@@ -25,8 +25,10 @@ They need a clear way to compare destinations by vibe, stay length, access, cost
 - Booking, checkout, commerce
 - UGC review system
 - Full attraction directory
-- Hover graph interactions
-- Full internal city map systems for every destination
+- Data visualization graphs and hover-triggered chart interactions
+- Large interactive city-internal neighborhood map systems are out of scope for v1.
+- If map context is shown in v1, keep it simple and static.
+- Migrate to a structured SVG approach before scaling destination count beyond the core set.
 - Nationwide exhaustive coverage
 
 ## 6. Homepage requirements
@@ -61,7 +63,7 @@ Each card must show:
 Card must not show:
 - full transport module
 - multi-anchor travel times
-- long body copy
+- descriptive body copy (the vibe field is one line only)
 
 ## 8. Detail page requirements
 Every detail page must include:
@@ -131,4 +133,3 @@ Expanded v1.1 candidates:
 - map is supportive, not dominant
 - cards are scan-friendly and information-dense without being crowded
 - practical, calm, trustworthy tone
-- not a tourism-board aesthetic

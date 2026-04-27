@@ -2,6 +2,7 @@
 
 ## Product feel
 WhereKorea should look like a trustworthy information product, not a tourism brochure.
+Calm, sharp, and informative outperforms dramatic and visual-first. Avoid tourism-campaign aesthetics.
 
 ## Keywords
 - clean

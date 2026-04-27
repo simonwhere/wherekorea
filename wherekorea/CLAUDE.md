@@ -10,16 +10,14 @@ It is not a generic travel portal, booking layer, or attraction directory.
 - The goal is faster destination choice, not more content.
 - Use simple destination names on main cards.
 - Put richer structure inside detail pages.
-- Avoid vague shorthand references to previous projects.
-- If reusing a past content structure, name the exact reusable sections explicitly.
 
 ## v1 interaction rules
-- No hover graphs in v1.
 - Card click goes to detail page.
 - Travel time belongs on detail pages, not cards.
+- Keep interactions simple and scannable. Hover-triggered charts and data visualizations are not part of the v1 interaction model.
 - Compare tray and compare view are in scope for v1.
-- Food is in scope for v1, but do not turn it into a restaurant listing product.
-- Neighborhoods are useful, but large city-internal map systems are v1.5 unless explicitly requested.
+- Food is in scope for v1. Keep it curated — see editorial-guidelines for food content rules.
+- Neighborhoods are useful, but large city-internal map systems are not part of the baseline v1 scope.
 
 ## Naming rules
 - Use simple, traveler-recognizable names for main cards.
@@ -45,11 +43,10 @@ It is not a generic travel portal, booking layer, or attraction directory.
   - easier with a car
   - one night is enough
 - Avoid exaggerated certainty.
-- Recommended stay is a guide for most travelers, not an absolute truth.
 
 ## Non-goals for v1
 - Full nationwide destination coverage
 - Flight booking, hotel booking, payments
 - UGC review community
-- Attraction cards everywhere
-- Long-form editorial essays as the main UX
+- Individual attraction cards as a navigation unit (destination cards are the unit)
+- Long-form narrative writing as a content pattern (compact section blocks are the pattern)

@@ -9,18 +9,19 @@
 
 ## How to work
 - Make the smallest coherent change that completes the requested task.
-- Preserve product identity: decision tool, not portal.
 - Prefer stable data structures over premature backend complexity.
 - Use static or seeded data first unless the task explicitly requires live integration.
 - Keep UI readable and easy to scan.
 
+## Core reference
+CLAUDE.md defines the product boundary. If a task conflicts with it, flag before implementing.
+This file covers implementation-level behavior only — it does not restate product philosophy.
+
 ## What to challenge
 Flag the task if it starts to drift into:
-- supplier-led recommendation logic
 - dense attraction directory behavior
-- booking platform behavior
 - overdesigned hover-heavy interactions
-- ambiguous shorthand like “reuse the old stuff” without naming exact sections
+- ambiguous shorthand like “reuse the old stuff” or “use the WhereNow structure” without naming exact sections
 
 ## Task output style
 When finishing a task, summarize:
