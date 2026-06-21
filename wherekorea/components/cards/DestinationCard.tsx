@@ -1,21 +1,40 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
 import { useState } from 'react'
 import type { Destination } from '@/data/types'
+import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
+import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
 
-interface Props {
-  destination: Destination
+const ACCENT = '#FF6A3D'
+
+function crowdColor(level: string): string {
+  if (level === 'Low') return '#4ade80'
+  if (level === 'Medium') return '#facc15'
+  return '#f87171'
 }
 
-export default function DestinationCard({ destination: d }: Props) {
+interface Props {
+  destination: Destination
+  onSelect: () => void
+  isSelected: boolean
+}
+
+export default function DestinationCard({ destination: d, onSelect, isSelected }: Props) {
   const { compareList, toggleCompare } = useCompare()
   const inCompare = compareList.includes(d.slug)
   const compareDisabled = compareList.length >= 3 && !inCompare
-  const [imgFailed, setImgFailed] = useState(false)
+  const [imgErr, setImgErr] = useState(false)
+  const [hov, setHov] = useState(false)
+  const [hovCompare, setHovCompare] = useState(false)
+
+  // Parse weather range from snapshot: "This week · 13–21°C · partly cloudy"
+  const weatherRange = d.live_weather_snapshot.split('·')[1]?.trim() ?? '—'
+  const nowVal = weatherRange.replace('°C', '°')
+  const perDay = DAILY_AVG[d.slug] ?? d.card_budget_level
+  const koreanName = KOREAN_NAMES[d.slug]
+  const region = REGIONS[d.slug]
 
   function handleCompareToggle(e: React.MouseEvent) {
     e.stopPropagation()
@@ -27,72 +46,208 @@ export default function DestinationCard({ destination: d }: Props) {
     }
   }
 
-  // Extract temp from "This week · 14–21°C · mostly dry"
-  const weatherTemp = d.live_weather_snapshot.split('·')[1]?.trim() ?? ''
-
   return (
-    <article className="relative rounded-2xl overflow-hidden aspect-[3/4] group bg-gray-800">
+    <article
+      onClick={() => {
+        track('card_clicked', { slug: d.slug })
+        onSelect()
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        position: 'relative',
+        borderRadius: 12,
+        overflow: 'hidden',
+        aspectRatio: '3/4',
+        background: '#1c1d24',
+        cursor: 'pointer',
+        transition: 'transform 200ms, box-shadow 200ms, outline-color 200ms',
+        transform: (hov || isSelected) ? 'translateY(-2px)' : 'none',
+        outline: isSelected ? '2px solid #fff' : '2px solid transparent',
+        outlineOffset: 2,
+        boxShadow: isSelected
+          ? '0 10px 36px rgba(0,0,0,0.65)'
+          : hov
+            ? '0 8px 32px rgba(0,0,0,0.55)'
+            : '0 2px 8px rgba(0,0,0,0.30)',
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          track('card_clicked', { slug: d.slug })
+          onSelect()
+        }
+      }}
+      aria-label={`Preview ${d.name}`}
+      aria-pressed={isSelected}
+    >
       {/* Background image */}
-      {!imgFailed && (
-        <Image
+      {!imgErr ? (
+        <img
           src={d.image.src}
           alt={d.image.alt}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-          onError={() => setImgFailed(true)}
+          onError={() => setImgErr(true)}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            transform: hov ? 'scale(1.04)' : 'scale(1)',
+            transition: 'transform 500ms ease',
+          }}
         />
+      ) : (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(135deg, #1e2030, #0f1017)',
+        }} />
       )}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/40" />
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.20) 100%)',
+      }} />
 
-      {/* Full-card navigation link */}
-      <Link
-        href={`/destination/${d.slug}`}
-        onClick={() => track('card_clicked', { slug: d.slug })}
-        className="absolute inset-0 z-0"
-        aria-label={`View ${d.name} details`}
-      />
+      {/* Top-left: primary tag */}
+      {d.tags[0] && (
+        <div style={{
+          position: 'absolute', top: 10, left: 10,
+          fontSize: 10, fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          padding: '3.5px 8px',
+          background: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(6px)',
+          color: '#fff',
+          borderRadius: 5,
+          border: '1px solid rgba(255,255,255,0.22)',
+        }}>
+          {d.tags[0]}
+        </div>
+      )}
 
-      {/* Top row: primary tag (left) + budget (right) */}
-      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-        {d.tags[0] && (
-          <span className="text-xs px-2.5 py-1 bg-black/55 backdrop-blur-sm text-white/75 rounded-full">
-            {d.tags[0]}
-          </span>
-        )}
-        <span className="shrink-0 text-xs px-2.5 py-1 bg-black/55 backdrop-blur-sm text-white font-bold rounded-full tracking-wide">
-          {d.card_budget_level}
-        </span>
+      {/* Top-right: Korea mini-map */}
+      <div style={{
+        position: 'absolute', top: 10, right: 10,
+        padding: 5,
+        background: 'rgba(0,0,0,0.42)',
+        backdropFilter: 'blur(8px)',
+        borderRadius: 9,
+        border: '1px solid rgba(255,255,255,0.16)',
+        lineHeight: 0,
+      }}>
+        <KoreaMiniMap slug={d.slug} size={30} />
       </div>
 
       {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h2 className="text-white text-3xl font-bold leading-none tracking-tight drop-shadow-md">
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        padding: '0 12px 12px',
+      }}>
+        {/* Korean name + region eyebrow */}
+        <div style={{
+          fontSize: 11, fontWeight: 600,
+          marginBottom: 5,
+          letterSpacing: '0.01em',
+          textShadow: '0 1px 4px rgba(0,0,0,0.85)',
+        }}>
+          <span style={{ color: 'rgba(255,255,255,0.95)' }}>{koreanName}</span>
+          <span style={{ color: 'rgba(255,255,255,0.70)' }}> · {region}</span>
+        </div>
+
+        {/* Destination name */}
+        <h2 style={{
+          fontSize: 26, fontWeight: 700,
+          color: '#fff', lineHeight: 1.02,
+          letterSpacing: '-0.03em',
+          marginBottom: 4,
+          textShadow: '0 1px 6px rgba(0,0,0,0.5)',
+        }}>
           {d.name}
         </h2>
-        <p className="text-white/60 text-sm mt-1.5 leading-snug">
+
+        {/* Short vibe */}
+        <p style={{
+          fontSize: 12.5, color: 'rgba(255,255,255,0.95)',
+          lineHeight: 1.3, marginBottom: 11,
+          letterSpacing: '0.005em', fontWeight: 500,
+          textShadow: '0 1px 4px rgba(0,0,0,0.80)',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
           {d.card_vibe}
         </p>
 
-        {/* Info row: stay + weather prominently, compare secondary */}
-        <div className="flex items-center justify-between mt-3 gap-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-white font-medium">{d.recommended_stay}</span>
-            <span className="text-white/40">·</span>
-            <span className="text-white/70">{weatherTemp}</span>
-          </div>
+        {/* Divider */}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', marginBottom: 11 }} />
 
-          {/* Compare button — z-10 sits above the Link overlay */}
+        {/* Metric row: Stay / Now / Per day */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 6,
+          marginBottom: 12,
+        }}>
+          {[
+            { v: d.recommended_stay, l: 'Stay' },
+            { v: nowVal,             l: 'Now' },
+            { v: perDay,             l: 'Per day' },
+          ].map((m) => (
+            <div key={m.l} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+              <span style={{
+                fontSize: 13.5, fontWeight: 700, color: '#fff',
+                letterSpacing: '-0.03em', lineHeight: 1.05,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                textShadow: '0 1px 3px rgba(0,0,0,0.75)',
+              }}>{m.v}</span>
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.78)',
+                textTransform: 'uppercase', letterSpacing: '0.07em',
+                textShadow: '0 1px 3px rgba(0,0,0,0.85)',
+              }}>{m.l}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom row: crowd + compare */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 6,
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: crowdColor(d.crowd_friction), flexShrink: 0,
+            }} />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.92)', fontWeight: 500, textShadow: '0 1px 3px rgba(0,0,0,0.80)' }}>
+              {d.crowd_friction} crowd
+            </span>
+          </span>
+
           <button
             onClick={handleCompareToggle}
-            disabled={compareDisabled}
-            className={`relative z-10 shrink-0 text-xs px-3 py-1.5 rounded-full border transition-all ${
-              inCompare
-                ? 'bg-white text-gray-900 border-white font-medium'
-                : 'text-white/50 border-white/25 hover:border-white/60 hover:text-white/80 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed'
-            }`}
+            onMouseEnter={() => setHovCompare(true)}
+            onMouseLeave={() => setHovCompare(false)}
+            disabled={compareDisabled && !inCompare}
+            style={{
+              flexShrink: 0,
+              fontSize: 11, fontWeight: 600,
+              padding: '5px 11px',
+              borderRadius: 7,
+              border: inCompare
+                ? `1px solid ${ACCENT}`
+                : '1px solid rgba(255,255,255,0.22)',
+              background: inCompare
+                ? ACCENT
+                : hovCompare ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.30)',
+              color: '#fff',
+              cursor: (compareDisabled && !inCompare) ? 'not-allowed' : 'pointer',
+              opacity: (compareDisabled && !inCompare) ? 0.3 : 1,
+              transition: 'all 120ms',
+              backdropFilter: 'blur(4px)',
+            }}
           >
             {inCompare ? '✓ Added' : '+ Compare'}
           </button>

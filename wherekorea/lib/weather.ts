@@ -1,6 +1,5 @@
 import type { Destination } from '@/data/types'
 
-// Coordinates for each v1 destination
 const COORDS: Record<string, { lat: number; lon: number }> = {
   seoul:     { lat: 37.5665, lon: 126.9780 },
   busan:     { lat: 35.1796, lon: 129.0756 },
@@ -14,23 +13,36 @@ const COORDS: Record<string, { lat: number; lon: number }> = {
   jirisan:   { lat: 35.3372, lon: 127.7306 },
 }
 
-// WMO weather interpretation codes → human-readable condition
+// WMO weather interpretation codes
 // https://open-meteo.com/en/docs#weathervariables
 function wmoToCondition(code: number): string {
-  if (code === 0)             return 'clear'
-  if (code === 1)             return 'mostly clear'
-  if (code === 2)             return 'partly cloudy'
-  if (code === 3)             return 'overcast'
-  if (code <= 48)             return 'foggy'
-  if (code <= 55)             return 'drizzle'
-  if (code <= 67)             return 'rainy'
-  if (code <= 77)             return 'snowy'
-  if (code <= 82)             return 'showery'
-  if (code <= 86)             return 'snow showers'
+  if (code === 0)  return 'clear'
+  if (code === 1)  return 'mostly clear'
+  if (code === 2)  return 'partly cloudy'
+  if (code === 3)  return 'overcast'
+  if (code <= 48)  return 'foggy'
+  if (code <= 55)  return 'drizzle'
+  if (code <= 67)  return 'rainy'
+  if (code <= 77)  return 'snowy'
+  if (code <= 82)  return 'showery'
+  if (code <= 86)  return 'snow showers'
   return 'stormy'
 }
 
-// Pick the most frequently occurring condition across 7 days
+export function wmoToEmoji(code: number): string {
+  if (code === 0)  return '☀️'
+  if (code === 1)  return '🌤️'
+  if (code === 2)  return '⛅'
+  if (code === 3)  return '☁️'
+  if (code <= 48)  return '🌫️'
+  if (code <= 55)  return '🌦️'
+  if (code <= 67)  return '🌧️'
+  if (code <= 77)  return '❄️'
+  if (code <= 82)  return '🌦️'
+  if (code <= 86)  return '🌨️'
+  return '⛈️'
+}
+
 function dominantCondition(codes: number[]): string {
   const counts: Record<string, number> = {}
   for (const code of codes) {
@@ -40,7 +52,11 @@ function dominantCondition(codes: number[]): string {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
 }
 
-interface OpenMeteoResponse {
+interface OpenMeteoForecastResponse {
+  current: {
+    temperature_2m: number
+    weathercode: number
+  }
   daily: {
     temperature_2m_max: number[]
     temperature_2m_min: number[]
@@ -48,40 +64,113 @@ interface OpenMeteoResponse {
   }
 }
 
-// Fetch 7-day weather snapshot for one destination.
-// Returns the seed fallback string if the API is unavailable.
-export async function fetchWeatherSnapshot(slug: string, fallback: string): Promise<string> {
+interface OpenMeteoArchiveResponse {
+  daily: {
+    temperature_2m_max: number[]
+    temperature_2m_min: number[]
+    weathercode: number[]
+  }
+}
+
+export interface WeatherResult {
+  snapshot: string
+  currentTemp: number
+  currentCode: number
+}
+
+export interface MonthlyAvg {
+  avgHigh: number
+  avgLow: number
+  condition: string
+  monthName: string
+}
+
+// Fetch current + 7-day forecast for one destination.
+// Falls back to seed snapshot if the API is unavailable.
+export async function fetchWeatherSnapshot(
+  slug: string,
+  fallback: string
+): Promise<WeatherResult> {
+  const FALLBACK: WeatherResult = { snapshot: fallback, currentTemp: 0, currentCode: 0 }
   const coords = COORDS[slug]
-  if (!coords) return fallback
+  if (!coords) return FALLBACK
 
   const url =
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${coords.lat}&longitude=${coords.lon}` +
+    `&current=temperature_2m,weathercode` +
     `&daily=temperature_2m_max,temperature_2m_min,weathercode` +
     `&timezone=Asia/Seoul&forecast_days=7`
 
   try {
     const res = await fetch(url, { next: { revalidate: 3600 } })
-    if (!res.ok) return fallback
+    if (!res.ok) return FALLBACK
 
-    const data: OpenMeteoResponse = await res.json()
+    const data: OpenMeteoForecastResponse = await res.json()
     const { temperature_2m_max, temperature_2m_min, weathercode } = data.daily
+    const currentTemp = Math.round(data.current.temperature_2m)
+    const currentCode = data.current.weathercode
 
     const high = Math.round(Math.max(...temperature_2m_max))
     const low  = Math.round(Math.min(...temperature_2m_min))
     const condition = dominantCondition(weathercode)
 
-    return `This week · ${low}–${high}°C · ${condition}`
+    return {
+      snapshot: `This week · ${low}–${high}°C · ${condition}`,
+      currentTemp,
+      currentCode,
+    }
   } catch {
-    return fallback
+    return FALLBACK
+  }
+}
+
+// Fetch average conditions for the current month using previous year's archive data.
+export async function fetchMonthlyAverage(slug: string): Promise<MonthlyAvg | null> {
+  const coords = COORDS[slug]
+  if (!coords) return null
+
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const year = now.getFullYear() - 1
+  const mm = String(month).padStart(2, '0')
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const startDate = `${year}-${mm}-01`
+  const endDate = `${year}-${mm}-${daysInMonth}`
+  const monthName = now.toLocaleString('en-US', { month: 'long' })
+
+  const url =
+    `https://archive-api.open-meteo.com/v1/archive` +
+    `?latitude=${coords.lat}&longitude=${coords.lon}` +
+    `&start_date=${startDate}&end_date=${endDate}` +
+    `&daily=temperature_2m_max,temperature_2m_min,weathercode` +
+    `&timezone=Asia/Seoul`
+
+  try {
+    const res = await fetch(url, { next: { revalidate: 86400 * 7 } })
+    if (!res.ok) return null
+
+    const data: OpenMeteoArchiveResponse = await res.json()
+    const { temperature_2m_max, temperature_2m_min, weathercode } = data.daily
+
+    const avgHigh = Math.round(
+      temperature_2m_max.reduce((a, b) => a + b, 0) / temperature_2m_max.length
+    )
+    const avgLow = Math.round(
+      temperature_2m_min.reduce((a, b) => a + b, 0) / temperature_2m_min.length
+    )
+    const condition = dominantCondition(weathercode)
+
+    return { avgHigh, avgLow, condition, monthName }
+  } catch {
+    return null
   }
 }
 
 // Fetch weather for multiple destinations in parallel.
-// Returns a map of slug → live snapshot string.
 export async function fetchWeatherForAll(
   destinations: Destination[]
-): Promise<Record<string, string>> {
+): Promise<Record<string, WeatherResult>> {
   const entries = await Promise.all(
     destinations.map(async (d) => [
       d.slug,
@@ -92,13 +181,18 @@ export async function fetchWeatherForAll(
 }
 
 // Merge live weather into a destination array.
-// If a slug has no live entry, the seed value is preserved.
 export function applyWeather(
   destinations: Destination[],
-  weatherMap: Record<string, string>
+  weatherMap: Record<string, WeatherResult>
 ): Destination[] {
-  return destinations.map((d) => ({
-    ...d,
-    live_weather_snapshot: weatherMap[d.slug] ?? d.live_weather_snapshot,
-  }))
+  return destinations.map((d) => {
+    const w = weatherMap[d.slug]
+    if (!w) return d
+    return {
+      ...d,
+      live_weather_snapshot: w.snapshot,
+      live_weather_current: w.currentTemp,
+      live_weather_icon: wmoToEmoji(w.currentCode),
+    }
+  })
 }

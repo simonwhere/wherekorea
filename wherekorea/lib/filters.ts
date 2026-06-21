@@ -13,6 +13,16 @@ function matchesTag(destination: Destination, tag: FilterTag): boolean {
   return destination.tags.includes(tag as VibeTag)
 }
 
+function matchesSearch(d: Destination, searchQuery: string): boolean {
+  const q = searchQuery.trim().toLowerCase()
+  if (!q) return true
+  return (
+    d.name.toLowerCase().includes(q) ||
+    d.card_vibe.toLowerCase().includes(q) ||
+    d.tags.some((t) => t.includes(q))
+  )
+}
+
 // OR logic: a destination matches if it satisfies ANY active filter tag.
 // An empty filter set returns all destinations.
 export function filterDestinations(
@@ -21,12 +31,7 @@ export function filterDestinations(
   searchQuery: string
 ): Destination[] {
   return destinations.filter((d) => {
-    if (
-      searchQuery.trim() &&
-      !d.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-    ) {
-      return false
-    }
+    if (!matchesSearch(d, searchQuery)) return false
     if (activeTags.length === 0) return true
     return activeTags.some((tag) => matchesTag(d, tag))
   })

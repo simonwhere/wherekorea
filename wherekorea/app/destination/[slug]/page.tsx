@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { destinations, getDestinationBySlug } from '@/data/destinations'
-import { fetchWeatherSnapshot } from '@/lib/weather'
+import { fetchWeatherSnapshot, fetchMonthlyAverage, wmoToEmoji } from '@/lib/weather'
 import HeroSummary from '@/components/detail/HeroSummary'
 import WhyDestination from '@/components/detail/WhyDestination'
 import BestForSkipIf from '@/components/detail/BestForSkipIf'
@@ -27,8 +27,16 @@ export default async function DestinationPage({ params }: Props) {
 
   if (!destination) notFound()
 
-  const liveWeather = await fetchWeatherSnapshot(slug, destination.live_weather_snapshot)
-  const enriched = { ...destination, live_weather_snapshot: liveWeather }
+  const [weather, monthlyAvg] = await Promise.all([
+    fetchWeatherSnapshot(slug, destination.live_weather_snapshot),
+    fetchMonthlyAverage(slug),
+  ])
+  const enriched = {
+    ...destination,
+    live_weather_snapshot: weather.snapshot,
+    live_weather_current: weather.currentTemp,
+    live_weather_icon: wmoToEmoji(weather.currentCode),
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -37,7 +45,7 @@ export default async function DestinationPage({ params }: Props) {
       <WhyDestination destination={enriched} />
       <BestForSkipIf destination={enriched} />
       <AccessMovement destination={enriched} />
-      <WeatherBlock destination={enriched} />
+      <WeatherBlock destination={enriched} monthlyAvg={monthlyAvg} />
       <FoodBlock destination={enriched} />
       <BudgetBlock destination={enriched} />
       <SimilarDestinations destination={enriched} allDestinations={destinations} />

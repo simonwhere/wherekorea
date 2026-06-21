@@ -1,5 +1,8 @@
 # CLAUDE.md — WhereKorea core rules
 
+> Session start: also read `docs/PROJECT-BRIEF.md` first — it is the single entry point
+> (vision, collaboration workflow, doc map, current status, planning backlog).
+
 ## Product identity
 WhereKorea is a decision tool for choosing travel destinations in Korea.
 It is not a generic travel portal, booking layer, or attraction directory.
@@ -12,12 +15,33 @@ It is not a generic travel portal, booking layer, or attraction directory.
 - Put richer structure inside detail pages.
 
 ## v1 interaction rules
-- Card click goes to detail page.
-- Travel time belongs on detail pages, not cards.
-- Keep interactions simple and scannable. Hover-triggered charts and data visualizations are not part of the v1 interaction model.
+- No hover graphs in v1.
+- Homepage browsing should preserve context.
+- During homepage exploration, card click opens a selected-destination preview panel, not a forced full-page transition.
+- Desktop/tablet: card click opens a right-side detail preview panel while keeping cards visible.
+- Mobile: card click opens a bottom sheet or drawer while preserving list scroll and filter state.
+- Dedicated detail pages still exist for SEO, sharing, and deeper guide content.
+- Cards can show compact travel practicality signals, but full multi-anchor travel time belongs on detail pages.
 - Compare tray and compare view are in scope for v1.
-- Food is in scope for v1. Keep it curated — see editorial-guidelines for food content rules.
-- Neighborhoods are useful, but large city-internal map systems are not part of the baseline v1 scope.
+- Food is in scope for v1, but do not turn it into a restaurant listing product.
+- Neighborhoods are useful, but large city-internal map systems are v1.5 unless explicitly requested.
+
+## Skill usage rules
+Before design or code changes, read the relevant skill file under `docs/skills/`.
+These five files exist; do not reference others.
+
+- Any code change → `docs/skills/10-implementation-guardrails.md` (always-on; includes master-detail, preview panel, and mobile invariants)
+- Filter/search work → `docs/skills/06-filter-search.md`
+- Image work → `docs/skills/07-image-curation.md`
+- Compare work → `docs/skills/08-compare.md`
+- Design review / QA → `docs/skills/11-design-qa.md`
+
+Do not read every skill file for tiny edits. Pick only the relevant ones.
+
+## Current UX priority
+The current priority is to make homepage discovery easier.
+The user should be able to browse, select, inspect, compare, and continue browsing without losing context.
+Do not turn the homepage into a full article page, booking flow, or itinerary planner.
 
 ## Naming rules
 - Use simple, traveler-recognizable names for main cards.

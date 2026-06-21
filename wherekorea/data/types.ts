@@ -75,6 +75,8 @@ export interface Destination {
   vibe: string             // full vibe copy for detail/editorial use
   recommended_stay: RecommendedStay
   live_weather_snapshot: string
+  live_weather_current?: number  // current temp °C — set at runtime by weather fetch
+  live_weather_icon?: string     // WMO emoji — set at runtime
   card_budget_level: BudgetLevel
   tags: VibeTag[]
 

@@ -28,3 +28,7 @@ yarn-error.log*
 
 # Claude Code local config
 .claude/settings.local.json
+
+# Obsidian vault state (per-user; content lives in docs/)
+.obsidian/
+Obsi_wherekr/
