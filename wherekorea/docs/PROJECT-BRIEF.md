@@ -52,8 +52,11 @@ UI를 눈으로 보며 다듬는 작업은 VS Code가, 방향·문서·판단은
 ## 7. 기획 중 / 열린 질문 (planning backlog)
 > 여기서 같이 다듬어 나갈 항목. 정해지면 위 섹션이나 PRD로 승격.
 
-- (작성 예정 — 다음 기획 세션에서 채움)
-  - 예: v1 이후 로드맵, destination 확장 기준, 데이터 전략(seed→live 전환), 수익 모델 경계, 차별화 포인트 등
+- **실시간 데이터 & 차별화** → `docs/planning-data-and-differentiation.md` (작성됨)
+  - 핵심: "Best now"가 현재 정렬 안 됨(`return true`) → 실데이터 기반 랭킹이 차별화 본체.
+  - 무료 실시간 소스 확인됨: TourAPI 혼잡도(★), 축제, 에어코리아 미세먼지, open-meteo(연동됨).
+  - 미정: 랭킹 가중치 / 실시간 1순위 확정 / 차별화 옵션 중 v1.5 선정 / live vs seed 경계.
+- (다음 세션) v1 이후 로드맵, destination 확장 기준, 수익 모델 경계
 
 ## 8. 고정 원칙 (헌법급)
 홈은 발견용(스토리텔링 아님) · destination 카드가 코어 단위 · 탐색 중 context 보존 · metric은 deep read 전에 보임 · 필터는 user intent · 이미지는 destination-specific · compare max 3 · seed 데이터 우선 · **smallest coherent change**.

@@ -29,11 +29,13 @@ export const REGIONS: Record<string, string> = {
   jirisan:   'Mountain inland',
 }
 
+// card_daily_total — mid traveler all-in per person/day (persona A: 2 sharing 1 mid room).
+// Calibration + sources: see docs/data-policy.md and docs/budget-calibration.md.
 export const DAILY_AVG: Record<string, string> = {
-  seoul: '₩155k', busan: '₩140k', jeju: '₩210k',
-  gyeongju: '₩110k', jeonju: '₩105k', gangneung: '₩140k',
-  sokcho: '₩130k', tongyeong: '₩100k', namhae: '₩120k',
-  jirisan: '₩95k',
+  seoul: '₩145k', busan: '₩125k', jeju: '₩165k',
+  gyeongju: '₩115k', jeonju: '₩110k', gangneung: '₩130k',
+  sokcho: '₩120k', tongyeong: '₩110k', namhae: '₩105k',
+  jirisan: '₩100k',
 }
 
 // x, y = % position within korea-map.png (398×494)

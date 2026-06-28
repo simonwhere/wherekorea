@@ -56,6 +56,16 @@ export interface UsefulLink {
   url: string
 }
 
+// Trust metadata — see data-policy.md §"Trust metadata". Structure now, UI later.
+export type MetricSource = 'official' | 'estimate' | 'api' | 'seed'
+export type Confidence = 'high' | 'medium' | 'low'
+
+export interface MetricMeta {
+  source: MetricSource
+  confidence: Confidence
+  last_verified: string   // ISO date, e.g. '2026-06-28'
+}
+
 export interface DestinationImage {
   src: string
   alt: string
@@ -93,8 +103,13 @@ export interface Destination {
   food: string
   detail_budget: DetailBudget
   crowd_friction: CrowdFriction
+  crowd_peak_months: number[]   // months 1–12 when crowding spikes (hybrid model)
   crowd_notes: string
   insider_tips: string[]
   similar_destinations: string[] // slugs of other destinations
   useful_links: UsefulLink[]
+  trust?: {
+    budget?: MetricMeta
+    crowd?: MetricMeta
+  }
 }

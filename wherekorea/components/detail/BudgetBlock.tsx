@@ -9,9 +9,12 @@ export default function BudgetBlock({ destination: d }: Props) {
 
   return (
     <div className="py-6 border-b border-gray-200">
-      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">
+      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">
         Budget
       </h2>
+      <p className="text-xs text-gray-500 leading-relaxed mb-4">
+        Per person, 2 sharing one mid-range room — lodging, meals, local transport, and light activities. Excludes intercity travel, flights, and shopping.
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
         <div className="bg-gray-50 rounded-md p-3">

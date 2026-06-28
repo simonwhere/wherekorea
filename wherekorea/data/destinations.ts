@@ -55,6 +55,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['busan', 'jeonju'],
     useful_links: [],
+    crowd_peak_months: [4, 5, 10],
+    trust: {
+      budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -107,6 +112,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['seoul', 'tongyeong', 'gyeongju'],
     useful_links: [],
+    crowd_peak_months: [7, 8],
+    trust: {
+      budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -143,11 +153,11 @@ export const destinations: Destination[] = [
       "Typical in April: warm and pleasant, 13–19°C, ocean breezes. Yellow canola fields peak in late March to early April. Summer is humid. Autumn (October) brings clear skies and comfortable hiking weather.",
     food: "Black pork (heuk dwaeji) is the local specialty — better at smaller restaurants away from tourist strips. Haenyeo-caught seafood near Seongsan. Hallabong citrus and green tea products are genuinely worth bringing home.",
     detail_budget: {
-      low: '~₩80,000–100,000/day',
-      mid: '~₩180,000–240,000/day',
-      high: '₩400,000+/day',
+      low: '~₩75,000–95,000/day',
+      mid: '~₩150,000–190,000/day',
+      high: '₩350,000+/day',
       notes:
-        "Car rental adds a meaningful daily cost. Accommodation near Seongsan or the south coast is pricier than Jeju City.",
+        "Car rental adds a meaningful daily cost on top of this. Accommodation near Seongsan or the south coast is pricier than Jeju City.",
     },
     crowd_friction: 'High',
     crowd_notes:
@@ -159,6 +169,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['namhae', 'tongyeong'],
     useful_links: [],
+    crowd_peak_months: [7, 8],
+    trust: {
+      budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -210,6 +225,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['jeonju', 'busan'],
     useful_links: [],
+    crowd_peak_months: [4, 10],
+    trust: {
+      budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -262,6 +282,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['gyeongju', 'busan'],
     useful_links: [],
+    crowd_peak_months: [5, 10],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -313,6 +338,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['sokcho'],
     useful_links: [],
+    crowd_peak_months: [7, 8],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -364,6 +394,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['gangneung', 'jirisan'],
     useful_links: [],
+    crowd_peak_months: [7, 8, 10],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -415,6 +450,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['namhae', 'busan'],
     useful_links: [],
+    crowd_peak_months: [7, 8],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -466,6 +506,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['tongyeong', 'jeju'],
     useful_links: [],
+    crowd_peak_months: [7, 8],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+    },
   },
 
   {
@@ -517,6 +562,11 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['sokcho', 'namhae'],
     useful_links: [],
+    crowd_peak_months: [5, 10],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
+      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+    },
   },
 ]
 
