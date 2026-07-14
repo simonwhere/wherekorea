@@ -32,6 +32,21 @@ interface RawFestivalItem {
   mapy?: string           // lat
 }
 
+// Keep only genuine festivals. The Korean festival DB mixes in routine programs
+// that aren't destination-choice signals: palace guard-changing ceremonies,
+// "상설"(permanent/standing) culture programs, and city walking/architecture tours.
+// Verified against the live Seoul feed 2026-07-14: a 15km match returned 26 items,
+// but half were ceremonies/tours (수문장 교대의식, 상설 전통문화행사, 건축투어…).
+// Rule: require a real festival marker AND reject routine markers. Works on the
+// raw title from either service (English titles carry 'Festival/Fair/Expo').
+// The Korean 제(祭) suffix marks a festival by type (문화제/영화제/극제…), so the
+// common families are listed explicitly — bare 제 is too ambiguous (국제, 경제).
+const FESTIVAL_MARKERS = /축제|축전|문화제|영화제|음악제|예술제|문학제|무용제|미술제|국악제|합창제|극제|대제|페스타|페스티벌|페스트|페어|엑스포|박람회|비엔날레|한마당|festival|festa|expo|fair|biennale/i
+const ROUTINE_MARKERS = /상설|의식|수문장|파수|봉수|교대|투어|탐방|ceremony|changing of|guard/i
+function isMajorFestival(title: string): boolean {
+  return FESTIVAL_MARKERS.test(title) && !ROUTINE_MARKERS.test(title)
+}
+
 export interface FestivalSignals {
   now: Record<string, LiveFestival[]>
   upcoming: Record<string, UpcomingFestival[]>
@@ -106,7 +121,8 @@ async function fetchAllFestivals(key: string, today: string): Promise<Normalized
     items.filter(
       (it) =>
         it.title && it.eventstartdate && it.eventenddate &&
-        it.eventenddate! >= today && it.mapx && it.mapy
+        it.eventenddate! >= today && it.mapx && it.mapy &&
+        isMajorFestival(it.title!)
     )
   const dupeKey = (it: RawFestivalItem) =>
     `${it.eventstartdate}-${it.eventenddate}-${Number(it.mapx).toFixed(2)},${Number(it.mapy).toFixed(2)}`
