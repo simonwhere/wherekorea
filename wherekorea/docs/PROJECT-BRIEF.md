@@ -11,6 +11,10 @@ WhereKorea는 **외국인 여행자가 한국에서 "지금 어디 갈지"를 �
 
 핵심 질문: *"Where in Korea should I go right now?"* — 홈에서 30초 안에 답이 나와야 한다.
 
+**코어 페르소나 (2026-07-12 확정):** 첫(또는 두 번째) 한국 여행을 계획하는 **영어권 여행자, 1~2주 일정, 서울 + 2~3개 도시 선택 단계**.
+카피 톤·기본 정렬·추천 매치업·페이지 우선순위는 모두 이 사람 기준으로 판단한다.
+(일본·중국어권은 방한 1~2위 시장이지만 언어 확장은 v2 질문 — [[planning-launch-strategy-gaps]] S3)
+
 ## 2. 무엇이 아닌가 (non-goals)
 여행 블로그 · 관광청 포털 · 예약/결제 · UGC 커뮤니티 · 풀 itinerary 플래너 · 식당/명소 디렉토리 · 전국 exhaustive DB.
 (상세: `CLAUDE.md` Non-goals, `docs/PRD-v1.md`)

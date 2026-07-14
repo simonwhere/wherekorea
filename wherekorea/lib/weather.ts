@@ -1,6 +1,6 @@
 import type { Destination } from '@/data/types'
 
-const COORDS: Record<string, { lat: number; lon: number }> = {
+export const COORDS: Record<string, { lat: number; lon: number }> = {
   seoul:     { lat: 37.5665, lon: 126.9780 },
   busan:     { lat: 35.1796, lon: 129.0756 },
   jeju:      { lat: 33.4996, lon: 126.5312 },
@@ -11,6 +11,11 @@ const COORDS: Record<string, { lat: number; lon: number }> = {
   tongyeong: { lat: 34.8544, lon: 128.4330 },
   namhae:    { lat: 34.8375, lon: 127.8921 },
   jirisan:   { lat: 35.3372, lon: 127.7306 },
+  yeosu:     { lat: 34.7604, lon: 127.6622 },
+  andong:    { lat: 36.5684, lon: 128.7294 },
+  suwon:     { lat: 37.2636, lon: 127.0286 },
+  chuncheon: { lat: 37.8813, lon: 127.7298 },
+  'damyang-boseong': { lat: 34.7714, lon: 127.0800 }, // Boseong tea fields
 }
 
 // WMO weather interpretation codes
@@ -58,10 +63,18 @@ interface OpenMeteoForecastResponse {
     weathercode: number
   }
   daily: {
+    time: string[]
     temperature_2m_max: number[]
     temperature_2m_min: number[]
     weathercode: number[]
   }
+}
+
+export interface DailyForecast {
+  date: string // ISO YYYY-MM-DD
+  tmax: number
+  tmin: number
+  code: number
 }
 
 interface OpenMeteoArchiveResponse {
@@ -76,6 +89,7 @@ export interface WeatherResult {
   snapshot: string
   currentTemp: number
   currentCode: number
+  daily: DailyForecast[] // 7-day forecast; [] on fallback
 }
 
 export interface MonthlyAvg {
@@ -91,7 +105,7 @@ export async function fetchWeatherSnapshot(
   slug: string,
   fallback: string
 ): Promise<WeatherResult> {
-  const FALLBACK: WeatherResult = { snapshot: fallback, currentTemp: 0, currentCode: 0 }
+  const FALLBACK: WeatherResult = { snapshot: fallback, currentTemp: 0, currentCode: 0, daily: [] }
   const coords = COORDS[slug]
   if (!coords) return FALLBACK
 
@@ -107,7 +121,7 @@ export async function fetchWeatherSnapshot(
     if (!res.ok) return FALLBACK
 
     const data: OpenMeteoForecastResponse = await res.json()
-    const { temperature_2m_max, temperature_2m_min, weathercode } = data.daily
+    const { time, temperature_2m_max, temperature_2m_min, weathercode } = data.daily
     const currentTemp = Math.round(data.current.temperature_2m)
     const currentCode = data.current.weathercode
 
@@ -115,10 +129,18 @@ export async function fetchWeatherSnapshot(
     const low  = Math.round(Math.min(...temperature_2m_min))
     const condition = dominantCondition(weathercode)
 
+    const daily: DailyForecast[] = (time ?? []).map((t, i) => ({
+      date: t,
+      tmax: Math.round(temperature_2m_max[i]),
+      tmin: Math.round(temperature_2m_min[i]),
+      code: weathercode[i],
+    }))
+
     return {
       snapshot: `This week · ${low}–${high}°C · ${condition}`,
       currentTemp,
       currentCode,
+      daily,
     }
   } catch {
     return FALLBACK

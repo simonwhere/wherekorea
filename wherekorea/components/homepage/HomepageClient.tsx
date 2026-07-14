@@ -9,6 +9,8 @@ import {
 } from '@/data/destinations-meta'
 import { track } from '@/lib/analytics'
 import { filterDestinations } from '@/lib/filters'
+import { sortByBestNow, bestNowReason } from '@/lib/best-now'
+import { isPeakNow } from '@/lib/crowd'
 import Header from '@/components/layout/Header'
 import CategoryRail from '@/components/homepage/CategoryRail'
 import FilterStrip from '@/components/homepage/FilterStrip'
@@ -18,11 +20,12 @@ import DestinationPreviewPanel from '@/components/homepage/DestinationPreviewPan
 const PANEL_WIDTH = 480
 
 function useIsDesktop(breakpoint = 1100) {
-  const [isDesktop, setIsDesktop] = useState(
-    typeof window !== 'undefined' ? window.innerWidth >= breakpoint : true
-  )
+  // Start with the SSR value (true) on both server and first client render,
+  // then correct after mount — avoids hydration mismatch (guardrails §5).
+  const [isDesktop, setIsDesktop] = useState(true)
   useEffect(() => {
     function onResize() { setIsDesktop(window.innerWidth >= breakpoint) }
+    onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [breakpoint])
@@ -37,6 +40,8 @@ export default function HomepageClient({ destinations }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilters, setActiveFilters] = useState<FilterTag[]>([])
   const [activeCategory, setActiveCategory] = useState<CategoryId>('best-now')
+  // fixed once per mount — hydration-safe (docs/best-now-ranking.md §엣지)
+  const [month] = useState(() => new Date().getMonth() + 1)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -54,7 +59,16 @@ export default function HomepageClient({ destinations }: Props) {
   }, [selectedSlug])
 
   const byCategory = destinations.filter((d) => matchesCategory(d, activeCategory))
-  const filtered = filterDestinations(byCategory, activeFilters, searchQuery)
+  // 'Quietest now' is season-aware: Low friction AND not currently in its peak months.
+  // (Crowd stays out of Best-now ranking — here the user chose the crowd lens.)
+  const seasonAware =
+    activeCategory === 'low-crowd'
+      ? byCategory.filter((d) => !isPeakNow(d, month))
+      : byCategory
+  const matched = filterDestinations(seasonAware, activeFilters, searchQuery)
+  // Best-now ranking v2: score-sort only in the 'best-now' category
+  const filtered =
+    activeCategory === 'best-now' ? sortByBestNow(matched, month) : matched
 
   const selectedDest = selectedSlug
     ? destinations.find((d) => d.slug === selectedSlug) ?? null
@@ -138,6 +152,9 @@ export default function HomepageClient({ destinations }: Props) {
               destination={d}
               onSelect={() => handleSelect(d.slug)}
               isSelected={selectedSlug === d.slug}
+              bestNowReason={
+                activeCategory === 'best-now' ? bestNowReason(d, month) : undefined
+              }
             />
           ))}
         </div>

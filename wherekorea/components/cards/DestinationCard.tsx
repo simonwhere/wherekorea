@@ -6,6 +6,8 @@ import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
 import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
+import { useSaved } from '@/lib/saved-context'
+import { isPeakNow } from '@/lib/crowd'
 
 const ACCENT = '#FF6A3D'
 
@@ -19,19 +21,29 @@ interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
+  // "why it ranks here" one-liner — only passed in the Best now category
+  bestNowReason?: string
 }
 
-export default function DestinationCard({ destination: d, onSelect, isSelected }: Props) {
+export default function DestinationCard({ destination: d, onSelect, isSelected, bestNowReason }: Props) {
   const { compareList, toggleCompare } = useCompare()
+  const { savedList, toggleSaved } = useSaved()
+  const isSaved = savedList.includes(d.slug)
   const inCompare = compareList.includes(d.slug)
   const compareDisabled = compareList.length >= 3 && !inCompare
   const [imgErr, setImgErr] = useState(false)
   const [hov, setHov] = useState(false)
   const [hovCompare, setHovCompare] = useState(false)
+  // fixed once per mount — hydration-safe (same pattern as best-now month)
+  const [month] = useState(() => new Date().getMonth() + 1)
+  const peakNow = isPeakNow(d, month)
 
-  // Parse weather range from snapshot: "This week · 13–21°C · partly cloudy"
+  // "Now" = live current temp + condition emoji when available;
+  // falls back to the weekly range parsed from snapshot ("This week · 13–21°C · …")
   const weatherRange = d.live_weather_snapshot.split('·')[1]?.trim() ?? '—'
-  const nowVal = weatherRange.replace('°C', '°')
+  const nowVal = d.live_weather_current
+    ? `${d.live_weather_icon ? d.live_weather_icon + ' ' : ''}${d.live_weather_current}°`
+    : weatherRange.replace('°C', '°')
   const perDay = DAILY_AVG[d.slug] ?? d.card_budget_level
   const koreanName = KOREAN_NAMES[d.slug]
   const region = REGIONS[d.slug]
@@ -180,6 +192,23 @@ export default function DestinationCard({ destination: d, onSelect, isSelected }
           {d.card_vibe}
         </p>
 
+        {/* Best-now reason — why this ranks here right now */}
+        {bestNowReason && (
+          <div style={{
+            display: 'inline-block',
+            fontSize: 10, fontWeight: 600,
+            color: 'rgba(255,255,255,0.92)',
+            padding: '3px 8px', marginBottom: 10,
+            background: 'rgba(255,106,61,0.16)',
+            border: '1px solid rgba(255,106,61,0.35)',
+            borderRadius: 5,
+            letterSpacing: '0.02em',
+            textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+          }}>
+            {bestNowReason}
+          </div>
+        )}
+
         {/* Divider */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', marginBottom: 11 }} />
 
@@ -222,9 +251,32 @@ export default function DestinationCard({ destination: d, onSelect, isSelected }
               background: crowdColor(d.crowd_friction), flexShrink: 0,
             }} />
             <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.92)', fontWeight: 500, textShadow: '0 1px 3px rgba(0,0,0,0.80)' }}>
-              {d.crowd_friction} crowd
+              {d.crowd_friction} crowd{peakNow ? ' · peak now' : ''}
             </span>
           </span>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!isSaved) track('destination_saved', { slug: d.slug })
+              toggleSaved(d.slug)
+            }}
+            aria-label={isSaved ? `Remove ${d.name} from saved` : `Save ${d.name}`}
+            aria-pressed={isSaved}
+            style={{
+              flexShrink: 0, marginLeft: 'auto',
+              width: 27, height: 27, borderRadius: 7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, lineHeight: 1,
+              border: isSaved ? `1px solid ${ACCENT}` : '1px solid rgba(255,255,255,0.22)',
+              background: 'rgba(0,0,0,0.30)',
+              color: isSaved ? ACCENT : 'rgba(255,255,255,0.85)',
+              cursor: 'pointer', backdropFilter: 'blur(4px)',
+              transition: 'all 120ms',
+            }}
+          >
+            {isSaved ? '♥' : '♡'}
+          </button>
 
           <button
             onClick={handleCompareToggle}

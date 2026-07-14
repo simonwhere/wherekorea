@@ -84,7 +84,7 @@ export default function FilterStrip({ activeFilters, onToggle, onClearAll }: Pro
                 onClick={onClearAll}
                 className="
                   shrink-0 px-4 py-2 text-xs font-medium rounded-full whitespace-nowrap
-                  border border-white/[0.15] text-white/45
+                  border border-white/[0.15] text-white/55
                   hover:border-white/35 hover:bg-white/[0.06] hover:text-white/70
                   transition-all duration-150
                 "

@@ -1,5 +1,10 @@
 # WhereKorea — 현재 상태 & 다음 작업 (코드 검증본)
 
+> **2026-07-08 갱신:** G1 ✅(FilterStrip 연결 + lib/filters 사용, RefineBar 제거) · G2 ✅(가짜 캐러셀 UI 제거) ·
+> G5 ✅(unused 변수 제거 + useIsDesktop hydration 수정) · 예산 보정 ✅ · trust/crowd 메타 ✅ ·
+> **Best-now 랭킹 v2 ✅** (`lib/best-now.ts`, `base_appeal`/`best_months` 필드, 'Best now' 카테고리 점수 정렬 — 7월 프리뷰 점수와 일치 검증됨).
+> tsc clean. `npm run build`는 로컬에서 1회 확인 필요. 아래 §2 갭 목록은 당시 기록용으로 유지.
+
 > 작성 목적: handoff 문서(전략)와 **실제 코드**를 대조해 검증한 결과.
 > VS Code / Claude Code 작업의 단일 출발점으로 쓴다.
 > 검증일 기준 코드 트리: `app/`, `components/`, `data/`, `lib/`.

@@ -1,12 +1,17 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { CompareProvider } from '@/lib/compare-context'
+import { SavedProvider } from '@/lib/saved-context'
 import CompareTray from '@/components/layout/CompareTray'
+import Footer from '@/components/layout/Footer'
 
 export const metadata: Metadata = {
   title: 'WhereKorea',
   description: 'Compare destinations in Korea and decide where to go.',
 }
+
+// S5 — analytics: set NEXT_PUBLIC_PLAUSIBLE_DOMAIN at deploy time to activate.
+const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,11 +28,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           crossOrigin="anonymous"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
+        {PLAUSIBLE_DOMAIN && (
+          <script
+            defer
+            data-domain={PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
       </head>
       <body>
         <CompareProvider>
-          {children}
-          <CompareTray />
+          <SavedProvider>
+            {children}
+            <Footer />
+            <CompareTray />
+          </SavedProvider>
         </CompareProvider>
       </body>
     </html>

@@ -72,6 +72,18 @@ export interface DestinationImage {
   credit?: string
 }
 
+// Live festival signal — information display only, never a ranking input.
+export interface LiveFestival {
+  name: string
+  ends: string // formatted end date, e.g. 'Aug 15'
+}
+
+export interface UpcomingFestival {
+  name: string
+  range: string // formatted date range, e.g. 'Sep 24 – Oct 4'
+  month: number // start month 1–12, for timing-strip alignment
+}
+
 export interface Destination {
   // identity
   slug: string
@@ -87,8 +99,14 @@ export interface Destination {
   live_weather_snapshot: string
   live_weather_current?: number  // current temp °C — set at runtime by weather fetch
   live_weather_icon?: string     // WMO emoji — set at runtime
+  live_festivals?: LiveFestival[] // ongoing now — set at runtime by TourAPI fetch, info only
+  live_festivals_upcoming?: UpcomingFestival[] // starting later — runtime, info only
   card_budget_level: BudgetLevel
   tags: VibeTag[]
+
+  // Best-now ranking inputs — see docs/best-now-ranking.md (v2, LOCKED)
+  base_appeal: number    // 1–10 editorial, year-round draw strength
+  best_months: number[]  // months 1–12 when it's genuinely good to visit
 
   // detail page fields
   hero_summary: string

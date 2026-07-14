@@ -14,6 +14,7 @@ export type CategoryId =
 export const KOREAN_NAMES: Record<string, string> = {
   seoul: '서울', busan: '부산', jeju: '제주', gyeongju: '경주', jeonju: '전주',
   gangneung: '강릉', sokcho: '속초', tongyeong: '통영', namhae: '남해', jirisan: '지리산',
+  yeosu: '여수', andong: '안동', suwon: '수원', chuncheon: '춘천', 'damyang-boseong': '담양·보성',
 }
 
 export const REGIONS: Record<string, string> = {
@@ -27,6 +28,11 @@ export const REGIONS: Record<string, string> = {
   tongyeong: 'South coast islands',
   namhae:    'South coast · island',
   jirisan:   'Mountain inland',
+  yeosu:     'South coast',
+  andong:    'North Gyeongsang',
+  suwon:     'Capital region',
+  chuncheon: 'Lake country · Gangwon',
+  'damyang-boseong': 'South Jeolla',
 }
 
 // card_daily_total — mid traveler all-in per person/day (persona A: 2 sharing 1 mid room).
@@ -36,6 +42,8 @@ export const DAILY_AVG: Record<string, string> = {
   gyeongju: '₩115k', jeonju: '₩110k', gangneung: '₩130k',
   sokcho: '₩120k', tongyeong: '₩110k', namhae: '₩105k',
   jirisan: '₩100k',
+  yeosu: '₩115k', andong: '₩100k', suwon: '₩110k',
+  chuncheon: '₩105k', 'damyang-boseong': '₩100k',
 }
 
 // x, y = % position within korea-map.png (398×494)
@@ -50,6 +58,11 @@ export const MAP_POS: Record<string, { x: number; y: number }> = {
   tongyeong: { x: 46, y: 67 },
   namhae:    { x: 43, y: 68 },
   jeju:      { x: 20, y: 93 },
+  suwon:     { x: 34, y: 24 },
+  chuncheon: { x: 44, y: 14 },
+  andong:    { x: 58, y: 40 },
+  yeosu:     { x: 39, y: 71 },
+  'damyang-boseong': { x: 32, y: 65 },
 }
 
 export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
@@ -73,14 +86,14 @@ export const SECTION_COPY: Record<CategoryId, { h: string; s: string }> = {
   'beach':      { h: 'On the coast',                     s: 'Beaches, harbors and sea air.' },
   'mountains':  { h: 'For the mountains',                s: 'Trails, ridges and altitude.' },
   'culture':    { h: 'Historic Korea',                   s: 'Heritage, hanok and old capitals.' },
-  'low-crowd':  { h: 'Quietest right now',               s: 'Low-crowd places to skip the rush.' },
+  'low-crowd':  { h: 'Quietest right now',               s: 'Low-crowd places that are not in peak season this month.' },
 }
 
 export function matchesCategory(d: Destination, cat: CategoryId): boolean {
   switch (cat) {
     case 'best-now':   return true
     case 'weekend':    return d.recommended_stay === '1–2 days'
-    case 'near-seoul': return ['seoul', 'gangneung', 'jeonju', 'sokcho', 'gyeongju'].includes(d.slug)
+    case 'near-seoul': return ['seoul', 'suwon', 'chuncheon', 'gangneung', 'jeonju', 'sokcho', 'gyeongju'].includes(d.slug)
     case 'food':       return ['jeonju', 'busan', 'seoul'].includes(d.slug)
     case 'nature':     return d.tags.includes('nature')
     case 'beach':      return d.tags.includes('coastal')

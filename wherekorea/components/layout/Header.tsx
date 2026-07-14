@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import WKLogo from '@/components/shared/WKLogo'
+import { useSaved } from '@/lib/saved-context'
 
 const NOW_MONTH = (() => {
   try { return new Date().toLocaleString('en-US', { month: 'long' }) }
@@ -12,15 +14,23 @@ const ACCENT = '#FF6A3D'
 const ACCENT_SOFT = 'rgba(255,106,61,0.14)'
 
 interface Props {
-  searchQuery: string
-  onSearchChange: (value: string) => void
+  // Search is homepage-only; subpages render the header without it.
+  searchQuery?: string
+  onSearchChange?: (value: string) => void
   onLogoClick?: () => void
 }
 
-export default function Header({ searchQuery, onSearchChange, onLogoClick }: Props) {
+export default function Header({ searchQuery = '', onSearchChange, onLogoClick }: Props) {
   const [navHover, setNavHover] = useState<number | null>(null)
   const [searchFocused, setSearchFocused] = useState(false)
-  const navItems = ['Explore', 'When to go', 'Compare']
+  const router = useRouter()
+  const pathname = usePathname()
+  const { savedList } = useSaved()
+  const navItems = [
+    { label: 'Explore', href: '/' },
+    { label: 'When to go', href: '/when-to-go' },
+    { label: 'Compare', href: '/compare' },
+  ]
 
   return (
     <header style={{
@@ -36,7 +46,7 @@ export default function Header({ searchQuery, onSearchChange, onLogoClick }: Pro
       }}>
         {/* Logo */}
         <button
-          onClick={onLogoClick}
+          onClick={onLogoClick ?? (() => router.push('/'))}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             background: 'none', border: 'none',
@@ -57,7 +67,8 @@ export default function Header({ searchQuery, onSearchChange, onLogoClick }: Pro
         <nav style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
           {navItems.map((item, i) => (
             <button
-              key={item}
+              key={item.label}
+              onClick={() => router.push(item.href)}
               onMouseEnter={() => setNavHover(i)}
               onMouseLeave={() => setNavHover(null)}
               style={{
@@ -65,17 +76,35 @@ export default function Header({ searchQuery, onSearchChange, onLogoClick }: Pro
                 padding: '6px 11px', borderRadius: 7,
                 background: navHover === i ? 'rgba(255,255,255,0.07)' : 'transparent',
                 border: 'none', cursor: 'pointer',
-                color: i === 0 ? '#fff' : 'rgba(255,255,255,0.62)',
+                color: pathname === item.href ? '#fff' : 'rgba(255,255,255,0.62)',
                 transition: 'all 120ms', whiteSpace: 'nowrap',
               }}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </nav>
 
         {/* Right cluster */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Saved shortlist */}
+          <button
+            onClick={() => router.push('/saved')}
+            aria-label="Saved places"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px', borderRadius: 8,
+              background: pathname === '/saved' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              color: savedList.length > 0 ? '#FF8E6B' : 'rgba(255,255,255,0.60)',
+              fontSize: 12, fontWeight: 600,
+              cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+            }}
+          >
+            {savedList.length > 0 ? '♥' : '♡'}
+            {savedList.length > 0 && <span>{savedList.length}</span>}
+          </button>
+
           {/* Now chip */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6,
@@ -90,7 +119,8 @@ export default function Header({ searchQuery, onSearchChange, onLogoClick }: Pro
             </span>
           </div>
 
-          {/* Search */}
+          {/* Search — homepage only */}
+          {onSearchChange && (
           <div style={{ position: 'relative', width: 220 }}>
             <span style={{
               position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)',
@@ -115,6 +145,7 @@ export default function Header({ searchQuery, onSearchChange, onLogoClick }: Pro
               }}
             />
           </div>
+          )}
         </div>
       </div>
     </header>

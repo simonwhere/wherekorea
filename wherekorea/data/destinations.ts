@@ -8,6 +8,8 @@ export const destinations: Destination[] = [
   {
     slug: 'seoul',
     name: 'Seoul',
+    base_appeal: 10,
+    best_months: [4, 5, 6, 9, 10, 11],
     image: {
       src: 'https://images.unsplash.com/photo-1758509444769-95567facc5b0?auto=format&fit=crop&w=800&q=80',
       alt: 'Seoul cityscape with Namsan Tower at night',
@@ -55,16 +57,18 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['busan', 'jeonju'],
     useful_links: [],
-    crowd_peak_months: [4, 5, 10],
+    crowd_peak_months: [], // visitor data: flat year-round (metro city)
     trust: {
       budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'busan',
     name: 'Busan',
+    base_appeal: 9,
+    best_months: [5, 6, 7, 8, 9, 10],
     image: {
       src: 'https://images.unsplash.com/photo-1538574027501-286b64ee38f8?auto=format&fit=crop&w=800&q=80',
       alt: 'Gamcheon Culture Village colorful hillside houses, Busan',
@@ -112,16 +116,18 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['seoul', 'tongyeong', 'gyeongju'],
     useful_links: [],
-    crowd_peak_months: [7, 8],
+    crowd_peak_months: [10],
     trust: {
       budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'jeju',
     name: 'Jeju',
+    base_appeal: 9,
+    best_months: [4, 5, 6, 7, 8, 9, 10],
     image: {
       src: 'https://images.unsplash.com/photo-1749382871869-4c8dcaa4a540?auto=format&fit=crop&w=800&q=80',
       alt: 'Jeju black volcanic lava rock meets the ocean',
@@ -169,16 +175,18 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['namhae', 'tongyeong'],
     useful_links: [],
-    crowd_peak_months: [7, 8],
+    crowd_peak_months: [10],
     trust: {
       budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'gyeongju',
     name: 'Gyeongju',
+    base_appeal: 6,
+    best_months: [4, 10, 11],
     image: {
       src: 'https://images.unsplash.com/photo-1748274035731-32c83e10661e?auto=format&fit=crop&w=800&q=80',
       alt: 'Tumuli Park burial mounds in green park, Gyeongju',
@@ -225,16 +233,18 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['jeonju', 'busan'],
     useful_links: [],
-    crowd_peak_months: [4, 10],
+    crowd_peak_months: [4, 10, 11],
     trust: {
       budget: { source: 'estimate', confidence: 'medium', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'jeonju',
     name: 'Jeonju',
+    base_appeal: 5,
+    best_months: [4, 5, 9, 10, 11],
     image: {
       src: 'https://images.unsplash.com/photo-1653230675261-fe00bde32c8e?auto=format&fit=crop&w=800&q=80',
       alt: 'Aerial view of Jeonju Hanok Village traditional tiled rooftops',
@@ -282,19 +292,21 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['gyeongju', 'busan'],
     useful_links: [],
-    crowd_peak_months: [5, 10],
+    crowd_peak_months: [10],
     trust: {
       budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'gangneung',
     name: 'Gangneung',
+    base_appeal: 5,
+    best_months: [6, 7, 8, 9, 10],
     image: {
-      src: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=800&q=80',
-      alt: 'Gangneung east coast shoreline with breaking waves',
+      src: 'https://images.unsplash.com/photo-1720252741302-77213465eab2?auto=format&fit=crop&w=800&q=80',
+      alt: 'Gyeongpo-area beach with pine forest and breakwater, Gangneung',
     },
     card_vibe: 'East coast & café culture',
     vibe: "East coast cafés, clean beaches, and a fast KTX hop from Seoul",
@@ -338,16 +350,18 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['sokcho'],
     useful_links: [],
-    crowd_peak_months: [7, 8],
+    crowd_peak_months: [7, 8, 10],
     trust: {
       budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'sokcho',
     name: 'Sokcho',
+    base_appeal: 5,
+    best_months: [7, 8, 9, 10],
     image: {
       src: 'https://images.unsplash.com/photo-1547690395-5adca25d2ae3?auto=format&fit=crop&w=800&q=80',
       alt: 'Seoraksan National Park mountain ridges, Sokcho',
@@ -367,7 +381,7 @@ export const destinations: Destination[] = [
     skip_if:
       "You want beaches and cafés over mountains and markets. Gangneung is the better choice for that.",
     travel_time: {
-      from_seoul: '~2h 30m express bus from Seoul Express Bus Terminal',
+      from_seoul: '~2h 30m express bus',
       from_incheon_airport: '~3h bus',
       from_busan_station: '~4h 30m',
     },
@@ -397,16 +411,18 @@ export const destinations: Destination[] = [
     crowd_peak_months: [7, 8, 10],
     trust: {
       budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'tongyeong',
     name: 'Tongyeong',
+    base_appeal: 4,
+    best_months: [4, 5, 7, 8, 9],
     image: {
-      src: 'https://images.unsplash.com/photo-1640529447335-8c46bcbe1e8f?auto=format&fit=crop&w=800&q=80',
-      alt: 'Tongyeong harbor filled with boats at sunset',
+      src: 'https://images.unsplash.com/photo-1606666476184-7d2940f2db90?auto=format&fit=crop&w=800&q=80',
+      alt: 'Tongyeong harbor and islands seen from a hillside',
     },
     card_vibe: 'Southern harbor & islands',
     vibe: "Harbor town with island ferries, raw seafood, and a slower southern coastal rhythm",
@@ -450,19 +466,21 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['namhae', 'busan'],
     useful_links: [],
-    crowd_peak_months: [7, 8],
+    crowd_peak_months: [10],
     trust: {
       budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'namhae',
     name: 'Namhae',
+    base_appeal: 3,
+    best_months: [4, 5, 7, 8],
     image: {
-      src: 'https://images.unsplash.com/photo-1750164556117-422fe43efd5a?auto=format&fit=crop&w=800&q=80',
-      alt: 'Namhae terraced rice fields with village on hillside',
+      src: 'https://images.unsplash.com/photo-1750778183205-0d370b98de32?auto=format&fit=crop&w=800&q=80',
+      alt: 'Boriam Hermitage temple eaves overlooking Namhae coast and islands',
     },
     card_vibe: 'Scenic southern island',
     vibe: "Scenic southern island — terraced hillsides, quiet bays, and the best views require a car",
@@ -506,19 +524,22 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['tongyeong', 'jeju'],
     useful_links: [],
-    crowd_peak_months: [7, 8],
+    crowd_peak_months: [4, 7, 8, 10],
     trust: {
       budget: { source: 'estimate', confidence: 'low', last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'low', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 
   {
     slug: 'jirisan',
     name: 'Jirisan',
+    base_appeal: 4,
+    best_months: [5, 6, 9, 10, 11],
     image: {
-      src: 'https://images.unsplash.com/photo-1761024439802-489f82d5d791?auto=format&fit=crop&w=800&q=80',
-      alt: 'Jirisan rocky autumn hillside with colorful foliage',
+      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Korea-Mountain-Jirisan-07.jpg/960px-Korea-Mountain-Jirisan-07.jpg',
+      alt: 'Autumn ridgeline of Jirisan National Park',
+      credit: 'eimoberg / Wikimedia Commons · CC BY 2.0',
     },
     card_vibe: 'Mountain solitude',
     vibe: "Korea's largest mainland mountain — serious multi-day trails and forest solitude",
@@ -535,7 +556,7 @@ export const destinations: Destination[] = [
     skip_if:
       "You want casual day hiking. Jirisan is serious terrain and better with preparation and 2 or more days.",
     travel_time: {
-      from_seoul: '~3h to Namwon or Gurye by KTX + local bus',
+      from_seoul: '~3h KTX + bus',
       from_incheon_airport: '~3h 30m',
       from_busan_station: '~1h 30m to Jinju, then ~40m by bus',
     },
@@ -562,10 +583,303 @@ export const destinations: Destination[] = [
     ],
     similar_destinations: ['sokcho', 'namhae'],
     useful_links: [],
-    crowd_peak_months: [5, 10],
+    crowd_peak_months: [3, 4, 10, 11], // spring blossom (Gurye/Hadong) + autumn foliage — visitor-data verified
     trust: {
       budget: { source: 'estimate', confidence: 'low',    last_verified: '2026-06-28' },
-      crowd:  { source: 'seed',     confidence: 'medium', last_verified: '2026-06-28' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
+    },
+  },
+
+  // ── Expansion v1.1 (docs/expansion-v1.1.md) ──────────────────────────────
+
+  {
+    slug: 'yeosu',
+    name: 'Yeosu',
+    base_appeal: 6,
+    best_months: [4, 5, 6, 7, 8, 9, 10],
+    image: {
+      src: 'https://images.unsplash.com/photo-1651375562199-65caae096ace?auto=format&fit=crop&w=800&q=80',
+      alt: 'Yeosu harbor with cable cars crossing toward Dolsan Island',
+    },
+    card_vibe: 'Night sea & cable car',
+    vibe: 'South coast harbor city famous for its night sea — cable car views, seafood streets, and island bridges',
+    recommended_stay: '1–2 days',
+    live_weather_snapshot: 'This week · 14–22°C · mostly clear',
+    card_budget_level: '$',
+    tags: ['coastal', 'city', 'couple'],
+
+    hero_summary:
+      "A south coast harbor city built around one of Korea's most famous night views. Cable cars, island bridges, and a long seafood tradition.",
+    why: "The night sea is the reason to come — the harbor, Dolsan Bridge, and cable car all light up after dark, and the view holds up. Daytime brings island walks and one of the best seafood scenes in the south. Works well chained with Suncheon or as a southern anchor.",
+    best_for:
+      "Couples, night-view seekers, seafood-driven travel, and anyone wanting a southern coastal city that is not Busan.",
+    skip_if:
+      "You want beaches or quiet nature. Yeosu is a working harbor city — the appeal is views and food, not sand.",
+    travel_time: {
+      from_seoul: '~3h KTX',
+      from_incheon_airport: '~3h 40m',
+      from_busan_station: '~2h 30m bus',
+    },
+    no_car_friendliness: 'Okay',
+    local_movement:
+      "The waterfront, Odongdo, and cable car area are walkable or a short taxi apart. City buses cover the rest but are slower — taxis are cheap enough for most hops.",
+    car_recommended: false,
+    seasonal_weather_context:
+      "Typical in April: warm south coast spring, 12–20°C. The night view works year-round. Summer is humid but the sea breeze helps; July–August is peak domestic season.",
+    food: "Gat kimchi (mustard leaf) is the local signature and shows up everywhere. Seafood back-alleys near the old harbor do marinated crab (gejang) set meals that locals queue for. Grilled fish streets near Jungang-dong.",
+    detail_budget: {
+      low: '~₩50,000–65,000/day',
+      mid: '~₩95,000–135,000/day',
+      high: '₩200,000+/day',
+      notes: "Budget-friendly outside summer weekends. Waterfront hotels charge a premium for night-view rooms.",
+    },
+    crowd_friction: 'Medium',
+    crowd_peak_months: [10],
+    crowd_notes:
+      "Summer weekends and holiday evenings pack the waterfront and cable car queues. Weeknights are far calmer, and the night view is the same.",
+    insider_tips: [
+      "Ride the cable car at dusk — you get daylight views one way and the lit-up harbor on the return.",
+      "Odongdo island walk is best early morning before tour groups; the camellia bloom peaks in early spring.",
+      "Skip the seafood restaurants directly on the tourist strip — two streets back the same dishes cost noticeably less.",
+    ],
+    similar_destinations: ['tongyeong', 'busan', 'namhae'],
+    useful_links: [],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-07-11' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
+    },
+  },
+
+  {
+    slug: 'andong',
+    name: 'Andong',
+    base_appeal: 5,
+    best_months: [4, 5, 9, 10],
+    image: {
+      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Hahoe_Byeolsingut_Tallori_08.jpg/960px-Hahoe_Byeolsingut_Tallori_08.jpg',
+      alt: 'Hahoe mask dance performer at the Byeolsingut Tallori, Andong',
+      credit: 'Bernard Gagnon / Wikimedia Commons · CC0',
+    },
+    card_vibe: 'Confucian heritage',
+    vibe: "Korea's Confucian heartland — Hahoe folk village, mask dance, and a riverside heritage pace",
+    recommended_stay: '1–2 days',
+    live_weather_snapshot: 'This week · 11–21°C · clear',
+    card_budget_level: '$',
+    tags: ['history / traditional', 'solo'],
+
+    hero_summary:
+      "The center of Korea's Confucian tradition. Hahoe Folk Village — a lived-in, UNESCO-listed riverside village — plus mask dance heritage and old academies.",
+    why: "Hahoe is the real thing: people still live in the village, and staying overnight after day-trippers leave is one of Korea's best heritage experiences. Different from Gyeongju's royal tombs and Jeonju's food-first hanok scene — this is quieter, more lived-in, more scholarly.",
+    best_for:
+      "Heritage-focused travelers, an overnight hanok stay in a working village, and anyone who found Jeonju too commercial.",
+    skip_if:
+      "You need nightlife, shopping, or dense sights. Andong is slow, spread out, and closes early.",
+    travel_time: {
+      from_seoul: '~2h KTX-Eum',
+      from_incheon_airport: '~3h',
+      from_busan_station: '~2h 30m bus',
+    },
+    no_car_friendliness: 'Okay',
+    local_movement:
+      "KTX-Eum runs from Seoul's Cheongnyangni station. Buses run from Andong station to Hahoe Village but are infrequent — check return times. The village itself is walkable; other sights (Dosan Seowon, Woryeonggyo) need a bus or taxi.",
+    car_recommended: false,
+    seasonal_weather_context:
+      "Typical in April: mild inland spring, 10–20°C. October brings the Mask Dance Festival and the best light on the river cliffs. Winters are cold and quiet.",
+    food: "Andong jjimdak (braised chicken) is the famous export — the originals cluster in the old market. Heotjesabap (ritual-style rice) and salted mackerel are the deeper local specialties.",
+    detail_budget: {
+      low: '~₩45,000–60,000/day',
+      mid: '~₩85,000–120,000/day',
+      high: '₩170,000+/day',
+      notes: "One of the cheapest heritage trips in Korea. Hanok stays inside Hahoe cost more and book out around the festival.",
+    },
+    crowd_friction: 'Low',
+    crowd_peak_months: [10, 11],
+    crowd_notes:
+      "Quiet most of the year. The October Mask Dance Festival is the one real spike — book ahead. Weekend day-trippers cluster at Hahoe midday and clear by late afternoon.",
+    insider_tips: [
+      "Stay overnight inside Hahoe Village — mornings and evenings without tour buses are a different place.",
+      "Take the short ferry-raft or drive to Buyongdae Cliff for the classic view over the river bend and village.",
+      "Woryeonggyo Bridge is lit at night and almost empty on weekdays — a good evening walk from the city side.",
+    ],
+    similar_destinations: ['gyeongju', 'jeonju'],
+    useful_links: [],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-07-11' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
+    },
+  },
+
+  {
+    slug: 'suwon',
+    name: 'Suwon',
+    base_appeal: 5,
+    best_months: [4, 5, 6, 9, 10, 11],
+    image: {
+      src: 'https://images.unsplash.com/photo-1695396998446-776f20becfdc?auto=format&fit=crop&w=800&q=80',
+      alt: 'Hwaseong Fortress wall and sentry tower on a grassy hill, Suwon',
+    },
+    card_vibe: 'Fortress day trip',
+    vibe: 'UNESCO fortress walls wrapped around a food-rich city — the easiest heritage day trip from Seoul',
+    recommended_stay: '1–2 days',
+    live_weather_snapshot: 'This week · 13–22°C · partly cloudy',
+    card_budget_level: '$',
+    tags: ['history / traditional', 'city'],
+
+    hero_summary:
+      "An 18th-century UNESCO fortress city on Seoul's doorstep. Walk the full wall loop, then eat your way through the galbi and fried chicken streets below it.",
+    why: "The best heritage-per-hour value near Seoul. Hwaseong is a complete, walkable fortress wall with gates, towers, and city views — reachable by subway. Add wanggalbi (king ribs) and the chicken street at Ji-dong market and it fills a very good day, or an easy overnight.",
+    best_for:
+      "First-time visitors based in Seoul, history walkers, food detours, and anyone short on time who still wants a UNESCO site.",
+    skip_if:
+      "You are looking for an escape from city energy — Suwon is a big city, and the fortress is woven through it.",
+    travel_time: {
+      from_seoul: '~30–40m subway or KTX',
+      from_incheon_airport: '~1h 30m',
+      from_busan_station: '~2h KTX',
+    },
+    no_car_friendliness: 'Easy',
+    local_movement:
+      "Subway from Seoul, then buses or a short taxi to Paldalmun gate. The wall loop itself is a ~2 hour walk; everything else clusters below it.",
+    car_recommended: false,
+    seasonal_weather_context:
+      "Typical in April: mild walking weather, 12–21°C — ideal for the wall loop. Summer midday is hot on the exposed ramparts; go morning or late afternoon. Autumn is the best season.",
+    food: "Suwon wanggalbi (king-size beef ribs) is the signature — pricier than average but worth one splurge. Ji-dong market's fried chicken street (tongdak golmok) is the budget classic.",
+    detail_budget: {
+      low: '~₩45,000–60,000/day',
+      mid: '~₩90,000–120,000/day',
+      high: '₩180,000+/day',
+      notes: "Day-trippable from Seoul, so lodging is optional. Wanggalbi dinner pushes a day toward the mid range.",
+    },
+    crowd_friction: 'Medium',
+    crowd_peak_months: [], // visitor data: flat year-round (metro city)
+    crowd_notes:
+      "Spring blossoms and autumn weekends bring day-trip crowds to the wall and Haenggung palace square. Weekday mornings are quiet along most of the loop.",
+    insider_tips: [
+      "Walk the full wall loop counterclockwise from Paldalmun — the climb comes first and the views open up after.",
+      "Try the archery experience at Yeonmudae — cheap, quick, and genuinely fun.",
+      "Hwaseong Haenggung palace square is lit up in the evening; night walking on the wall is allowed and mostly empty.",
+    ],
+    similar_destinations: ['seoul', 'gyeongju'],
+    useful_links: [],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-07-11' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
+    },
+  },
+
+  {
+    slug: 'chuncheon',
+    name: 'Chuncheon',
+    base_appeal: 4,
+    best_months: [4, 5, 6, 9, 10],
+    image: {
+      src: 'https://images.unsplash.com/photo-1644765662414-19212b854c64?auto=format&fit=crop&w=800&q=80',
+      alt: 'Tree-lined walking path on Nami Island near Chuncheon',
+    },
+    card_vibe: 'Lakes & Nami Island',
+    vibe: 'Lake city an hour from Seoul — Nami Island tree lanes, dakgalbi alleys, and easy nature',
+    recommended_stay: '1–2 days',
+    live_weather_snapshot: 'This week · 11–21°C · clear',
+    card_budget_level: '$',
+    tags: ['nature', 'couple'],
+
+    hero_summary:
+      "A lake city ringed by mountains, an ITX hour from Seoul. Nami Island's famous tree lanes, lakeside walks, and the home of dakgalbi.",
+    why: "The lowest-effort nature trip from Seoul that still feels like leaving the city. Nami Island's tree lanes are iconic for a reason, the lake edges are calm, and dakgalbi alley is a proper food destination. Works as a day trip but is better with one relaxed night.",
+    best_for:
+      "First-time visitors on a Seoul base, couples, easy nature without hiking boots, and K-drama location seekers.",
+    skip_if:
+      "You want wild or remote nature — this is groomed, popular, and busy on weekends. Sokcho or Jirisan are the wilder picks.",
+    travel_time: {
+      from_seoul: '~1h 10m ITX from Yongsan',
+      from_incheon_airport: '~2h',
+      from_busan_station: '~4h',
+    },
+    no_car_friendliness: 'Easy',
+    local_movement:
+      "ITX to Chuncheon or Gapyeong station, then shuttle bus and a short ferry to Nami Island. The dakgalbi street and lakeside are a bus or taxi hop from the station.",
+    car_recommended: false,
+    seasonal_weather_context:
+      "Typical in April: fresh lake-country spring, 10–20°C. Nami's lanes peak twice — late April greenery and late October foliage. Summer is lush but humid; winter snow scenes are famous but cold.",
+    food: "Dakgalbi (spicy stir-fried chicken) was born here — Myeongdong Dakgalbi Street has dozens of originals. Makguksu (cold buckwheat noodles) is the local counterpoint in summer.",
+    detail_budget: {
+      low: '~₩45,000–60,000/day',
+      mid: '~₩90,000–120,000/day',
+      high: '₩170,000+/day',
+      notes: "Cheap as a day trip; Nami entry and ferry add a small fixed cost. Lakeside stays are modest in price.",
+    },
+    crowd_friction: 'Medium',
+    crowd_peak_months: [10, 11],
+    crowd_notes:
+      "Nami Island is heavily visited on weekends and holidays, especially May and foliage season. Weekday mornings are dramatically quieter; the city itself rarely feels crowded.",
+    insider_tips: [
+      "Reach Nami at ferry opening time — the tree lanes empty of people for photos only in the first hour.",
+      "The Uiamho lake bike path from Chuncheon station is flat, scenic, and skipped by most visitors.",
+      "Combine with the Gangchon rail bike on the way back to Seoul if you have a half day spare.",
+    ],
+    similar_destinations: ['gangneung', 'sokcho'],
+    useful_links: [],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-07-11' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
+    },
+  },
+
+  {
+    slug: 'damyang-boseong',
+    name: 'Damyang & Boseong',
+    base_appeal: 4,
+    best_months: [4, 5, 6, 7],
+    image: {
+      src: 'https://images.unsplash.com/photo-1668755930355-3d89aa8b4c8b?auto=format&fit=crop&w=800&q=80',
+      alt: 'Rows of green tea bushes in a Korean tea plantation',
+    },
+    card_vibe: 'Bamboo & green tea',
+    vibe: "Bamboo forests and terraced green tea fields — South Jeolla's garden landscapes",
+    recommended_stay: '1–2 days',
+    live_weather_snapshot: 'This week · 13–22°C · mostly clear',
+    card_budget_level: '$',
+    tags: ['nature', 'couple'],
+
+    hero_summary:
+      "Two South Jeolla counties that pair naturally: Damyang's bamboo forest and garden heritage, and Boseong's terraced green tea slopes.",
+    why: "Korea's most photogenic cultivated landscapes — walking inside Juknokwon's bamboo canopy and standing over Boseong's tea terraces feel unlike anywhere else in the country. Quieter and cheaper than Jeju for a green, slow couple of days.",
+    best_for:
+      "Slow nature travel, couples, photographers, tea drinkers, and a green add-on to a Jeonju or Gwangju route.",
+    skip_if:
+      "You are without a car and short on patience — the two areas are about an hour apart and rural buses are sparse.",
+    travel_time: {
+      from_seoul: '~3h KTX + bus',
+      from_incheon_airport: '~4h',
+      from_busan_station: '~3h',
+    },
+    no_car_friendliness: 'Hard',
+    local_movement:
+      "Buses reach Juknokwon and the Boseong tea plantations from Gwangju and Boseong-eup, but connections between the two areas are slow. A car turns a logistics exercise into an easy loop.",
+    car_recommended: true,
+    seasonal_weather_context:
+      "Typical in April: soft southern spring, 12–21°C. Tea rows are greenest from late April through June after the first plucking. The bamboo forest stays cool even in midsummer.",
+    food: "Damyang tteok-galbi (grilled short rib patties) and bamboo-rice (daetongbap) are the signatures. In Boseong everything comes in green tea form — noodles, ice cream, and the leaf itself at plantation cafés.",
+    detail_budget: {
+      low: '~₩45,000–60,000/day',
+      mid: '~₩85,000–120,000/day',
+      high: '₩170,000+/day',
+      notes: "Cheap once you are there; the cost is getting there. Car rental from Gwangju is the practical mid-range choice.",
+    },
+    crowd_friction: 'Low',
+    crowd_peak_months: [10, 11],
+    crowd_notes:
+      "Quiet most of the year. The May green tea festival and spring weekends bring tour buses to Daehan Dawon; early mornings stay calm even then.",
+    insider_tips: [
+      "Daehan Dawon plantation opens early — arrive before 9am and you will have the terraces nearly alone.",
+      "Juknokwon's bamboo forest is coolest and emptiest right at opening; midday brings tour groups.",
+      "Metasequoia Road in Damyang is worth a slow 30 minutes — park at the far end, not the main lot.",
+    ],
+    similar_destinations: ['jeonju', 'namhae'],
+    useful_links: [],
+    trust: {
+      budget: { source: 'estimate', confidence: 'low', last_verified: '2026-07-11' },
+      crowd:  { source: 'api',      confidence: 'medium', last_verified: '2026-07-11' },
     },
   },
 ]

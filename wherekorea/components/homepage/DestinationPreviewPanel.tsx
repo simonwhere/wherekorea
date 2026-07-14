@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Destination } from '@/data/types'
 import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
 import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
+import { isPeakNow } from '@/lib/crowd'
+import { usdApprox } from '@/lib/currency'
 
 const ACCENT = '#FF6A3D'
 
@@ -24,8 +27,9 @@ function noCarDot(level: string): string {
 interface MetricProps {
   value: string
   label: string
+  sub?: string
 }
-function PreviewMetric({ value, label }: MetricProps) {
+function PreviewMetric({ value, label, sub }: MetricProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
       <span style={{
@@ -36,7 +40,7 @@ function PreviewMetric({ value, label }: MetricProps) {
         fontSize: 10, fontWeight: 600,
         color: 'rgba(255,255,255,0.45)',
         textTransform: 'uppercase', letterSpacing: '0.07em',
-      }}>{label}</span>
+      }}>{label}{sub ? ` · ${sub}` : ''}</span>
     </div>
   )
 }
@@ -55,7 +59,14 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
   const koreanName = KOREAN_NAMES[d.slug]
   const region = REGIONS[d.slug]
   const perDay = DAILY_AVG[d.slug] ?? d.card_budget_level
+  // fixed once per mount — hydration-safe
+  const [month] = useState(() => new Date().getMonth() + 1)
+  const peakNow = isPeakNow(d, month)
   const weatherRange = d.live_weather_snapshot.split('·')[1]?.trim() ?? '—'
+  // Live current temp + condition emoji when available; else weekly range
+  const nowVal = d.live_weather_current
+    ? `${d.live_weather_icon ? d.live_weather_icon + ' ' : ''}${d.live_weather_current}°`
+    : weatherRange.replace('°C', '°')
   const fromSeoul = d.travel_time.from_seoul.replace(/^~/, '')
 
   function handleCompareToggle() {
@@ -109,19 +120,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to top, rgba(22,24,31,0.72) 0%, rgba(22,24,31,0) 45%)',
           }} />
-          {/* photo dots */}
-          <div style={{ position: 'absolute', bottom: 10, left: 14, display: 'flex', gap: 5 }}>
-            <span style={{ width: 22, height: 3, borderRadius: 2, background: '#fff' }} />
-            <span style={{ width: 22, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.30)' }} />
-            <span style={{ width: 22, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.30)' }} />
-          </div>
-          <div style={{
-            position: 'absolute', bottom: 10, right: 14,
-            fontSize: 10, color: 'rgba(255,255,255,0.60)',
-            background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)',
-            padding: '3px 8px', borderRadius: 5,
-            border: '1px solid rgba(255,255,255,0.10)',
-          }}>1 / 3</div>
+          {/* Single image for now — restore dots/counter when photos[] lands (G2) */}
         </div>
 
         {/* Content */}
@@ -187,10 +186,34 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
             marginBottom: 18,
           }}>
             <PreviewMetric value={d.recommended_stay} label="Stay" />
-            <PreviewMetric value={weatherRange} label="Now" />
-            <PreviewMetric value={perDay} label="Per day" />
+            <PreviewMetric value={nowVal} label="Now" />
+            <PreviewMetric value={perDay} label="Per day" sub={usdApprox(perDay) ?? undefined} />
             <PreviewMetric value={fromSeoul || '—'} label="From Seoul" />
           </div>
+
+          {/* Happening now — live festival signal (info only, never ranked) */}
+          {d.live_festivals && d.live_festivals.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
+              {d.live_festivals.map((f) => (
+                <div key={f.name} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  fontSize: 13, color: 'rgba(255,255,255,0.90)',
+                  padding: '7px 10px', marginBottom: 6,
+                  background: 'rgba(255,106,61,0.10)',
+                  border: '1px solid rgba(255,106,61,0.25)',
+                  borderRadius: 8,
+                }}>
+                  <span aria-hidden>🎪</span>
+                  <span style={{
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{f.name}</span>
+                  <span style={{ marginLeft: 'auto', flexShrink: 0, color: 'rgba(255,255,255,0.55)', fontSize: 12 }}>
+                    until {f.ends}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Why */}
           <div style={{ marginBottom: 20 }}>
@@ -286,7 +309,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
                   width: 6, height: 6, borderRadius: '50%',
                   background: crowdDot(d.crowd_friction),
                 }} />
-                {d.crowd_friction} crowds
+                {d.crowd_friction} crowds{peakNow ? ' · peak season now' : ''}
               </span>
             </div>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
