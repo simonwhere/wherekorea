@@ -124,8 +124,10 @@ async function fetchAllFestivals(key: string, today: string): Promise<Normalized
   for (const it of valid(ko)) {
     const k = dupeKey(it)
     if (out.has(k)) continue // English version exists — prefer it
+    const title = koreanTitleToEnglish(it.title!)
+    if (!title) continue // conversion failed the readability gate — skip
     out.set(k, {
-      title: koreanTitleToEnglish(it.title!),
+      title,
       start: it.eventstartdate!,
       end: it.eventenddate!,
       lat: Number(it.mapy),

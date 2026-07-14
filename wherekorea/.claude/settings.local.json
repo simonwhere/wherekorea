@@ -138,7 +138,9 @@
       "Bash(vercel --version)",
       "Bash(kill %1)",
       "Bash(pkill -f \"next start\")",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(echo \"TYPECHECK EXIT: $?\")"
     ]
   }
 }

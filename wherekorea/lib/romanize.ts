@@ -57,6 +57,12 @@ const WORDS: [string, string][] = [
   ['공연', 'Performance'], ['연극', 'Theater'], ['뮤지컬', 'Musical'], ['전시', 'Exhibition'],
   ['팝업', 'Pop-up'], ['페어', 'Fair'], ['위크', 'Week'], ['마켓', 'Market'],
   ['클래식', 'Classical'], ['재즈', 'Jazz'], ['크리스마스', 'Christmas'],
+  ['일러스트레이션', 'Illustration'], ['보드게임', 'Board Game'], ['게임', 'Game'],
+  ['썸머', 'Summer'], ['윈터', 'Winter'], ['비치', 'Beach'], ['나이트', 'Night'],
+  ['투어', 'Tour'], ['뷰', 'View'], ['크루즈', 'Cruise'], ['피크닉', 'Picnic'],
+  ['캠핑', 'Camping'], ['러닝', 'Running'], ['뮤직', 'Music'], ['아트', 'Art'],
+  ['디자인', 'Design'], ['푸드', 'Food'], ['커피', 'Coffee'], ['맥주', 'Beer'],
+  ['와인', 'Wine'], ['치킨', 'Chicken'], ['불빛정원', 'Light Garden'],
   ['축제', 'Festival'], ['축전', 'Festival'], ['잔치', 'Festival'], ['대회', 'Contest'],
 ]
 // Longest keys first — otherwise '시장' would fire inside '야시장'
@@ -68,14 +74,28 @@ function titleCase(s: string): string {
   return s.replace(/\b[a-z]/g, (c) => c.toUpperCase())
 }
 
-export function koreanTitleToEnglish(title: string): string {
+// Returns null when the converted title would still be unreadable —
+// "show only what a traveler can read" (same principle as ticketing labels).
+export function koreanTitleToEnglish(title: string): string | null {
   let t = title
     .replace(/제?\s?\d+(회|주년)\s?/g, '') // strip '제28회' style counters
     .trim()
+  const knownPlaces = new Set(PLACES.map(([, en]) => en))
   for (const [ko, en] of PLACES) t = t.split(ko).join(` ${en} `)
   for (const [ko, en] of DICT) t = t.split(ko).join(en)
   t = romanize(t)
-  // collapse whitespace, tidy word boundaries
   t = t.replace(/\s+/g, ' ').trim()
-  return titleCase(t)
+  t = titleCase(t)
+
+  // Quality gate: any romanized-residue word longer than 12 chars that isn't a
+  // known place name means the title didn't really translate ('Sseommeobichi').
+  const words = t.split(/\s+/)
+  const unreadable = words.some(
+    (w) => w.replace(/[^A-Za-z]/g, '').length > 12 && !knownPlaces.has(w)
+  )
+  // Also require at least one real English word so pure-romanization titles drop.
+  const englishWords = new Set(DICT.flatMap(([, en]) => en.trim().split(' ')))
+  const hasEnglish = words.some((w) => englishWords.has(w.replace(/[^A-Za-z-]/g, '')))
+  if (unreadable || !hasEnglish) return null
+  return t
 }

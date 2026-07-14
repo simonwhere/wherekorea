@@ -1,6 +1,6 @@
 import type { Destination } from '@/data/types'
 import { DAILY_AVG } from '@/data/destinations-meta'
-import { usdApprox } from '@/lib/currency'
+import { usdApprox, usdifyRange } from '@/lib/currency'
 
 interface Props {
   destination: Destination
@@ -27,18 +27,18 @@ export default function BudgetBlock({ destination: d }: Props) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <div className="bg-white/5 rounded-md p-3">
-          <p className="text-xs text-white/55 mb-1">Budget</p>
-          <p className="text-sm text-white/85">{b.low}</p>
-        </div>
-        <div className="bg-white/5 rounded-md p-3">
-          <p className="text-xs text-white/55 mb-1">Mid-range</p>
-          <p className="text-sm text-white/85">{b.mid}</p>
-        </div>
-        <div className="bg-white/5 rounded-md p-3">
-          <p className="text-xs text-white/55 mb-1">Comfortable</p>
-          <p className="text-sm text-white/85">{b.high}</p>
-        </div>
+        {([['Budget', b.low], ['Mid-range', b.mid], ['Comfortable', b.high]] as const).map(
+          ([label, krw]) => {
+            const usd = usdifyRange(krw)
+            return (
+              <div key={label} className="bg-white/5 rounded-md p-3">
+                <p className="text-xs text-white/55 mb-1">{label}</p>
+                <p className="text-sm text-white/85">{usd ?? krw}</p>
+                {usd && <p className="text-[11px] text-white/45 mt-0.5">{krw}</p>}
+              </div>
+            )
+          }
+        )}
       </div>
 
       {b.notes && (
