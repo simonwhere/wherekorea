@@ -24,7 +24,10 @@ interface Props {
 }
 
 export default function SignatureEventsExplorer({ currentMonth }: Props) {
-  const [month, setMonth] = useState<number>(currentMonth) // 0 = all
+  // Default to the current month — but if it has no events, open on All months
+  // (an empty first screen is worse than a full one).
+  const hasCurrent = SIGNATURE_EVENTS.some((e) => e.months.includes(currentMonth))
+  const [month, setMonth] = useState<number>(hasCurrent ? currentMonth : 0) // 0 = all
   const [city, setCity] = useState<string>('all')
 
   const cities = [...new Set(SIGNATURE_EVENTS.map((e) => e.city))]
@@ -45,7 +48,7 @@ export default function SignatureEventsExplorer({ currentMonth }: Props) {
   })
 
   return (
-    <div className="mt-12">
+    <div className="mt-12 lg:mt-0">
       <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-1">
         Signature events
       </h2>

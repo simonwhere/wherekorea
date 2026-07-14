@@ -187,7 +187,11 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
           }}>
             <PreviewMetric value={d.recommended_stay} label="Stay" />
             <PreviewMetric value={nowVal} label="Now" />
-            <PreviewMetric value={perDay} label="Per day" sub={usdApprox(perDay) ?? undefined} />
+            <PreviewMetric
+              value={usdApprox(perDay) ?? perDay}
+              label="Per day"
+              sub={usdApprox(perDay) ? perDay : undefined}
+            />
             <PreviewMetric value={fromSeoul || '—'} label="From Seoul" />
           </div>
 

@@ -29,8 +29,14 @@ export const SIGNATURE_EVENTS: SignatureEvent[] = [
     note: 'UNESCO-listed lantern parade through Jongno', ticketing: 'walk-in' },
   { city: 'seoul', name: 'Seoul Lantern Festival', months: [12, 1], when: 'Dec–Jan',
     note: 'Light installations along Cheonggyecheon and Gwanghwamun', ticketing: 'walk-in' },
+  { city: 'seoul', name: 'Hangang Summer Festival', months: [7, 8], when: 'late Jul–Aug',
+    note: 'Riverside pools, night markets and concerts along the Han', ticketing: 'walk-in' },
 
   // Busan
+  { city: 'busan', name: 'Gwangalli M Drone Light Show', months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], when: 'every Sat night',
+    note: 'Free weekly drone show over Gwangalli Beach — year-round', ticketing: 'walk-in' },
+  { city: 'busan', name: 'Busan Sea Festival', months: [8], when: 'early Aug',
+    note: 'Beach concerts and water events across the city beaches', ticketing: 'walk-in' },
   { city: 'busan', name: 'Busan International Film Festival (BIFF)', months: [10], when: 'early Oct',
     note: "Asia's biggest film festival — open-air screenings by the sea", ticketing: 'english-booking' },
   { city: 'busan', name: 'Busan Fireworks Festival', months: [11], when: 'Nov',

@@ -21,8 +21,8 @@ export default function BudgetBlock({ destination: d }: Props) {
       </p>
       {avg && (
         <p className="text-sm text-white/85 mb-4">
-          Typical mid all-in: <span className="font-semibold">{avg}/day</span>
-          {usd && <span className="text-white/60"> · ≈ {usd}/day</span>}
+          Typical mid all-in: <span className="font-semibold">{usd ? `${usd}/day` : `${avg}/day`}</span>
+          {usd && <span className="text-white/60"> · {avg}/day</span>}
         </p>
       )}
 

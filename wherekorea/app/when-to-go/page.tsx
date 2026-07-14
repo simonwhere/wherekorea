@@ -27,7 +27,7 @@ export default function WhenToGoPage() {
   return (
     <div>
       <Header />
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-screen-xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold text-white mb-2">When to go where</h1>
       <p className="text-sm text-white/60 leading-relaxed mb-1">
         Month-by-month timing for every destination. Now: <span className="text-white/90 font-medium">{MONTH_NAMES[currentMonth - 1]}</span> (highlighted column).
@@ -39,27 +39,32 @@ export default function WhenToGoPage() {
         <span className="text-red-400">•</span> peak crowds (visitor-data verified)
       </p>
 
-      <div className="space-y-4">
-        {sorted.map((d) => (
-          <div
-            key={d.slug}
-            className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 py-3 border-b border-white/10"
-          >
-            <div className="w-44 shrink-0">
-              <Link
-                href={`/destination/${d.slug}`}
-                className="text-sm font-semibold text-white hover:underline"
-              >
-                {d.name}
-              </Link>
-              <span className="ml-2 text-xs text-white/55">{KOREAN_NAMES[d.slug]}</span>
+      {/* Side-by-side on desktop: seasons left, signature events right */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-10 items-start">
+        <div>
+          {sorted.map((d) => (
+            <div
+              key={d.slug}
+              className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 py-2.5 border-b border-white/10"
+            >
+              <div className="w-44 shrink-0">
+                <Link
+                  href={`/destination/${d.slug}`}
+                  className="text-sm font-semibold text-white hover:underline"
+                >
+                  {d.name}
+                </Link>
+                <span className="ml-2 text-xs text-white/55">{KOREAN_NAMES[d.slug]}</span>
+              </div>
+              <TimingStrip destination={d} currentMonth={currentMonth} />
             </div>
-            <TimingStrip destination={d} currentMonth={currentMonth} />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <SignatureEventsExplorer currentMonth={currentMonth} />
+        <div className="lg:sticky lg:top-20">
+          <SignatureEventsExplorer currentMonth={currentMonth} />
+        </div>
+      </div>
 
       <p className="text-xs text-white/50 mt-8 leading-relaxed">
         Best months are editorial judgements of when the experience is genuinely good; crowd peaks

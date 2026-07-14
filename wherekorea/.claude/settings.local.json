@@ -135,7 +135,10 @@
       "Bash(PORT=3100 npm run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3100/)",
       "Bash(break)",
-      "Bash(vercel --version)"
+      "Bash(vercel --version)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"next start\")",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

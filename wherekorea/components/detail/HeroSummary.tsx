@@ -90,7 +90,7 @@ export default function HeroSummary({ destination: d, currentMonth }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-white/10 mb-4">
         <Metric value={d.recommended_stay} label="Stay" />
         <Metric value={nowVal} label="Now" />
-        <Metric value={perDay} label="Per day" sub={usd ?? undefined} />
+        <Metric value={usd ?? perDay} label="Per day" sub={usd ? perDay : undefined} />
         <Metric value={fromSeoul || '—'} label="From Seoul" />
       </div>
 

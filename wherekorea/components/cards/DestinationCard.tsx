@@ -8,6 +8,7 @@ import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
 import { useSaved } from '@/lib/saved-context'
 import { isPeakNow } from '@/lib/crowd'
+import { usdApprox } from '@/lib/currency'
 
 const ACCENT = '#FF6A3D'
 
@@ -44,7 +45,10 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
   const nowVal = d.live_weather_current
     ? `${d.live_weather_icon ? d.live_weather_icon + ' ' : ''}${d.live_weather_current}°`
     : weatherRange.replace('°C', '°')
-  const perDay = DAILY_AVG[d.slug] ?? d.card_budget_level
+  const perDayKrw = DAILY_AVG[d.slug] ?? d.card_budget_level
+  // USD leads for a global audience; ₩ stays visible as the label detail
+  const perDay = usdApprox(perDayKrw) ?? perDayKrw
+  const perDayLabel = perDay.startsWith('$') ? `Per day · ${perDayKrw}` : 'Per day'
   const koreanName = KOREAN_NAMES[d.slug]
   const region = REGIONS[d.slug]
 
@@ -222,7 +226,7 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
           {[
             { v: d.recommended_stay, l: 'Stay' },
             { v: nowVal,             l: 'Now' },
-            { v: perDay,             l: 'Per day' },
+            { v: perDay,             l: perDayLabel },
           ].map((m) => (
             <div key={m.l} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
               <span style={{

@@ -70,8 +70,8 @@ export const destinations: Destination[] = [
     base_appeal: 9,
     best_months: [5, 6, 7, 8, 9, 10],
     image: {
-      src: 'https://images.unsplash.com/photo-1538574027501-286b64ee38f8?auto=format&fit=crop&w=800&q=80',
-      alt: 'Gamcheon Culture Village colorful hillside houses, Busan',
+      src: 'https://images.unsplash.com/photo-1768295982614-5dcd1c6eeb2b?auto=format&fit=crop&w=800&q=80',
+      alt: 'Gwangan Bridge and the Busan skyline across the bay',
     },
     card_vibe: 'Coastal city energy',
     vibe: "Coastal city energy — beaches, raw seafood markets, and a looser pace than Seoul",
@@ -656,8 +656,8 @@ export const destinations: Destination[] = [
     base_appeal: 5,
     best_months: [4, 5, 9, 10],
     image: {
-      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/Hahoe_Byeolsingut_Tallori_08.jpg/960px-Hahoe_Byeolsingut_Tallori_08.jpg',
-      alt: 'Hahoe mask dance performer at the Byeolsingut Tallori, Andong',
+      src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Hahoe_Byeolsingut_Tallori_03.jpg/960px-Hahoe_Byeolsingut_Tallori_03.jpg',
+      alt: 'Hahoe mask dance performance with audience, Andong',
       credit: 'Bernard Gagnon / Wikimedia Commons · CC0',
     },
     card_vibe: 'Confucian heritage',
