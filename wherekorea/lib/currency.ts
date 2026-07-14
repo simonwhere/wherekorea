@@ -11,15 +11,23 @@ export function usdApprox(krwK: string): string | null {
   return `$${usd}`
 }
 
-// Convert every ₩ amount inside a free-form string to USD:
-// '~₩60,000–80,000/day' → '~$45–60/day' · '₩300,000+/day' → '$215+/day'
+// Convert ₩ amounts (including ranges where only the first number carries ₩)
+// to USD: '~₩60,000–80,000/day' → '~$45–60/day' · '₩300,000+/day' → '$215+/day'
 export function usdifyRange(s: string): string | null {
   if (!s.includes('₩')) return null
-  const out = s.replace(/₩([\d,]+)/g, (_, num: string) => {
+  const toUsd = (num: string) => {
     const krw = Number(num.replace(/,/g, ''))
-    if (!Number.isFinite(krw) || krw <= 0) return `₩${num}`
-    const usd = Math.max(5, Math.round(krw / KRW_PER_USD / 5) * 5)
-    return `$${usd}`
+    if (!Number.isFinite(krw) || krw <= 0) return null
+    return Math.max(5, Math.round(krw / KRW_PER_USD / 5) * 5)
+  }
+  const out = s.replace(/₩([\d,]+)(\s*[–\-~]\s*)([\d,]+)|₩([\d,]+)/g, (m, a, dash, b, single) => {
+    if (single !== undefined) {
+      const u = toUsd(single)
+      return u === null ? m : `$${u}`
+    }
+    const ua = toUsd(a)
+    const ub = toUsd(b)
+    return ua === null || ub === null ? m : `$${ua}–${ub}`
   })
   return out === s ? null : out
 }
