@@ -1,4 +1,5 @@
 import type { Destination } from '@/data/types'
+import SectionTitle from '@/components/detail/SectionTitle'
 
 interface Props {
   destination: Destination
@@ -7,9 +8,7 @@ interface Props {
 export default function AccessMovement({ destination: d }: Props) {
   return (
     <div className="py-6 border-b border-white/10">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-4">
-        Getting there &amp; getting around
-      </h2>
+      <SectionTitle className="mb-4">Getting there &amp; getting around</SectionTitle>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="bg-white/5 rounded-md p-3">

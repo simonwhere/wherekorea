@@ -3,6 +3,7 @@ import TimingStrip from '@/components/shared/TimingStrip'
 import { CROWD_MONTHLY } from '@/data/crowd-monthly'
 import { SIGNATURE_EVENTS } from '@/data/signature-events'
 import TicketingBadge from '@/components/shared/TicketingBadge'
+import SectionTitle from '@/components/detail/SectionTitle'
 
 interface Props {
   destination: Destination
@@ -20,9 +21,7 @@ export default function WhenToGoBlock({ destination: d, currentMonth }: Props) {
 
   return (
     <div className="py-6 border-b border-white/10">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-3">
-        When to go
-      </h2>
+      <SectionTitle className="mb-3">When to go</SectionTitle>
 
       <TimingStrip destination={d} currentMonth={currentMonth} />
       <p className="text-[11px] text-white/55 mt-2 mb-4">
@@ -36,7 +35,8 @@ export default function WhenToGoBlock({ destination: d, currentMonth }: Props) {
         <div>
           <p className="text-xs text-white/60 mb-2">
             Visitor volume by month — 1.0 is this destination&apos;s yearly average
-            <span className="text-white/50"> (mobile-network visitor data, non-local + foreign)</span>
+            <span className="text-white/50"> (mobile-network visitor data, non-local + foreign
+            {d.trust?.crowd ? ` · verified ${d.trust.crowd.last_verified}` : ''})</span>
           </p>
           <div className="flex items-end gap-[3px] h-14 mb-3">
             {crowd.map((r, i) => (
@@ -70,7 +70,7 @@ export default function WhenToGoBlock({ destination: d, currentMonth }: Props) {
       {/* Annual highlights — signature events, editorial seed (yearly refresh) */}
       {signature.length > 0 && (
         <div className="mt-5">
-          <p className="text-xs font-semibold text-white/55 uppercase tracking-wide mb-2">
+          <p className="text-xs font-bold text-white/75 uppercase tracking-wide mb-2">
             Annual highlights
           </p>
           <ul className="space-y-1.5">
@@ -97,7 +97,7 @@ export default function WhenToGoBlock({ destination: d, currentMonth }: Props) {
       {/* Festivals ahead — month-based planning signal (live, info only) */}
       {d.live_festivals_upcoming && d.live_festivals_upcoming.length > 0 && (
         <div className="mt-5">
-          <p className="text-xs font-semibold text-white/55 uppercase tracking-wide mb-2">
+          <p className="text-xs font-bold text-white/75 uppercase tracking-wide mb-2">
             Festivals ahead
           </p>
           <ul className="space-y-1.5">

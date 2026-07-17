@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { Destination } from '@/data/types'
 import { track } from '@/lib/analytics'
+import SectionTitle from '@/components/detail/SectionTitle'
 
 interface Props {
   destination: Destination
@@ -18,9 +19,7 @@ export default function SimilarDestinations({ destination: d, allDestinations }:
 
   return (
     <div className="py-6">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-4">
-        Similar destinations
-      </h2>
+      <SectionTitle className="mb-4">Similar destinations</SectionTitle>
       <div className="flex flex-col gap-2">
         {similar.map((s) => (
           <Link

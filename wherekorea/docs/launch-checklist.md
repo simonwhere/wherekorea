@@ -1,5 +1,13 @@
 # 오픈 전 체크리스트 (2026-07-11 라이브 QA 기준)
 
+> **2026-07-15 갱신 — 4주 런칭 플랜 채택** (외부 보강 리포트 검토 후 병합. 검토 의견: A3 이미지 audit는 이미 완료(15장 실물검증 교체, 담양보성 1장만 잔여), 그 외 대부분 동의):
+> **A0 (진행 중)**: Vercel 배포 정상화 — Framework Preset을 Next.js로 (Root Directory=wherekorea는 설정됨, 30초 빈 빌드의 원인은 preset)
+> **W1 블로커**: A1 도메인 · A2 "Typical in April" 시드 버그(15개 전부, 신규 5개는 내 작성 실수 포함) · A4 서울 From-Seoul 숨김 · A5 about 연락처 · A6 Plausible env · A7 S1(robots.ts AI봇 허용+sitemap+generateMetadata 질문매칭형+OG) · A8 모바일 QA
+> **W2**: B1 booking_reality(Kobus/Bustago 외국인 예매 불가 — 버스 의존 4개 도시 핵심) + 실전 5필드 + /practical(FAQPage) · B4 팩트 블록(definition-first, 숫자 3개+날짜) · B5 "verified {date}" 마이크로카피 · JSON-LD 스택(TouristDestination+Event+FAQPage+**Dataset**)
+> **W3**: C1 @vercel/og 데이터 카드 · C2 텔레그램 발행 시작 · C3 /this-week 아카이브 · B6 월별 랜딩 12p · B7 정적 비교 5p
+> **W4**: C4 데이터 방법론 스토리 → Show HN + PH + r/koreatravel 동시 · Share-of-Model baseline 20문항
+> 런칭 후: MCP 서버(be-the-source) · Reddit 주2~3 루틴 · llms.txt는 최하순위 · 시드 신선도 lint 자동화
+
 > dev 서버 실화면 QA 결과 (skill 11). 심각도순.
 
 ## 🔴 Blocker — 오픈 불가 사유

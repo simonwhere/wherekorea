@@ -91,7 +91,11 @@ export default function HeroSummary({ destination: d, currentMonth }: Props) {
         <Metric value={d.recommended_stay} label="Stay" />
         <Metric value={nowVal} label="Now" />
         <Metric value={usd ?? perDay} label="Per day" sub={usd ? perDay : undefined} />
-        <Metric value={fromSeoul || '—'} label="From Seoul" />
+        {d.slug === 'seoul' ? (
+          <Metric value={d.travel_time.from_incheon_airport.replace(/^~/, '')} label="From Incheon" />
+        ) : (
+          <Metric value={fromSeoul || '—'} label="From Seoul" />
+        )}
       </div>
 
       {/* Happening now — live festival signal (info only) */}

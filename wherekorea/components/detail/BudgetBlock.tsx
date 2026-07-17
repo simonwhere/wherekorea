@@ -1,6 +1,7 @@
 import type { Destination } from '@/data/types'
 import { DAILY_AVG } from '@/data/destinations-meta'
 import { usdApprox, usdifyRange } from '@/lib/currency'
+import SectionTitle from '@/components/detail/SectionTitle'
 
 interface Props {
   destination: Destination
@@ -13,9 +14,7 @@ export default function BudgetBlock({ destination: d }: Props) {
 
   return (
     <div className="py-6 border-b border-white/10">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-2">
-        Budget
-      </h2>
+      <SectionTitle className="mb-2">Budget</SectionTitle>
       <p className="text-xs text-white/60 leading-relaxed mb-2">
         Per person, 2 sharing one mid-range room — lodging, meals, local transport, and light activities. Excludes intercity travel, flights, and shopping.
       </p>
@@ -43,6 +42,11 @@ export default function BudgetBlock({ destination: d }: Props) {
 
       {b.notes && (
         <p className="text-xs text-white/60 leading-relaxed">{b.notes}</p>
+      )}
+      {d.trust?.budget && (
+        <p className="text-[11px] text-white/45 mt-2">
+          Editorial estimate · verified {d.trust.budget.last_verified}
+        </p>
       )}
     </div>
   )

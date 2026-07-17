@@ -38,7 +38,7 @@ export const destinations: Destination[] = [
       "One of the best subway systems in the world. All major traveler areas are well connected and walkable. A T-money card covers everything.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: mild days 15–21°C, cool evenings, low rain. Cherry blossoms peak late March to mid-April. May is warm and dry. Summer (July–August) is hot and humid.",
+      "Spring (Apr–May) and autumn (Sep–Nov) are Seoul at its best — mild walking weather, cherry blossoms late March to mid-April, golden ginkgo in November. Summer (Jul–Aug) is hot, humid and rainy in spells; winter is dry, clear and often below freezing.",
     food: "No single dish owns Seoul — the city eats at every register, from tent bars to Michelin bibs. Gwangjang Market is iconic but heavily touristed with prices to match; Mangwon and Tongin markets feel more like how the city actually eats. Charcoal galbi alleys in Mapo, knife-cut noodles at Namdaemun, and the café neighborhoods (Seongsu, Yeonnam) for everything in between.",
     detail_budget: {
       low: '~₩60,000–80,000/day',
@@ -97,7 +97,7 @@ export const destinations: Destination[] = [
       "Subway connects all major traveler areas: Haeundae, Seomyeon, BIFF Square, Nampo-dong. Most districts are walkable once you arrive.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: mild and clear, 14–20°C, lower humidity than summer. Spring and autumn are the best seasons. Summer beach season (July–August) is very crowded.",
+      "Late spring through early autumn is beach season, with July–August the hottest and busiest. Spring and autumn are clear and mild — the best walking weather. Winters are the mildest of Korea's big cities, rarely below freezing.",
     food: "Dwaeji gukbap — milky pork-bone soup with rice — is Busan's soul dish; the alley near Seomyeon has the classics. Jagalchi market for raw fish straight off the boats, milmyeon (cold wheat noodles) on hot days, and ssiat hotteok in BIFF Square for dessert.",
     detail_budget: {
       low: '~₩55,000–75,000/day',
@@ -156,7 +156,7 @@ export const destinations: Destination[] = [
       "Buses connect Jeju City to main towns but are slow and infrequent outside the city. A rental car opens the island fully. Taxis are an option but expensive for full-day exploration.",
     car_recommended: true,
     seasonal_weather_context:
-      "Typical in April: warm and pleasant, 13–19°C, ocean breezes. Yellow canola fields peak in late March to early April. Summer is humid. Autumn (October) brings clear skies and comfortable hiking weather.",
+      "April brings canola bloom and mild ocean-breeze days; summer is warm, humid and lush. October is prime Hallasan hiking weather with clear skies. Winter is windy but mild at sea level, with camellias in bloom.",
     food: "Black pork (heuk dwaeji) over charcoal is the signature — better at smaller places away from the tourist strips. Gogi-guksu (pork noodle soup) is the island's comfort dish, haenyeo divers sell the day's catch near Seongsan, and hallabong citrus earns its suitcase space.",
     detail_budget: {
       low: '~₩75,000–95,000/day',
@@ -215,7 +215,7 @@ export const destinations: Destination[] = [
       "Tumuli Park and the city center are walkable. Bulguksa Temple and Seokguram Grotto require a bus or taxi — manageable but not seamless.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: clear and mild, ideal for outdoor sites. Cherry blossoms at Bomun Lake and along the Gyeongju stream peak late March to mid-April. Summer is hot and can be humid.",
+      "Cherry blossoms around Bomun Lake peak late March to mid-April — the city's most beautiful (and busiest) weeks. Summers are hot and humid; autumn brings clear skies and golden light over the tombs. Winter is cold, dry and very quiet.",
     food: "Ssambap (rice and vegetables wrapped in leaves) is the local specialty. Gyeongju bread (hwangnam ppang — red bean pastry) as a souvenir snack. Modest dining city — budget-friendly across the board.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -273,7 +273,7 @@ export const destinations: Destination[] = [
       "The hanok village and city center are entirely walkable. All main traveler attractions are within easy walking distance of each other.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: mild and dry, 12–21°C. One of the better seasons — not too hot, not crowded with summer travelers. The hanok village gardens are at their best in spring.",
+      "Spring and autumn are ideal for hanok-village walking — mild, dry and photogenic. Summer is hot and humid (the food scene helps); winter is cold, but the village under snow is quietly beautiful and empty of crowds.",
     food: "Bibimbap was born here and tastes different in the proper brass bowl. Kongnamul gukbap (bean-sprout hangover soup) is what locals actually eat daily, the makgeolli houses of Samcheon-dong pour endless side dishes with every kettle, and PNB bakery's choco pie is the classic take-home.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -332,7 +332,7 @@ export const destinations: Destination[] = [
       "City buses reach Gyeongpo Beach and the main café district, but connections are slow. A taxi or rental car makes exploring the coast easier.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: east coast spring, 11–19°C, clean air, low rain. Good beach weather starts June. Summer is popular but crowded. Autumn is excellent for coastal walks.",
+      "Beach season runs June–August, and the east coast stays a touch cooler than Seoul in summer. Autumn brings the clearest skies for coastal walks. Winters are cold with occasional heavy east-coast snow — dramatic, but check bus schedules.",
     food: "Chodang sundubu — silken tofu set with seawater — is the true local specialty, and the tofu-gelato twist is better than it sounds. Jang-kalguksu (spicy knife-cut noodles) warms cold coast days, Jumunjin port grills the squid, and the Anmok café strip is Korea's most serious beach coffee.",
     detail_budget: {
       low: '~₩55,000–70,000/day',
@@ -390,7 +390,7 @@ export const destinations: Destination[] = [
       "Buses reach Seoraksan park entrance and the main market area. Getting around the wider coast without a car is slower but manageable for the core circuit.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: cool east coast spring, 10–17°C. Mountain trails at Seoraksan open fully as snow clears. Autumn (October) is the best season — foliage on the trails is exceptional.",
+      "Summer (Jul–Aug) is beach-and-mountain season. October is the star — Seoraksan's foliage peaks mid-to-late month and the whole city fills. Spring trails open fully by April as snow clears; winter granite-and-snow scenery rewards prepared hikers.",
     food: "Abai sundae and squid sundae in Abai Village are the real reasons to take the ferry-raft across. Dak gangjeong (sweet-crispy fried chicken) by the express terminal is locally famous, mulhoe (cold raw-fish soup) is the summer dish, and ganjang gejang if the budget allows.",
     detail_budget: {
       low: '~₩55,000–70,000/day',
@@ -448,7 +448,7 @@ export const destinations: Destination[] = [
       "The central dock area and Dongpirang Village are walkable. The cable car and outer island ferries are accessible by local bus or taxi.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: warm south coast spring, 14–21°C, pleasant for harbor walks and ferry trips. Summer is warm but manageable. One of the better spring destinations.",
+      "Korea's mildest corner: spring arrives early and April harbor walks are ideal. Summers are warm but sea-tempered; autumn stays pleasant late. Winter oyster season (Nov–Feb) is a reason to come, not to stay away.",
     food: "Chungmu gimbap — bare rice rolls with spicy squid and radish — was invented here and still costs pocket change. The dock market does Korea's best-value oysters and sea squirt (meongge), and kkulppang honey pastries are the walking-around snack.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -506,7 +506,7 @@ export const destinations: Destination[] = [
       "Buses connect the main villages but run infrequently. The island's scenic drives and most notable viewpoints are not practical without a car.",
     car_recommended: true,
     seasonal_weather_context:
-      "Typical in April: warm and scenic, 14–22°C. Spring wildflowers on the terraced hillsides. Summer is pleasant and not as crowded as the east coast. Autumn foliage is quieter here.",
+      "Spring (Apr–May) greens the terraced fields with wildflowers on the hillsides; summer is warm, bright and less crowded than the east coast. Autumn stays mild well into November, and winter is quiet and gentle by Korean standards.",
     food: "Myeolchi ssambap — fat spring anchovies braised spicy and wrapped in lettuce — is the island's true signature. Grilled eel is everywhere and good, Namhae garlic sneaks into everything, and village restaurants beat the tourist spots near German Village on both price and honesty.",
     detail_budget: {
       low: '~₩50,000–65,000/day',
@@ -565,7 +565,7 @@ export const destinations: Destination[] = [
       "Trail access is possible by bus from Gurye or Namwon but connections are infrequent. A car makes it easier to reach different trailheads and mountain towns.",
     car_recommended: true,
     seasonal_weather_context:
-      "Typical in April: mountain spring — warm in lower valleys, still cool on upper ridges. Snow possible above 1,500m in early April. Autumn (October) is the best season for the ridge traverse — clear skies and foliage.",
+      "Trail seasons: spring wildflowers from April (snow lingers above 1,500m into early April), lush green summers, and the main event — October ridge foliage under clear skies. Winter traverses need proper alpine gear; valley temples are beautiful year-round.",
     food: "Sanchae jeongsik — a full table of foraged mountain herbs — is the meal here, best in Gurye and Hadong. Jirisan black pork rivals Jeju's at half the fuss, and Hadong's jaecheop clam soup is how hikers start their mornings.",
     detail_budget: {
       low: '~₩40,000–55,000/day',
@@ -625,7 +625,7 @@ export const destinations: Destination[] = [
       "The waterfront, Odongdo, and cable car area are walkable or a short taxi apart. City buses cover the rest but are slower — taxis are cheap enough for most hops.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: warm south coast spring, 12–20°C. The night view works year-round. Summer is humid but the sea breeze helps; July–August is peak domestic season.",
+      "Mild south-coast weather most of the year: spring and autumn are ideal for island ferries and cable-car views. Summer is humid but the night waterfront makes up for it; winters are mild and clear — the night view doesn't take a season off.",
     food: "Gejang baekban — raw marinated crab set meals — is what locals queue for near the old harbor. Gat kimchi (mustard leaf) lands on every table, seodae-hoe (sole sashimi in chili-vinegar) is the summer dish, and the waterfront pocha street is the evening plan.",
     detail_budget: {
       low: '~₩50,000–65,000/day',
@@ -684,7 +684,7 @@ export const destinations: Destination[] = [
       "KTX-Eum runs from Seoul's Cheongnyangni station. Buses run from Andong station to Hahoe Village but are infrequent — check return times. The village itself is walkable; other sights (Dosan Seowon, Woryeonggyo) need a bus or taxi.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: mild inland spring, 10–20°C. October brings the Mask Dance Festival and the best light on the river cliffs. Winters are cold and quiet.",
+      "Inland climate with four real seasons: mild dry spring, hot summers, and a crisp autumn — late Sep–Oct is festival season and the year's best light on the river cliffs. Winters are cold, dry and very quiet.",
     food: "Andong jjimdak (braised chicken) is the famous export — the originals cluster in the old market. Heotjesabap (ritual-style rice) and salted mackerel are the deeper local specialties.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -742,7 +742,7 @@ export const destinations: Destination[] = [
       "Subway from Seoul, then buses or a short taxi to Paldalmun gate. The wall loop itself is a ~2 hour walk; everything else clusters below it.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: mild walking weather, 12–21°C — ideal for the wall loop. Summer midday is hot on the exposed ramparts; go morning or late afternoon. Autumn is the best season.",
+      "Same seasons as Seoul: April–May and September–November are prime wall-walking weather. Summer middays are hot on the exposed ramparts — go morning or evening. Winter walks are cold but clear, and the wall is nearly empty.",
     food: "Suwon wanggalbi (king-size beef ribs) is the signature — pricier than average but worth one splurge. Ji-dong market's fried chicken street (tongdak golmok) is the budget classic.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -800,7 +800,7 @@ export const destinations: Destination[] = [
       "ITX to Chuncheon or Gapyeong station, then shuttle bus and a short ferry to Nami Island. The dakgalbi street and lakeside are a bus or taxi hop from the station.",
     car_recommended: false,
     seasonal_weather_context:
-      "Typical in April: fresh lake-country spring, 10–20°C. Nami's lanes peak twice — late April greenery and late October foliage. Summer is lush but humid; winter snow scenes are famous but cold.",
+      "Lake country runs a touch cooler than Seoul. Nami's tree lanes peak twice — late April greenery and late October foliage. Summer is lush but humid and busy on weekends; winter snow scenes are famous, so bring layers.",
     food: "Dakgalbi (spicy stir-fried chicken) was born here — Myeongdong Dakgalbi Street has dozens of originals. Makguksu (cold buckwheat noodles) is the local counterpoint in summer.",
     detail_budget: {
       low: '~₩45,000–60,000/day',
@@ -858,7 +858,7 @@ export const destinations: Destination[] = [
       "Buses reach Juknokwon and the Boseong tea plantations from Gwangju and Boseong-eup, but connections between the two areas are slow. A car turns a logistics exercise into an easy loop.",
     car_recommended: true,
     seasonal_weather_context:
-      "Typical in April: soft southern spring, 12–21°C. Tea rows are greenest from late April through June after the first plucking. The bamboo forest stays cool even in midsummer.",
+      "Tea rows are greenest from late April through June after the first plucking, and the bamboo forest stays cool even in midsummer. Autumn is mild and quiet; in winter the Boseong terraces light up after dark (Dec–Jan).",
     food: "Damyang tteok-galbi (grilled short-rib patties) and daetongbap (rice steamed in bamboo) are the signatures, plus a humble noodle street by the bamboo forest. In Boseong everything comes in green tea form — noodles, ice cream, and the leaf itself at plantation cafés.",
     detail_budget: {
       low: '~₩45,000–60,000/day',

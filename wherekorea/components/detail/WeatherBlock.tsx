@@ -1,6 +1,7 @@
 import type { Destination } from '@/data/types'
 import type { MonthlyAvg, DailyForecast } from '@/lib/weather'
 import { wmoToEmoji } from '@/lib/weather'
+import SectionTitle from '@/components/detail/SectionTitle'
 
 interface Props {
   destination: Destination
@@ -17,9 +18,7 @@ function dayLabel(iso: string, i: number): string {
 export default function WeatherBlock({ destination: d, monthlyAvg, daily }: Props) {
   return (
     <div className="py-6 border-b border-white/10">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-3">
-        Weather
-      </h2>
+      <SectionTitle className="mb-3">Weather</SectionTitle>
       <p className="text-sm text-white/60 mb-1">{d.live_weather_snapshot}</p>
       {monthlyAvg && (
         <p className="text-sm text-white/55 mb-3">

@@ -12,7 +12,10 @@ export const metadata: Metadata = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="py-6 border-b border-white/10">
-      <h2 className="text-sm font-semibold text-white/55 uppercase tracking-wide mb-3">{title}</h2>
+      <h2 className="flex items-center gap-2 text-[13px] font-bold text-white/90 uppercase tracking-wider mb-3">
+        <span aria-hidden className="w-1 h-3.5 rounded-full shrink-0" style={{ background: '#FF6A3D' }} />
+        {title}
+      </h2>
       <div className="text-sm text-white/85 leading-relaxed space-y-3">{children}</div>
     </div>
   )
@@ -80,8 +83,16 @@ export default function AboutPage() {
           </p>
         </Section>
 
-        <p className="text-xs text-white/50 mt-6">
-          Questions or corrections? We want the numbers to be right.
+        <p className="text-xs text-white/55 mt-6">
+          Spotted something off?{' '}
+          <a
+            href={process.env.NEXT_PUBLIC_TELEGRAM_URL ?? 'https://t.me/wherekorea'}
+            rel="noopener"
+            className="underline text-white/85 hover:text-white"
+          >
+            Tell us on Telegram
+          </a>{' '}
+          — we want the numbers to be right.
         </p>
         <Link href="/" className="inline-block mt-4 text-sm text-white/60 hover:text-white">
           ← Browse destinations

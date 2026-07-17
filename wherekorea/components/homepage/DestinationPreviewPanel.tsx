@@ -192,7 +192,14 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
               label="Per day"
               sub={usdApprox(perDay) ? perDay : undefined}
             />
-            <PreviewMetric value={fromSeoul || '—'} label="From Seoul" />
+            {d.slug === 'seoul' ? (
+              <PreviewMetric
+                value={d.travel_time.from_incheon_airport.replace(/^~/, '')}
+                label="From Incheon"
+              />
+            ) : (
+              <PreviewMetric value={fromSeoul || '—'} label="From Seoul" />
+            )}
           </div>
 
           {/* Happening now — live festival signal (info only, never ranked) */}

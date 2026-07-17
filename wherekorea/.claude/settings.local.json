@@ -140,7 +140,9 @@
       "Bash(pkill -f \"next start\")",
       "Bash(echo \"EXIT: $?\")",
       "Bash(pkill -f \"next dev\")",
-      "Bash(echo \"TYPECHECK EXIT: $?\")"
+      "Bash(echo \"TYPECHECK EXIT: $?\")",
+      "Bash(gh auth *)",
+      "Bash(gh api *)"
     ]
   }
 }
