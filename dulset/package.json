@@ -1,0 +1,29 @@
+{
+  "name": "dulset",
+  "version": "0.1.0",
+  "private": true,
+  "description": "둘셋 — 임신을 준비하는 부부가 함께 쓰는 앱 (프로토타입)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "npx --yes serve out",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "next": "15.5.26",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

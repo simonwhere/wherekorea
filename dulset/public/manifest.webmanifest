@@ -1,0 +1,14 @@
+{
+  "name": "둘셋 — 둘이 셋이 되기까지",
+  "short_name": "둘셋",
+  "description": "임신을 준비하는 부부가 함께 쓰는 앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf7f4",
+  "theme_color": "#e2685c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
