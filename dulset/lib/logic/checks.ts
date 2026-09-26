@@ -71,6 +71,27 @@ export function coupleStreak(state: Pick<AppState, 'checkItems' | 'checkLog'>, t
   return n
 }
 
+/** First day an item was ever checked (e.g. "엽산 먹은 지 D+40"). */
+export function firstCheckedDate(state: Pick<AppState, 'checkLog'>, member: MemberId, itemId: string): ISODate | undefined {
+  const days = Object.keys(state.checkLog)
+    .filter((d) => (state.checkLog[d]?.[member] ?? []).includes(itemId))
+    .sort()
+  return days[0]
+}
+
+/** Days on which a member checked an item, within [from, to]. */
+export function daysChecked(
+  state: Pick<AppState, 'checkLog'>,
+  member: MemberId,
+  itemId: string,
+  from: ISODate,
+  to: ISODate,
+): number {
+  return Object.keys(state.checkLog).filter(
+    (d) => d >= from && d <= to && (state.checkLog[d]?.[member] ?? []).includes(itemId),
+  ).length
+}
+
 // ── Mutations ───────────────────────────────────────────────
 
 export function toggleCheck(state: AppState, member: MemberId, date: ISODate, itemId: string): AppState {

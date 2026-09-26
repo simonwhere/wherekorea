@@ -2,14 +2,18 @@
 //
 // Model (calendar method, refined by LH tests when logged):
 //   • ovulation ≈ next period start − 14 days (luteal phase ≈ 14 days)
-//   • fertile window = the 6 days ending on ovulation day (Wilcox et al., NEJM 1995)
-//     plus the day after, to absorb ovulation-date uncertainty
-//   • "peak" = the 3 days ending on ovulation day, where day-specific conception
-//     probability is highest (Wilcox 1995; Dunson 2002)
+//   • fertile window = the 6 days ending on ovulation day (Wilcox et al., NEJM 1995;
+//     ASRM 2022). Days after ovulation are deliberately NOT included — conception
+//     probability falls to ~0 then, and apps that add them overstate the window
+//     (Setton et al., Obstet Gynecol 2016)
+//   • "peak" = the 3 days ending on ovulation day; fecundability is highest for
+//     intercourse in the 2 days before ovulation (ASRM 2022; Dunson 1999)
 //   • a positive LH test moves ovulation to the day after the first positive test
 //     (ovulation typically follows the LH surge by ~24–36 h)
-// Calendar predictions are rough: real ovulation varies from cycle to cycle, so the
-// UI must present these as estimates and never as contraception or diagnosis.
+// Calendar predictions are rough: only ~30% of women have their whole fertile window
+// inside cycle days 10–17 (Wilcox 2000, BMJ), and cycle-length-only methods hit the
+// real ovulation day ≤21% of the time (Johnson 2018). The UI must present these as
+// estimates, nudge toward LH tests, and never frame them as contraception or diagnosis.
 
 import { addDays, diffDays, isBetween } from '../dates'
 import type { CycleSettings, ISODate, LHTest, PeriodLog } from '../types'
@@ -17,8 +21,8 @@ import type { CycleSettings, ISODate, LHTest, PeriodLog } from '../types'
 export const LUTEAL_DAYS = 14
 /** Days before ovulation that sperm can survive and conception is possible. */
 export const FERTILE_DAYS_BEFORE = 5
-/** Extra day shown after estimated ovulation (egg lives ~12–24 h; date is uncertain). */
-export const FERTILE_DAYS_AFTER = 1
+/** Days after estimated ovulation counted as fertile (0 — see header). */
+export const FERTILE_DAYS_AFTER = 0
 /** Peak = ovulation − 2 … ovulation. */
 export const PEAK_DAYS_BEFORE = 2
 
@@ -97,24 +101,60 @@ export interface CycleWindow {
   fertileEnd: ISODate
   peakStart: ISODate
   peakEnd: ISODate
+  /**
+   * Wider "could also be fertile" band around a calendar estimate, reflecting
+   * luteal-phase variation (~±2 days) and, for projected cycles, the spread of
+   * the couple's own recent cycle lengths. Equals the fertile window when an LH
+   * test pinned ovulation.
+   */
+  broadStart: ISODate
+  broadEnd: ISODate
   basis: 'calendar' | 'lh'
 }
 
-function buildWindow(start: ISODate, startLogged: boolean, length: number, lhOvulation?: ISODate): CycleWindow {
+/** Extra days of uncertainty before/after a calendar estimate. */
+interface Spread {
+  early: number
+  late: number
+}
+
+const LUTEAL_SPREAD = 2
+
+function buildWindow(
+  start: ISODate,
+  startLogged: boolean,
+  length: number,
+  lhOvulation?: ISODate,
+  spread: Spread = { early: 0, late: 0 },
+): CycleWindow {
   const nextPeriod = addDays(start, length)
   // Never put ovulation before cycle day 8 even for very short averages.
   const calendarOvulation = addDays(start, Math.max(7, length - LUTEAL_DAYS))
   const ovulation = lhOvulation ?? calendarOvulation
+  const fertileStart = addDays(ovulation, -FERTILE_DAYS_BEFORE)
+  const fertileEnd = addDays(ovulation, FERTILE_DAYS_AFTER)
+  let broadStart = fertileStart
+  let broadEnd = fertileEnd
+  if (!lhOvulation) {
+    broadStart = addDays(fertileStart, -(LUTEAL_SPREAD + spread.early))
+    broadEnd = addDays(ovulation, LUTEAL_SPREAD + spread.late)
+    const earliest = addDays(start, 5) // cycle day 6
+    const latest = addDays(nextPeriod, -1)
+    if (broadStart < earliest) broadStart = earliest < fertileStart ? earliest : fertileStart
+    if (broadEnd > latest) broadEnd = latest > fertileEnd ? latest : fertileEnd
+  }
   return {
     start,
     startLogged,
     length,
     nextPeriod,
     ovulation,
-    fertileStart: addDays(ovulation, -FERTILE_DAYS_BEFORE),
-    fertileEnd: addDays(ovulation, FERTILE_DAYS_AFTER),
+    fertileStart,
+    fertileEnd,
     peakStart: addDays(ovulation, -PEAK_DAYS_BEFORE),
     peakEnd: ovulation,
+    broadStart,
+    broadEnd,
     basis: lhOvulation ? 'lh' : 'calendar',
   }
 }
@@ -162,15 +202,21 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   }
 
   const L = stats.average
+  // The couple's own variability widens the band for not-yet-finished cycles.
+  const spread: Spread =
+    stats.min !== undefined && stats.max !== undefined
+      ? { early: Math.max(0, L - stats.min), late: Math.max(0, stats.max - L) }
+      : { early: 0, late: 0 }
   const k = Math.floor(diffDays(loggedStart, date) / L)
   if (k <= 0 || nextLogged) {
-    return buildWindow(loggedStart, true, L, lhOvulationFor(loggedStart, L, input.lhTests))
+    return buildWindow(loggedStart, true, L, lhOvulationFor(loggedStart, L, input.lhTests), spread)
   }
   const projectedStart = addDays(loggedStart, k * L)
-  return buildWindow(projectedStart, false, L, lhOvulationFor(projectedStart, L, input.lhTests))
+  return buildWindow(projectedStart, false, L, lhOvulationFor(projectedStart, L, input.lhTests), spread)
 }
 
-export type DayPhase = 'period' | 'period-predicted' | 'peak' | 'fertile' | 'none'
+/** 'possible' = inside the wider uncertainty band but outside the estimated window. */
+export type DayPhase = 'period' | 'period-predicted' | 'peak' | 'fertile' | 'possible' | 'none'
 
 export interface DayInfo {
   date: ISODate
@@ -206,6 +252,7 @@ export function dayInfo(input: CycleInput, date: ISODate): DayInfo {
   let phase: DayPhase = 'none'
   if (isBetween(date, w.peakStart, w.peakEnd)) phase = 'peak'
   else if (isBetween(date, w.fertileStart, w.fertileEnd)) phase = 'fertile'
+  else if (isBetween(date, w.broadStart, w.broadEnd)) phase = 'possible'
   return { ...base, ...pos, phase, isOvulation: date === w.ovulation }
 }
 

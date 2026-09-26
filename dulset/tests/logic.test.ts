@@ -125,6 +125,19 @@ describe('baby', () => {
 })
 
 describe('notifications', () => {
+  it('respects each member’s alert style', () => {
+    const s0 = fresh()
+    expect(s0.settings.alertStyle).toEqual({ a: 'soft', b: 'explicit' }) // b tracks the cycle
+    const n = scheduledNotices(s0, '2026-09-14')
+    const toA = n.filter((x) => x.to === 'a')
+    const toB = n.filter((x) => x.to === 'b')
+    expect(toA.map((x) => x.kind)).toEqual(['fertile-start']) // soft: one gentle notice, no peak
+    expect(toA[0]!.title).not.toMatch(/가임|가능성/)
+    expect(toB.map((x) => x.kind).sort()).toEqual(['fertile-start', 'peak'])
+    const off = fresh({ settings: { ...s0.settings, alertStyle: { a: 'off', b: 'explicit' } } })
+    expect(scheduledNotices(off, '2026-09-14').some((x) => x.to === 'a')).toBe(false)
+  })
+
   it('sends fertile-window notices to both members once', () => {
     let s = fresh()
     const n = scheduledNotices(s, '2026-09-09') // day before fertile window (Sep 10)
@@ -136,12 +149,10 @@ describe('notifications', () => {
     expect(mergeNotices(s, scheduledNotices(s, '2026-09-10'), '2026-09-10T09:00:00+09:00').added.filter((x) => x.kind === 'fertile-start')).toHaveLength(0)
   })
 
-  it('sends peak notices during peak days and uses low-pressure wording', () => {
+  it('sends no fertile-day alerts in low-pressure mode but still tells the owner about her period', () => {
     const s = fresh({ settings: { ...fresh().settings, lowPressure: true } })
-    const n = scheduledNotices(s, '2026-09-14')
-    const peak = n.find((x) => x.kind === 'peak')!
-    expect(peak.title).not.toMatch(/가능성|가임/)
-    expect(n.find((x) => x.kind === 'fertile-start')!.title).not.toMatch(/가임/)
+    expect(scheduledNotices(s, '2026-09-14').some((x) => x.kind === 'peak' || x.kind === 'fertile-start')).toBe(false)
+    expect(scheduledNotices(s, '2026-09-28').some((x) => x.kind === 'period-due' && x.to === 'b')).toBe(true)
   })
 
   it('only tells the cycle owner about period timing', () => {

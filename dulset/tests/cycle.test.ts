@@ -58,10 +58,22 @@ describe('cycleAt / windows', () => {
     expect(w.nextPeriod).toBe('2026-09-29')
     expect(w.ovulation).toBe('2026-09-15')
     expect(w.fertileStart).toBe('2026-09-10')
-    expect(w.fertileEnd).toBe('2026-09-16')
+    expect(w.fertileEnd).toBe('2026-09-15')
     expect(w.peakStart).toBe('2026-09-13')
     expect(w.peakEnd).toBe('2026-09-15')
     expect(w.basis).toBe('calendar')
+    // ±2 days of luteal-phase uncertainty
+    expect(w.broadStart).toBe('2026-09-08')
+    expect(w.broadEnd).toBe('2026-09-17')
+  })
+
+  it('widens the band with the couple’s own cycle spread', () => {
+    const i = base({ periods: [{ start: '2026-07-01' }, { start: '2026-07-27' }, { start: '2026-08-28' }] }) // 26, 32 → avg 29
+    const w = cycleAt(i, '2026-09-05')!
+    expect(w.length).toBe(29)
+    expect(w.ovulation).toBe('2026-09-12')
+    expect(w.broadStart).toBe('2026-09-02') // fertileStart 09-07 − (2 + 3)
+    expect(w.broadEnd).toBe('2026-09-17') // ovulation + 2 + 3
   })
 
   it('returns null before any logged period', () => {
@@ -87,6 +99,7 @@ describe('cycleAt / windows', () => {
     expect(w.basis).toBe('lh')
     expect(w.ovulation).toBe('2026-09-18')
     expect(w.peakStart).toBe('2026-09-16')
+    expect([w.broadStart, w.broadEnd]).toEqual([w.fertileStart, w.fertileEnd])
   })
 
   it('ignores positive LH tests during the period days', () => {
@@ -116,8 +129,9 @@ describe('dayInfo', () => {
     expect(dayInfo(input, '2026-09-10').phase).toBe('fertile')
     expect(dayInfo(input, '2026-09-14').phase).toBe('peak')
     expect(dayInfo(input, '2026-09-15')).toMatchObject({ phase: 'peak', isOvulation: true, cycleDay: 15, ovulationOffset: 0 })
-    expect(dayInfo(input, '2026-09-16').phase).toBe('fertile')
-    expect(dayInfo(input, '2026-09-17').phase).toBe('none')
+    expect(dayInfo(input, '2026-09-16').phase).toBe('possible')
+    expect(dayInfo(input, '2026-09-18').phase).toBe('none')
+    expect(dayInfo(input, '2026-09-08').phase).toBe('possible')
     expect(dayInfo(input, '2026-09-30').phase).toBe('period-predicted')
   })
 
@@ -131,7 +145,8 @@ describe('dayInfo', () => {
     expect(chanceLevel(0)).toBe('high')
     expect(chanceLevel(-2)).toBe('high')
     expect(chanceLevel(-3)).toBe('medium')
-    expect(chanceLevel(1)).toBe('medium')
+    expect(chanceLevel(-5)).toBe('medium')
+    expect(chanceLevel(1)).toBe('low')
     expect(chanceLevel(2)).toBe('low')
     expect(chanceLevel(undefined)).toBe('low')
   })

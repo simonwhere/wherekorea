@@ -153,13 +153,24 @@ export interface MilestoneRecord {
 
 // ── Settings / root state ───────────────────────────────────
 
+/**
+ * How a member hears about fertile days. Each partner chooses for themselves —
+ * pressure from single "D-day" alerts is linked to distress, so the default for
+ * the partner is the softer "couple time" framing.
+ */
+export type AlertStyle = 'explicit' | 'soft' | 'off'
+
 export interface Settings {
   /** Lock-screen-safe wording: "우리의 날" instead of "가임기". */
   discreet: boolean
   /** Show browser notifications while the app is open. */
   browserNotifications: boolean
-  /** Hide fertility wording entirely and frame days as date suggestions only. */
+  /**
+   * NICE-style "every 2–3 days, all cycle long" mode: no fertile-day alerts or
+   * countdowns; the app frames everything as couple time.
+   */
   lowPressure: boolean
+  alertStyle: Record<MemberId, AlertStyle>
   /** When the couple started trying — drives the "see a doctor" guidance. */
   ttcStart?: ISODate
 }

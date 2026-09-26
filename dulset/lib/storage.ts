@@ -58,6 +58,10 @@ export function normalize(state: AppState): AppState {
       discreet: settings.discreet ?? false,
       browserNotifications: settings.browserNotifications ?? false,
       lowPressure: settings.lowPressure ?? false,
+      alertStyle: {
+        a: settings.alertStyle?.a ?? 'soft',
+        b: settings.alertStyle?.b ?? 'soft',
+      },
       ttcStart: settings.ttcStart,
     },
   }

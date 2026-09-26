@@ -31,11 +31,13 @@ export function defaultCheckItems(members: [Member, Member], today = todayISO())
     const add = (label: string, kind: CheckItem['kind'], note?: string) =>
       items.push({ id: uid(), owner: m.id, label, kind, note, active: true, createdAt: today })
     if (m.tracksCycle) {
+      // Folic acid is the one supplement with strong evidence (USPSTF A, WHO, KDCA).
       add('엽산', 'supplement', '400µg')
-      add('비타민 D', 'supplement')
+      add('비타민 D', 'supplement', '선택')
     } else {
-      add('종합비타민', 'supplement')
-      add('사우나·뜨거운 탕 피하기', 'habit')
+      // For men, zinc/folate pills showed no benefit (FAZST, JAMA 2020) — habits matter more.
+      add('사우나·뜨거운 탕 피하기', 'habit', '고환 온도')
+      add('담배 안 피우기', 'habit')
     }
     add('술 안 마시기', 'habit')
     add('30분 걷기·운동', 'habit')
@@ -97,6 +99,7 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       discreet: false,
       browserNotifications: false,
       lowPressure: false,
+      alertStyle: { a: members[0].tracksCycle ? 'explicit' : 'soft', b: members[1].tracksCycle ? 'explicit' : 'soft' },
       ttcStart: input.ttcStart ?? today,
     },
   }

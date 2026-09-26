@@ -25,7 +25,7 @@ function memberName(state: AppState, id: MemberId): string {
   return state.couple.members.find((m) => m.id === id)?.name ?? ''
 }
 
-function toBoth(n: Omit<Notice, 'to' | 'key'> & { key: string }): Notice[] {
+function toBoth(n: Omit<Notice, 'to'>): Notice[] {
   return MEMBER_IDS.map((to) => ({ ...n, to, key: `${n.key}:${to}` }))
 }
 
@@ -66,44 +66,47 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         body: `예정일(${formatKo(status.expected)})이 ${status.daysLate}일 지났어요. 생리가 시작됐다면 기록해 주세요. 아니라면 임신 테스트를 해 볼 때예요.`,
       })
     }
-    if (status.kind !== 'late' && status.kind !== 'no-data') {
+    // Low-pressure mode (NICE: every 2–3 days, all cycle long) sends no fertile-day alerts.
+    if (status.kind !== 'late' && status.kind !== 'no-data' && !low) {
       const [w] = upcomingWindows(state, today, 1)
       if (w) {
-        // Heads-up the day before the window, and on any day inside it (dedup by key).
-        if (isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd)) {
-          out.push(
-            ...toBoth({
-              key: `fertile-start:${w.fertileStart}`,
+        for (const m of state.couple.members) {
+          const style = state.settings.alertStyle?.[m.id] ?? 'soft'
+          if (style === 'off') continue
+          const soft = style === 'soft'
+          // Heads-up the day before the window, and on any day inside it (dedup by key).
+          if (isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd)) {
+            out.push({
+              key: `fertile-start:${w.fertileStart}:${m.id}`,
+              to: m.id,
               kind: 'fertile-start',
-              title: low ? '💞 이번 주는 데이트 주간이에요' : '💞 가임기가 다가왔어요',
-              body: low
+              title: soft ? '💞 이번 주는 우리의 주간이에요' : '💞 가임기가 다가왔어요',
+              body: soft
                 ? '둘만의 시간을 챙겨 볼까요? 데이트 탭에 아이디어를 골라 뒀어요.'
-                : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지 임신 가능성이 높은 기간이에요. 부담은 내려놓고, 둘만의 시간을 챙겨요.`,
-            }),
-          )
-        }
-        if (isBetween(today, w.peakStart, w.peakEnd)) {
-          out.push(
-            ...toBoth({
-              key: `peak:${w.peakStart}`,
+                : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`,
+            })
+          }
+          // Explicit style only: soft style already got its one gentle nudge above.
+          if (!soft && isBetween(today, w.peakStart, w.peakEnd)) {
+            out.push({
+              key: `peak:${w.peakStart}:${m.id}`,
+              to: m.id,
               kind: 'peak',
-              title: low ? '🌙 오늘 저녁은 둘이서' : '🌟 가능성이 가장 높은 날들이에요',
-              body: low
-                ? '일찍 퇴근해서 같이 저녁 먹는 건 어때요?'
-                : `${formatKo(w.peakStart, { weekday: false })}~${formatKo(w.peakEnd, { weekday: false })}. 이 기간엔 하루나 이틀에 한 번이면 충분해요. 숙제처럼 느끼지 않아도 괜찮아요.`,
-            }),
-          )
+              title: '🌟 가능성이 가장 높은 날들이에요',
+              body: `${formatKo(w.peakStart, { weekday: false })}~${formatKo(w.peakEnd, { weekday: false })} (예상). 이 기간엔 하루나 이틀에 한 번이면 충분해요. 숙제처럼 느끼지 않아도 괜찮아요.`,
+            })
+          }
         }
       }
-      if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1) {
-        out.push({
-          key: `period-due:${status.nextPeriod}:${owner.id}`,
-          to: owner.id,
-          kind: 'period-due',
-          title: '🗓️ 내일이 생리 예정일이에요',
-          body: '시작하면 달력에 기록해 주세요. 다음 예측이 더 정확해져요.',
-        })
-      }
+    }
+    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1) {
+      out.push({
+        key: `period-due:${status.nextPeriod}:${owner.id}`,
+        to: owner.id,
+        kind: 'period-due',
+        title: '🗓️ 내일이 생리 예정일이에요',
+        body: '시작하면 달력에 기록해 주세요. 다음 예측이 더 정확해져요.',
+      })
     }
 
     const ttcStart = state.settings.ttcStart
