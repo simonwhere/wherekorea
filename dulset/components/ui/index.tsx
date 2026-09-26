@@ -4,6 +4,7 @@
 // re-inventing card/button styles, so the app reads as one system.
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Member } from '@/lib/types'
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -203,7 +204,11 @@ export const inputClass =
 export const textareaClass =
   'block w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20'
 
-/** Bottom sheet dialog. Closes on backdrop tap and Escape. */
+/**
+ * Bottom sheet dialog, rendered in a portal. Closes on backdrop tap and Escape.
+ * While open, everything else on the page is `inert` (no focus, hidden from
+ * screen readers) and focus returns to the opener when it closes.
+ */
 export function Sheet({
   open,
   onClose,
@@ -216,32 +221,54 @@ export function Sheet({
   children: React.ReactNode
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  // Callers often pass an inline onClose; keep the latest in a ref so the open
+  // effect below doesn't re-run (and steal focus) on every parent render.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   useEffect(() => {
-    if (!open) return
+    if (!open || !mounted) return
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+
+    // Make the rest of the page inert (nested sheets restore in LIFO order).
+    const own = containerRef.current
+    const touched: Array<[HTMLElement, boolean]> = []
+    for (const el of Array.from(document.body.children)) {
+      if (!(el instanceof HTMLElement) || el === own || el.contains(own)) continue
+      touched.push([el, el.inert])
+      el.inert = true
+    }
     panelRef.current?.focus()
+
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
+      for (const [el, was] of touched.reverse()) el.inert = was
+      if (opener && document.contains(opener)) opener.focus({ preventScroll: true })
     }
-  }, [open, onClose])
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/40" onClick={onClose} />
+  }, [open, mounted])
+
+  if (!open || !mounted) return null
+  return createPortal(
+    <div ref={containerRef} className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <button type="button" aria-label="닫기" tabIndex={-1} className="absolute inset-0 bg-black/40" onClick={() => onCloseRef.current()} />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-bg p-5 shadow-2xl outline-none sm:rounded-3xl"
+        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-bg p-5 text-ink shadow-2xl outline-none sm:rounded-3xl"
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line sm:hidden" />
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -250,16 +277,17 @@ export function Sheet({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             aria-label="닫기"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2"
           >
             ✕
           </button>
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

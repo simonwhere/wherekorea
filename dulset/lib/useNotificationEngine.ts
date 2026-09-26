@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { localNowISO, mergeNotices, scheduledNotices } from './logic/notifications'
+import { mergeNotices, scheduledNotices } from './logic/notifications'
+import { stampOn } from './logic/today'
 import { useApp } from './store'
 import type { AppNotification } from './types'
 
@@ -18,13 +19,14 @@ export function useNotificationEngine(): void {
   useEffect(() => {
     // Preview against the current state to learn what's new; the updater re-derives
     // against the latest state, and key-dedup makes repeated application harmless.
-    const now = localNowISO()
+    // Stamped on the app's `today` so a pinned ?today= groups them correctly.
+    const now = stampOn(today)
     const { added } = mergeNotices(state, scheduledNotices(state, today), now)
     if (added.length === 0) return
     update((s) => mergeNotices(s, scheduledNotices(s, today), now).state)
     deliver(added.filter((n) => n.to === viewer))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.ttcStart, couple.members])
+  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.alertStyle, settings.ttcStart, couple.members])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
   // Whatever is already unread when the app opens isn't re-announced.

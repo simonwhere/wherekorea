@@ -1,8 +1,32 @@
 'use client'
 
-import { EmptyState } from '@/components/ui'
+import { useCallback, useState } from 'react'
+import DateBanner from '@/components/date/DateBanner'
+import IdeaBrowser from '@/components/date/IdeaBrowser'
+import PlanList from '@/components/date/PlanList'
+import PlanSheet from '@/components/date/PlanSheet'
+import WeeklyPicks from '@/components/date/WeeklyPicks'
+import type { DateIdea } from '@/lib/content/dateIdeas'
 
-// Placeholder — implemented in the feature build step.
+/**
+ * 데이트 (육아 중엔 "둘만의") tab: a gentle context line, this week's three
+ * picks, our shared plans, then every idea with filters. Adding a plan sends
+ * the partner a proposal notice.
+ */
 export default function DateTab() {
-  return <EmptyState icon="🚧" title="DateTab 준비 중" />
+  // null = closed; { idea: undefined } = a plan without an idea (직접 추가).
+  const [draft, setDraft] = useState<{ idea?: DateIdea } | null>(null)
+  const open = useCallback((idea?: DateIdea) => setDraft({ idea }), [])
+  // Stable identity: the Sheet re-focuses its panel whenever onClose changes.
+  const close = useCallback(() => setDraft(null), [])
+
+  return (
+    <div>
+      <DateBanner />
+      <WeeklyPicks onPlan={open} />
+      <PlanList onAdd={() => open()} />
+      <IdeaBrowser onPlan={open} />
+      {draft ? <PlanSheet idea={draft.idea} onClose={close} /> : null}
+    </div>
+  )
 }

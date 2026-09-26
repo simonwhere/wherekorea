@@ -88,6 +88,14 @@ describe('cycleAt / windows', () => {
     expect(w.ovulation).toBe('2026-10-13')
   })
 
+  it('does not invent cycle days inside a long gap between logs (missed logs)', () => {
+    const i = base({ periods: [{ start: '2026-01-01' }, { start: '2026-06-01' }] })
+    expect(cycleAt(i, '2026-01-10')!.start).toBe('2026-01-01')
+    expect(cycleAt(i, '2026-04-01')).toBeNull()
+    expect(dayInfo(i, '2026-04-01').cycleDay).toBeUndefined()
+    expect(cycleAt(i, '2026-06-05')!.start).toBe('2026-06-01')
+  })
+
   it('uses the measured length for completed cycles', () => {
     const w = cycleAt(base({ periods: [{ start: '2026-08-01' }, { start: '2026-09-01' }] }), '2026-08-10')!
     expect(w.length).toBe(31)

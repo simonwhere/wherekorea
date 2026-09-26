@@ -1,0 +1,74 @@
+'use client'
+
+import { useId, useState } from 'react'
+import SettingsLink from '@/components/cycle/SettingsLink'
+import { Button, Card, inputClass, useToast } from '@/components/ui'
+import { formatKo, isISODate } from '@/lib/dates'
+import { addPeriod } from '@/lib/logic/cycle'
+import type { FertilityView } from '@/lib/logic/calendarView'
+import { useApp } from '@/lib/store'
+
+/** Empty state: nothing logged yet — one date is enough to start predicting. */
+export default function FirstPeriodCard({ view }: { view: FertilityView }) {
+  const { state, update, today, cycleOwner, me } = useApp()
+  const toast = useToast()
+  const inputId = useId()
+  const errorId = useId()
+  const [date, setDate] = useState('')
+  const valid = isISODate(date) && date <= today
+  const error = date && !valid ? (isISODate(date) ? '오늘 이후 날짜는 기록할 수 없어요.' : '날짜를 다시 골라 주세요.') : null
+  const forPartner = me.id !== cycleOwner.id
+
+  const save = () => {
+    if (!valid) return
+    update((s) => addPeriod(s, date))
+    toast.show(`${formatKo(date, { weekday: false })} 생리 시작으로 기록했어요`)
+  }
+
+  return (
+    <Card tone="brand">
+      <div className="text-3xl" aria-hidden>
+        🌷
+      </div>
+      <h2 className="mt-2 text-lg font-bold text-ink">마지막 생리 시작일을 알려 주세요</h2>
+      <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
+        한 번만 기록해도 다음 생리 예정일
+        {view === 'hidden' ? '을' : view === 'soft' ? '과 우리의 주간을' : '과 예상 가임기를'} 계산해 달력에 보여줘요.
+        {forPartner ? ` ${cycleOwner.name}님 대신 기록해도 괜찮아요.` : ''}
+      </p>
+      <form
+        className="mt-4 space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault()
+          save()
+        }}
+      >
+        <label htmlFor={inputId} className="block text-xs font-semibold text-ink-2">
+          생리 시작일
+        </label>
+        <input
+          id={inputId}
+          type="date"
+          max={today}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          className={inputClass}
+        />
+        {error ? (
+          <p id={errorId} className="text-xs text-period">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" size="lg" full disabled={!valid}>
+          마지막 생리 시작일 기록하기
+        </Button>
+      </form>
+      <p className="mt-3 text-xs leading-relaxed text-ink-3">
+        두 번째 기록부터는 실제 주기로 계산해요. 그 전까지는 설정한 주기 {state.cycle.cycleLength}일을 써요.{' '}
+        <SettingsLink>주기 길이 바꾸기</SettingsLink>
+      </p>
+    </Card>
+  )
+}

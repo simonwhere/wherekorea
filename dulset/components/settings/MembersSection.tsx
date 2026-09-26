@@ -1,0 +1,212 @@
+'use client'
+
+import { useCallback, useId, useState } from 'react'
+import { Avatar, Button, Card, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { ROLE_LABEL } from '@/lib/initial'
+import {
+  NAME_MAX,
+  ROLES,
+  birthYearBounds,
+  emojiChoices,
+  isValidBirthYear,
+  membersViewerFirst,
+  setCycleOwner,
+  updateMember,
+} from '@/lib/logic/settings'
+import { useApp } from '@/lib/store'
+import type { Member, MemberId, Role } from '@/lib/types'
+import { ConfirmActions, Pill, RadioCard, Segmented, SettingsSection } from './bits'
+
+export default function MembersSection() {
+  const { state, viewer, cycleOwner } = useApp()
+  const [editing, setEditing] = useState<MemberId | null>(null)
+  const [ownerTo, setOwnerTo] = useState<MemberId | null>(null)
+  // Stable callbacks: Sheet re-runs its focus effect whenever onClose changes,
+  // which would pull focus out of the form each time the other tab syncs.
+  const closeEdit = useCallback(() => setEditing(null), [])
+  const closeOwner = useCallback(() => setOwnerTo(null), [])
+  const ownerLabelId = useId()
+  const ownerGroup = useId()
+  const members = membersViewerFirst(state, viewer)
+  const editingMember = state.couple.members.find((m) => m.id === editing)
+  const ownerCandidate = state.couple.members.find((m) => m.id === ownerTo)
+
+  return (
+    <SettingsSection title="우리 둘" sub="이름과 역할은 두 사람 화면에 똑같이 보여요">
+      <Card>
+        <ul className="divide-y divide-line">
+          {members.map((m) => (
+            <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0">
+              <Avatar member={m} size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-bold text-ink">{m.name}</span>
+                  {m.id === viewer ? <Pill tone="brand">나</Pill> : null}
+                </p>
+                <p className="mt-0.5 text-xs text-ink-3">
+                  {ROLE_LABEL[m.role]} · {m.birthYear ? `${m.birthYear}년생` : '출생 연도 없음'}
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => setEditing(m.id)} ariaLabel={`${m.name} 정보 수정`}>
+                수정
+              </Button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-1 rounded-xl bg-surface-2 p-3">
+          <p id={ownerLabelId} className="text-xs font-semibold text-ink-2">
+            주기를 기록하는 사람
+          </p>
+          <div role="radiogroup" aria-labelledby={ownerLabelId} className="mt-2 grid grid-cols-2 gap-2">
+            {members.map((m) => {
+              const on = m.id === cycleOwner.id
+              return (
+                <RadioCard
+                  key={m.id}
+                  name={ownerGroup}
+                  checked={on}
+                  onSelect={() => setOwnerTo(m.id)}
+                  className="min-w-0 justify-center gap-1.5 px-2 text-sm font-medium"
+                  selectedClassName="border-her bg-her-soft text-ink"
+                  idleClassName="border-line bg-surface text-ink-3 hover:bg-bg"
+                >
+                  <span aria-hidden>{m.emoji}</span>
+                  <span className="truncate">{m.name}</span>
+                  {on ? <span aria-hidden className="text-her">✓</span> : null}
+                </RadioCard>
+              )
+            })}
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+            생리 기록과 달력의 예상, 주기 알림이 이 사람을 기준으로 해요.
+          </p>
+        </div>
+      </Card>
+
+      <Sheet open={!!editingMember} onClose={closeEdit} title="정보 수정">
+        {editingMember ? <MemberForm key={editingMember.id} member={editingMember} onDone={closeEdit} /> : null}
+      </Sheet>
+
+      <Sheet open={!!ownerCandidate} onClose={closeOwner} title="주기 기록하는 사람 바꾸기">
+        {ownerCandidate ? <OwnerConfirm member={ownerCandidate} onDone={closeOwner} /> : null}
+      </Sheet>
+    </SettingsSection>
+  )
+}
+
+export function MemberForm({ member, onDone }: { member: Member; onDone: () => void }) {
+  const { update, today, viewer } = useApp()
+  const toast = useToast()
+  const [name, setName] = useState(member.name)
+  const [role, setRole] = useState<Role>(member.role)
+  const [emoji, setEmoji] = useState(member.emoji)
+  const [year, setYear] = useState(member.birthYear ? String(member.birthYear) : '')
+  const bounds = birthYearBounds(today)
+  const yearNum = Number(year)
+  const yearError = year.trim() && !isValidBirthYear(yearNum, today) ? `${bounds.min}~${bounds.max} 사이로 입력해 주세요.` : null
+  const choices = emojiChoices(member.emoji)
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (yearError) return
+    update((s) => updateMember(s, member.id, { name, role, emoji, birthYear: year.trim() ? yearNum : undefined }))
+    toast.show('저장했어요')
+    onDone()
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      {member.id !== viewer ? (
+        <p className="rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
+          {member.name}님의 정보예요. 바꾸면 {member.name}님 화면에도 똑같이 보여요.
+        </p>
+      ) : null}
+      <Field label="이름 (앱에서 부를 이름)">
+        <input
+          className={inputClass}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={ROLE_LABEL[role]}
+          maxLength={NAME_MAX}
+          autoComplete="off"
+        />
+      </Field>
+
+      <Segmented
+        legend="역할"
+        options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+        value={role}
+        onChange={setRole}
+      />
+
+      <fieldset>
+        <legend className="mb-1.5 text-xs font-semibold text-ink-2">프로필 이모지</legend>
+        <div className="grid grid-cols-6 gap-2">
+          {choices.map((e) => {
+            const on = e === emoji
+            return (
+              <button
+                key={e}
+                type="button"
+                aria-pressed={on}
+                aria-label={`${e} 고르기`}
+                onClick={() => setEmoji(e)}
+                className={cx(
+                  'flex h-11 items-center justify-center rounded-xl border text-xl transition-colors',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+                  on ? 'border-brand bg-brand-soft' : 'border-line bg-surface hover:bg-surface-2',
+                )}
+              >
+                {e}
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
+
+      <Field
+        label="출생 연도 (선택)"
+        hint={yearError ?? '나이에 맞춰 전문의 상담 시기를 안내할 때만 써요. 비워 둬도 괜찮아요.'}
+      >
+        <input
+          className={inputClass}
+          type="number"
+          inputMode="numeric"
+          min={bounds.min}
+          max={bounds.max}
+          value={year}
+          onChange={(e) => setYear(e.target.value.slice(0, 4))}
+          placeholder="예: 1993"
+          aria-invalid={!!yearError}
+        />
+      </Field>
+
+      <Button type="submit" full size="lg" disabled={!!yearError}>
+        저장하기
+      </Button>
+    </form>
+  )
+}
+
+export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () => void }) {
+  const { update } = useApp()
+  const toast = useToast()
+  const confirm = () => {
+    update((s) => setCycleOwner(s, member.id))
+    toast.show(`이제 ${member.name}님 주기를 기록해요`)
+    onDone()
+  }
+  return (
+    <div>
+      <p className="text-sm leading-relaxed text-ink">
+        {member.name}님의 주기를 기록하도록 바꿀까요? 달력의 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-ink-3">
+        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 달력에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지
+        않아요.
+      </p>
+      <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
+    </div>
+  )
+}

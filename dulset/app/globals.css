@@ -4,27 +4,29 @@
 
 /* Theme tokens (RGB triplets so Tailwind can apply alpha). */
 :root {
+  /* Values chosen so text-{color} on bg/surface/{color}-soft and white text on
+     bg-{color} both reach WCAG AA 4.5:1. */
   --bg: 250 247 244;
   --surface: 255 255 255;
   --surface-2: 245 240 236;
   --line: 232 225 219;
   --ink: 38 32 30;
-  --ink-2: 99 89 84;
-  --ink-3: 150 140 134;
-  --brand: 226 104 92;
+  --ink-2: 92 82 77;
+  --ink-3: 112 103 98;
+  --brand: 184 64 56;
   --brand-soft: 252 233 229;
-  --brand-ink: 176 64 54;
-  --him: 74 125 196;
+  --brand-ink: 150 48 42;
+  --him: 52 100 170;
   --him-soft: 228 238 250;
-  --her: 214 92 132;
+  --her: 180 60 104;
   --her-soft: 251 231 239;
-  --ok: 52 150 104;
+  --ok: 30 120 80;
   --ok-soft: 222 243 232;
-  --warn: 196 132 32;
+  --warn: 150 95 10;
   --warn-soft: 252 241 219;
-  --fert: 124 96 214;
+  --fert: 112 84 200;
   --fert-soft: 238 233 252;
-  --period: 208 72 84;
+  --period: 184 52 66;
   --period-soft: 251 228 230;
   color-scheme: light;
 }
@@ -54,6 +56,14 @@
     --period: 240 116 128;
     --period-soft: 64 30 34;
     color-scheme: dark;
+  }
+}
+
+/* Dark theme keeps accent colors light enough to read as text, so text that
+   sits ON an accent fill flips to the dark background color instead of white. */
+@media (prefers-color-scheme: dark) {
+  .text-white:is(.bg-brand, .bg-him, .bg-her, .bg-ok, .bg-fert, .bg-period, .bg-warn) {
+    color: rgb(var(--bg));
   }
 }
 

@@ -1,10 +1,11 @@
 // Versioned localStorage persistence. Everything stays on the device in the
 // prototype — no server ever sees cycle or health data.
 
+import { sanitizeBackup } from './logic/settings'
 import type { AppState, MemberId } from './types'
 
 export const STORAGE_KEY = 'dulset:state:v1'
-const VIEWER_KEY = 'dulset:viewer'
+export const VIEWER_KEY = 'dulset:viewer'
 
 function safeLocal(): Storage | null {
   try {
@@ -58,9 +59,10 @@ export function normalize(state: AppState): AppState {
       discreet: settings.discreet ?? false,
       browserNotifications: settings.browserNotifications ?? false,
       lowPressure: settings.lowPressure ?? false,
+      // Default: the cycle owner hears it explicitly, the partner softly.
       alertStyle: {
-        a: settings.alertStyle?.a ?? 'soft',
-        b: settings.alertStyle?.b ?? 'soft',
+        a: settings.alertStyle?.a ?? (s.couple.members[0]?.tracksCycle ? 'explicit' : 'soft'),
+        b: settings.alertStyle?.b ?? (s.couple.members[1]?.tracksCycle ? 'explicit' : 'soft'),
       },
       ttcStart: settings.ttcStart,
     },
@@ -71,7 +73,9 @@ export function parseState(raw: string | null): AppState | null {
   if (!raw) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    return isAppState(parsed) ? normalize(parsed) : null
+    // Outline check, fill newer fields, then deep repair/reject (unknown stage,
+    // broken members, malformed lists) so bad data can never crash the screens.
+    return isAppState(parsed) ? sanitizeBackup(normalize(parsed)) : null
   } catch {
     return null
   }
@@ -109,6 +113,14 @@ export function saveState(state: AppState | null): boolean {
 export function loadViewer(): MemberId {
   const v = safeSession()?.getItem(VIEWER_KEY)
   return v === 'b' ? 'b' : 'a'
+}
+
+export function clearViewer(): void {
+  try {
+    safeSession()?.removeItem(VIEWER_KEY)
+  } catch {
+    /* ignore */
+  }
 }
 
 export function saveViewer(viewer: MemberId): void {

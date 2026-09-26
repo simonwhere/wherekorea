@@ -34,9 +34,11 @@ export function defaultCheckItems(members: [Member, Member], today = todayISO())
       // Folic acid is the one supplement with strong evidence (USPSTF A, WHO, KDCA).
       add('엽산', 'supplement', '400µg')
       add('비타민 D', 'supplement', '선택')
-    } else {
+    } else if (m.role !== 'wife') {
       // For men, zinc/folate pills showed no benefit (FAZST, JAMA 2020) — habits matter more.
       add('사우나·뜨거운 탕 피하기', 'habit', '고환 온도')
+      add('담배 안 피우기', 'habit')
+    } else {
       add('담배 안 피우기', 'habit')
     }
     add('술 안 마시기', 'habit')

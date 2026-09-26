@@ -202,6 +202,9 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   }
 
   const L = stats.average
+  // Inside a gap too long to be one cycle (missed logs): only the first projected
+  // cycle after the logged start is meaningful; later dates are unknown.
+  if (nextLogged && diffDays(loggedStart, date) >= L) return null
   // The couple's own variability widens the band for not-yet-finished cycles.
   const spread: Spread =
     stats.min !== undefined && stats.max !== undefined
