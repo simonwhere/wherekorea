@@ -12,6 +12,7 @@ import { DateCard, DiaryPromptCard, DoctorCard, SupportTips } from '@/components
 import Greeting from '@/components/today/Greeting'
 import HabitTimers from '@/components/today/HabitTimers'
 import StageHero from '@/components/today/StageHero'
+import SignalsCard from '@/components/signals/SignalsCard'
 
 export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
   const { state, today, me, cycleOwner } = useApp()
@@ -36,6 +37,8 @@ export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => 
         <PartnerChecks />
         <CoupleStreak />
       </div>
+
+      <SignalsCard />
 
       {preparing ? <HabitTimers /> : null}
 
