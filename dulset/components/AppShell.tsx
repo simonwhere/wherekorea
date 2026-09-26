@@ -10,7 +10,7 @@ import DiaryTab from '@/components/tabs/DiaryTab'
 import PregnancyTab from '@/components/tabs/PregnancyTab'
 import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
-import { Avatar, cx } from '@/components/ui'
+import { Avatar, ToastProvider, cx } from '@/components/ui'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { useApp, useStore } from '@/lib/store'
 import type { Stage } from '@/lib/types'
@@ -67,7 +67,11 @@ export default function AppShell() {
     )
   }
   if (!state || !state.onboarded) return <Onboarding />
-  return <MainApp />
+  return (
+    <ToastProvider>
+      <MainApp />
+    </ToastProvider>
+  )
 }
 
 function MainApp() {

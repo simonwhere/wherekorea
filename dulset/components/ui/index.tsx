@@ -3,7 +3,7 @@
 // Shared UI primitives. Feature screens should compose these instead of
 // re-inventing card/button styles, so the app reads as one system.
 
-import { useEffect, useId, useRef } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
 import type { Member } from '@/lib/types'
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -311,6 +311,74 @@ export function Stat({ label, value, sub }: { label: string; value: React.ReactN
       <div className="text-[11px] font-medium text-ink-3">{label}</div>
       <div className="mt-0.5 text-xl font-bold tabular-nums text-ink">{value}</div>
       {sub ? <div className="text-[11px] text-ink-3">{sub}</div> : null}
+    </div>
+  )
+}
+
+// ── Toast ───────────────────────────────────────────────────
+
+
+interface ToastApi {
+  show: (message: string) => void
+}
+
+const ToastContext = createContext<ToastApi>({ show: () => {} })
+
+/** Short confirmation messages ("콕! 보냈어요"). Mounted once in AppShell. */
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [msg, setMsg] = useState<{ id: number; text: string } | null>(null)
+  const show = useCallback((text: string) => {
+    const id = Date.now()
+    setMsg({ id, text })
+    window.setTimeout(() => setMsg((m) => (m?.id === id ? null : m)), 2400)
+  }, [])
+  return (
+    <ToastContext.Provider value={{ show }}>
+      {children}
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4">
+        {msg ? (
+          <div key={msg.id} className="rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg shadow-lg">
+            {msg.text}
+          </div>
+        ) : null}
+      </div>
+    </ToastContext.Provider>
+  )
+}
+
+export function useToast(): ToastApi {
+  return useContext(ToastContext)
+}
+
+/** −/+ number input for small ranges (cycle length etc.). */
+export function NumberStepper({
+  value,
+  onChange,
+  min,
+  max,
+  unit,
+  label,
+}: {
+  value: number
+  onChange: (next: number) => void
+  min: number
+  max: number
+  unit?: string
+  label: string
+}) {
+  const clamp = (n: number) => Math.min(max, Math.max(min, n))
+  return (
+    <div className="flex items-center gap-2" role="group" aria-label={label}>
+      <Button variant="secondary" size="md" ariaLabel={`${label} 줄이기`} onClick={() => onChange(clamp(value - 1))} disabled={value <= min}>
+        −
+      </Button>
+      <span className="min-w-[4.5rem] text-center text-lg font-bold tabular-nums" aria-live="polite">
+        {value}
+        {unit ? <span className="ml-0.5 text-sm font-medium text-ink-3">{unit}</span> : null}
+      </span>
+      <Button variant="secondary" size="md" ariaLabel={`${label} 늘리기`} onClick={() => onChange(clamp(value + 1))} disabled={value >= max}>
+        +
+      </Button>
     </div>
   )
 }
