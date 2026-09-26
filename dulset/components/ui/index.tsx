@@ -265,10 +265,17 @@ export function Sheet({
     if (!open || !mounted) return
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     // Remember what surrounds the opener, in case the sheet's action removes it.
-    const item = opener && opener !== document.body ? opener.closest('li, article') : null
-    const near = [item?.nextElementSibling, item?.previousElementSibling, item?.parentElement?.closest('li, article, section')].filter(
-      (el): el is Element => !!el,
-    )
+    // The list item is the unit that disappears (an <article> card usually sits
+    // alone inside its <li>, so its own siblings are none); then its group.
+    const item = opener && opener !== document.body ? (opener.closest('li') ?? opener.closest('article')) : null
+    const group = item?.parentElement?.closest('section')
+    const near = [
+      item?.nextElementSibling,
+      item?.previousElementSibling,
+      group?.nextElementSibling,
+      group?.previousElementSibling,
+      group,
+    ].filter((el): el is Element => !!el)
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCloseRef.current()
     }

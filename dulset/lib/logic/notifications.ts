@@ -6,6 +6,8 @@
 import { addDays, addMonths, diffDays, formatKo, isBetween } from '../dates'
 import { uid } from '../id'
 import { MEMBER_IDS, type AppNotification, type AppState, type ISODate, type MemberId, type NotificationKind } from '../types'
+import { anniversaryNotices } from './anniversary'
+import { appointmentNotices } from './appointments'
 import { koreanDays } from './baby'
 import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows } from './cycle'
 import { gestationalAge, recentlyEnded } from './pregnancy'
@@ -188,6 +190,9 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       }
     }
   }
+
+  // Couple-wide reminders that apply in every stage.
+  out.push(...appointmentNotices(state, today), ...anniversaryNotices(state, today))
 
   return out
 }

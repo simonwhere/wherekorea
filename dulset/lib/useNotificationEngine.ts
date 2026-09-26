@@ -15,7 +15,7 @@ export function useNotificationEngine(): void {
   const { state, update, today, viewer } = useApp()
   const shown = useRef(new Set<string>())
 
-  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple } = state
+  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple, appointments, anniversaries } = state
   useEffect(() => {
     // Preview against the current state to learn what's new; the updater re-derives
     // against the latest state, and key-dedup makes repeated application harmless.
@@ -26,7 +26,7 @@ export function useNotificationEngine(): void {
     update((s) => mergeNotices(s, scheduledNotices(s, today), now).state)
     deliver(added.filter((n) => n.to === viewer))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.alertStyle, settings.ttcStart, couple.members])
+  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.alertStyle, settings.ttcStart, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
   // Whatever is already unread when the app opens isn't re-announced.

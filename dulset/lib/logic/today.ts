@@ -3,7 +3,7 @@
 import { diffDays, formatKo, isISODate, parts } from '../dates'
 import type { AppState, CheckItem, ISODate, Member, MemberId, NotificationKind, Settings, Stage } from '../types'
 import { activeItems, doneIds, firstCheckedDate, toggleCheck } from './checks'
-import { cycleStats, sortedStarts, type FertilityStatus } from './cycle'
+import { cycleStats, ourWeekSoon, sortedStarts, type FertilityStatus } from './cycle'
 import {
   ageFromBirthYear,
   doctorThresholdMonths,
@@ -68,7 +68,7 @@ export function fertilityVoice(
 /** The prominent "이번 주 데이트" teaser only shows close to / inside the window. */
 export function showDateTeaser(status: FertilityStatus, voice: FertilityVoice): boolean {
   if (voice === 'calm') return false
-  return status.kind === 'fertile' || (status.kind === 'before-fertile' && status.daysUntil <= 3)
+  return ourWeekSoon(status)
 }
 
 // ── Daily checks ────────────────────────────────────────────

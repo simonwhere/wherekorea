@@ -12,10 +12,10 @@ import {
 import { addDays, formatKo, isISODate, parts, weekdayIndex } from '../dates'
 import { uid } from '../id'
 import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
-import { dayInfo, fertilityStatus, upcomingWindows, type DayPhase } from './cycle'
+import { dayInfo, fertilityStatus, ourWeekSoon, upcomingWindows, type DayPhase } from './cycle'
+import { mergeNotices } from './notifications'
 
 const isPeriodDay = (phase: DayPhase) => phase === 'period' || phase === 'period-predicted'
-import { mergeNotices } from './notifications'
 
 // ── Season / week ───────────────────────────────────────────
 
@@ -241,8 +241,8 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
     }
   }
   if (fertileHintsAllowed(state, viewer)) {
-    const status = fertilityStatus(state, today)
-    if (status.kind === 'fertile' || (status.kind === 'before-fertile' && status.daysUntil <= 3)) {
+    // Same rule as the home teaser and the "이번 주는 우리의 주간" notice.
+    if (ourWeekSoon(fertilityStatus(state, today))) {
       return {
         kind: 'our-week',
         emoji: '💞',

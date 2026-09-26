@@ -55,6 +55,10 @@ export function normalize(state: AppState): AppState {
     datePlans: s.datePlans ?? [],
     growth: s.growth ?? [],
     milestones: s.milestones ?? [],
+    anniversaries: s.anniversaries ?? [],
+    appointments: s.appointments ?? [],
+    planDone: s.planDone ?? {},
+    customTasks: s.customTasks ?? [],
     cycle: { cycleLength: cycle.cycleLength ?? 28, periodLength: cycle.periodLength ?? 5 },
     settings: {
       discreet: settings.discreet ?? false,

@@ -9,6 +9,7 @@ import {
   dayInfo,
   fertilityStatus,
   forecastLimit,
+  ourWeekSoon,
   upcomingWindows,
 } from '@/lib/logic/cycle'
 import {
@@ -22,8 +23,8 @@ import {
 } from '@/lib/logic/notifications'
 import { backToPreparing, recordBirth, startPregnancy, updatePregnancy } from '@/lib/logic/pregnancy'
 import { markPregnant } from '@/lib/logic/settings'
-import { confirmPregnancy, doctorAdvice } from '@/lib/logic/today'
-import { acceptDatePlan, isPlanAccepted, proposeDatePlan, suggestPlanDate } from '@/lib/logic/dateIdeas'
+import { confirmPregnancy, doctorAdvice, showDateTeaser } from '@/lib/logic/today'
+import { acceptDatePlan, dateBanner, isPlanAccepted, proposeDatePlan, suggestPlanDate } from '@/lib/logic/dateIdeas'
 import { buildIcs, fertileWindowEvents } from '@/lib/logic/ics'
 import { createDemoState, sampleWindow } from '@/lib/demo'
 import { createInitialState } from '@/lib/initial'
@@ -211,6 +212,23 @@ describe('short cycles', () => {
     // Before the window it still says when it starts.
     const before = fertilityStatus(s, '2026-09-29')
     expect(before.kind === 'period' && before.nextFertileStart).toBe('2026-10-01')
+  })
+
+  it('the date tab and the home teaser agree with the "우리의 주간" notice during the period', () => {
+    // The heads-up notice goes out on 09-30 (day before the 10-01 window), while the period is on.
+    const notice = scheduledNotices(s, '2026-09-30').find((n) => n.to === 'a' && n.kind === 'fertile-start')
+    expect(notice?.title).toBe('💞 이번 주는 우리의 주간이에요')
+    for (const d of ['2026-09-30', '2026-10-02']) {
+      const st = fertilityStatus(s, d)
+      expect(st.kind).toBe('period')
+      expect(ourWeekSoon(st)).toBe(true)
+      expect(showDateTeaser(st, 'soft')).toBe(true)
+      expect(dateBanner(s, d, 'a').kind).toBe('our-week')
+    }
+    // Early in a normal-length period the window is still far off.
+    const normal = preparing({ periods: [{ start: '2026-09-15' }] })
+    expect(ourWeekSoon(fertilityStatus(normal, '2026-09-16'))).toBe(false)
+    expect(dateBanner(normal, '2026-09-16', 'a').kind).toBe('preparing')
   })
 
   it('does not suggest a period day as 우리의 주간', () => {

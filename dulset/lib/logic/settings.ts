@@ -391,6 +391,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
 
   const couple: AppState['couple'] = { ...input.couple, members }
   if (!isStr(couple.linkedAt)) delete couple.linkedAt
+  if (!isISODate(couple.metDate)) delete couple.metDate
+  if (!isISODate(couple.marriedDate)) delete couple.marriedDate
 
   const c: Loose = isObj(input.cycle) ? input.cycle : {}
   const cycle: CycleSettings = {
@@ -512,6 +514,36 @@ export function sanitizeBackup(input: AppState): AppState | null {
     diary,
     growth,
     milestones: list(input.milestones, (m) => isStr(m.key) && isISODate(m.date)),
+    anniversaries: list<AppState['anniversaries'][number]>(
+      input.anniversaries,
+      (a) => isStr(a.id) && isStr(a.title) && isISODate(a.date),
+    ).map((a) => ({ ...a, yearly: a.yearly === true })),
+    appointments: list(
+      input.appointments,
+      (a) =>
+        isStr(a.id) &&
+        isStr(a.title) &&
+        isISODate(a.date) &&
+        (a.who === 'both' || isMemberId(a.who)) &&
+        ['hospital', 'test', 'vaccine', 'admin', 'other'].includes(a.kind as string) &&
+        (a.time === undefined || (isStr(a.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))),
+    ),
+    planDone: isObj(input.planDone)
+      ? Object.fromEntries(
+          Object.entries(input.planDone).filter(
+            ([, v]) => isObj(v) && isISODate(v.at) && (v.by === undefined || isMemberId(v.by)),
+          ),
+        )
+      : {},
+    customTasks: list(
+      input.customTasks,
+      (c) =>
+        isStr(c.id) &&
+        isStr(c.title) &&
+        ['preconception', 'pregnancy-1st', 'pregnancy-2nd', 'pregnancy-3rd', 'birth', 'postpartum'].includes(c.phase as string) &&
+        (c.who === 'both' || isMemberId(c.who)) &&
+        (c.due === undefined || isISODate(c.due)),
+    ),
   }
 
   if (isObj(input.sync)) {

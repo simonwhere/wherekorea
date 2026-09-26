@@ -122,6 +122,8 @@ export interface DiaryEntry {
   /** Key of a photo stored in IndexedDB (lib/photos.ts). */
   photoId?: string
   createdAt: ISODateTime
+  /** The partner's small reaction (e.g. '❤️') — Between-style, no comments thread. */
+  reactions?: Partial<Record<MemberId, string>>
 }
 
 export interface Pregnancy {
@@ -187,6 +189,53 @@ export interface Couple {
   inviteCode: string
   /** Set once the partner "joined" (simulated in the prototype). */
   linkedAt?: ISODateTime
+  /** 처음 만난 날 / 사귄 날 — day 1 of "함께한 지 N일". */
+  metDate?: ISODate
+  /** 결혼한 날. */
+  marriedDate?: ISODate
+}
+
+// ── Our days / appointments / roadmap ───────────────────────
+
+export interface CustomAnniversary {
+  id: string
+  title: string
+  date: ISODate
+  /** Repeats every year (N주년) or happens once. */
+  yearly: boolean
+  emoji?: string
+}
+
+export type AppointmentKind = 'hospital' | 'test' | 'vaccine' | 'admin' | 'other'
+
+export interface Appointment {
+  id: string
+  date: ISODate
+  /** 'HH:MM' (24h), optional. */
+  time?: string
+  title: string
+  place?: string
+  /** Who goes. */
+  who: MemberId | 'both'
+  kind: AppointmentKind
+  note?: string
+  /** Roadmap item this appointment belongs to. */
+  taskId?: string
+  createdBy: MemberId
+  done?: boolean
+}
+
+export type RoadmapPhase = 'preconception' | 'pregnancy-1st' | 'pregnancy-2nd' | 'pregnancy-3rd' | 'birth' | 'postpartum'
+
+export interface CustomTask {
+  id: string
+  title: string
+  phase: RoadmapPhase
+  who: MemberId | 'both'
+  due?: ISODate
+  doneAt?: ISODate
+  doneBy?: MemberId
+  createdBy: MemberId
 }
 
 export interface AppState {
@@ -207,6 +256,14 @@ export interface AppState {
   baby?: Baby
   growth: GrowthRecord[]
   milestones: MilestoneRecord[]
+  /** Couple's own anniversaries (첫 여행, 프러포즈 …). */
+  anniversaries: CustomAnniversary[]
+  /** Shared hospital/test/admin appointments. */
+  appointments: Appointment[]
+  /** Roadmap template completion: templateId → when/who. */
+  planDone: Record<string, { at: ISODate; by?: MemberId }>
+  /** Roadmap items the couple added themselves. */
+  customTasks: CustomTask[]
   settings: Settings
   /**
    * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser

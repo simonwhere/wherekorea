@@ -7,16 +7,17 @@ import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
 import CycleTab from '@/components/tabs/CycleTab'
 import DateTab from '@/components/tabs/DateTab'
-import DiaryTab from '@/components/tabs/DiaryTab'
+import PlanTab from '@/components/tabs/PlanTab'
 import PregnancyTab from '@/components/tabs/PregnancyTab'
 import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
+import UsTab from '@/components/tabs/UsTab'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { useApp, useStore } from '@/lib/store'
 import type { Stage } from '@/lib/types'
 
-export type TabKey = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'date' | 'diary' | 'settings'
+export type TabKey = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'plan' | 'date' | 'diary' | 'settings'
 
 interface TabDef {
   key: TabKey
@@ -24,29 +25,34 @@ interface TabDef {
   icon: string
 }
 
+// Settings lives behind the header ⚙️ so the bottom bar keeps five everyday tabs.
+// 'diary' is the 우리 tab (story · album · our days); the key stays for old links.
 const TAB_SETS: Record<Stage, TabDef[]> = {
   preparing: [
     { key: 'today', label: '오늘', icon: '☀️' },
     { key: 'cycle', label: '달력', icon: '📅' },
+    { key: 'plan', label: '챙길 것', icon: '✅' },
     { key: 'date', label: '데이트', icon: '💞' },
-    { key: 'diary', label: '기록', icon: '📔' },
-    { key: 'settings', label: '설정', icon: '⚙️' },
+    { key: 'diary', label: '우리', icon: '💑' },
   ],
   pregnant: [
     { key: 'today', label: '오늘', icon: '☀️' },
     { key: 'pregnancy', label: '임신', icon: '🤰' },
+    { key: 'plan', label: '챙길 것', icon: '✅' },
     { key: 'date', label: '데이트', icon: '💞' },
-    { key: 'diary', label: '태교일기', icon: '📔' },
-    { key: 'settings', label: '설정', icon: '⚙️' },
+    { key: 'diary', label: '우리', icon: '💑' },
   ],
   parenting: [
     { key: 'today', label: '오늘', icon: '☀️' },
     { key: 'baby', label: '아기', icon: '👶' },
-    { key: 'diary', label: '육아일기', icon: '📔' },
+    { key: 'diary', label: '우리', icon: '💑' },
+    { key: 'plan', label: '챙길 것', icon: '✅' },
     { key: 'date', label: '둘만의', icon: '💞' },
-    { key: 'settings', label: '설정', icon: '⚙️' },
   ],
 }
+
+/** Routes reachable without a bottom-bar button. */
+const EXTRA_ROUTES: TabKey[] = ['settings']
 
 export const STAGE_LABEL: Record<Stage, string> = {
   preparing: '임신 준비 중',
@@ -95,7 +101,7 @@ function MainApp() {
   useEffect(() => {
     const sync = () => {
       const h = readHash()
-      if (tabs.some((t) => t.key === h)) setTab(h as TabKey)
+      if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
       else setTab('today')
     }
     sync()
@@ -136,8 +142,10 @@ function MainApp() {
         return <BabyTab />
       case 'date':
         return <DateTab />
+      case 'plan':
+        return <PlanTab />
       case 'diary':
-        return <DiaryTab />
+        return <UsTab />
       case 'settings':
         return <SettingsTab />
       default:
@@ -178,6 +186,18 @@ function MainApp() {
                 {unread > 9 ? '9+' : unread}
               </span>
             ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={() => go('settings')}
+            aria-current={tab === 'settings' ? 'page' : undefined}
+            className={cx(
+              'flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface-2',
+              tab === 'settings' && 'bg-surface-2',
+            )}
+            aria-label="설정"
+          >
+            <span aria-hidden className="text-lg">⚙️</span>
           </button>
         </div>
       </header>

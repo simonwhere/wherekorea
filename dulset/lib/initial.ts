@@ -97,6 +97,10 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     diary: [],
     growth: [],
     milestones: [],
+    anniversaries: [],
+    appointments: [],
+    planDone: {},
+    customTasks: [],
     settings: {
       discreet: false,
       browserNotifications: false,

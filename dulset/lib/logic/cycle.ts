@@ -348,7 +348,7 @@ export type FertilityStatus =
    * Bleeding today. `nextFertileStart` only when the window is still ahead;
    * `fertileEnd` when a short cycle's estimated window already overlaps the period.
    */
-  | { kind: 'period'; cycleDay: number; nextFertileStart?: ISODate; fertileEnd?: ISODate }
+  | { kind: 'period'; cycleDay: number; nextFertileStart?: ISODate; daysUntilFertile?: number; fertileEnd?: ISODate }
   | { kind: 'before-fertile'; daysUntil: number; fertileStart: ISODate; cycleDay: number }
   | { kind: 'fertile'; peak: boolean; isOvulation: boolean; fertileEnd: ISODate; cycleDay: number }
   | { kind: 'after-fertile'; nextPeriod: ISODate; daysUntilPeriod: number; cycleDay: number }
@@ -386,7 +386,8 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
   if (info.phase === 'period') {
     // Short cycles: the estimated window can start during the period — never
     // call a date that has already come the "next" window.
-    if (today < w.fertileStart) return { kind: 'period', cycleDay, nextFertileStart: w.fertileStart }
+    if (today < w.fertileStart)
+      return { kind: 'period', cycleDay, nextFertileStart: w.fertileStart, daysUntilFertile: diffDays(today, w.fertileStart) }
     if (today <= w.fertileEnd) return { kind: 'period', cycleDay, fertileEnd: w.fertileEnd }
     return { kind: 'period', cycleDay }
   }
@@ -403,6 +404,31 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
     }
   }
   return { kind: 'after-fertile', nextPeriod: w.nextPeriod, daysUntilPeriod: diffDays(today, w.nextPeriod), cycleDay }
+}
+
+/** How many days ahead of the estimated window "이번 주는 우리의 주간" starts. */
+export const OUR_WEEK_LEAD_DAYS = 3
+
+/**
+ * Is the estimated window on now or starting within OUR_WEEK_LEAD_DAYS? One rule
+ * for the date banner, the home teaser and the heads-up notice (sent the day
+ * before the window) — including short cycles, where the window can start
+ * while the period is still going.
+ */
+export function ourWeekSoon(status: FertilityStatus): boolean {
+  switch (status.kind) {
+    case 'fertile':
+      return true
+    case 'before-fertile':
+      return status.daysUntil <= OUR_WEEK_LEAD_DAYS
+    case 'period':
+      return (
+        status.fertileEnd !== undefined ||
+        (status.daysUntilFertile !== undefined && status.daysUntilFertile <= OUR_WEEK_LEAD_DAYS)
+      )
+    default:
+      return false
+  }
 }
 
 /**
