@@ -26,7 +26,7 @@ function doctorCopy(plan: DoctorPlan, name: string): string[] {
   }
   if (plan.months === 0) {
     return [
-      `40세 이상이면(${name}님 ${plan.age}세) 오래 기다리지 말고, 준비를 시작하면서 두 사람이 함께 전문의와 상담해 보길 권해요.`,
+      `40세 이상이면(${name}님 ${plan.age}세) 오래 기다리지 말고, 준비를 시작하면서 두 사람이 함께 전문의와 상담해 보는 게 좋아요.`,
       '시작하면 보건소 임신 사전건강관리 지원도 함께 알려 드릴게요.',
     ]
   }
@@ -91,7 +91,12 @@ export default function StartStep({
             {line}
           </p>
         ))}
-        <SourceLink href={SOURCES.asrm2023.url}>출처: 미국생식의학회(ASRM) 2023</SourceLink>
+        {/* The 40+ "don't wait" rule is from ASRM's evaluation opinion (2021), not the 2023 definition. */}
+        {plan.months === 0 ? (
+          <SourceLink href={SOURCES.asrmEval2021.url}>출처: 미국생식의학회(ASRM) 2021</SourceLink>
+        ) : (
+          <SourceLink href={SOURCES.asrm2023.url}>출처: 미국생식의학회(ASRM) 2023</SourceLink>
+        )}
       </div>
     </div>
   )

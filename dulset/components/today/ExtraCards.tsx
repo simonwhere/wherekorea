@@ -111,7 +111,9 @@ export function DoctorCard() {
           <ExternalLink href={program.url}>{program.urlLabel}에서 신청하기</ExternalLink>
         </div>
       ) : null}
-      <Disclaimer>기준: 미국생식의학회(ASRM 2023) · 영국 NICE(2026). 진단이 아닌 안내예요.</Disclaimer>
+      <Disclaimer>
+        기준: 미국생식의학회(ASRM {advice.reasons.includes('age') ? '2021·2023' : '2023'}) · 영국 NICE(2026). 진단이 아닌 안내예요.
+      </Disclaimer>
     </Card>
   )
 }

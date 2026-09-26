@@ -63,6 +63,11 @@ export const SOURCES = {
     name: 'ASRM 위원회 의견 — Definition of infertility (2023)',
     url: 'https://www.asrm.org/practice-guidance/practice-committee-documents/definition-of-infertility/',
   },
+  /** "In women >40 years of age, more immediate evaluation and treatment may be warranted." */
+  asrmEval2021: {
+    name: 'ASRM 위원회 의견 — Fertility evaluation of infertile women (2021)',
+    url: 'https://www.asrm.org/practice-guidance/practice-committee-documents/fertility-evaluation-of-infertile-women-a-committee-opinion-2021/',
+  },
   mchAct: {
     name: '모자보건법 제2조 (난임의 정의)',
     url: 'https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EB%AA%A8%EC%9E%90%EB%B3%B4%EA%B1%B4%EB%B2%95',
@@ -148,7 +153,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '36세 이상이거나 생리가 불규칙하거나 없다면 1년을 기다리지 말고 더 일찍 상담해 보세요 (NICE).',
       '20~49세라면 결혼 여부와 상관없이 보건소 ‘임신 사전건강관리’로 여성 AMH·초음파, 남성 정액검사 비용을 지원받을 수 있어요.',
     ],
-    sources: [SOURCES.asrm2023, SOURCES.mchAct, SOURCES.nice2026, SOURCES.eHealth],
+    sources: [SOURCES.asrm2023, SOURCES.asrmEval2021, SOURCES.mchAct, SOURCES.nice2026, SOURCES.eHealth],
     showWhenHidden: true,
   },
 ]
