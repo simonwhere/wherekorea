@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, useToast } from '@/components/ui'
+import { useToast } from '@/components/ui'
 import { buildDiaryHtml, isSafeImageDataURL, mapWithConcurrency } from '@/lib/logic/diaryExport'
 import { downloadText } from '@/lib/logic/ics'
 import { getPhotoDataURL } from '@/lib/photos'
@@ -13,8 +13,11 @@ export const EXPORT_FILENAME = '둘셋-우리이야기.html'
 /** Photos read from IndexedDB at the same time while exporting. */
 const PHOTO_READS = 4
 
-/** Download the whole diary (all stages, both authors) as one standalone HTML file. */
-export default function ExportCard() {
+/**
+ * Download the whole story (all chapters, both authors, photos inlined) as one
+ * standalone HTML file. Always free — the record is the couple's, not ours.
+ */
+export function useDiaryExport() {
   const { state, today } = useApp()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
@@ -61,33 +64,11 @@ export default function ExportCard() {
     }
   }
 
-  const what = photoCount ? `기록 ${count}개와 사진 ${photoCount}장을` : `기록 ${count}개를`
   const label = !busy
     ? '우리 이야기 내보내기 (HTML)'
     : progress && progress.total
       ? `사진 담는 중… ${progress.done}/${progress.total}`
       : '파일 만드는 중…'
 
-  return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <span className="text-2xl leading-none" aria-hidden>
-          📖
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-bold text-ink">우리 이야기 한 권으로</h2>
-          <p className="mt-1 text-xs leading-relaxed text-ink-2">
-            두 사람의 {what} 오래된 순서대로 한 파일에 담아요. 브라우저에서 열어 인쇄하거나 PDF로 저장할 수 있어요.
-          </p>
-        </div>
-      </div>
-      <Button full variant="secondary" className="mt-3" onClick={run} disabled={busy || !count}>
-        <span aria-live="polite">{label}</span>
-      </Button>
-      <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-        나중에 포토북 인쇄와 연결할 수 있어요 (맘스다이어리처럼). 파일에는 글과 사진이 그대로 담기니, 다른 사람에게
-        보낼 때는 한 번 더 확인해 주세요.
-      </p>
-    </Card>
-  )
+  return { run, busy, label, count, photoCount }
 }

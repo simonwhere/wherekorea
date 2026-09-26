@@ -5,16 +5,22 @@ import Composer from '@/components/diary/Composer'
 import DeleteEntrySheet from '@/components/diary/DeleteEntrySheet'
 import EditEntrySheet from '@/components/diary/EditEntrySheet'
 import EntryCard from '@/components/diary/EntryCard'
-import ExportCard from '@/components/diary/ExportCard'
-import { Button, Chip, EmptyState } from '@/components/ui'
-import { DIARY_NAME, groupByMonth } from '@/lib/logic/diary'
+import { Button, Chip, EmptyState, useToast } from '@/components/ui'
+import { groupByMonth } from '@/lib/logic/diary'
+import { monthLabel } from '@/lib/logic/diaryExport'
+import { stampOn } from '@/lib/logic/today'
 import {
-  STAGE_SHORT,
-  entryStageLabel,
-  filterEntries,
-  monthLabel,
-  stagesWithEntries,
-} from '@/lib/logic/diaryExport'
+  CHAPTER_SHORT,
+  chapterContext,
+  chapterLabel,
+  chaptersWithEntries,
+  entryChapter,
+  filterStory,
+  reactToEntry,
+  reactionOf,
+  receivedReactions,
+  type Chapter,
+} from '@/lib/logic/usView'
 import { useApp } from '@/lib/store'
 import type { Member, MemberId, Stage } from '@/lib/types'
 
@@ -26,7 +32,7 @@ const EMPTY: Record<Stage, { icon: string; title: string; body: string }> = {
   preparing: {
     icon: '📔',
     title: '우리 둘의 첫 기록을 남겨 볼까요?',
-    body: '오늘 있었던 작은 일 하나면 충분해요. 나중에 둘이 함께 꺼내 볼 이야기가 돼요.',
+    body: '오늘 있었던 작은 일 하나면 충분해요. 날짜를 예전으로 바꾸면 연애 시절 이야기도 ‘우리 둘’로 남길 수 있어요.',
   },
   pregnant: {
     icon: '🌱',
@@ -44,9 +50,12 @@ const EMPTY: Record<Stage, { icon: string; title: string; body: string }> = {
 const chipClass = 'min-h-[44px]'
 
 /**
- * The ⇄ switch simulates picking up the other phone, so the whole tab (filters,
- * open sheets, the composer's draft) starts fresh for that person. "내 글" /
- * "{partner} 글" would otherwise silently flip meaning.
+ * 우리 › 이야기: composer, filters and the shared timeline (우리 둘 → 준비 →
+ * 임신 → 육아). The page heading, export and backup live in the 우리 tab.
+ *
+ * The ⇄ switch simulates picking up the other phone, so the whole panel
+ * (filters, open sheets, the composer's draft) starts fresh for that person.
+ * "내 글" / "{partner} 글" would otherwise silently flip meaning.
  */
 export default function DiaryTab() {
   const { me } = useApp()
@@ -54,8 +63,9 @@ export default function DiaryTab() {
 }
 
 function DiaryView() {
-  const { state, me, partner } = useApp()
-  const [stageFilter, setStageFilter] = useState<Stage | 'all'>('all')
+  const { state, update, today, me, partner } = useApp()
+  const toast = useToast()
+  const [chapterFilter, setChapterFilter] = useState<Chapter | 'all'>('all')
   const [authorFilter, setAuthorFilter] = useState<AuthorFilter>('all')
   const [sheet, setSheet] = useState<OpenSheet>(null)
   // Sheets re-run their focus effect when onClose changes — keep it stable.
@@ -64,22 +74,30 @@ function DiaryView() {
   const onDelete = useCallback((id: string) => setSheet({ kind: 'delete', id }), [])
 
   const entries = state.diary
-  const stages = useMemo(() => stagesWithEntries(entries), [entries])
+  const { settings, pregnancy, baby, createdAt } = state
+  const ctx = useMemo(
+    () => chapterContext({ settings, pregnancy, baby, createdAt }),
+    [settings, pregnancy, baby, createdAt],
+  )
+  const chapters = useMemo(() => chaptersWithEntries(entries, ctx), [entries, ctx])
   const mineCount = entries.filter((e) => e.author === me.id).length
   const partnerCount = entries.length - mineCount
-  const showStageChips = stages.length > 1
+  const showChapterChips = chapters.length > 1
   const showAuthorChips = mineCount > 0 && partnerCount > 0
   // A filter whose chip is no longer shown (its entries are gone, or the other
   // tab deleted them) quietly falls back to 전체 instead of hiding everything.
-  const stage: Stage | 'all' =
-    showStageChips && stageFilter !== 'all' && stages.includes(stageFilter) ? stageFilter : 'all'
+  const chapter: Chapter | 'all' =
+    showChapterChips && chapterFilter !== 'all' && chapters.includes(chapterFilter) ? chapterFilter : 'all'
   const authorSel: AuthorFilter = showAuthorChips ? authorFilter : 'all'
   const author: MemberId | 'all' = authorSel === 'me' ? me.id : authorSel === 'partner' ? partner.id : 'all'
-  const groups = useMemo(() => groupByMonth(filterEntries(entries, { stage, author })), [entries, stage, author])
+  const groups = useMemo(
+    () => groupByMonth(filterStory(entries, ctx, { chapter, author })),
+    [entries, ctx, chapter, author],
+  )
 
   const members = state.couple.members
   const byId = useMemo(() => new Map<MemberId, Member>(members.map((m) => [m.id, m])), [members])
-  const filtered = stage !== 'all' || author !== 'all'
+  const filtered = chapter !== 'all' || author !== 'all'
 
   // Only my own entries can be edited or deleted; a sheet whose entry is gone closes itself.
   const target = sheet ? entries.find((e) => e.id === sheet.id && e.author === me.id) ?? null : null
@@ -87,47 +105,41 @@ function DiaryView() {
   const deleting = sheet?.kind === 'delete' ? target : null
 
   const resetFilters = () => {
-    setStageFilter('all')
+    setChapterFilter('all')
     setAuthorFilter('all')
   }
   // Toggle against what's on screen (the effective filter), not the raw state.
   const toggleAuthor = (next: Exclude<AuthorFilter, 'all'>) => setAuthorFilter(authorSel === next ? 'all' : next)
-  const toggleStage = (next: Stage) => setStageFilter(stage === next ? 'all' : next)
+  const toggleChapter = (next: Chapter) => setChapterFilter(chapter === next ? 'all' : next)
+
+  // `next` is decided from what's on screen, so re-applying it (two-tab sync) is harmless.
+  const onReact = (id: string, next: string | null) => {
+    const writer = entries.find((e) => e.id === id)?.author
+    update((s) => reactToEntry(s, id, me.id, next, stampOn(today)))
+    if (next && writer) toast.show(`${byId.get(writer)?.name ?? partner.name}님에게 ${next} 마음을 전했어요`)
+  }
 
   const empty = EMPTY[state.stage]
 
   return (
     <div className="space-y-4">
-      <header className="px-1">
-        <h1 className="text-xl font-extrabold tracking-tight text-ink">{DIARY_NAME[state.stage]}</h1>
-        <p className="mt-0.5 text-xs text-ink-3">
-          둘이 셋이 되기까지, 두 사람의 기록이 한 권으로 이어져요
-          {entries.length ? <span className="text-ink-2"> · 함께 남긴 기록 {entries.length}개</span> : null}
-        </p>
-      </header>
-
       {/* Remounted per viewer (see DiaryTab): each person gets their own draft, never saved under the other name. */}
       <Composer />
 
-      {showStageChips || showAuthorChips ? (
+      {showChapterChips || showAuthorChips ? (
         <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
           <div role="group" aria-label="기록 골라 보기" className="flex w-max items-center gap-1.5">
             <Chip selected={!filtered} onClick={resetFilters} className={chipClass}>
               전체
             </Chip>
-            {showStageChips
-              ? stages.map((s) => (
-                  <Chip
-                    key={s}
-                    selected={stage === s}
-                    onClick={() => toggleStage(s)}
-                    className={chipClass}
-                  >
-                    {STAGE_SHORT[s]}
+            {showChapterChips
+              ? chapters.map((c) => (
+                  <Chip key={c} selected={chapter === c} onClick={() => toggleChapter(c)} className={chipClass}>
+                    {CHAPTER_SHORT[c]}
                   </Chip>
                 ))
               : null}
-            {showStageChips && showAuthorChips ? <span className="mx-0.5 h-5 w-px bg-line" aria-hidden /> : null}
+            {showChapterChips && showAuthorChips ? <span className="mx-0.5 h-5 w-px bg-line" aria-hidden /> : null}
             {showAuthorChips ? (
               <>
                 <Chip
@@ -177,15 +189,26 @@ function DiaryView() {
                 <ol className="space-y-3">
                   {g.entries.map((e) => {
                     const writer = byId.get(e.author) ?? (e.author === me.id ? me : partner)
+                    const mine = e.author === me.id
+                    const received = mine
+                      ? receivedReactions(e).flatMap((r) => {
+                          const m = byId.get(r.member)
+                          return m ? [{ member: m, emoji: r.emoji }] : []
+                        })
+                      : []
                     return (
                       <li key={e.id}>
                         <EntryCard
                           entry={e}
                           author={writer}
-                          mine={e.author === me.id}
-                          stageLabel={entryStageLabel(e, { pregnancy: state.pregnancy, baby: state.baby })}
+                          mine={mine}
+                          chapter={entryChapter(e, ctx)}
+                          stageLabel={chapterLabel(e, ctx)}
+                          myReaction={mine ? undefined : reactionOf(e, me.id)}
+                          received={received}
                           onEdit={onEdit}
                           onDelete={onDelete}
+                          onReact={onReact}
                         />
                       </li>
                     )
@@ -196,8 +219,6 @@ function DiaryView() {
           })}
         </div>
       )}
-
-      {entries.length ? <ExportCard /> : null}
 
       <EditEntrySheet entry={editing} onClose={closeSheet} />
       <DeleteEntrySheet entry={deleting} onClose={closeSheet} />

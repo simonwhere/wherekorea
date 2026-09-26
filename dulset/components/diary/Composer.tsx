@@ -12,6 +12,7 @@ import {
   type DiaryDraft,
 } from '@/lib/logic/diaryExport'
 import { stampOn } from '@/lib/logic/today'
+import { chapterContext, composerTitle, entryChapter } from '@/lib/logic/usView'
 import { deletePhoto, downscaleImage, getPhotoURL, savePhoto } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 import MoodPicker from './MoodPicker'
@@ -191,10 +192,19 @@ export default function Composer() {
   }
 
   const backdated = date !== '' && date < today
+  // 우리 둘 기록 / 우리의 기록 / 태교일기 / 육아일기 — follows the picked date's chapter.
+  const ctx = chapterContext(state)
+  const effectiveDate = clampDiaryDate(date, today)
+  const title = composerTitle(stage, effectiveDate, ctx)
+  const coupleChapter = entryChapter({ stage, date: effectiveDate }, ctx) === 'couple'
   const onDateBlur = () => setPickedDate((d) => (d === null ? null : clampDiaryDate(d, today)))
 
   return (
     <Card>
+      <h2 className="mb-2 flex items-center gap-1.5 text-[15px] font-extrabold text-ink">
+        <span aria-hidden>✍️</span>
+        {title}
+      </h2>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[11px] font-semibold text-brand-ink">오늘의 질문</p>
@@ -253,7 +263,10 @@ export default function Composer() {
         </div>
 
         <div className="grid grid-cols-2 items-start gap-2">
-          <Field label="날짜" hint={backdated ? '지난 날의 기록으로 남겨요' : undefined}>
+          <Field
+            label="날짜"
+            hint={coupleChapter ? '‘우리 둘’ 이야기로 남겨요' : backdated ? '지난 날의 기록으로 남겨요' : undefined}
+          >
             <input
               type="date"
               className={cx(inputClass, 'px-2.5')}

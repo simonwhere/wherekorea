@@ -4,6 +4,7 @@ import { useId, useState } from 'react'
 import { Button, Field, Sheet, cx, inputClass, textareaClass, useToast } from '@/components/ui'
 import { updateEntry } from '@/lib/logic/diary'
 import { DIARY_MAX_TEXT, clampDiaryDate } from '@/lib/logic/diaryExport'
+import { chapterContext, entryChapter } from '@/lib/logic/usView'
 import { useApp } from '@/lib/store'
 import type { DiaryEntry } from '@/lib/types'
 import MoodPicker from './MoodPicker'
@@ -18,7 +19,7 @@ export default function EditEntrySheet({ entry, onClose }: { entry: DiaryEntry |
 }
 
 function EditForm({ entry, onDone }: { entry: DiaryEntry; onDone: () => void }) {
-  const { update, today } = useApp()
+  const { state, update, today } = useApp()
   const toast = useToast()
   const [text, setText] = useState(entry.text)
   const [mood, setMood] = useState(entry.mood)
@@ -28,6 +29,11 @@ function EditForm({ entry, onDone }: { entry: DiaryEntry; onDone: () => void }) 
 
   const canSave = text.trim().length > 0 || !!entry.photoId
   const maxDate = entry.date > today ? entry.date : today
+  // Moving the date before the prep story began files the entry under 우리 둘.
+  const ctx = chapterContext(state)
+  const toCouple =
+    entryChapter({ stage: entry.stage, date: clampDiaryDate(date, maxDate) }, ctx) === 'couple' &&
+    entryChapter(entry, ctx) !== 'couple'
 
   function save(e: React.FormEvent) {
     e.preventDefault()
@@ -66,7 +72,7 @@ function EditForm({ entry, onDone }: { entry: DiaryEntry; onDone: () => void }) 
         </p>
         <MoodPicker value={mood} onChange={setMood} label="그날의 기분 (선택)" />
       </div>
-      <Field label="날짜">
+      <Field label="날짜" hint={toCouple ? '‘우리 둘’ 이야기로 옮겨져요' : undefined}>
         <input
           type="date"
           className={inputClass}

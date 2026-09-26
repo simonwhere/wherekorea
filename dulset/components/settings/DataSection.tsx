@@ -36,8 +36,13 @@ const PRINCIPLES: ReadonlyArray<{ icon: string; title: string; body: string }> =
   },
   {
     icon: '🗑️',
-    title: '언제든 내보내고 지우기',
-    body: '내 기록은 언제든 파일로 받거나 완전히 지울 수 있어야 해요.',
+    title: '언제든 무료로 내보내고 지우기',
+    body: '기록장 내보내기를 유료 기능으로 묶지 않아요. 글·사진·일정을 언제든 파일로 받거나 완전히 지울 수 있어야 해요.',
+  },
+  {
+    icon: '📦',
+    title: '연결을 끊을 때도 각자 사본',
+    body: '연결을 해제하면 지우기 전에 두 사람 모두 자기 사본을 받을 수 있게 하고, 삭제 7일 전과 1일 전에 알려요. 아기 기록은 두 부모 모두 가져요.',
   },
 ]
 
@@ -80,7 +85,7 @@ export default function DataSection() {
               <h3 className="text-sm font-bold text-ink">이 기기에만 저장돼요</h3>
               <p className="mt-1 text-xs leading-relaxed text-ink-2">
                 지금은 모든 기록이 이 브라우저 안에만 있어요. 서버로 보내지 않아요. 대신 브라우저 데이터를 지우면 함께 사라지니,
-                가끔 백업 파일을 받아 두세요.
+                가끔 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.
               </p>
             </div>
           </div>
@@ -92,7 +97,8 @@ export default function DataSection() {
             <RestoreBackup onMessage={toast.show} />
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            사진은 크기 때문에 백업 파일에 들어가지 않아요. 사진이 담긴 일기는 일기 탭의 ‘우리 이야기 내보내기’로 따로 남길 수 있어요.
+            백업 파일에는 두 사람의 체크와 주기 기록, 일기 글, 만난 날·기념일, 병원 일정, 챙길 것 진행 상황이 모두 들어가요. 사진은
+            크기 때문에 빠지니, 사진이 담긴 기록은 우리 탭의 ‘우리 이야기 내보내기’로 따로 남겨 주세요.
           </p>
 
           <div className="mt-3 border-t border-line pt-3">
@@ -125,7 +131,8 @@ export default function DataSection() {
         {wipeStep === 1 ? (
           <div>
             <p className="text-sm leading-relaxed text-ink">
-              두 사람의 체크, 생리 기록, 일기와 사진, 알림이 이 기기에서 모두 지워져요. 지운 뒤에는 되돌릴 수 없어요.
+              두 사람의 체크, 생리 기록, 일기와 사진, 기념일·병원 일정·챙길 것, 알림이 이 기기에서 모두 지워져요. 지운 뒤에는 되돌릴
+              수 없어요.
             </p>
             <p className="mt-2 text-xs leading-relaxed text-ink-3">남겨 두고 싶은 기록이 있다면 먼저 백업 파일을 받아 두세요.</p>
             <div className="mt-5 grid gap-2">

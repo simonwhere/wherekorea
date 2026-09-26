@@ -1,14 +1,19 @@
 // Onboarding helpers + "예시로 둘러보기" demo data (pure).
 //
 // The demo couple is 민수 (a, husband, 1992) & 지은 (b, wife, 1994, cycle owner).
-// Every demo state is built with the same pure helpers the app itself uses, so
-// the demo exercises real logic instead of hand-written JSON. Content is
-// deterministic for a given (today, now); only ids and the invite code are random.
+// They met on 2021-05-14 and married on 2024-10-19, so their story (우리 탭)
+// starts well before the prep chapter. Every demo state is built with the same
+// pure helpers the app itself uses, so the demo exercises real logic instead of
+// hand-written JSON. Content is deterministic for a given (today, now); only ids
+// and the invite code are random.
 
 import { addDays, addMonths, diffDays, isISODate, parts, range } from './dates'
 import { uid } from './id'
 import { ROLE_LABEL, createInitialState, type OnboardingInput } from './initial'
 import { DATE_IDEAS } from './content/dateIdeas'
+import { ROADMAP } from './content/roadmap'
+import { addAnniversary, setCoupleDates } from './logic/anniversary'
+import { addAppointment, setAppointmentDone, type AppointmentInput } from './logic/appointments'
 import { addGrowth, setMilestone } from './logic/baby'
 import { checkupKey, milestoneKey } from './logic/babyView'
 import { activeItems, archiveCheckItem, isDone, itemsFor, toggleCheck } from './logic/checks'
@@ -27,6 +32,8 @@ import {
 } from './logic/notifications'
 import { recordBirth, startPregnancy } from './logic/pregnancy'
 import { prenatalKey } from './logic/pregnancyView'
+import { addCustomTask, setTemplateDone } from './logic/roadmap'
+import { setReaction } from './logic/usView'
 import type { AlertStyle, AppState, DatePlan, ISODate, MemberId, Role, Stage } from './types'
 
 // ── Onboarding ──────────────────────────────────────────────
@@ -86,12 +93,27 @@ export function pastDate(value: string | undefined, today: ISODate): ISODate | u
   return isISODate(value) && value <= today ? value : undefined
 }
 
+/** Oldest 처음 만난 날 / 결혼한 날 the onboarding form accepts. */
+export const COUPLE_DATE_MIN = '1950-01-01'
+
+/** 처음 만난 날 / 결혼한 날: a real day from 1950 up to today, or undefined. */
+export function coupleDate(value: string | undefined, today: ISODate): ISODate | undefined {
+  const d = pastDate(value, today)
+  return d && d >= COUPLE_DATE_MIN ? d : undefined
+}
+
 export interface OnboardingPrefs {
   alertStyle: Record<MemberId, AlertStyle>
   lowPressure: boolean
 }
 
-export type OnboardingChoices = OnboardingInput & OnboardingPrefs
+/** Optional 우리의 날 from the 우리 둘 step. */
+export interface OnboardingCoupleDays {
+  metDate?: ISODate
+  marriedDate?: ISODate
+}
+
+export type OnboardingChoices = OnboardingInput & OnboardingPrefs & OnboardingCoupleDays
 
 /** Apply the notification choices on top of createInitialState's defaults. */
 export function applyPrefs(state: AppState, prefs: OnboardingPrefs): AppState {
@@ -140,7 +162,10 @@ export function stateFromOnboarding(choices: OnboardingChoices, today: ISODate, 
   )
   // Local-date-prefixed like every other timestamp, so `createdAt.slice(0, 10)`
   // is the day the couple started (a UTC string reads as yesterday before 9am in Korea).
-  const state = { ...applyPrefs(base, choices), createdAt: localNowISO(at) }
+  let state: AppState = { ...applyPrefs(base, choices), createdAt: localNowISO(at) }
+  const metDate = coupleDate(choices.metDate, today)
+  const marriedDate = coupleDate(choices.marriedDate, today)
+  if (metDate || marriedDate) state = setCoupleDates(state, { metDate: metDate ?? null, marriedDate: marriedDate ?? null })
   return code ? { ...state, couple: { ...state.couple, inviteCode: code } } : state
 }
 
@@ -226,6 +251,10 @@ export interface OnboardingDraft {
   alertStyle: Partial<Record<MemberId, AlertStyle>>
   lowPressure: boolean
   consent: boolean
+  /** 처음 만난 날 — '' when skipped. */
+  metDate: string
+  /** 결혼한 날 — '' when skipped. */
+  marriedDate: string
 }
 
 export function initialDraft(): OnboardingDraft {
@@ -241,6 +270,8 @@ export function initialDraft(): OnboardingDraft {
     alertStyle: {},
     lowPressure: false,
     consent: false,
+    metDate: '',
+    marriedDate: '',
   }
 }
 
@@ -275,6 +306,8 @@ export function stepProblem(step: number, d: OnboardingDraft, today: ISODate): s
     if (!r.b) return '함께하는 사람의 역할을 골라 주세요.'
     const n = draftNames(d)
     if (n.a === n.b) return '두 사람 이름이 같아요. 구분할 수 있게 바꿔 주세요.'
+    const bad = coupleDateProblem('처음 만난 날', d.metDate, today) ?? coupleDateProblem('결혼한 날', d.marriedDate, today)
+    if (bad) return bad
   }
   if (step === 2 && !d.periodUnknown && d.lastPeriodStart) {
     const start = pastDate(d.lastPeriodStart, today)
@@ -290,6 +323,20 @@ export function stepProblem(step: number, d: OnboardingDraft, today: ISODate): s
   }
   if (step === 5 && !d.consent) return '내용을 확인하고 동의해 주세요.'
   return null
+}
+
+/** Why an entered 처음 만난 날 / 결혼한 날 can't be saved (empty is fine — both are optional). */
+function coupleDateProblem(label: string, value: string, today: ISODate): string | null {
+  if (!value || coupleDate(value, today)) return null
+  if (isISODate(value) && value > today) return `${label}은 오늘까지의 날짜로 넣어 주세요.`
+  return `${label}을 한 번 더 확인해 주세요.`
+}
+
+/** Gentle, non-blocking note when the wedding comes before the day they met. */
+export function coupleDatesNote(d: Pick<OnboardingDraft, 'metDate' | 'marriedDate'>, today: ISODate): string | null {
+  const met = coupleDate(d.metDate, today)
+  const married = coupleDate(d.marriedDate, today)
+  return met && married && married < met ? '결혼한 날이 처음 만난 날보다 앞서요. 맞는지 한 번 확인해 주세요.' : null
 }
 
 /** When the couple started trying, as it will be saved ('이번 달부터' = today). */
@@ -315,6 +362,8 @@ export function draftToChoices(d: OnboardingDraft, today: ISODate): OnboardingCh
     ttcStart: draftTtcStart(d, today),
     alertStyle: draftStyles(d),
     lowPressure: d.lowPressure,
+    metDate: coupleDate(d.metDate, today),
+    marriedDate: coupleDate(d.marriedDate, today),
   }
 }
 
@@ -459,6 +508,115 @@ function plan(state: AppState, p: Omit<DatePlan, 'id'>): AppState {
   return { ...state, datePlans: [...state.datePlans, next].sort((x, y) => (x.date < y.date ? -1 : 1)) }
 }
 
+// ── 우리 둘 · 챙길 것 (demo) ────────────────────────────────
+
+/** The demo couple's days before prep. */
+export const DEMO_COUPLE_DAYS = {
+  met: '2021-05-14',
+  firstTrip: '2021-10-03',
+  proposal: '2024-03-09',
+  married: '2024-10-19',
+} as const
+
+export type DemoCoupleDays = Record<keyof typeof DEMO_COUPLE_DAYS, ISODate>
+
+/** The preparing demo's three upcoming appointments (in date order). */
+export const PREP_APPOINTMENTS = {
+  healthCenter: '보건소 가임력 검사 신청',
+  dentist: '치과 검진·스케일링',
+  semen: '정액검사',
+} as const
+
+/**
+ * DEMO_COUPLE_DAYS, moved back whole years (every anniversary keeps its
+ * calendar day) when a pinned ?today= would put the wedding on or after the
+ * day prep began — the 우리 둘 chapter always comes first.
+ */
+export function demoCoupleDays(prepStart: ISODate): DemoCoupleDays {
+  let years = 0
+  while (addMonths(DEMO_COUPLE_DAYS.married, -12 * years) >= prepStart) years++
+  const back = (d: ISODate) => addMonths(d, -12 * years)
+  return {
+    met: back(DEMO_COUPLE_DAYS.met),
+    firstTrip: back(DEMO_COUPLE_DAYS.firstTrip),
+    proposal: back(DEMO_COUPLE_DAYS.proposal),
+    married: back(DEMO_COUPLE_DAYS.married),
+  }
+}
+
+const other = (m: MemberId): MemberId => (m === 'a' ? 'b' : 'a')
+
+/** The partner's small reaction on the entry just added (Between-style, no thread). */
+function reactLast(state: AppState, emoji: string): AppState {
+  const e = state.diary[state.diary.length - 1]
+  return e ? setReaction(state, e.id, other(e.author), emoji) : state
+}
+
+/**
+ * 우리 둘: when they met and married, their own days, and three memories from
+ * before prep — written the evening they started 둘셋, dated to the day itself.
+ */
+function ourStory(state: AppState, prepStart: ISODate): AppState {
+  const d = demoCoupleDays(prepStart)
+  let s = setCoupleDates(state, { metDate: d.met, marriedDate: d.married })
+  s = addAnniversary(s, { title: '첫 여행', date: d.firstTrip, yearly: true, emoji: '✈️' })
+  s = addAnniversary(s, { title: '프러포즈', date: d.proposal, yearly: true, emoji: '💍' })
+  const memory = (date: ISODate, author: MemberId, text: string, minute: number) =>
+    addEntry(s, { date, author, text, mood: '🥰', stage: 'preparing' }, stamp(prepStart, 21, minute))
+  s = memory(
+    d.firstTrip,
+    'b',
+    '첫 여행으로 강릉에 갔어요. 비 오는 바다 앞에서 우산 하나로 한참 걸었어요. 이 사람이랑 오래 함께하고 싶다고 생각한 날.',
+    20,
+  )
+  s = reactLast(s, '❤️')
+  s = memory(
+    d.proposal,
+    'a',
+    '한강에서 프러포즈했어요. 준비한 말은 반도 못 했는데 지은이가 먼저 웃으면서 울었어요. 대답은 “응, 좋아”.',
+    30,
+  )
+  s = reactLast(s, '🥹')
+  s = memory(
+    d.married,
+    'b',
+    '우리 결혼했어요! 정신없이 지나갔지만 입장할 때 민수 표정은 오래 기억날 것 같아요. 앞으로도 잘 부탁해요.',
+    40,
+  )
+  return reactLast(s, '❤️')
+}
+
+const TEMPLATES = new Map(ROADMAP.map((t) => [t.id, t]))
+
+/** Tick 챙길 것 templates the way the app does (planDone, or the milestone shared with 임신·아기 tabs). */
+function tick(state: AppState, list: ReadonlyArray<readonly [id: string, date: ISODate, by: MemberId]>): AppState {
+  let s = state
+  for (const [id, date, by] of list) {
+    const t = TEMPLATES.get(id)
+    if (t) s = setTemplateDone(s, t, true, date, by)
+  }
+  return s
+}
+
+/** Add an appointment (optionally already done). */
+function appointment(state: AppState, input: AppointmentInput, by: MemberId, done = false): AppState {
+  const s = addAppointment(state, input, by)
+  const added = s.appointments[s.appointments.length - 1]
+  return done && added && s !== state ? setAppointmentDone(s, added.id, true) : s
+}
+
+/** Preconception items they had looked after before the pregnancy (pregnant / parenting demos). */
+function preparedTicks(state: AppState, ttcStart: ISODate): AppState {
+  return tick(state, [
+    ['pre-folic', ttcStart, 'b'],
+    ['pre-habits-partner', ttcStart, 'a'],
+    ['pre-health-check-support', addDays(ttcStart, 10), 'b'],
+    ['pre-checkup-carrier', addDays(ttcStart, 20), 'b'],
+    ['pre-checkup-partner', addDays(ttcStart, 20), 'a'],
+    ['pre-dental', addDays(ttcStart, 30), 'b'],
+  ])
+}
+
 /**
  * Run the notification rules for each day in [from, today], as the app would
  * have if it had been opened daily.
@@ -574,6 +732,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     '사흘 연속 우리 둘 다 체크 완료! 작은 거지만 같이 하니까 은근히 재밌어요.',
     '😊',
   )
+  s = reactLast(s, '👏')
   s = plan(s, {
     date: addDays(today, 2),
     ideaId: 'home-cooking',
@@ -583,6 +742,60 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     done: false,
     createdBy: 'a',
   })
+
+  // 우리 둘 + 챙길 것: a few items done, three appointments ahead, one of their own.
+  s = ourStory(s, ttcStart)
+  s = tick(s, [
+    ['pre-folic', ttcStart, 'b'],
+    ['pre-habits-partner', ttcStart, 'a'],
+    // 풍진 항체 was checked before they started trying (MMR needs 4 weeks before
+    // trying), so the tick is dated to the day they started, not mid-way.
+    ['pre-rubella', ttcStart, 'b'],
+  ])
+  // 임신 사전건강관리: apply at 보건소 (or e보건소) first — tests done before
+  // applying aren't covered — then take the referral to a clinic for the test.
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 3),
+      time: '09:30',
+      title: PREP_APPOINTMENTS.healthCenter,
+      place: '보건소',
+      who: 'both',
+      kind: 'admin',
+      note: '임신 사전건강관리 · 검사 전에 먼저 신청해야 지원돼요. 검사의뢰서 받아 오기',
+      taskId: 'pre-health-check-support',
+    },
+    'b',
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 8),
+      time: '19:00',
+      title: PREP_APPOINTMENTS.dentist,
+      place: '동네 치과',
+      who: 'b',
+      kind: 'hospital',
+      taskId: 'pre-dental',
+    },
+    'b',
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 12),
+      time: '08:30',
+      title: PREP_APPOINTMENTS.semen,
+      place: '비뇨의학과',
+      who: 'a',
+      kind: 'test',
+      note: '보건소 검사의뢰서 챙기기 · 결과지 받아 오기',
+      taskId: 'pre-checkup-partner',
+    },
+    'a',
+  )
+  s = addCustomTask(s, { title: '검사 결과지 한곳에 모아 두기', phase: 'preconception', who: 'both', due: addDays(today, 14) }, 'b')
 
   s = runEngine(s, addDays(today, -10), today, now)
   const yesterday = addDays(today, -1)
@@ -617,6 +830,7 @@ function pregnancyHistory(state: AppState, lmp: ISODate): AppState {
     '처음으로 심장 소리를 들었어요. 생각보다 빠르고 씩씩한 소리. 태명은 콩이로 정했어요.',
     '🥰',
   )
+  s = reactLast(s, '🥹')
   s = diary(
     s,
     addDays(lmp, 72),
@@ -625,7 +839,25 @@ function pregnancyHistory(state: AppState, lmp: ISODate): AppState {
     '입덧 때문에 힘든 하루. 민수가 퇴근길에 귤이랑 크래커를 사 왔어요. 그것만 먹고 버텼어요.',
     '😴',
   )
-  return s
+  s = appointment(
+    s,
+    {
+      date: addDays(lmp, 50),
+      time: '10:00',
+      title: '첫 산부인과 진료',
+      place: '다니는 산부인과',
+      who: 'both',
+      kind: 'hospital',
+      taskId: 'p1-first-visit',
+    },
+    'b',
+    true,
+  )
+  return tick(s, [
+    ['p1-work-hours', addDays(lmp, 45), 'b'],
+    ['p1-prenatal-labs', addDays(lmp, 50), 'b'],
+    ['p1-care-center', addDays(lmp, 70), 'a'],
+  ])
 }
 
 function demoPregnant(today: ISODate, now: Date): AppState {
@@ -660,6 +892,51 @@ function demoPregnant(today: ISODate, now: Date): AppState {
     done: false,
     createdBy: 'a',
   })
+
+  s = ourStory(s, ttcStart)
+  s = preparedTicks(s, ttcStart)
+  // 12주 5일: NT is open until 13주 6일. 정밀초음파 at 21주 (20~24주).
+  s = appointment(
+    s,
+    {
+      date: addDays(lmp, 12 * 7 + 5),
+      time: '10:00',
+      title: '정기검진 · NT 초음파',
+      place: '다니는 산부인과',
+      who: 'both',
+      kind: 'test',
+      note: '1차 기형아 선별검사 채혈도 같이 해요',
+      taskId: 'p1-nt',
+    },
+    'b',
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 5),
+      time: '14:00',
+      title: '산후조리원 상담',
+      place: '투어했던 조리원',
+      who: 'both',
+      kind: 'other',
+      note: '환불 기준 꼭 물어보기',
+      taskId: 'p1-care-center-contract',
+    },
+    'a',
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(lmp, 21 * 7),
+      time: '11:00',
+      title: '정밀초음파',
+      place: '다니는 산부인과',
+      who: 'both',
+      kind: 'test',
+      taskId: 'p2-anatomy',
+    },
+    'b',
+  )
   s = runEngine(s, addDays(today, -10), today, now) // from 11주 0일
   s = sendCheer(s, 'a', 'b', earlierToday(today, now, 40), '오늘 입덧은 좀 괜찮아요? 퇴근길에 귤 사 갈게요 🍊')
   return settleInbox(s, today)
@@ -689,6 +966,26 @@ function demoParenting(today: ISODate, now: Date): AppState {
     '😌',
   )
 
+  s = ourStory(s, ttcStart)
+  s = preparedTicks(s, ttcStart)
+  const edd = addDays(lmp, 280)
+  s = tick(s, [
+    ['p1-birth-hospital', addDays(lmp, 80), 'a'],
+    ['p1-nt', addDays(lmp, 89), 'b'],
+    ['p1-care-center-contract', addDays(lmp, 92), 'a'],
+    ['p2-quad', addDays(lmp, 112), 'b'],
+    ['p2-anatomy', addDays(lmp, 147), 'b'],
+    ['p2-gdm', addDays(lmp, 175), 'b'],
+    ['p3-tdap', addDays(lmp, 200), 'b'],
+    ['p3-partner-tdap', addDays(edd, -45), 'a'],
+    ['p3-parental-leave', addDays(edd, -60), 'a'],
+    ['p3-car-seat', addDays(lmp, 230), 'a'],
+    ['p3-hospital-bag', addDays(lmp, 240), 'b'],
+    ['p3-maternity-leave', addDays(edd, -40), 'b'],
+    ['p3-postnatal-care', addDays(edd, -30), 'b'],
+    ['p3-gbs', addDays(lmp, 252), 'b'],
+  ])
+
   s = recordBirth(s, { name: '콩이', birthDate: birth, sex: 'girl' })
   s = fillRecent(s, today)
   const months = (n: number) => addMonths(birth, n)
@@ -697,6 +994,65 @@ function demoParenting(today: ISODate, now: Date): AppState {
   s = addGrowth(s, { date: months(2), weightKg: 5.3, heightCm: 57.4, headCm: 38.5 })
   s = addGrowth(s, { date: months(3), weightKg: 6.0, heightCm: 60.3, headCm: 39.8 })
   s = setMilestone(s, checkupKey('1'), addDays(birth, 28)) // 1차 영유아 건강검진 (생후 14~35일)
+  s = tick(s, [
+    ['birth-partner-leave', birth, 'a'],
+    ['birth-hepb', birth, 'b'],
+    ['birth-hearing', addDays(birth, 2), 'b'],
+    ['birth-metabolic', addDays(birth, 3), 'b'],
+    ['birth-registration', addDays(birth, 7), 'a'],
+    ['birth-happy-birth', addDays(birth, 7), 'a'],
+    ['birth-insurance', addDays(birth, 10), 'a'],
+    ['pp-vaccine-alerts', addDays(birth, 10), 'b'],
+    ['birth-bcg', addDays(birth, 20), 'a'],
+    ['pp-mother-checkup', addDays(birth, 35), 'b'],
+  ])
+  // Past: 2개월 접종 (done). Ahead: 민수's leave request, then the 4개월 visits.
+  s = appointment(
+    s,
+    { date: months(2), time: '10:30', title: '2개월 예방접종', place: '동네 소아청소년과', who: 'both', kind: 'vaccine' },
+    'b',
+    true,
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 4),
+      time: '14:00',
+      title: '회사 면담 · 육아휴직 신청',
+      place: '회사',
+      who: 'a',
+      kind: 'admin',
+      note: '휴직 시작 30일 전까지 신청해요',
+      taskId: 'pp-six-plus-six',
+    },
+    'a',
+  )
+  s = appointment(
+    s,
+    {
+      date: months(4),
+      time: '10:30',
+      title: '4개월 예방접종',
+      place: '동네 소아청소년과',
+      who: 'both',
+      kind: 'vaccine',
+      note: '접종 종류는 예방접종도우미에서 확인',
+    },
+    'b',
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(months(4), 10),
+      time: '11:00',
+      title: '영유아 건강검진 2차',
+      place: '동네 소아청소년과',
+      who: 'both',
+      kind: 'hospital',
+      note: '생후 4~6개월에 받아요',
+    },
+    'b',
+  )
   s = setMilestone(s, milestoneKey('smile'), addDays(birth, 47))
   s = setMilestone(s, milestoneKey('head'), addDays(birth, 88))
 

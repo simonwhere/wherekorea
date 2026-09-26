@@ -4,11 +4,14 @@ import { useState } from 'react'
 import { Avatar, Card, cx } from '@/components/ui'
 import { formatKo } from '@/lib/dates'
 import { moodLabel } from '@/lib/logic/diaryExport'
-import type { DiaryEntry, Member, Stage } from '@/lib/types'
+import type { Chapter } from '@/lib/logic/usView'
+import type { DiaryEntry, Member } from '@/lib/types'
 import DiaryPhoto from './Photo'
+import { ReactionPicker, ReceivedReactions } from './Reactions'
 
-// Stage hue on the background; text stays ink-2/brand-ink so 11px labels keep 4.5:1 contrast.
-const BADGE_TONE: Record<Stage, string> = {
+// Chapter hue on the background; text stays ink-2/brand-ink so 11px labels keep 4.5:1 contrast.
+export const CHAPTER_BADGE_TONE: Record<Chapter, string> = {
+  couple: 'bg-warn-soft text-ink-2',
   preparing: 'bg-brand-soft text-brand-ink',
   pregnant: 'bg-fert-soft text-ink-2',
   parenting: 'bg-ok-soft text-ink-2',
@@ -25,16 +28,26 @@ export default function EntryCard({
   entry,
   author,
   mine,
+  chapter,
   stageLabel,
+  myReaction,
+  received,
   onEdit,
   onDelete,
+  onReact,
 }: {
   entry: DiaryEntry
   author: Member
   mine: boolean
+  chapter: Chapter
   stageLabel: string
+  /** The viewer's feeling on the partner's entry. */
+  myReaction?: string
+  /** Feelings the partner left (shown on the viewer's own entries). */
+  received: Array<{ member: Member; emoji: string }>
   onEdit: (id: string) => void
   onDelete: (id: string) => void
+  onReact: (id: string, next: string | null) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const foldable = entry.text.length > FOLD_CHARS || entry.text.split('\n').length > FOLD_LINES
@@ -64,7 +77,10 @@ export default function EntryCard({
             </span>
           ) : null}
           <span
-            className={cx('whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold', BADGE_TONE[entry.stage])}
+            className={cx(
+              'whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold',
+              CHAPTER_BADGE_TONE[chapter],
+            )}
           >
             {stageLabel}
           </span>
@@ -99,15 +115,22 @@ export default function EntryCard({
       ) : null}
 
       {mine ? (
-        <div className="-mb-2 -mr-2 mt-1 flex justify-end">
-          <button type="button" onClick={() => onEdit(entry.id)} className={cx(actionClass, 'text-ink-2')}>
-            고치기<span className="sr-only"> ({day} 기록)</span>
-          </button>
-          <button type="button" onClick={() => onDelete(entry.id)} className={cx(actionClass, 'text-period')}>
-            지우기<span className="sr-only"> ({day} 기록)</span>
-          </button>
+        <div className="-mb-2 -mr-2 mt-1 flex items-center justify-between gap-2">
+          <ReceivedReactions items={received} />
+          <div className="ml-auto flex shrink-0">
+            <button type="button" onClick={() => onEdit(entry.id)} className={cx(actionClass, 'text-ink-2')}>
+              고치기<span className="sr-only"> ({day} 기록)</span>
+            </button>
+            <button type="button" onClick={() => onDelete(entry.id)} className={cx(actionClass, 'text-period')}>
+              지우기<span className="sr-only"> ({day} 기록)</span>
+            </button>
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="-mb-2 -ml-2 mt-2">
+          <ReactionPicker author={author} value={myReaction} day={day} onChange={(next) => onReact(entry.id, next)} />
+        </div>
+      )}
     </Card>
   )
 }

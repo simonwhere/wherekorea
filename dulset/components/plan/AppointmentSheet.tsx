@@ -1,0 +1,206 @@
+'use client'
+
+import { useId, useState } from 'react'
+import { Button, Field, Sheet, inputClass, textareaClass, useToast } from '@/components/ui'
+import { templateById } from '@/lib/content/roadmap'
+import { formatKo, isISODate } from '@/lib/dates'
+import {
+  APPOINTMENT_KIND_EMOJI,
+  APPOINTMENT_KIND_LABEL,
+  addAppointment,
+  updateAppointment,
+} from '@/lib/logic/appointments'
+import { useApp } from '@/lib/store'
+import type { Appointment, AppointmentKind } from '@/lib/types'
+import { ChoiceChips, FieldError } from './bits'
+import {
+  APPT_PLACEHOLDER,
+  APPT_TEXT_MAX,
+  APPT_TITLE_MAX,
+  validateDraft,
+  type AppointmentDraft,
+  type DraftError,
+  type Who,
+} from './model'
+
+const KINDS: AppointmentKind[] = ['hospital', 'test', 'vaccine', 'admin', 'other']
+
+const ERROR_TEXT: Record<DraftError, string> = {
+  date: '오늘이나 이후 날짜를 골라 주세요.',
+  time: '시간을 다시 확인해 주세요.',
+  title: '무슨 일정인지 한 줄로 적어 주세요.',
+}
+
+/**
+ * Add or edit a shared appointment (병원·검사·접종·신청). Both phones see it,
+ * and reminders go out the day before / the morning of.
+ */
+export default function AppointmentSheet({
+  initial,
+  editing,
+  onClose,
+}: {
+  initial: AppointmentDraft
+  /** Set when editing an existing appointment. */
+  editing?: Appointment
+  onClose: () => void
+}) {
+  const { state, update, today, me, partner } = useApp()
+  const toast = useToast()
+  const errorId = useId()
+  const [draft, setDraft] = useState<AppointmentDraft>(initial)
+  const [error, setError] = useState<DraftError | null>(null)
+  const [a, b] = state.couple.members
+  // An existing appointment may keep its own (past) date; new ones start today.
+  const minDate = editing && editing.date < today ? editing.date : today
+  const task = draft.taskId ? templateById(draft.taskId) ?? state.customTasks.find((c) => c.id === draft.taskId) : undefined
+
+  const set = <K extends keyof AppointmentDraft>(key: K, value: AppointmentDraft[K]) => {
+    setDraft((d) => ({ ...d, [key]: value }))
+    if (error === key) setError(null)
+  }
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const err = validateDraft(draft, minDate)
+    setError(err)
+    if (err) return
+    const input = {
+      date: draft.date,
+      time: draft.time || undefined,
+      title: draft.title,
+      place: draft.place,
+      who: draft.who,
+      kind: draft.kind,
+      note: draft.note,
+      taskId: draft.taskId,
+    }
+    if (editing) {
+      update((s) => updateAppointment(s, editing.id, { ...input, time: draft.time }))
+      toast.show('일정을 고쳤어요')
+    } else {
+      update((s) => addAppointment(s, input, me.id))
+      toast.show(`${partner.name}님 화면에도 보여요`)
+    }
+    onClose()
+  }
+
+  const describe = (key: DraftError) => (error === key ? `${errorId}-${key}` : undefined)
+
+  return (
+    <Sheet open onClose={onClose} title={editing ? '일정 고치기' : '일정 추가'}>
+      <form onSubmit={submit} className="space-y-4" noValidate>
+        {task ? (
+          <p className="rounded-xl bg-surface-2 px-3 py-2 text-xs text-ink-2">
+            <span aria-hidden>✅ </span>챙길 것 · <b className="font-semibold text-ink">{task.title}</b>
+          </p>
+        ) : null}
+
+        <div className="grid grid-cols-[1fr_auto] gap-3">
+          <Field label="날짜">
+            <input
+              type="date"
+              className={inputClass}
+              value={draft.date}
+              min={minDate}
+              required
+              aria-invalid={error === 'date'}
+              aria-describedby={describe('date')}
+              onChange={(e) => set('date', e.target.value)}
+            />
+          </Field>
+          <Field label="시간 (선택)">
+            <input
+              type="time"
+              className={`${inputClass} w-[7.5rem]`}
+              value={draft.time}
+              aria-invalid={error === 'time'}
+              aria-describedby={describe('time')}
+              onChange={(e) => set('time', e.target.value)}
+            />
+          </Field>
+        </div>
+        {error === 'date' || error === 'time' ? (
+          <FieldError id={`${errorId}-${error}`}>{ERROR_TEXT[error]}</FieldError>
+        ) : null}
+
+        <Field label="무슨 일정">
+          <input
+            className={inputClass}
+            value={draft.title}
+            maxLength={APPT_TITLE_MAX}
+            placeholder={APPT_PLACEHOLDER[state.stage].title}
+            required
+            aria-invalid={error === 'title'}
+            aria-describedby={describe('title')}
+            onChange={(e) => set('title', e.target.value)}
+          />
+        </Field>
+        {error === 'title' ? <FieldError id={`${errorId}-title`}>{ERROR_TEXT.title}</FieldError> : null}
+
+        <Field label="어디서 (선택)">
+          <input
+            className={inputClass}
+            value={draft.place}
+            maxLength={APPT_TEXT_MAX}
+            placeholder="예: ○○산부인과 3층"
+            onChange={(e) => set('place', e.target.value)}
+          />
+        </Field>
+
+        <div>
+          <span className="mb-1.5 block text-xs font-semibold text-ink-2">누가 가요</span>
+          <ChoiceChips<Who>
+            label="누가 가요"
+            value={draft.who}
+            onChange={(v) => set('who', v)}
+            options={[
+              { value: 'both', label: '둘 다' },
+              { value: a.id, label: a.name },
+              { value: b.id, label: b.name },
+            ]}
+          />
+        </div>
+
+        <div>
+          <span className="mb-1.5 block text-xs font-semibold text-ink-2">종류</span>
+          <ChoiceChips<AppointmentKind>
+            label="종류"
+            value={draft.kind}
+            onChange={(v) => set('kind', v)}
+            options={KINDS.map((k) => ({
+              value: k,
+              label: (
+                <>
+                  <span aria-hidden>{APPOINTMENT_KIND_EMOJI[k]}</span> {APPOINTMENT_KIND_LABEL[k]}
+                </>
+              ),
+            }))}
+          />
+        </div>
+
+        <Field label="메모 (선택)">
+          <textarea
+            className={textareaClass}
+            rows={2}
+            value={draft.note}
+            maxLength={APPT_TEXT_MAX}
+            placeholder={APPT_PLACEHOLDER[state.stage].note}
+            onChange={(e) => set('note', e.target.value)}
+          />
+        </Field>
+
+        <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
+          🔔 {draft.who === 'both' ? '둘 다' : draft.who === me.id ? '나' : `${partner.name}님`}에게{' '}
+          <b className="font-semibold text-ink">{isISODate(draft.date) ? formatKo(draft.date) : '그날'}</b> 전날과 당일에
+          알림이 가요.
+          {draft.who !== 'both' ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
+        </div>
+
+        <Button type="submit" full size="lg">
+          {editing ? '저장' : '일정 추가'}
+        </Button>
+      </form>
+    </Sheet>
+  )
+}

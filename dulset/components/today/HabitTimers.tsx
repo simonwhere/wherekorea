@@ -8,7 +8,7 @@ import { ExternalLink, ProgressBar } from './bits'
 
 /**
  * Two slow timers that make "why keep doing this" visible:
- *  • sperm take ~74 days (~3 months) to form → healthy habits D+N (non-cycle-owner)
+ *  • sperm take ~64–74 days to form + 1–2 weeks to mature (~3 months) → healthy habits D+N (non-cycle-owner)
  *  • folic acid from ≥1 month (KR norm 3 months) before until 12 weeks (cycle owner)
  */
 export default function HabitTimers() {
@@ -42,14 +42,14 @@ export default function HabitTimers() {
                 </span>
               ) : null}
             </div>
-            <ProgressBar className="mt-2" value={habit.progress} tone="him" label="정자 형성 주기 74일 중 진행" />
+            <ProgressBar className="mt-2" value={habit.progress} tone="him" label="정자 형성 기간(최대 74일 기준) 중 진행" />
             <p className="mt-1.5 text-xs leading-relaxed text-ink-2">
               {habit.day === undefined
                 ? '습관을 체크한 날부터 세어 드려요. '
                 : habit.day >= SPERM_CYCLE_DAYS
                   ? '한 바퀴를 채웠어요! 지금처럼 이어 가요. '
                   : ''}
-              새 정자가 만들어지는 데 약 74일(약 3개월)이 걸려요. 오늘의 습관이 3개월 뒤를 만들어요.
+              새 정자가 만들어지는 데 약 64~74일, 성숙하는 데 1~2주가 더 걸려 모두 3개월쯤이에요. 오늘의 습관이 3개월 뒤를 만들어요.
             </p>
           </div>
         ) : null}

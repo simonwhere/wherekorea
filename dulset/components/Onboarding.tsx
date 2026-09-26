@@ -93,7 +93,7 @@ export default function Onboarding() {
   const body = (() => {
     switch (step) {
       case 1:
-        return <CoupleStep draft={draft} patch={patch} />
+        return <CoupleStep draft={draft} patch={patch} today={today} />
       case 2:
         return <CycleStep draft={draft} patch={patch} today={today} />
       case 3:

@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { DATE_IDEAS } from '@/lib/content/dateIdeas'
-import { addDays, diffDays } from '@/lib/dates'
 import {
+  dayLabel,
+  homeAppointments,
+  todaysAnniversaries,
+  togetherDays,
+  upcomingForToday,
+  whoLabel,
+  withTicked,
+} from '@/components/today/model'
+import { DATE_IDEAS } from '@/lib/content/dateIdeas'
+import { ROADMAP } from '@/lib/content/roadmap'
+import { addDays, addMonths, diffDays, isISODate } from '@/lib/dates'
+import {
+  DEMO_COUPLE_DAYS,
   applyPrefs,
   birthYearOptions,
   cleanBirthYear,
+  coupleDatesNote,
   createDemoState,
+  demoCoupleDays,
   defaultAlertStyles,
   defaultCycleOwner,
   displayName,
@@ -26,11 +39,17 @@ import {
   withRo,
   type OnboardingChoices,
 } from '@/lib/demo'
+import { nextAnniversaries } from '@/lib/logic/anniversary'
+import { addAppointment, isValidTime, upcomingAppointments } from '@/lib/logic/appointments'
 import { nextKoreanDay } from '@/lib/logic/baby'
+import { CLAIM_KEY } from '@/lib/logic/babyView'
 import { activeItems, coupleStreak, itemsFor, progress, streak } from '@/lib/logic/checks'
 import { cycleAt, cycleStats, dayInfo, fertilityStatus } from '@/lib/logic/cycle'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
-import { gestationalAge } from '@/lib/logic/pregnancy'
+import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
+import { buildItems, focusItems } from '@/lib/logic/roadmap'
+import { sanitizeBackup } from '@/lib/logic/settings'
+import { chapterContext, entryChapter, receivedReactions } from '@/lib/logic/usView'
 import { isAppState, parseState } from '@/lib/storage'
 import type { AppState, Stage } from '@/lib/types'
 
@@ -41,9 +60,19 @@ const NOW = new Date(2026, 8, 26, 14, 30)
 /** Everything but random ids / invite code, for determinism checks. */
 function fingerprint(s: AppState) {
   const label = new Map(s.checkItems.map((i) => [i.id, `${i.owner}:${i.label}`]))
+  // Generated notice keys carry appointment / anniversary ids ('appt:<id>:…').
+  const named = new Map<string, string>([
+    ...s.anniversaries.map((a) => [a.id, `anniv=${a.title}`] as const),
+    ...s.appointments.map((a) => [a.id, `appt=${a.title}`] as const),
+    ...s.customTasks.map((c) => [c.id, `task=${c.title}`] as const),
+  ])
+  const unId = (key?: string) => (key === undefined ? key : [...named].reduce((k, [id, name]) => k.split(id).join(name), key))
   return {
     ...s,
     couple: { ...s.couple, inviteCode: '' },
+    anniversaries: s.anniversaries.map(({ id: _id, ...rest }) => rest),
+    appointments: s.appointments.map(({ id: _id, ...rest }) => rest),
+    customTasks: s.customTasks.map(({ id: _id, ...rest }) => rest),
     checkItems: s.checkItems.map(({ id: _id, ...rest }) => rest),
     checkLog: Object.fromEntries(
       Object.entries(s.checkLog).map(([d, day]) => [
@@ -51,7 +80,7 @@ function fingerprint(s: AppState) {
         Object.fromEntries(Object.entries(day).map(([m, ids]) => [m, (ids ?? []).map((id) => label.get(id)).sort()])),
       ]),
     ),
-    notifications: s.notifications.map(({ id: _id, ...rest }) => rest),
+    notifications: s.notifications.map(({ id: _id, key, ...rest }) => ({ ...rest, key: unId(key) })),
     diary: s.diary.map(({ id: _id, ...rest }) => rest),
     datePlans: s.datePlans.map(({ id: _id, ...rest }) => rest),
     growth: s.growth.map(({ id: _id, ...rest }) => rest),
@@ -137,7 +166,8 @@ describe('preparing demo', () => {
     expect(s.datePlans.some((p) => !p.done && p.date === addDays(today, 2))).toBe(true)
     // Linked ideas must exist in the catalogue.
     for (const p of s.datePlans) if (p.ideaId) expect(DATE_IDEAS.some((i) => i.id === p.ideaId)).toBe(true)
-    const entries = s.diary.filter((e) => e.stage === 'preparing')
+    // 준비 기록 since the start (the 우리 둘 memories before it are checked below).
+    const entries = s.diary.filter((e) => e.stage === 'preparing' && e.date >= s.settings.ttcStart!)
     expect(entries.length).toBeGreaterThanOrEqual(3)
     expect(entries.length).toBeLessThanOrEqual(4)
   })
@@ -471,5 +501,319 @@ describe('onboarding helpers', () => {
     expect(w.fertileEnd).toBe('2026-10-04')
     expect(sampleWindow(undefined, 28, 5, '2026-09-26')).toBeNull()
     expect(sampleWindow('2026-10-01', 28, 5, '2026-09-26')).toBeNull()
+  })
+})
+
+describe('demo 우리 둘 · 챙길 것', () => {
+  const today = '2026-09-26'
+  const templateIds = new Set(ROADMAP.map((t) => t.id))
+
+  for (const stage of STAGES) {
+    it(`${stage}: met / married days and two custom anniversaries`, () => {
+      const s = createDemoState(today, NOW, stage)
+      expect(s.couple.metDate).toBe('2021-05-14')
+      expect(s.couple.marriedDate).toBe('2024-10-19')
+      expect(s.anniversaries.map((a) => [a.title, a.date, a.yearly])).toEqual([
+        ['첫 여행', '2021-10-03', true],
+        ['프러포즈', '2024-03-09', true],
+      ])
+      for (const a of s.anniversaries) {
+        expect(isISODate(a.date)).toBe(true)
+        expect(a.date > s.couple.metDate! && a.date <= today).toBe(true)
+      }
+      expect(s.couple.marriedDate! < s.settings.ttcStart!).toBe(true)
+    })
+
+    it(`${stage}: the story starts before prep with 우리 둘 memories (and reactions)`, () => {
+      const s = createDemoState(today, NOW, stage)
+      const ctx = chapterContext(s)
+      const couple = s.diary.filter((e) => entryChapter(e, ctx) === 'couple')
+      expect(couple.map((e) => e.date)).toEqual(['2021-10-03', '2024-03-09', '2024-10-19'])
+      for (const e of couple) {
+        expect(e.date < s.settings.ttcStart!).toBe(true)
+        // Written the evening they started 둘셋.
+        expect(e.createdAt.slice(0, 10)).toBe(s.settings.ttcStart)
+        expect(receivedReactions(e)).toHaveLength(1)
+      }
+      // The first 준비 기록 comes right after them.
+      expect(s.diary.some((e) => e.date === s.settings.ttcStart && entryChapter(e, ctx) === 'preparing')).toBe(true)
+    })
+
+    it(`${stage}: appointments, ticks and custom tasks point at real things`, () => {
+      const s = createDemoState(today, NOW, stage)
+      const customIds = new Set(s.customTasks.map((c) => c.id))
+      expect(s.appointments.length).toBeGreaterThanOrEqual(3)
+      for (const a of s.appointments) {
+        expect(isISODate(a.date)).toBe(true)
+        expect(isValidTime(a.time)).toBe(true)
+        expect(['a', 'b', 'both']).toContain(a.who)
+        expect(['hospital', 'test', 'vaccine', 'admin', 'other']).toContain(a.kind)
+        if (a.taskId) expect(templateIds.has(a.taskId) || customIds.has(a.taskId)).toBe(true)
+        // Past visits are marked done; upcoming ones are open.
+        expect(!!a.done).toBe(a.date < today)
+      }
+      expect(Object.keys(s.planDone).length).toBeGreaterThanOrEqual(3)
+      for (const [id, v] of Object.entries(s.planDone)) {
+        const t = ROADMAP.find((x) => x.id === id)
+        expect(t).toBeDefined()
+        // Templates with a shared milestone record their tick there, not in planDone.
+        expect(t!.milestoneKey).toBeUndefined()
+        expect(isISODate(v.at) && v.at <= today).toBe(true)
+        expect(v.at >= s.settings.ttcStart!).toBe(true)
+      }
+      for (const c of s.customTasks) expect(c.due === undefined || isISODate(c.due)).toBe(true)
+    })
+
+    it(`${stage}: a backup round trip keeps 우리 둘 and 챙길 것`, () => {
+      const s = createDemoState(today, NOW, stage)
+      const json = JSON.parse(JSON.stringify(s)) as AppState
+      const back = sanitizeBackup(json)!
+      expect(back.couple.metDate).toBe(s.couple.metDate)
+      expect(back.couple.marriedDate).toBe(s.couple.marriedDate)
+      expect(back.anniversaries).toEqual(json.anniversaries)
+      expect(back.appointments).toEqual(json.appointments)
+      expect(back.planDone).toEqual(json.planDone)
+      expect(back.customTasks).toEqual(json.customTasks)
+      expect(back.milestones).toEqual(json.milestones)
+      expect(back.diary.map((e) => e.reactions)).toEqual(json.diary.map((e) => e.reactions))
+      expect(parseState(JSON.stringify(s))).toEqual(back)
+    })
+  }
+
+  it('preparing: 보건소 together, 지은’s dentist, 민수’s test, one task of their own', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(upcomingAppointments(s.appointments, today).map((a) => [a.title, a.who, diffDays(today, a.date)])).toEqual([
+      ['보건소 가임력 검사 신청', 'both', 3],
+      ['치과 검진·스케일링', 'b', 8],
+      ['정액검사', 'a', 12],
+    ])
+    expect(Object.keys(s.planDone).sort()).toEqual(['pre-folic', 'pre-habits-partner', 'pre-rubella'])
+    // 임신 사전건강관리 is applied for at 보건소 *before* the test (no refund for a
+    // test done first), and the test itself is at a clinic with the referral.
+    const [apply, , semen] = upcomingAppointments(s.appointments, today)
+    expect(apply!.kind).toBe('admin')
+    expect(apply!.taskId).toBe('pre-health-check-support')
+    expect(apply!.note).toContain('검사 전에')
+    expect(semen!.date > apply!.date).toBe(true)
+    expect(semen!.place).not.toContain('보건소')
+    expect(semen!.note).toContain('검사의뢰서')
+    // MMR needs 4 weeks before trying: 풍진 is ticked as handled by the day they
+    // started, never while they were already trying.
+    expect(s.planDone['pre-rubella']!.at <= s.settings.ttcStart!).toBe(true)
+    expect(s.customTasks).toHaveLength(1)
+    // Preconception items have no dates, so this week's list is their own task.
+    const focus = focusItems(buildItems(s, ROADMAP, today))
+    expect(focus.map((i) => i.title)).toEqual(['검사 결과지 한곳에 모아 두기'])
+    // 첫 여행 5주년 is a week away: both got the heads-up today.
+    const notes = s.notifications.filter((n) => n.key?.startsWith('anniv:custom:'))
+    expect(notes.map((n) => [n.to, n.title, n.read])).toEqual([
+      ['a', '✈️ 첫 여행 5주년까지 일주일', false],
+      ['b', '✈️ 첫 여행 5주년까지 일주일', false],
+    ])
+    expect(nextAnniversaries(s.couple, s.anniversaries, today, 2).map((e) => e.title)).toEqual(['첫 여행 5주년', '결혼 2주년'])
+  })
+
+  for (const day of TODAYS) {
+    it(`pregnant: NT and 정밀초음파 are booked inside their windows (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'pregnant')
+      const items = new Map(buildItems(s, ROADMAP, day).map((i) => [i.id, i]))
+      const open = s.appointments.filter((a) => a.taskId && !a.done)
+      expect(open.length).toBeGreaterThanOrEqual(3)
+      for (const a of open) {
+        const it = items.get(a.taskId!)!
+        expect(it.start).toBeDefined()
+        expect(a.date >= it.start! && (!it.end || a.date <= it.end)).toBe(true)
+      }
+      const nt = s.appointments.find((a) => a.taskId === 'p1-nt')!
+      expect(gestationalAge(s.pregnancy!, nt.date)).toMatchObject({ weeks: 12, days: 5 })
+      const anatomy = s.appointments.find((a) => a.taskId === 'p2-anatomy')!
+      expect(gestationalAge(s.pregnancy!, anatomy.date)).toMatchObject({ weeks: 21, days: 0 })
+    })
+  }
+
+  it('pregnant: first-trimester items done, NT and 조리원 up next', () => {
+    const s = createDemoState(today, NOW, 'pregnant')
+    const items = buildItems(s, ROADMAP, today)
+    const done = items.filter((i) => i.status === 'done').map((i) => i.id)
+    expect(done).toEqual(
+      expect.arrayContaining(['pre-folic', 'p1-first-visit', 'p1-voucher', 'p1-health-center', 'p1-prenatal-labs', 'p1-care-center']),
+    )
+    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['정기검진 · NT 초음파', '산후조리원 상담'])
+    expect(focusItems(items).map((i) => i.id)).toContain('p1-nt')
+  })
+
+  it('parenting: every 출산 직후 item done, 4개월 visits booked', () => {
+    const s = createDemoState(today, NOW, 'parenting')
+    const items = buildItems(s, ROADMAP, today)
+    const birthItems = items.filter((i) => i.phase === 'birth')
+    expect(birthItems.length).toBeGreaterThanOrEqual(5)
+    expect(birthItems.filter((i) => i.status !== 'done').map((i) => i.id)).toEqual([])
+    expect(s.milestones.some((m) => m.key === CLAIM_KEY)).toBe(true)
+    expect(items.find((i) => i.id === 'pp-infant-checkup-1')!.status).toBe('done')
+    const up = upcomingAppointments(s.appointments, today)
+    expect(up.map((a) => a.title)).toEqual(['회사 면담 · 육아휴직 신청', '4개월 예방접종', '영유아 건강검진 2차'])
+    expect(up[1]!.date).toBe(addMonths(s.baby!.birthDate, 4))
+    expect(s.appointments.filter((a) => a.done).map((a) => a.title)).toEqual(
+      expect.arrayContaining(['첫 산부인과 진료', '2개월 예방접종']),
+    )
+    // Ticks from the pregnancy stay with it.
+    expect(items.filter((i) => i.phase === 'pregnancy-3rd' && i.status === 'done').length).toBeGreaterThanOrEqual(5)
+  })
+
+  it('moves the couple days back whole years when a pinned today is early', () => {
+    expect(demoCoupleDays('2026-01-01')).toEqual(DEMO_COUPLE_DAYS)
+    expect(demoCoupleDays('2024-10-20')).toEqual(DEMO_COUPLE_DAYS)
+    expect(demoCoupleDays('2024-10-19')).toEqual({
+      met: '2020-05-14',
+      firstTrip: '2020-10-03',
+      proposal: '2023-03-09',
+      married: '2023-10-19',
+    })
+    for (const stage of STAGES) {
+      const day = '2025-03-01'
+      const s = createDemoState(day, NOW, stage)
+      expect(s.couple.marriedDate! < s.settings.ttcStart!).toBe(true)
+      expect(s.couple.metDate! < s.couple.marriedDate!).toBe(true)
+      expect(s.diary.every((e) => e.date <= day)).toBe(true)
+      expect(s.anniversaries.every((a) => a.date <= day)).toBe(true)
+    }
+  })
+})
+
+describe('오늘 · 우리 둘 / 챙길 것 cards', () => {
+  const today = '2026-09-26'
+
+  it('counts 함께한 지 from the day they met (day 1) and only for a past date', () => {
+    expect(togetherDays({ metDate: '2026-09-26' }, today)).toBe(1)
+    expect(togetherDays({ metDate: '2026-06-19' }, today)).toBe(100)
+    expect(togetherDays({ metDate: '2026-09-27' }, today)).toBeNull()
+    expect(togetherDays({}, today)).toBeNull()
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(togetherDays(s.couple, today)).toBe(diffDays('2021-05-14', today) + 1)
+  })
+
+  it('shows the anniversary banner only on the day', () => {
+    expect(todaysAnniversaries({ couple: { members: [] as never, inviteCode: '', metDate: '2026-06-19' }, anniversaries: [] }, today).map((e) => e.title)).toEqual([
+      '만난 지 100일',
+    ])
+    const s = createDemoState('2026-10-03', NOW, 'preparing')
+    expect(todaysAnniversaries(s, '2026-10-03').map((e) => e.title)).toEqual(['첫 여행 5주년'])
+    expect(todaysAnniversaries(s, '2026-10-02')).toEqual([])
+    expect(todaysAnniversaries(createDemoState('2026-10-19', NOW, 'parenting'), '2026-10-19').map((e) => e.title)).toEqual([
+      '결혼 2주년',
+    ])
+  })
+
+  it('lists the next two appointments within two weeks, with 오늘/내일/D-N and who goes', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['보건소 가임력 검사 신청', '치과 검진·스케일링'])
+    // Two weeks later everything booked has passed.
+    expect(upcomingForToday(s.appointments, addDays(today, 13)).map((a) => a.title)).toEqual([])
+    expect(dayLabel(today, today)).toBe('오늘')
+    expect(dayLabel(addDays(today, 1), today)).toBe('내일')
+    expect(dayLabel(addDays(today, 3), today)).toBe('D-3')
+    const members = s.couple.members
+    expect(whoLabel('both', members, 'a')).toBe('둘이 함께')
+    expect(whoLabel('a', members, 'a')).toBe('나')
+    expect(whoLabel('b', members, 'a')).toBe('지은')
+  })
+
+  it('keeps a pregnancy’s visits off the home screen after going back to preparing', () => {
+    const pregnant = createDemoState(today, NOW, 'pregnant')
+    // While pregnant everything booked shows.
+    expect(homeAppointments(pregnant)).toBe(pregnant.appointments)
+    expect(upcomingForToday(homeAppointments(pregnant), today).map((a) => a.title)).toEqual([
+      '정기검진 · NT 초음파',
+      '산후조리원 상담',
+    ])
+    // After a loss: NT / 조리원 / 정밀초음파 stay in 챙길 것 but not on 오늘.
+    let s = backToPreparing(pregnant, today)
+    expect(upcomingForToday(homeAppointments(s), today)).toEqual([])
+    // A visit of their own (or a preconception one) still shows.
+    s = addAppointment(s, { date: addDays(today, 5), title: '산부인과 진료', who: 'b', kind: 'hospital' }, 'b')
+    s = addAppointment(
+      s,
+      { date: addDays(today, 6), title: '치과', who: 'b', kind: 'hospital', taskId: 'pre-dental' },
+      'b',
+    )
+    expect(upcomingForToday(homeAppointments(s), today).map((a) => a.title)).toEqual(['산부인과 진료', '치과'])
+    expect(s.appointments.length).toBe(pregnant.appointments.length + 2)
+  })
+
+  it('still shows birth-day visits while preparing for a second child', () => {
+    const parenting = createDemoState(today, NOW, 'parenting')
+    let s: AppState = { ...parenting, stage: 'preparing' }
+    s = addAppointment(
+      s,
+      { date: addDays(today, 3), title: '배우자 출산휴가 면담', who: 'a', kind: 'admin', taskId: 'birth-partner-leave' },
+      'a',
+    )
+    s = addAppointment(s, { date: addDays(today, 4), title: '정밀초음파', who: 'both', kind: 'test', taskId: 'p2-anatomy' }, 'a')
+    const titles = homeAppointments(s).map((a) => a.title)
+    expect(titles).toContain('배우자 출산휴가 면담')
+    expect(titles).not.toContain('정밀초음파')
+    // …but not the birth-day ones of a pregnancy that ended without a birth.
+    const ended = backToPreparing(
+      addAppointment(
+        createDemoState(today, NOW, 'pregnant'),
+        { date: addDays(today, 3), title: '배우자 출산휴가 면담', who: 'a', kind: 'admin', taskId: 'birth-partner-leave' },
+        'a',
+      ),
+      today,
+    )
+    expect(homeAppointments(ended).map((a) => a.title)).not.toContain('배우자 출산휴가 면담')
+  })
+
+  it('keeps rows ticked on the card in place (as done) until the tab is left', () => {
+    const x = { id: 'x', status: 'now' }
+    const y = { id: 'y', status: 'soon' }
+    const z = { id: 'z', status: 'done' }
+    const w = { id: 'w', status: 'now' }
+    const items = [x, y, z, w]
+    expect(withTicked([x, y], items, [{ id: 'z', index: 0 }]).map((r) => r.id)).toEqual(['z', 'x', 'y'])
+    expect(withTicked([x, y], items, [{ id: 'z', index: 9 }]).map((r) => r.id)).toEqual(['x', 'y', 'z'])
+    // Still in focus (e.g. un-ticked again) or not done: nothing extra.
+    expect(withTicked([x, y], items, [{ id: 'x', index: 1 }, { id: 'w', index: 0 }]).map((r) => r.id)).toEqual(['x', 'y'])
+  })
+})
+
+describe('onboarding: 우리의 날', () => {
+  const today = '2026-09-26'
+  const base = { ...initialDraft(), myRole: 'husband' as const, myName: '민수', partnerName: '지은' }
+
+  it('is optional, but an entered day must be real and not in the future', () => {
+    expect(base.metDate).toBe('')
+    expect(stepProblem(1, base, today)).toBeNull()
+    expect(stepProblem(1, { ...base, metDate: '2021-05-14', marriedDate: '2024-10-19' }, today)).toBeNull()
+    expect(stepProblem(1, { ...base, metDate: today }, today)).toBeNull()
+    expect(stepProblem(1, { ...base, metDate: '2026-09-27' }, today)).toBe('처음 만난 날은 오늘까지의 날짜로 넣어 주세요.')
+    expect(stepProblem(1, { ...base, marriedDate: '1949-12-31' }, today)).toBe('결혼한 날을 한 번 더 확인해 주세요.')
+    expect(stepProblem(1, { ...base, marriedDate: '2026-02-30' }, today)).toContain('확인')
+    // Names come first.
+    expect(stepProblem(1, { ...initialDraft(), metDate: '2030-01-01' }, today)).toContain('역할')
+  })
+
+  it('notes (without blocking) a wedding before the day they met', () => {
+    expect(coupleDatesNote({ metDate: '2024-10-19', marriedDate: '2021-05-14' }, today)).toContain('앞서요')
+    expect(coupleDatesNote({ metDate: '2021-05-14', marriedDate: '2024-10-19' }, today)).toBeNull()
+    expect(coupleDatesNote({ metDate: '2021-05-14', marriedDate: '' }, today)).toBeNull()
+  })
+
+  it('saves the days on the first state (and nothing when skipped)', () => {
+    const c = draftToChoices({ ...base, metDate: '2021-05-14', marriedDate: '' }, today)!
+    expect(c.metDate).toBe('2021-05-14')
+    expect(c.marriedDate).toBeUndefined()
+    const s = stateFromOnboarding(c, today, NOW)
+    expect(isAppState(s)).toBe(true)
+    expect(s.couple.metDate).toBe('2021-05-14')
+    expect('marriedDate' in s.couple).toBe(false)
+    const both = stateFromOnboarding({ ...c, marriedDate: '2024-10-19' }, today, NOW, 'ABC234')
+    expect(both.couple).toMatchObject({ metDate: '2021-05-14', marriedDate: '2024-10-19', inviteCode: 'ABC234' })
+    const skipped = stateFromOnboarding(draftToChoices(base, today)!, today, NOW)
+    expect('metDate' in skipped.couple || 'marriedDate' in skipped.couple).toBe(false)
+    // Sanitized again at save time.
+    const bad = stateFromOnboarding({ ...c, metDate: '2027-01-01', marriedDate: 'nope' }, today, NOW)
+    expect(bad.couple.metDate).toBeUndefined()
+    expect(bad.couple.marriedDate).toBeUndefined()
   })
 })

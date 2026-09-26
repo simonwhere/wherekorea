@@ -8,7 +8,16 @@ import type { Stage } from '@/lib/types'
 const VALUE_PROPS = [
   { emoji: '✅', title: '매일 영양제·습관 서로 체크', body: '엽산·생활습관을 같이 챙기고, 콕 찔러 응원해요.' },
   { emoji: '💞', title: '가임기를 두 사람에게 같이 알려 줘요', body: '부담 없이, 각자 편한 말투로 받아요.' },
-  { emoji: '📔', title: '임신·육아일기까지 한 앱에서', body: '준비부터 첫돌까지 우리 이야기를 한곳에.' },
+  {
+    emoji: '🏥',
+    title: '병원·검사·신청까지 함께 챙기기',
+    body: '임신 준비부터 출산 뒤까지, 챙길 것과 병원 예약을 둘이 같이 봐요.',
+  },
+  {
+    emoji: '📔',
+    title: '비트윈처럼 둘이 쌓는 기록장',
+    body: '만난 날과 기념일, 사진과 일기가 아기가 생긴 뒤에도 한 권으로 이어져요.',
+  },
 ] as const
 
 const DEMOS: Array<{ stage: Stage; emoji: string; label: string }> = [

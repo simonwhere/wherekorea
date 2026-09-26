@@ -2,7 +2,7 @@
 
 import { Button, Sheet, useToast } from '@/components/ui'
 import { formatKo } from '@/lib/dates'
-import { removeEntry } from '@/lib/logic/diary'
+import { removeStoryEntry } from '@/lib/logic/usView'
 import { deletePhoto } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 import type { DiaryEntry } from '@/lib/types'
@@ -15,7 +15,7 @@ export default function DeleteEntrySheet({ entry, onClose }: { entry: DiaryEntry
   function confirm() {
     if (!entry) return
     const { id, photoId } = entry
-    update((s) => removeEntry(s, id))
+    update((s) => removeStoryEntry(s, id))
     if (photoId) void deletePhoto(photoId)
     toast.show('기록을 지웠어요')
     onClose()

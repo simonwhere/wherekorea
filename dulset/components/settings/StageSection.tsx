@@ -76,7 +76,7 @@ export default function StageSection() {
 
         {state.stage === 'parenting' ? (
           <p className="mt-3 rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
-            준비 기록과 태교일기도 모두 그대로 남아 있어요. 육아일기에서 함께 이어 가요.
+            준비 기록과 태교일기도 모두 그대로 남아 있어요. 우리 탭 이야기에서 육아일기로 함께 이어 가요.
           </p>
         ) : null}
       </Card>

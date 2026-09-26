@@ -1,8 +1,8 @@
 'use client'
 
 import type { TabKey } from '@/components/AppShell'
-import { Button, Card, Disclaimer, cx } from '@/components/ui'
-import { PROGRAMS_CHECKED_AT, programById, type Program } from '@/lib/content/programs'
+import { Button, Card, Disclaimer } from '@/components/ui'
+import { programById } from '@/lib/content/programs'
 import { DIARY_NAME, promptFor } from '@/lib/logic/diary'
 import { DATE_CARD_COPY, doctorAdvice } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
@@ -115,56 +115,5 @@ export function DoctorCard() {
         기준: 미국생식의학회(ASRM {advice.reasons.includes('age') ? '2021·2023' : '2023'}) · 영국 NICE(2026). 진단이 아닌 안내예요.
       </Disclaimer>
     </Card>
-  )
-}
-
-// ── Public support tips (collapsible) ───────────────────────
-
-export function SupportTips() {
-  const programs = [programById('folic-acid'), programById('fertility-check')].filter((p): p is Program => !!p)
-  if (programs.length === 0) return null
-  return (
-    <details className="group rounded-xl2 border border-line bg-surface shadow-card">
-      <summary
-        className={cx(
-          'flex min-h-[52px] cursor-pointer list-none items-center gap-2 rounded-xl2 px-4 text-sm font-semibold text-ink',
-          '[&::-webkit-details-marker]:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand',
-        )}
-      >
-        <span aria-hidden>💡</span>
-        <span className="flex-1">보건소 무료 엽산제·가임력 검사 지원</span>
-        <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">
-          ⌄
-        </span>
-      </summary>
-      <div className="space-y-3 px-4 pb-4">
-        {programs.map((p) => (
-          <div key={p.id} className="rounded-xl bg-surface-2 p-3">
-            <p className="text-sm font-semibold text-ink">{p.title}</p>
-            <p className="mt-1 text-xs leading-relaxed text-ink-2">{p.benefit}</p>
-            <dl className="mt-1.5 space-y-0.5 text-[11px] leading-relaxed text-ink-3">
-              <div>
-                <dt className="inline font-semibold">대상 </dt>
-                <dd className="inline">{p.who}</dd>
-              </div>
-              <div>
-                <dt className="inline font-semibold">신청 </dt>
-                <dd className="inline">{p.how}</dd>
-              </div>
-              {p.deadline ? (
-                <div>
-                  <dt className="inline font-semibold">기한 </dt>
-                  <dd className="inline">{p.deadline}</dd>
-                </div>
-              ) : null}
-            </dl>
-            <ExternalLink href={p.url}>{p.urlLabel}</ExternalLink>
-          </div>
-        ))}
-        <p className="text-[11px] leading-relaxed text-ink-3">
-          지원 내용은 지역·연도마다 달라요. {PROGRAMS_CHECKED_AT} 기준이니 신청 전에 공식 페이지에서 확인해 주세요.
-        </p>
-      </div>
-    </details>
   )
 }
