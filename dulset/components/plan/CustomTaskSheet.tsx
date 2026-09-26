@@ -7,7 +7,7 @@ import { PHASES, addCustomTask } from '@/lib/logic/roadmap'
 import { useApp } from '@/lib/store'
 import type { RoadmapPhase } from '@/lib/types'
 import { ChoiceChips, FieldError } from './bits'
-import { CUSTOM_PLACEHOLDER, CUSTOM_TITLE_MAX, PHASE_SHORT, type Who } from './model'
+import { CUSTOM_PLACEHOLDER, CUSTOM_TITLE_MAX, PHASE_SHORT, type Who } from '@/lib/logic/plan'
 
 /** "+ 직접 추가": the couple's own item (e.g. 태명 짓기, 회사에 알리기). */
 export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhase: RoadmapPhase; onClose: () => void }) {

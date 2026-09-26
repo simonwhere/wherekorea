@@ -24,7 +24,7 @@ import {
   CLAIM_KEY,
   claimAppliedAt,
   claimDeadline,
-  firstYearLastDay,
+  firstMeetingLastDay,
   formatMeasure,
   formatSpan,
   growthNewestFirst,
@@ -363,17 +363,18 @@ describe('60-day claim window', () => {
     expect(programDeadline('parent-allowance', '2026-01-01', '2026-01-21')).toEqual({ active: true, d: 'D-39' })
     expect(programDeadline('parent-allowance', '2026-01-01', '2026-01-21', true)).toEqual({ active: false, done: true })
     expect(programDeadline('child-allowance', '2026-01-01', '2026-06-01')).toEqual({ active: false })
-    expect(programDeadline('first-meeting', '2026-01-01', '2026-11-17')).toEqual({ active: true, d: 'D-44' })
-    expect(programDeadline('first-meeting', '2026-01-01', '2026-12-31')).toEqual({ active: true, d: 'D-day' })
-    expect(programDeadline('first-meeting', '2026-01-01', '2027-01-01')).toEqual({ active: false })
-    expect(programDeadline('first-meeting', '2026-01-01', '2026-11-17', true)).toEqual({ active: true, d: 'D-44' })
+    expect(programDeadline('first-meeting', '2026-01-01', '2027-11-17')).toEqual({ active: true, d: 'D-44' })
+    expect(programDeadline('first-meeting', '2026-01-01', '2027-12-31')).toEqual({ active: true, d: 'D-day' })
+    expect(programDeadline('first-meeting', '2026-01-01', '2028-01-01')).toEqual({ active: false })
+    expect(programDeadline('first-meeting', '2026-01-01', '2027-11-17', true)).toEqual({ active: true, d: 'D-44' })
     expect(programDeadline('infant-checkup', '2026-01-01', '2030-01-01')).toEqual({ active: true })
   })
 
-  it('ends 첫만남이용권 the day before the first birthday', () => {
-    expect(firstYearLastDay('2026-01-01')).toBe('2026-12-31')
-    expect(firstYearLastDay('2024-02-29')).toBe('2025-02-27')
-    expect(firstYearLastDay('2026-03-31')).toBe('2027-03-30')
+  it('ends 첫만남이용권 the day before the 2nd birthday for births from 2024 (1st before)', () => {
+    expect(firstMeetingLastDay('2026-01-01')).toBe('2027-12-31')
+    expect(firstMeetingLastDay('2024-02-29')).toBe('2026-02-27')
+    expect(firstMeetingLastDay('2026-03-31')).toBe('2028-03-30')
+    expect(firstMeetingLastDay('2023-12-31')).toBe('2024-12-30')
   })
 })
 

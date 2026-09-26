@@ -17,7 +17,7 @@ import {
   shortDate,
   statusPill,
   type PlanItem,
-} from './model'
+} from '@/lib/logic/plan'
 
 export interface ItemActions {
   onToggle: (item: PlanItem) => void

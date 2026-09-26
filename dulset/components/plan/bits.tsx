@@ -4,7 +4,7 @@
 
 import { Avatar, cx } from '@/components/ui'
 import type { Member, MemberId } from '@/lib/types'
-import type { PillTone } from './model'
+import type { PillTone } from '@/lib/logic/plan'
 
 export const btn =
   'inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'

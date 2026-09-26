@@ -172,7 +172,7 @@ export function Toggle({
       >
         <span
           className={cx(
-            'absolute top-0.5 h-6 w-6 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform',
+            'absolute left-0 top-0.5 h-6 w-6 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform',
             checked ? 'translate-x-[22px]' : 'translate-x-0.5',
           )}
         />

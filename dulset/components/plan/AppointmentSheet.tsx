@@ -21,7 +21,7 @@ import {
   type AppointmentDraft,
   type DraftError,
   type Who,
-} from './model'
+} from '@/lib/logic/plan'
 
 const KINDS: AppointmentKind[] = ['hospital', 'test', 'vaccine', 'admin', 'other']
 

@@ -115,12 +115,17 @@ function whenLabel(a: Appointment): string {
 /**
  * Reminders the day before (and the morning of) an appointment. Attendees get a
  * reminder; when only one of the two goes, the other gets a gentle heads-up so
- * they can ask how it went.
+ * they can ask how it went. `skip` lets the caller drop appointments that no
+ * longer apply (see planNotices: visits for a pregnancy that ended).
  */
-export function appointmentNotices(state: AppState, today: ISODate): Notice[] {
+export function appointmentNotices(
+  state: AppState,
+  today: ISODate,
+  skip: (a: Appointment) => boolean = () => false,
+): Notice[] {
   const out: Notice[] = []
   for (const a of state.appointments) {
-    if (a.done) continue
+    if (a.done || skip(a)) continue
     const until = diffDays(today, a.date)
     if (until !== 1 && until !== 0) continue
     const when = until === 1 ? '내일' : '오늘'

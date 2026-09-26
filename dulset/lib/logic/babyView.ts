@@ -384,9 +384,16 @@ export function toggleClaimApplied(state: AppState, birth: ISODate, today: ISODa
   return { ...state, milestones }
 }
 
-/** Last day of "출생일로부터 1년 안에 사용" — the day before the first birthday. */
-export function firstYearLastDay(birth: ISODate): ISODate {
-  return addDays(addMonths(birth, 12), -1)
+/** Births from this date get 2 years (was 1) to apply for and use 첫만남이용권. */
+export const FIRST_MEETING_TWO_YEARS_FROM = '2024-01-01'
+
+/**
+ * Last day to apply for and use 첫만남이용권: the day before the 2nd birthday for
+ * births from 2024-01-01 (1st birthday before that). Unused balance lapses.
+ */
+export function firstMeetingLastDay(birth: ISODate): ISODate {
+  const years = birth >= FIRST_MEETING_TWO_YEARS_FROM ? 2 : 1
+  return addDays(addMonths(birth, 12 * years), -1)
 }
 
 export interface ProgramDeadline {
@@ -399,8 +406,8 @@ export interface ProgramDeadline {
 
 /**
  * Whether a program's deadline still applies to this baby, with a D-label when
- * it is date-bound: 60-day claims (부모급여·아동수당) and 첫만남이용권 (use
- * within a year of birth). Other deadlines are shown as plain, always-on text.
+ * it is date-bound: 60-day claims (부모급여·아동수당) and 첫만남이용권 (apply and
+ * use within 2 years of birth). Other deadlines are shown as plain, always-on text.
  */
 export function programDeadline(
   programId: string,
@@ -414,7 +421,7 @@ export function programDeadline(
     return c ? { active: true, d: c.d } : { active: false }
   }
   if (programId === FIRST_MEETING_PROGRAM_ID) {
-    const last = firstYearLastDay(birth)
+    const last = firstMeetingLastDay(birth)
     return today >= birth && today <= last ? { active: true, d: dLabel(last, today) } : { active: false }
   }
   return { active: true }

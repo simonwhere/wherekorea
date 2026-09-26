@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import ItemRow, { type ItemActions } from '@/components/plan/ItemRow'
-import { calmSuggestions, planFocus, planItems, tickItem, type PlanItem } from '@/components/plan/model'
+import { calmSuggestions, planFocus, planItems, tickItem, type PlanItem } from '@/lib/logic/plan'
 import { Card, cx, useToast } from '@/components/ui'
 import { formatKo } from '@/lib/dates'
 import { APPOINTMENT_KIND_EMOJI, APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'

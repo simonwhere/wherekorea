@@ -15,7 +15,7 @@ import { buildIcs, downloadText } from '@/lib/logic/ics'
 import { useApp } from '@/lib/store'
 import type { Appointment } from '@/lib/types'
 import { Owners, btnBrand, btnDanger, btnSecondary } from './bits'
-import { ownerText, usableAppointments } from './model'
+import { ownerText, usableAppointments } from '@/lib/logic/plan'
 
 const PAST_PAGE = 3
 

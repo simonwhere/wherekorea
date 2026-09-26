@@ -47,7 +47,7 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
 
   const tapOne = (n: AppNotification) => {
     if (!n.read) update((s) => markRead(s, me.id, n.id))
-    const target = noticeTarget(n.kind, state.stage)
+    const target = noticeTarget(n.kind, state.stage, n.key)
     if (target) {
       close()
       openTab(target)
@@ -121,7 +121,7 @@ function Group({
         {items.map((n, i) => {
           const { icon, text } = splitTitleIcon(n.title, n.kind)
           const time = relativeTimeKo(n.createdAt, nowMs)
-          const opens = noticeTarget(n.kind, stage) !== null
+          const opens = noticeTarget(n.kind, stage, n.key) !== null
           return (
             <li key={n.id} className={cx(i > 0 && 'border-t border-line')}>
               <button

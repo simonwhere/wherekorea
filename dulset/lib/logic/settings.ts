@@ -491,6 +491,16 @@ export function sanitizeBackup(input: AppState): AppState | null {
     d.stage = STAGES.includes(raw.stage as Stage) ? raw.stage : input.stage
     d.createdAt = isStr(raw.createdAt) ? raw.createdAt : `${raw.date as string}T00:00:00`
     optStr(d, 'mood', 'photoId')
+    // Reactions: only {a|b: short string}.
+    if (isObj(raw.reactions)) {
+      const r: Record<string, string> = {}
+      for (const id of MEMBER_IDS) {
+        const v = (raw.reactions as Loose)[id]
+        if (isStr(v) && v.length <= 8) r[id] = v
+      }
+      if (Object.keys(r).length) d.reactions = r
+      else delete d.reactions
+    } else delete d.reactions
     return d as unknown as DiaryEntry
   })
 
@@ -517,7 +527,11 @@ export function sanitizeBackup(input: AppState): AppState | null {
     anniversaries: list<AppState['anniversaries'][number]>(
       input.anniversaries,
       (a) => isStr(a.id) && isStr(a.title) && isISODate(a.date),
-    ).map((a) => ({ ...a, yearly: a.yearly === true })),
+    ).map((a) => {
+      const out = { ...a, yearly: a.yearly === true }
+      if (!(isStr(a.emoji) && a.emoji.length <= 8)) delete out.emoji
+      return out
+    }),
     appointments: list(
       input.appointments,
       (a) =>

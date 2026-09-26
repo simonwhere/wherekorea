@@ -6,7 +6,7 @@ import { Card, cx } from '@/components/ui'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { useApp } from '@/lib/store'
 import ItemRow, { type ItemActions } from './ItemRow'
-import { calmSuggestions, planFocus, type PlanItem } from './model'
+import { calmSuggestions, planFocus, type PlanItem } from '@/lib/logic/plan'
 
 const SHOWN = 3
 

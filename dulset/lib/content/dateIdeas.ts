@@ -134,7 +134,7 @@ export const DATE_IDEAS: DateIdea[] = [
     budget: 1,
     duration: '1~2시간',
     mapQuery: '문구 소품샵',
-    tip: '다 쓴 편지는 기록 탭에 사진으로 남겨 둬요.',
+    tip: '다 쓴 편지는 우리 탭 이야기에 사진으로 남겨 둬요.',
     stages: ALL,
     flags: ['low-energy'],
   },

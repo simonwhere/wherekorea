@@ -101,7 +101,8 @@ function MainApp() {
   useEffect(() => {
     const sync = () => {
       const h = readHash()
-      if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
+      if (h === 'days') setTab('diary') // 우리 → 기념일
+      else if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
       else setTab('today')
     }
     sync()

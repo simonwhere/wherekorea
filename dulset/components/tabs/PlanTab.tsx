@@ -24,7 +24,7 @@ import {
   type AppointmentDraft,
   type PhaseFilter,
   type PlanItem,
-} from '@/components/plan/model'
+} from '@/lib/logic/plan'
 import { ROADMAP_CHECKED_AT } from '@/lib/content/roadmap'
 import { setAppointmentDone } from '@/lib/logic/appointments'
 import { removeCustomTask } from '@/lib/logic/roadmap'

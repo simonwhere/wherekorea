@@ -5,7 +5,7 @@ import { PHASES, PHASE_LABEL } from '@/lib/logic/roadmap'
 import { useApp } from '@/lib/store'
 import { btnBrand } from './bits'
 import ItemRow, { type ItemActions } from './ItemRow'
-import { PHASE_SHORT, phaseGroups, type PhaseFilter, type PlanItem } from './model'
+import { PHASE_SHORT, phaseGroups, type PhaseFilter, type PlanItem } from '@/lib/logic/plan'
 
 const FILTERS: Array<{ value: PhaseFilter; label: string }> = [
   { value: 'stage', label: '지금 단계' },

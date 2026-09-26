@@ -90,7 +90,7 @@ export const PROGRAMS: Program[] = [
     benefit: '첫째 200만 원, 둘째 이상 300만 원 (국민행복카드 바우처)',
     who: '2024년 이후 태어난 아이',
     how: '출생신고 때 정부24 “행복출산” 원스톱으로 함께 신청',
-    deadline: '출생일로부터 1년 안에 사용',
+    deadline: '출생일로부터 2년 안에 신청·사용 (2024년 이후 출생아, 남은 금액은 소멸)',
     effective: '2024-01-01',
     url: 'https://www.gov.kr/portal/onestopSvc/happyBirth',
     urlLabel: '정부24 행복출산',

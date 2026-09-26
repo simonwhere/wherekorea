@@ -311,13 +311,16 @@ export function relativeTimeKo(createdAt: string, nowMs: number): string {
 }
 
 /** Tabs a notice can open (a subset of AppShell's TabKey). */
-export type NoticeTab = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'date'
+export type NoticeTab = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'date' | 'plan' | 'diary'
 
 /**
  * Where tapping a notice should take the viewer, or null when there's nothing
  * more to see. Only returns tabs that exist in the current stage.
  */
-export function noticeTarget(kind: NotificationKind, stage: Stage): NoticeTab | null {
+export function noticeTarget(kind: NotificationKind, stage: Stage, key?: string): NoticeTab | null {
+  // Couple-wide notices are routed by their key (kind alone is ambiguous).
+  if (key?.startsWith('anniv:') || key?.startsWith('reaction:')) return 'diary'
+  if (key?.startsWith('appt:') || key?.startsWith('deadline:')) return 'plan'
   switch (kind) {
     case 'fertile-start':
     case 'peak':

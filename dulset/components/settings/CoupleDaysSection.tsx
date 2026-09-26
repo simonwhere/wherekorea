@@ -8,9 +8,9 @@ import { daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
 import { useApp } from '@/lib/store'
 import { SettingsSection } from './bits'
 
-/** 우리 is the 'diary' route (AppShell keeps the key for old links). */
-function openUs() {
-  if (window.location.hash.replace(/^#/, '') !== 'diary') window.location.hash = 'diary'
+/** #days opens the 우리 tab on its 기념일 view. */
+function openDays() {
+  if (window.location.hash.replace(/^#/, '') !== 'days') window.location.hash = 'days'
   window.scrollTo({ top: 0 })
 }
 
@@ -82,9 +82,8 @@ export default function CoupleDaysSection() {
           <Button variant="secondary" onClick={openSheet}>
             {met || married ? '날짜 고치기' : '날짜 넣기'}
           </Button>
-          {/* Lands on the 우리 tab (its 기념일 view is one tap away, named in the note below). */}
-          <Button variant="ghost" onClick={openUs}>
-            우리 탭 열기 <span aria-hidden>→</span>
+          <Button variant="ghost" onClick={openDays}>
+            기념일 보기 <span aria-hidden>→</span>
           </Button>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-ink-3">

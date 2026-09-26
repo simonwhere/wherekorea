@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import DiaryTab from '@/components/tabs/DiaryTab'
 import AlbumPanel from '@/components/us/AlbumPanel'
 import AnniversaryPanel from '@/components/us/AnniversaryPanel'
@@ -25,7 +25,17 @@ const SEGMENTS: ReadonlyArray<SegmentOption<Segment>> = [
  */
 export default function UsTab() {
   const { state } = useApp()
-  const [segment, setSegment] = useState<Segment>('story')
+  // #days opens straight on 기념일 (links from 설정 and the home banner).
+  const [segment, setSegment] = useState<Segment>(() =>
+    typeof window !== 'undefined' && window.location.hash === '#days' ? 'days' : 'story',
+  )
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === '#days') setSegment('days')
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
   const [datesOpen, setDatesOpen] = useState(false)
   // Stable, so the Sheet's open effect doesn't re-run (and refocus) on every render.
   const openDates = useCallback(() => setDatesOpen(true), [])

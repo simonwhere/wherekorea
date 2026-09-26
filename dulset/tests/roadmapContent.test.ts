@@ -16,7 +16,7 @@ import {
   usableAppointments,
   validateDraft,
   type PlanItem,
-} from '@/components/plan/model'
+} from '@/lib/logic/plan'
 import { CHECKUPS } from '@/lib/content/baby'
 import { BAG_ITEMS, PRENATAL_CHECKS } from '@/lib/content/pregnancy'
 import { PROGRAMS } from '@/lib/content/programs'

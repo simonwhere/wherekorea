@@ -13,7 +13,7 @@
 //           view dates it from the due date (due − 280), like the 임신 tab, so a
 //           doctor-adjusted due date moves these windows too.
 //   edd   — due date. After the birth the 챙길 것 view reads the real birth day
-//           here, so rights counted "출산일부터" line up (see components/plan/model).
+//           here, so rights counted "출산일부터" line up (see lib/logic/plan).
 //   birth — birth day (day 0). "N일 안" deadlines use the earliest reading
 //           (birth day counted as day 1), like the 60-day claim in lib/logic/babyView.
 // Preconception items have no window: there is no date to count from.
@@ -39,7 +39,7 @@ export const planKey = (id: string) => `plan:${id}`
  * Deadlines the law counts in calendar months ("1개월 안"), in months from the
  * window's anchor. Windows are in days, so the template itself carries the
  * shortest possible reading (a February birth: 27 days) for any code that reads
- * raw windows; the 챙길 것 view swaps in the exact last day (components/plan/model).
+ * raw windows; the 챙길 것 view swaps in the exact last day (lib/logic/plan).
  */
 export const MONTH_DEADLINES: Readonly<Record<string, number>> = { 'birth-registration': 1 }
 
@@ -938,7 +938,7 @@ const TEMPLATES: RoadmapTemplate[] = [
     deadline: true,
     milestoneKey: CLAIM_KEY,
     detail:
-      '출생신고 때 정부24나 주민센터에서 첫만남이용권·부모급여·아동수당·양육수당 등을 한 번에 신청해요. 부모급여(0세 월 100만 원, 1세 월 50만 원)와 아동수당(2026년부터 만 9세 미만, 수도권 월 10만 원)은 출생일 포함 60일 안에 신청해야 출생월부터 받아요. 늦으면 신청한 달부터 받아요.',
+      '출생신고 때 정부24나 주민센터에서 첫만남이용권·부모급여·아동수당·양육수당 등을 한 번에 신청해요. 부모급여(0세 월 100만 원, 1세 월 50만 원)와 아동수당(2026년부터 만 9세 미만, 수도권 월 10만 원)은 출생일 포함 60일 안에 신청해야 출생월부터 받고, 늦으면 신청한 달부터 받아요. 첫만남이용권은 출생일로부터 2년 안에 신청하고 써야 해요(2024년 이후 출생아).',
     sources: [S.gov24HappyBirth, S.koreaHappyBirth, S.koreaParentAllowance, S.mohwChildAllowance],
   },
   {
