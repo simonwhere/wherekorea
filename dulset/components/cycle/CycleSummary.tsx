@@ -19,7 +19,8 @@ export default function CycleSummary({
 }) {
   const { status, headline, rows, cycleDay, stats } = summary
   const fertileNow = view !== 'hidden' && status.kind === 'fertile'
-  const tone = fertileNow ? 'fert' : status.kind === 'late' ? 'brand' : 'default'
+  const tone = fertileNow ? 'fert' : status.kind === 'late' || status.kind === 'after-pregnancy' ? 'brand' : 'default'
+  const waitingForPeriod = status.kind === 'late' || status.kind === 'after-pregnancy'
 
   return (
     <div className="space-y-3">
@@ -44,8 +45,8 @@ export default function CycleSummary({
         </dl>
 
         <div className="mt-4 flex">
-          <Button variant={status.kind === 'late' ? 'primary' : 'secondary'} onClick={onLogToday}>
-            {status.kind === 'late' ? '생리 시작 기록하기' : '오늘 기록하기'}
+          <Button variant={waitingForPeriod ? 'primary' : 'secondary'} onClick={onLogToday}>
+            {waitingForPeriod ? '생리 시작 기록하기' : '오늘 기록하기'}
           </Button>
         </div>
         <Disclaimer>{ESTIMATE_DISCLAIMER}</Disclaimer>

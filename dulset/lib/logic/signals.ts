@@ -74,7 +74,11 @@ export function sendSignal(
     key: `signal:${s.id}:${today}:${from}:${sent}`,
     read: false,
   }
-  return { ...state, notifications: [n, ...state.notifications] }
+  // A reply answers today's signals from the partner, so they're no longer unread
+  // for the one replying (like answering a date proposal).
+  const answered = (m: AppNotification) =>
+    s.tone === 'reply' && isSignal(m) && m.to === from && m.createdAt.startsWith(today) && !m.read
+  return { ...state, notifications: [n, ...state.notifications.map((m) => (answered(m) ? { ...m, read: true } : m))] }
 }
 
 /** Latest signal the viewer received today that they haven't replied to yet. */

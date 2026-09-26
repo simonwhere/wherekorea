@@ -29,7 +29,7 @@ export function ChoiceGroup<T extends string>({
   options: Option<T>[]
   value: T | undefined
   onChange: (next: T) => void
-  columns?: 2 | 3
+  columns?: 1 | 2 | 3
   disabled?: boolean
   tone?: 'brand' | 'fert'
 }) {
@@ -39,7 +39,11 @@ export function ChoiceGroup<T extends string>({
       role="group"
       aria-label={label}
       aria-disabled={disabled || undefined}
-      className={cx('grid gap-2', columns === 2 ? 'grid-cols-2' : 'grid-cols-3', disabled && 'opacity-50')}
+      className={cx(
+        'grid gap-2',
+        columns === 1 ? 'grid-cols-1' : columns === 2 ? 'grid-cols-2' : 'grid-cols-3',
+        disabled && 'opacity-50',
+      )}
     >
       {options.map((o) => {
         const selected = o.value === value

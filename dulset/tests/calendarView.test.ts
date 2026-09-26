@@ -162,7 +162,9 @@ describe('cellView', () => {
     expect(t.ariaLabel).toContain('오늘')
     const out = cellView(dayInfo(base(), '2026-08-31'), ctx('explicit'))
     expect(out.inMonth).toBe(false)
-    expect(out.className).toContain('opacity-35')
+    // Dimmed fill, readable digits (no whole-cell opacity).
+    expect(out.className).not.toContain('opacity-')
+    expect(out.className).toMatch(/text-ink-[23]/)
     expect(cellView(dayInfo(base(), '2026-09-30'), ctx('explicit')).isFuture).toBe(true)
   })
 
@@ -356,7 +358,9 @@ describe('fertility content', () => {
     expect(doctorGuideMonths(undefined)).toBe(12)
     expect(doctorGuideMonths(34)).toBe(12)
     expect(doctorGuideMonths(35)).toBe(6)
-    expect(doctorGuideMonths(41)).toBe(6)
+    // 40+: right away — the same rule as the notice and the home card.
+    expect(doctorGuideMonths(41)).toBe(0)
+    expect(doctorGuideMonths(39)).toBe(6)
   })
 
   it('stays low-pressure and non-medical', () => {
@@ -432,8 +436,12 @@ describe('day sheet helpers', () => {
   it('shows the chance only where it makes sense', () => {
     const input = base()
     expect(dayChanceLabel(dayInfo(input, '2026-09-14'), 'explicit')).toBe('높음')
-    expect(dayChanceLabel(dayInfo(input, '2026-09-11'), 'soft')).toBe('보통')
-    expect(dayChanceLabel(dayInfo(input, '2026-09-22'), 'explicit')).toBe('낮음')
+    expect(dayChanceLabel(dayInfo(input, '2026-09-11'), 'explicit')).toBe('보통')
+    // The soft view ("건강 용어 없이") never shows a pregnancy-chance rating.
+    expect(dayChanceLabel(dayInfo(input, '2026-09-11'), 'soft')).toBeNull()
+    expect(dayChanceLabel(dayInfo(input, '2026-09-14'), 'soft')).toBeNull()
+    // Outside the window and its band: no confident "낮음" ("safe day" framing).
+    expect(dayChanceLabel(dayInfo(input, '2026-09-22'), 'explicit')).toBeNull()
     // The wider band is calendar uncertainty, not a confident "low".
     const possible = range('2026-09-01', '2026-09-28').find((d) => dayInfo(input, d).phase === 'possible')!
     expect(dayChanceLabel(dayInfo(input, possible), 'explicit')).toBe('낮음~보통')
@@ -446,7 +454,7 @@ describe('day sheet helpers', () => {
     const info = dayInfo(base(), '2026-09-22')
     expect(info.phase).toBe('none')
     expect(explainDay(info, 'soft', false)).not.toMatch(/가임기|배란/)
-    expect(explainDay(info, 'explicit', false)).toContain('가임기')
+    expect(explainDay(info, 'explicit', false)).toBe('예상 범위 밖이에요 · 예측은 주기마다 틀릴 수 있어요.')
     expect(explainDay(info, 'hidden', false)).not.toMatch(/가임기|배란/)
     expect(explainDay(dayInfo(base(), '2026-08-20'), 'explicit', true)).toContain('기록 전')
   })
@@ -494,5 +502,6 @@ describe('guide in the hidden view', () => {
   it('personal doctor line follows the 12/6-month rule', () => {
     expect(doctorAgeLine('지은', 33)).toBe('지은님(33세) 기준으로는 1년 동안 소식이 없으면 상담을 받아 보세요.')
     expect(doctorAgeLine('지은', 36)).toContain('6개월')
+    expect(doctorAgeLine('지은', 41)).toBe('지은님(41세) 기준으로는 기다리지 말고 지금 상담해 보세요.')
   })
 })

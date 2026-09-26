@@ -11,7 +11,7 @@ import {
   serializeDiaryDraft,
   type DiaryDraft,
 } from '@/lib/logic/diaryExport'
-import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import { deletePhoto, downscaleImage, getPhotoURL, savePhoto } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 import MoodPicker from './MoodPicker'
@@ -181,7 +181,7 @@ export default function Composer() {
     if (!canSave) return
     const entryDate = clampDiaryDate(date, today)
     const photoId = photo?.id
-    update((s) => addEntry(s, { date: entryDate, author: me.id, text, mood, photoId }, localNowISO()))
+    update((s) => addEntry(s, { date: entryDate, author: me.id, text, mood, photoId }, stampOn(today)))
     // The photo now belongs to the entry: drop the preview but keep the stored file.
     setPhoto(null, { keepStored: true })
     setText('')

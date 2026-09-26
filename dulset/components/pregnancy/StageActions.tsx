@@ -125,10 +125,10 @@ function BirthForm({ onDone }: { onDone: () => void }) {
 }
 
 function EndConfirm({ onDone }: { onDone: () => void }) {
-  const { update } = useApp()
+  const { update, today } = useApp()
   const toast = useToast()
   const confirm = () => {
-    update(backToPreparing)
+    update((s) => backToPreparing(s, today))
     toast.show('준비 단계로 돌아왔어요')
     onDone()
     goToTab('today')

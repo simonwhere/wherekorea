@@ -166,12 +166,13 @@ export function Toggle({
         onClick={() => onChange(!checked)}
         className={cx(
           'relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors',
-          checked ? 'bg-brand' : 'bg-line',
+          // Off track: the --control token (≥3:1 vs the card and vs the white knob).
+          checked ? 'bg-brand' : 'bg-control',
         )}
       >
         <span
           className={cx(
-            'absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform',
+            'absolute top-0.5 h-6 w-6 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform',
             checked ? 'translate-x-[22px]' : 'translate-x-0.5',
           )}
         />
@@ -198,16 +199,46 @@ export function Field({
   )
 }
 
+// border-control: the field's edge needs 3:1 against the card/page (WCAG 1.4.11).
 export const inputClass =
-  'block h-11 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20'
+  'block h-11 w-full rounded-xl border border-control bg-surface px-3 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20'
 
 export const textareaClass =
-  'block w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20'
+  'block w-full rounded-xl border border-control bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20'
+
+const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]):not([tabindex="-1"]), select, textarea, [tabindex="0"]'
+
+/** Focus the page's main heading (made focusable if needed). Returns false if there is none. */
+export function focusMainHeading(): boolean {
+  const h = document.querySelector<HTMLElement>('main h1')
+  if (!h) return false
+  if (!h.hasAttribute('tabindex')) h.tabIndex = -1
+  h.focus({ preventScroll: true })
+  return true
+}
+
+/**
+ * Where focus goes when a sheet closes but its opener is gone (e.g. the diary
+ * entry it deleted): the nearest remaining item around the opener, else the
+ * page heading — never <body>, where keyboard users lose their place.
+ */
+function focusNear(near: Element[]): void {
+  for (const el of near) {
+    if (!document.contains(el)) continue
+    const target = el.matches(FOCUSABLE) ? el : el.querySelector(FOCUSABLE)
+    if (target instanceof HTMLElement) {
+      target.focus({ preventScroll: false })
+      return
+    }
+  }
+  focusMainHeading()
+}
 
 /**
  * Bottom sheet dialog, rendered in a portal. Closes on backdrop tap and Escape.
  * While open, everything else on the page is `inert` (no focus, hidden from
- * screen readers) and focus returns to the opener when it closes.
+ * screen readers) and focus returns to the opener when it closes (or near it,
+ * if the action removed the opener).
  */
 export function Sheet({
   open,
@@ -233,6 +264,11 @@ export function Sheet({
   useEffect(() => {
     if (!open || !mounted) return
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    // Remember what surrounds the opener, in case the sheet's action removes it.
+    const item = opener && opener !== document.body ? opener.closest('li, article') : null
+    const near = [item?.nextElementSibling, item?.previousElementSibling, item?.parentElement?.closest('li, article, section')].filter(
+      (el): el is Element => !!el,
+    )
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCloseRef.current()
     }
@@ -245,6 +281,8 @@ export function Sheet({
     const touched: Array<[HTMLElement, boolean]> = []
     for (const el of Array.from(document.body.children)) {
       if (!(el instanceof HTMLElement) || el === own || el.contains(own)) continue
+      // Live regions (toasts) must keep announcing confirmations for actions inside the sheet.
+      if (el.hasAttribute('data-live-region')) continue
       touched.push([el, el.inert])
       el.inert = true
     }
@@ -255,6 +293,7 @@ export function Sheet({
       document.body.style.overflow = prevOverflow
       for (const [el, was] of touched.reverse()) el.inert = was
       if (opener && document.contains(opener)) opener.focus({ preventScroll: true })
+      else if (opener && opener !== document.body) focusNear(near)
     }
   }, [open, mounted])
 
@@ -363,7 +402,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4">
+      <div
+        aria-live="polite"
+        data-live-region=""
+        className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-4"
+      >
         {msg ? (
           <div key={msg.id} className="rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg shadow-lg">
             {msg.text}

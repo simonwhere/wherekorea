@@ -16,7 +16,7 @@
 // estimates, nudge toward LH tests, and never frame them as contraception or diagnosis.
 
 import { addDays, diffDays, isBetween } from '../dates'
-import type { CycleSettings, ISODate, LHTest, PeriodLog } from '../types'
+import type { CycleSettings, ISODate, LHTest, PeriodLog, Pregnancy } from '../types'
 
 export const LUTEAL_DAYS = 14
 /** Days before ovulation that sperm can survive and conception is possible. */
@@ -174,6 +174,60 @@ export interface CycleInput {
   periods: PeriodLog[]
   lhTests: LHTest[]
   cycle: CycleSettings
+  /**
+   * The couple's pregnancy record, if any (AppState passes it through). Once it
+   * has ended (back to preparing), predictions pause until a period is logged
+   * after `endedAt` — the old cycle says nothing about what comes next.
+   */
+  pregnancy?: Pick<Pregnancy, 'confirmedAt' | 'endedAt'>
+}
+
+/** Past this many days late, "N일 지났어요" reads oddly — more likely a missed log. */
+export const LONG_LATE_DAYS = 14
+
+/**
+ * The day an ended pregnancy ended, while no period has been logged after it
+ * (predictions are paused). A record ended on the day it was confirmed is a
+ * correction, not a pregnancy, and doesn't pause anything.
+ */
+export function pausedSince(input: Pick<CycleInput, 'periods' | 'pregnancy'>): ISODate | undefined {
+  const p = input.pregnancy
+  if (!p?.endedAt || !(p.endedAt > p.confirmedAt)) return undefined
+  const starts = sortedStarts(input.periods)
+  const last = starts[starts.length - 1]
+  return !last || last <= p.endedAt ? p.endedAt : undefined
+}
+
+export interface ForecastLimit {
+  /** No cycle projection on or after this date. */
+  from: ISODate
+  /**
+   * late: the expected period passed with nothing logged — what follows depends
+   * on when it actually starts (or on a pregnancy). paused: after an ended pregnancy.
+   */
+  reason: 'late' | 'paused'
+  /** Most recent logged period start. */
+  lastStart?: ISODate
+}
+
+/**
+ * Where predictions stop as of `today` (undefined = project freely). Every
+ * screen that projects cycles (calendar grid, day sheet, alerts, previews,
+ * .ics) follows this, so none of them shows a fertile window the others hide.
+ */
+export function forecastLimit(input: CycleInput, today: ISODate): ForecastLimit | undefined {
+  const starts = sortedStarts(input.periods)
+  const last = starts[starts.length - 1]
+  const paused = pausedSince(input)
+  if (paused) {
+    if (!last) return { from: addDays(paused, 1), reason: 'paused' }
+    const expected = addDays(last, cycleStats(input.periods, input.cycle).average)
+    const endNext = addDays(paused, 1)
+    return { from: expected < endNext ? expected : endNext, reason: 'paused', lastStart: last }
+  }
+  if (!last || last > today) return undefined
+  const expected = addDays(last, cycleStats(input.periods, input.cycle).average)
+  return diffDays(expected, today) >= 1 ? { from: expected, reason: 'late', lastStart: last } : undefined
 }
 
 /**
@@ -230,6 +284,8 @@ export interface DayInfo {
   /** Days relative to estimated ovulation (0 = ovulation day). */
   ovulationOffset?: number
   hasLH?: 'positive' | 'negative'
+  /** Past the forecast limit (late period / after a pregnancy): nothing is predicted here. */
+  unpredicted?: 'late' | 'paused'
 }
 
 function loggedPeriodCovers(periods: PeriodLog[], date: ISODate, periodLength: number): boolean {
@@ -239,17 +295,40 @@ function loggedPeriodCovers(periods: PeriodLog[], date: ISODate, periodLength: n
   })
 }
 
-export function dayInfo(input: CycleInput, date: ISODate): DayInfo {
+/**
+ * What the calendar shows for `date`. Pass `today` wherever the answer is shown
+ * to the user: it stops projections past a missed period or an ended pregnancy
+ * (see forecastLimit), and keeps counting the current cycle on an unlogged
+ * expected day instead of starting a projected one.
+ */
+export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayInfo {
   const lh = input.lhTests.find((t) => t.date === date)?.result
   const w = cycleAt(input, date)
   const base: DayInfo = { date, phase: 'none', isOvulation: false, hasLH: lh }
   if (loggedPeriodCovers(input.periods, date, input.cycle.periodLength)) {
     return { ...base, phase: 'period', ...(w ? cyclePos(w, date) : {}) }
   }
+  const limit = today ? forecastLimit(input, today) : undefined
+  if (limit && date >= limit.from) {
+    const info: DayInfo = { ...base, unpredicted: limit.reason }
+    if (limit.reason === 'late' && limit.lastStart) {
+      // Keep counting from the last logged start, and keep the missed period's
+      // predicted days visible — nothing after them.
+      info.cycleDay = diffDays(limit.lastStart, date) + 1
+      if (diffDays(limit.from, date) < input.cycle.periodLength) info.phase = 'period-predicted'
+    }
+    return info
+  }
   if (!w) return base
   const pos = cyclePos(w, date)
   // Projected period days of a projected cycle (never overrides a logged one).
   if (!w.startLogged && diffDays(w.start, date) < input.cycle.periodLength) {
+    // On an unlogged expected day (today), it is still the current cycle's last day + 1.
+    if (today && date <= today) {
+      const starts = sortedStarts(input.periods)
+      const last = [...starts].reverse().find((d) => d <= date)
+      if (last) return { ...base, phase: 'period-predicted', cycleDay: diffDays(last, date) + 1 }
+    }
     return { ...base, ...pos, phase: 'period-predicted' }
   }
   let phase: DayPhase = 'none'
@@ -265,18 +344,27 @@ function cyclePos(w: CycleWindow, date: ISODate): Pick<DayInfo, 'cycleDay' | 'ov
 
 export type FertilityStatus =
   | { kind: 'no-data' }
-  | { kind: 'period'; cycleDay: number; nextFertileStart: ISODate }
+  /**
+   * Bleeding today. `nextFertileStart` only when the window is still ahead;
+   * `fertileEnd` when a short cycle's estimated window already overlaps the period.
+   */
+  | { kind: 'period'; cycleDay: number; nextFertileStart?: ISODate; fertileEnd?: ISODate }
   | { kind: 'before-fertile'; daysUntil: number; fertileStart: ISODate; cycleDay: number }
   | { kind: 'fertile'; peak: boolean; isOvulation: boolean; fertileEnd: ISODate; cycleDay: number }
   | { kind: 'after-fertile'; nextPeriod: ISODate; daysUntilPeriod: number; cycleDay: number }
   | { kind: 'late'; daysLate: number; expected: ISODate }
+  /** A pregnancy ended and no period has been logged since: nothing to predict yet. */
+  | { kind: 'after-pregnancy'; endedAt: ISODate; daysSince: number }
 
 /**
  * One-line summary of "where are we today" for the home screen and alerts.
  * `late` means the expected period has passed with nothing logged — the UI should
- * gently suggest logging the period or taking a pregnancy test.
+ * gently suggest logging the period or taking a pregnancy test. `after-pregnancy`
+ * must never do that: the old cycle is meaningless after a pregnancy ended.
  */
 export function fertilityStatus(input: CycleInput, today: ISODate): FertilityStatus {
+  const paused = pausedSince(input)
+  if (paused) return { kind: 'after-pregnancy', endedAt: paused, daysSince: Math.max(0, diffDays(paused, today)) }
   const starts = sortedStarts(input.periods)
   if (starts.length === 0) return { kind: 'no-data' }
   const last = starts[starts.length - 1]!
@@ -293,10 +381,14 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
   if (today === expected) {
     return { kind: 'after-fertile', nextPeriod: expected, daysUntilPeriod: 0, cycleDay: diffDays(w.start, today) + 1 }
   }
-  const info = dayInfo(input, today)
+  const info = dayInfo(input, today, today)
   const cycleDay = info.cycleDay ?? 1
   if (info.phase === 'period') {
-    return { kind: 'period', cycleDay, nextFertileStart: w.fertileStart }
+    // Short cycles: the estimated window can start during the period — never
+    // call a date that has already come the "next" window.
+    if (today < w.fertileStart) return { kind: 'period', cycleDay, nextFertileStart: w.fertileStart }
+    if (today <= w.fertileEnd) return { kind: 'period', cycleDay, fertileEnd: w.fertileEnd }
+    return { kind: 'period', cycleDay }
   }
   if (today < w.fertileStart) {
     return { kind: 'before-fertile', daysUntil: diffDays(today, w.fertileStart), fertileStart: w.fertileStart, cycleDay }
@@ -318,6 +410,8 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
  * the calendar legend and .ics export.
  */
 export function upcomingWindows(input: CycleInput, from: ISODate, count = 3): CycleWindow[] {
+  // Late period or paused after a pregnancy: the next window is unknown.
+  if (forecastLimit(input, from)) return []
   const out: CycleWindow[] = []
   let cursor = from
   for (let guard = 0; out.length < count && guard < count * 3; guard++) {

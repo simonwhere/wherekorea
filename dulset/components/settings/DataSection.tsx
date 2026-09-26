@@ -1,20 +1,12 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import RestoreBackup from '@/components/RestoreBackup'
 import { Button, Card, Sheet, useToast } from '@/components/ui'
-import { formatKo } from '@/lib/dates'
 import { downloadText } from '@/lib/logic/ics'
-import {
-  BACKUP_FILENAME,
-  BACKUP_MAX_BYTES,
-  backupSummary,
-  extraStorageKeys,
-  sanitizeBackup,
-} from '@/lib/logic/settings'
-import { clearAllPhotos } from '@/lib/photos'
+import { BACKUP_FILENAME } from '@/lib/logic/settings'
 import { useApp } from '@/lib/store'
-import { STORAGE_KEY, clearViewer, parseState } from '@/lib/storage'
-import type { AppState } from '@/lib/types'
+import { clearDeviceData } from '@/lib/storage'
 import { ConfirmActions, SettingsSection } from './bits'
 
 const noop = () => {}
@@ -52,74 +44,26 @@ const PRINCIPLES: ReadonlyArray<{ icon: string; title: string; body: string }> =
 export default function DataSection() {
   const { state, replace, setViewer } = useApp()
   const toast = useToast()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [pending, setPending] = useState<AppState | null>(null)
   const [wipeStep, setWipeStep] = useState<0 | 1 | 2>(0)
   const [busy, setBusy] = useState(false)
   // Stable callbacks: Sheet re-focuses its panel whenever onClose changes.
-  const cancelImport = useCallback(() => setPending(null), [])
   const closeWipe = useCallback(() => setWipeStep(0), [])
+  // Each wipe step swaps the sheet's content; put focus on the new step's text
+  // (not on <body>, and not straight onto the destructive button).
+  const stepRef = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (wipeStep === 2) stepRef.current?.focus()
+  }, [wipeStep])
 
   const exportBackup = () => {
     downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
     toast.show('백업 파일을 저장했어요')
   }
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // let the same file be picked again
-    if (!file) return
-    if (file.size > BACKUP_MAX_BYTES) {
-      toast.show('둘셋 백업 파일이 아닌 것 같아요 (파일이 너무 커요)')
-      return
-    }
-    let parsed: AppState | null = null
-    try {
-      const outline = parseState(await file.text())
-      // parseState only checks the outline; repair/reject the details before this replaces everything.
-      parsed = outline ? sanitizeBackup(outline) : null
-    } catch {
-      parsed = null
-    }
-    if (!parsed) {
-      toast.show('둘셋 백업 파일이 아니거나 손상된 파일이에요')
-      return
-    }
-    setPending(parsed)
-  }
-
-  const confirmImport = () => {
-    if (!pending) return
-    replace(pending)
-    setPending(null)
-    toast.show('백업을 불러왔어요')
-  }
-
   const wipe = async () => {
     setBusy(true)
-    try {
-      await clearAllPhotos()
-    } catch {
-      /* nothing stored */
-    }
-    try {
-      const ls = window.localStorage
-      const keys: string[] = []
-      for (let i = 0; i < ls.length; i++) {
-        const k = ls.key(i)
-        if (k) keys.push(k)
-      }
-      extraStorageKeys(keys, STORAGE_KEY).forEach((k) => ls.removeItem(k))
-    } catch {
-      /* storage unavailable — nothing else to clear */
-    }
     setViewer('a')
-    clearViewer()
-    try {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    } catch {
-      /* ignore */
-    }
+    await clearDeviceData()
     // Removes the main state; the other tab (partner's "phone") follows via the storage event.
     replace(null)
   }
@@ -145,18 +89,7 @@ export default function DataSection() {
             <Button full variant="secondary" onClick={exportBackup}>
               백업 파일 내보내기 (.json)
             </Button>
-            <Button full variant="secondary" onClick={() => fileRef.current?.click()}>
-              백업 파일 불러오기
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              tabIndex={-1}
-              aria-hidden
-              onChange={(e) => void onFile(e)}
-            />
+            <RestoreBackup onMessage={toast.show} />
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
             사진은 크기 때문에 백업 파일에 들어가지 않아요. 사진이 담긴 일기는 일기 탭의 ‘우리 이야기 내보내기’로 따로 남길 수 있어요.
@@ -188,10 +121,6 @@ export default function DataSection() {
         </Card>
       </div>
 
-      <Sheet open={!!pending} onClose={cancelImport} title="백업을 불러올까요?">
-        {pending ? <ImportConfirm next={pending} onConfirm={confirmImport} onCancel={cancelImport} /> : null}
-      </Sheet>
-
       <Sheet open={wipeStep > 0} onClose={busy ? noop : closeWipe} title="모든 기록 지우기">
         {wipeStep === 1 ? (
           <div>
@@ -214,7 +143,9 @@ export default function DataSection() {
         ) : null}
         {wipeStep === 2 ? (
           <div>
-            <p className="text-sm font-semibold leading-relaxed text-ink">정말 모두 지울까요?</p>
+            <p ref={stepRef} tabIndex={-1} className="text-sm font-semibold leading-relaxed text-ink outline-none">
+              정말 모두 지울까요?
+            </p>
             <p className="mt-1 text-xs leading-relaxed text-ink-3">
               지우고 나면 처음 시작 화면으로 돌아가요. 다른 탭에 열어 둔 둘셋도 함께 초기화돼요.
             </p>
@@ -230,36 +161,5 @@ export default function DataSection() {
         ) : null}
       </Sheet>
     </SettingsSection>
-  )
-}
-
-export function ImportConfirm({ next, onConfirm, onCancel }: { next: AppState; onConfirm: () => void; onCancel: () => void }) {
-  const sum = backupSummary(next)
-  return (
-    <div>
-      <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1.5 rounded-xl bg-surface-2 p-3 text-xs">
-        <dt className="font-semibold text-ink-3">두 사람</dt>
-        <dd className="text-ink">{sum.names}</dd>
-        <dt className="font-semibold text-ink-3">단계</dt>
-        <dd className="text-ink">{sum.stage}</dd>
-        <dt className="font-semibold text-ink-3">기록</dt>
-        <dd className="text-ink">
-          생리 {sum.periods}번 · 체크 {sum.checkDays}일 · 일기 {sum.diary}개
-        </dd>
-        {sum.createdAt ? (
-          <>
-            <dt className="font-semibold text-ink-3">시작한 날</dt>
-            <dd className="text-ink">{formatKo(sum.createdAt, { year: true })}</dd>
-          </>
-        ) : null}
-      </dl>
-      <p className="mt-3 text-sm leading-relaxed text-ink">지금 이 기기의 기록이 백업 내용으로 바뀌어요.</p>
-      {sum.photos > 0 ? (
-        <p className="mt-1 text-xs leading-relaxed text-ink-3">
-          사진 {sum.photos}장은 백업에 들어 있지 않아서, 이 기기에 없는 사진은 보이지 않을 수 있어요.
-        </p>
-      ) : null}
-      <ConfirmActions confirmLabel="불러오기" onConfirm={onConfirm} onCancel={onCancel} cancelLabel="취소" />
-    </div>
   )
 }

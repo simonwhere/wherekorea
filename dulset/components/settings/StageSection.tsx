@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button, Card, Field, Sheet, inputClass, useToast } from '@/components/ui'
 import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
@@ -38,6 +38,8 @@ export default function StageSection() {
   const { state } = useApp()
   const [sheet, setSheet] = useState<SheetKind>(null)
   const close = useCallback(() => setSheet(null), [])
+  // The stage changed (here or on the partner's phone): whatever was open no longer applies.
+  useEffect(() => setSheet(null), [state.stage])
   const info = STAGE_INFO[state.stage]
 
   return (
@@ -79,14 +81,17 @@ export default function StageSection() {
         ) : null}
       </Card>
 
-      <Sheet open={sheet === 'pregnant'} onClose={close} title="축하해요! 🎉">
-        {sheet === 'pregnant' ? <PregnantForm onDone={close} /> : null}
+      {/* Each sheet only while the stage still fits it: if the partner changes the
+          stage on their phone, a sheet left open here closes instead of
+          overwriting what they entered. */}
+      <Sheet open={sheet === 'pregnant' && state.stage === 'preparing'} onClose={close} title="축하해요! 🎉">
+        {sheet === 'pregnant' && state.stage === 'preparing' ? <PregnantForm onDone={close} /> : null}
       </Sheet>
-      <Sheet open={sheet === 'birth'} onClose={close} title="아기가 태어났어요 👶">
-        {sheet === 'birth' ? <BirthForm onDone={close} /> : null}
+      <Sheet open={sheet === 'birth' && state.stage === 'pregnant'} onClose={close} title="아기가 태어났어요 👶">
+        {sheet === 'birth' && state.stage === 'pregnant' ? <BirthForm onDone={close} /> : null}
       </Sheet>
-      <Sheet open={sheet === 'back'} onClose={close} title="준비 단계로 돌아가기">
-        {sheet === 'back' ? <BackConfirm onDone={close} /> : null}
+      <Sheet open={sheet === 'back' && state.stage === 'pregnant'} onClose={close} title="준비 단계로 돌아가기">
+        {sheet === 'back' && state.stage === 'pregnant' ? <BackConfirm onDone={close} /> : null}
       </Sheet>
     </SettingsSection>
   )
@@ -227,10 +232,10 @@ export function BirthForm({ onDone }: { onDone: () => void }) {
 }
 
 export function BackConfirm({ onDone }: { onDone: () => void }) {
-  const { update } = useApp()
+  const { update, today } = useApp()
   const toast = useToast()
   const confirm = () => {
-    update(backToPreparing)
+    update((s) => backToPreparing(s, today))
     toast.show('준비 단계로 돌아왔어요')
     onDone()
   }

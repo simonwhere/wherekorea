@@ -235,8 +235,10 @@ describe('pregnancy confirmation', () => {
     expect(isValidLmp('2026-09-01', '2026-10-05')).toBe(true)
     expect(isValidLmp('2026-10-06', '2026-10-05')).toBe(false)
     expect(isValidLmp('2025-09-01', '2026-10-05')).toBe(false)
-    expect(isValidLmp('2025-12-09', '2026-10-05')).toBe(true) // exactly LMP_MAX_DAYS back
-    expect(LMP_MAX_DAYS).toBe(300)
+    expect(isValidLmp('2025-12-01', '2026-10-05')).toBe(true) // exactly LMP_MAX_DAYS back
+    expect(isValidLmp('2025-11-30', '2026-10-05')).toBe(false)
+    // Same 44 weeks as the 임신 tab / 설정 / 예정일 수정 (pregnancyView.validateLmp).
+    expect(LMP_MAX_DAYS).toBe(308)
     expect(isValidLmp('nope', '2026-10-05')).toBe(false)
     const next = confirmPregnancy(s, '2026-09-01', '2026-10-05', 'b', 'a', '2026-10-05T08:00:00+09:00')
     expect(next.stage).toBe('pregnant')
@@ -318,6 +320,16 @@ describe('supplement suggestions', () => {
     expect(noSperm).not.toContain('no-laptop-lap')
     expect(noSperm).not.toContain('coq10')
     expect(infoNotes('partner', { sperm: false })).toHaveLength(0)
+    // Conception-only advice disappears once pregnant / parenting.
+    for (const stage of ['pregnant', 'parenting'] as const) {
+      const ids = suggestionsForRole('partner', { stage }).map((s) => s.id)
+      expect(ids).not.toContain('no-laptop-lap')
+      expect(ids).not.toContain('no-sauna')
+      expect(ids).not.toContain('coq10')
+      expect(ids).not.toContain('male-zinc-folate')
+      expect(ids).toContain('no-smoking')
+    }
+    expect(suggestionsForRole('partner', { stage: 'preparing' }).map((s) => s.id)).toContain('no-laptop-lap')
   })
 
   it('hides what is already on the list, matching loosely', () => {
@@ -332,7 +344,8 @@ describe('supplement suggestions', () => {
     expect(partnerIds).not.toContain('exercise')
     expect(partnerIds).toContain('caffeine')
     expect(partnerIds).not.toContain('male-zinc-folate') // info-only, never offered
-    expect(infoNotes('partner').map((x) => x.id)).toEqual(['male-zinc-folate'])
+    expect(partnerIds).not.toContain('coq10') // low-certainty: a note, not a "추천 항목"
+    expect(infoNotes('partner').map((x) => x.id)).toEqual(['coq10', 'male-zinc-folate'])
     expect(infoNotes('cycle-owner')).toHaveLength(0)
     const ownerIds = availableSuggestions('cycle-owner', activeItems(s, 'b')).map((x) => x.id)
     expect(ownerIds).not.toContain('folic-acid')

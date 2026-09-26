@@ -8,6 +8,7 @@
 import { addDays, addMonths, diffDays, dLabel, formatKo, formatShort, parts, startOfMonth } from '../dates'
 import type { ISODate, MemberId, PeriodLog, Settings } from '../types'
 import {
+  LONG_LATE_DAYS,
   MAX_CYCLE,
   MIN_CYCLE,
   chanceLevel,
@@ -156,6 +157,19 @@ export const PHASE_CLASS: Record<DayPhase, string> = {
   none: 'text-ink',
 }
 
+/**
+ * Days spilling in from the adjacent months: lighter fills, but digits kept at
+ * ≥4.5:1 (they are still buttons). Whole-cell opacity dropped them to ~2:1.
+ */
+export const PHASE_CLASS_DIM: Record<DayPhase, string> = {
+  period: 'bg-period/25 text-ink-2',
+  'period-predicted': 'border-2 border-dashed border-period/50 text-ink-3',
+  peak: 'bg-fert/25 text-ink-2',
+  fertile: 'bg-fert-soft text-ink-2',
+  possible: `border border-dashed border-fert/30 text-ink-3 ${HATCH}`,
+  none: 'text-ink-3',
+}
+
 export function cellView(info: DayInfo, ctx: { month: ISODate; today: ISODate; view: FertilityView }): CellView {
   const { month, today, view } = ctx
   const { day, month: m } = parts(info.date)
@@ -174,9 +188,8 @@ export function cellView(info: DayInfo, ctx: { month: ISODate; today: ISODate; v
 
   const className = [
     'relative flex h-9 w-9 items-center justify-center rounded-full text-[13px] tabular-nums',
-    PHASE_CLASS[phase],
+    inMonth ? PHASE_CLASS[phase] : PHASE_CLASS_DIM[phase],
     isToday && 'ring-2 ring-brand ring-offset-2 ring-offset-surface font-bold',
-    !inMonth && 'opacity-35',
   ]
     .filter(Boolean)
     .join(' ')
@@ -225,8 +238,14 @@ export interface Headline {
 /** NICE NG257 framing, used wherever fertile-day estimates are hidden. */
 export const NICE_LINE = '특정 날을 맞추기보다 2~3일에 한 번, 편한 리듬이면 좋아요.'
 
-/** Past this many days late, "N일 지났어요" reads oddly — more likely a missed log. */
-export const LONG_LATE_DAYS = 14
+/** Shared with the 오늘 hero and the late-period notice (lib/logic/cycle.ts). */
+export { LONG_LATE_DAYS }
+
+/** After a pregnancy ended, before a new period is logged. */
+export const AFTER_PREGNANCY_HEADLINE: Headline = {
+  title: '몸과 마음을 먼저 챙겨요',
+  sub: '생리가 다시 시작되면 그날을 눌러 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
+}
 
 export interface HeadlineContext {
   today: ISODate
@@ -245,6 +264,8 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
   switch (status.kind) {
     case 'no-data':
       return { title: '마지막 생리 시작일을 알려 주세요', sub: '한 번만 기록해도 다음 예정일을 계산해요.' }
+    case 'after-pregnancy':
+      return AFTER_PREGNANCY_HEADLINE
     case 'late':
       if (status.daysLate > LONG_LATE_DAYS && ctx.lastStart)
         return {
@@ -257,14 +278,24 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
       }
     case 'period':
       // The end date only changes how the calendar colours this period — predictions use start dates.
-      if (view === 'hidden') return { title: `생리 ${status.cycleDay}일째`, sub: '끝나는 날도 기록해 두면 달력에 정확히 보여요.' }
-      return {
-        title: `생리 ${status.cycleDay}일째`,
-        sub:
-          view === 'soft'
-            ? `다음 우리의 주간은 ${formatKo(status.nextFertileStart)}부터예요 (예상).`
-            : `다음 가임기는 ${formatKo(status.nextFertileStart)}부터예요 (예상).`,
-      }
+      if (view !== 'hidden' && status.nextFertileStart)
+        return {
+          title: `생리 ${status.cycleDay}일째`,
+          sub:
+            view === 'soft'
+              ? `다음 우리의 주간은 ${formatKo(status.nextFertileStart)}부터예요 (예상).`
+              : `다음 가임기는 ${formatKo(status.nextFertileStart)}부터예요 (예상).`,
+        }
+      // Short cycle: the estimated window already started during the period.
+      if (view !== 'hidden' && status.fertileEnd)
+        return {
+          title: `생리 ${status.cycleDay}일째`,
+          sub:
+            view === 'soft'
+              ? `이번 우리의 주간은 ${formatKo(status.fertileEnd)}까지예요 (예상).`
+              : `주기가 짧은 편이라 예상 가임기가 생리 기간과 겹쳐요. ${formatKo(status.fertileEnd)}까지예요 (예상).`,
+        }
+      return { title: `생리 ${status.cycleDay}일째`, sub: '끝나는 날도 기록해 두면 달력에 정확히 보여요.' }
     case 'before-fertile':
       if (view === 'hidden') return neutral
       if (view === 'soft')
@@ -333,7 +364,7 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
     const sinceLast = last ? diffDays(last, today) + 1 : undefined
     cycleDay = sinceLast !== undefined ? knownCycleDay({ cycleDay: sinceLast }) : undefined
     nextPeriod = status.expected
-  } else if (status.kind !== 'no-data') {
+  } else if (status.kind !== 'no-data' && status.kind !== 'after-pregnancy') {
     cycleDay = status.cycleDay
     nextPeriod = status.kind === 'after-fertile' ? status.nextPeriod : cycleAt(input, today)?.nextPeriod
   }
@@ -342,7 +373,7 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
   // so don't show a confident-looking range (the calendar still shows the rough projection).
   const late = status.kind === 'late'
   const longLate = late && status.daysLate > LONG_LATE_DAYS
-  const window = status.kind === 'no-data' || late ? undefined : upcomingWindows(input, today, 1)[0]
+  const window = upcomingWindows(input, today, 1)[0]
   const rows: SummaryRow[] = []
   if (nextPeriod && !longLate)
     rows.push({
@@ -448,18 +479,22 @@ export function dayTitle(date: ISODate, today: ISODate): string {
 }
 
 /**
- * "임신 가능성(예상)" value for the day sheet, or null when it must not be shown
- * (hidden view, before any log, or a (predicted) period day). The wider
- * "가능 범위" band is calendar uncertainty, so it reads 낮음~보통 rather than a
- * confident 낮음.
+ * "임신 가능성(예상)" value for the day sheet, or null when it must not be shown.
+ * Only days inside the estimated window or its wider "가능 범위" band get one:
+ * a confident 낮음 elsewhere would read as a "safe day" (it isn't — Wilcox
+ * 2000 found fertile women on every cycle day from 6 to 21), and the soft /
+ * hidden views keep pregnancy-chance wording off the screen altogether.
  */
 export function dayChanceLabel(info: DayInfo, view: FertilityView): string | null {
+  if (view !== 'explicit' || info.unpredicted || knownCycleDay(info) === undefined) return null
   const phase = visiblePhase(info.phase, view)
-  if (view === 'hidden' || knownCycleDay(info) === undefined) return null
-  if (phase === 'period' || phase === 'period-predicted') return null
   if (phase === 'possible') return `${CHANCE_LABEL.low}~${CHANCE_LABEL.medium}`
+  if (phase !== 'peak' && phase !== 'fertile') return null
   return CHANCE_LABEL[chanceLevel(info.ovulationOffset)]
 }
+
+/** Shown on explicit-view days outside the estimated range (instead of a 낮음 rating). */
+export const OUTSIDE_RANGE_NOTE = '예상 범위 밖이에요 · 예측은 주기마다 틀릴 수 있어요.'
 
 /** Shown instead of the logging buttons for days after today. */
 export function futureDayNote(view: FertilityView): string {
@@ -490,11 +525,15 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean):
         ? '우리의 주간 앞뒤로 여유를 둔 날이에요. 주기마다 며칠씩 달라질 수 있어서요.'
         : '예측 오차를 고려한 가능 범위예요. 배란일은 주기마다 며칠씩 달라질 수 있어요.'
     default:
+      if (info.unpredicted === 'paused')
+        return '임신 기록이 끝난 뒤라 이 무렵은 예측하지 않았어요. 생리가 다시 시작되면 그날을 기록해 주세요.'
+      if (info.unpredicted === 'late')
+        return '생리 예정일이 지나서 이 무렵은 예측하지 않았어요. 생리가 시작됐다면 그날을 기록해 주세요.'
       if (info.cycleDay === undefined) return '첫 생리 기록 전의 날이라 예측이 없어요.'
       if (knownCycleDay(info) === undefined)
         return '앞뒤 기록 사이가 길어서 이 무렵은 예측하지 않았어요. 빠진 생리 기록이 있다면 여기서 추가해 주세요.'
       if (view === 'hidden') return NICE_LINE
-      return view === 'soft' ? '평범한 하루예요. 둘만의 시간은 언제든 좋아요.' : '예상 가임기가 아닌 날이에요.'
+      return view === 'soft' ? '평범한 하루예요. 둘만의 시간은 언제든 좋아요.' : OUTSIDE_RANGE_NOTE
   }
 }
 
@@ -557,7 +596,10 @@ export function icsAvailability(input: CycleInput, today: ISODate, settings: Pic
   if (input.periods.length === 0)
     return { enabled: false, reason: '생리 시작일을 한 번 기록하면 만들 수 있어요.', windows: [] }
   // Don't put alarms for guessed dates on both phones while the period is late.
-  if (fertilityStatus(input, today).kind === 'late')
+  const kind = fertilityStatus(input, today).kind
+  if (kind === 'after-pregnancy')
+    return { enabled: false, reason: '생리가 다시 시작되면 기록해 주세요. 그때부터 만들 수 있어요.', windows: [] }
+  if (kind === 'late')
     return {
       enabled: false,
       reason: '생리 예정일이 지나서 다음 일정을 아직 알 수 없어요. 새 생리 시작일을 기록하면 만들 수 있어요.',

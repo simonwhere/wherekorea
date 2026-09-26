@@ -3,6 +3,8 @@
 // via search summaries of the linked sources). Wording is wellness/reference
 // only: no contraception, no diagnosis, no "success-rate" promises.
 
+import { doctorThresholdMonths } from '../logic/notifications'
+
 export interface Source {
   name: string
   url: string
@@ -174,16 +176,21 @@ export function guideSources(sections: GuideSection[]): Source[] {
 }
 
 /**
- * Months of trying after which both partners are encouraged to get checked
- * (ASRM 2023: 12 months under 35, 6 months at 35+). Unknown age → 12.
+ * Months of trying after which both partners are encouraged to get checked —
+ * the same rule as the notices, the home DoctorCard and onboarding
+ * (notifications.doctorThresholdMonths): 12 under 35, 6 at 35+, 0 (right away)
+ * at 40+. Unknown age → 12.
  */
-export function doctorGuideMonths(age: number | undefined): 6 | 12 {
-  return age !== undefined && age >= 35 ? 6 : 12
+export function doctorGuideMonths(age: number | undefined): 0 | 6 | 12 {
+  const m = doctorThresholdMonths(age)
+  return m === 0 ? 0 : m === 6 ? 6 : 12
 }
 
 /** Personal line for the doctor section, e.g. "지은님(36세) 기준으로는 6개월 동안 …". */
 export function doctorAgeLine(name: string, age: number): string {
-  const span = doctorGuideMonths(age) === 12 ? '1년' : '6개월'
+  const months = doctorGuideMonths(age)
+  if (months === 0) return `${name}님(${age}세) 기준으로는 기다리지 말고 지금 상담해 보세요.`
+  const span = months === 12 ? '1년' : '6개월'
   return `${name}님(${age}세) 기준으로는 ${span} 동안 소식이 없으면 상담을 받아 보세요.`
 }
 

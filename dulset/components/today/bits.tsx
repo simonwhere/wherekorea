@@ -63,7 +63,7 @@ export function LinkButton({
       type="button"
       onClick={onClick}
       className={cx(
-        'inline-flex min-h-[44px] items-center gap-0.5 text-xs font-semibold text-brand-ink hover:underline',
+        'inline-flex min-h-[44px] min-w-[44px] items-center gap-0.5 text-xs font-semibold text-brand-ink hover:underline',
         className,
       )}
     >

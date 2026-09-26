@@ -320,13 +320,16 @@ function IcsCard() {
   const toast = useToast()
   const view = fertilityView(state.settings, viewer, cycleOwner.id)
   const { enabled, reason, windows } = icsAvailability(state, today, state.settings, view)
-  // A "soft" viewer gets the discreet titles (우리의 주간 / 둘만의 저녁) too.
+  // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
   const discreet = state.settings.discreet || view === 'soft'
   const label = view === 'explicit' ? '가임기 일정 캘린더로 내보내기 (.ics)' : '우리의 주간 캘린더로 내보내기 (.ics)'
 
   const download = () => {
     if (!enabled) return
-    downloadText('dulset-fertile.ics', buildIcs(fertileWindowEvents(windows, discreet)))
+    downloadText(
+      'dulset-fertile.ics',
+      buildIcs(fertileWindowEvents(windows, { discreet, peak: view === 'explicit', id: state.couple.inviteCode })),
+    )
     toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
   }
 

@@ -8,19 +8,24 @@ export default function IcsExport({
   availability,
   view,
   discreet,
+  coupleId,
 }: {
   availability: IcsAvailability
   view: FertilityView
   discreet: boolean
+  coupleId?: string
 }) {
   const toast = useToast()
   const { enabled, reason, windows } = availability
-  // A "soft" viewer gets the discreet titles (우리의 주간 / 둘만의 저녁) in their calendar too.
+  // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
   const useDiscreet = discreet || view === 'soft'
 
   const download = () => {
     if (!enabled) return
-    downloadText('dulset-fertile.ics', buildIcs(fertileWindowEvents(windows, useDiscreet)))
+    downloadText(
+      'dulset-fertile.ics',
+      buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: view === 'explicit', id: coupleId })),
+    )
     toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
   }
 

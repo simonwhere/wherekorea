@@ -43,7 +43,8 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
   )
   const role = me.tracksCycle ? 'cycle-owner' : 'partner'
   // Sperm-side items are 'partner' audience anyway; this also hides them for a non-owner '아내'.
-  const filter = { sperm: isSpermSide(me) }
+  const spermSide = isSpermSide(me)
+  const filter = { sperm: spermSide, stage: state.stage }
   // Archived matches are offered under "보관한 항목" instead, so nothing shows twice.
   const suggestions = availableSuggestions(role, [...active, ...archived], filter)
   const notes = infoNotes(role, filter)
@@ -122,7 +123,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
               className={inputClass}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="예: 엽산, 물 2L 마시기"
+              placeholder={spermSide ? '예: 물 2L 마시기, 일찍 자기' : '예: 엽산, 물 2L 마시기'}
               maxLength={30}
             />
           </Field>
@@ -148,7 +149,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
               className={inputClass}
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="예: 400µg, 아침 식후"
+              placeholder={spermSide ? '예: 저녁 식후, 30분' : '예: 400µg, 아침 식후'}
               maxLength={30}
             />
           </Field>

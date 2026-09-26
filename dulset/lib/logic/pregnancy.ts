@@ -5,6 +5,8 @@ import { addDays, diffDays } from '../dates'
 import type { AppState, Baby, ISODate, Pregnancy } from '../types'
 
 export const PREGNANCY_DAYS = 280
+/** Longest pregnancy we accept when dating from an LMP (44 weeks). Every LMP field uses it. */
+export const MAX_GESTATION_DAYS = 308
 
 export function dueDate(p: Pregnancy): ISODate {
   return p.dueDateOverride ?? addDays(p.lmp, PREGNANCY_DAYS)
@@ -48,13 +50,26 @@ export function formatGA(ga: Pick<GestationalAge, 'weeks' | 'days'>): string {
 }
 
 // ── Stage transitions (pure) ────────────────────────────────
+//
+// Each transition only applies from the stage it belongs to, so a sheet left
+// open on the other phone can't overwrite a pregnancy or baby record that the
+// partner has already entered (the state is shared).
+
+/** Whether a new pregnancy can be recorded: preparing, or 'pregnant' without a record yet. */
+export function canStartPregnancy(state: Pick<AppState, 'stage' | 'pregnancy'>): boolean {
+  return state.stage === 'preparing' || (state.stage === 'pregnant' && !state.pregnancy)
+}
+
+/** Whether a birth can be recorded: pregnant, or 'parenting' without a baby yet. */
+export function canRecordBirth(state: Pick<AppState, 'stage' | 'baby'>): boolean {
+  return state.stage === 'pregnant' || (state.stage === 'parenting' && !state.baby)
+}
 
 export function startPregnancy(state: AppState, lmp: ISODate, today: ISODate, dueDateOverride?: ISODate): AppState {
-  return {
-    ...state,
-    stage: 'pregnant',
-    pregnancy: { lmp, dueDateOverride, confirmedAt: today },
-  }
+  if (!canStartPregnancy(state)) return state
+  const pregnancy: Pregnancy = { lmp, confirmedAt: today }
+  if (dueDateOverride) pregnancy.dueDateOverride = dueDateOverride
+  return { ...state, stage: 'pregnant', pregnancy }
 }
 
 export function updatePregnancy(state: AppState, patch: Partial<Pregnancy>): AppState {
@@ -63,10 +78,39 @@ export function updatePregnancy(state: AppState, patch: Partial<Pregnancy>): App
 }
 
 export function recordBirth(state: AppState, baby: Baby): AppState {
+  if (!canRecordBirth(state)) return state
   return { ...state, stage: 'parenting', baby }
 }
 
-/** Go back to preparing (e.g. after a loss). Keeps all history. */
-export function backToPreparing(state: AppState): AppState {
-  return { ...state, stage: 'preparing' }
+/**
+ * After a pregnancy ended, the home screen stays gentle (no "임신했어요 🎉",
+ * no specialist prompt) for this many days.
+ */
+export const QUIET_DAYS_AFTER_END = 42
+
+/** The ended pregnancy (back in preparing), if it ended less than QUIET_DAYS_AFTER_END days ago. */
+export function recentlyEnded(state: Pick<AppState, 'stage' | 'pregnancy'>, today: ISODate): boolean {
+  const p = state.pregnancy
+  if (state.stage !== 'preparing' || !p?.endedAt || !(p.endedAt > p.confirmedAt)) return false
+  const since = diffDays(p.endedAt, today)
+  return since >= 0 && since < QUIET_DAYS_AFTER_END
+}
+
+/**
+ * Go back to preparing (e.g. after a loss). Keeps all history, records when the
+ * pregnancy ended (cycle predictions pause until a new period is logged, and the
+ * "trying" clock restarts), and settles the notices about that pregnancy for
+ * both members — kept as dismissed stubs so they aren't delivered again.
+ */
+export function backToPreparing(state: AppState, today: ISODate): AppState {
+  if (state.stage !== 'pregnant') return state
+  const p = state.pregnancy
+  if (!p) return { ...state, stage: 'preparing' }
+  const tied = (key: string | undefined) => !!key && (key.startsWith(`pregnant:${p.lmp}:`) || key.startsWith(`week:${p.lmp}:`))
+  return {
+    ...state,
+    stage: 'preparing',
+    pregnancy: { ...p, endedAt: today },
+    notifications: state.notifications.map((n) => (tied(n.key) ? { ...n, read: true, dismissed: true } : n)),
+  }
 }

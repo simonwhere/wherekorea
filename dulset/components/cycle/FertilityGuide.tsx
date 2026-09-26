@@ -13,7 +13,9 @@ export default function FertilityGuide({
   ownerName: string
   ownerAge?: number
 }) {
-  const hidden = view === 'hidden'
+  // The soft view promises "건강 용어 없이", so it gets the same set as the hidden
+  // view (no 가임기/배란 or LH timing sections).
+  const hidden = view !== 'explicit'
   const sections = guideSections(hidden)
   const sources = guideSources(sections)
 

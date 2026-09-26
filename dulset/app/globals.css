@@ -5,11 +5,14 @@
 /* Theme tokens (RGB triplets so Tailwind can apply alpha). */
 :root {
   /* Values chosen so text-{color} on bg/surface/{color}-soft and white text on
-     bg-{color} both reach WCAG AA 4.5:1. */
+     bg-{color} both reach WCAG AA 4.5:1 — in both themes (re-check the pairs
+     when changing one). --control is for component boundaries (input borders,
+     an off switch's track): at least 3:1 against bg/surface/surface-2. */
   --bg: 250 247 244;
   --surface: 255 255 255;
   --surface-2: 245 240 236;
   --line: 232 225 219;
+  --control: 140 130 124;
   --ink: 38 32 30;
   --ink-2: 92 82 77;
   --ink-3: 112 103 98;
@@ -37,9 +40,11 @@
     --surface: 33 29 28;
     --surface-2: 44 39 37;
     --line: 60 54 51;
+    --control: 130 120 114;
     --ink: 242 236 232;
     --ink-2: 200 190 184;
-    --ink-3: 150 140 134;
+    /* ≥4.8:1 on every *-soft tone and 5.3:1 on surface-2 (150 140 134 fell to 4.0). */
+    --ink-3: 164 154 148;
     --brand: 240 128 114;
     --brand-soft: 66 38 34;
     --brand-ink: 250 170 160;
@@ -65,6 +70,21 @@
   .text-white:is(.bg-brand, .bg-him, .bg-her, .bg-ok, .bg-fert, .bg-period, .bg-warn) {
     color: rgb(var(--bg));
   }
+}
+
+/* Keyboard focus scrolls clear of the sticky header (h-14) and the fixed
+   bottom tab bar (h-14 + safe area), so a focused control is never hidden
+   under them (WCAG 2.4.11). */
+html {
+  scroll-padding-top: 4.5rem;
+  scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+/* While a sheet (modal dialog) is open, toasts move to the top so they never
+   cover the sheet's action buttons. */
+body:has([aria-modal='true']) [data-live-region] {
+  top: calc(env(safe-area-inset-top) + 1rem);
+  bottom: auto;
 }
 
 html,

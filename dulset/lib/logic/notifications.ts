@@ -3,12 +3,12 @@
 // In the prototype, delivery = in-app inbox (+ browser notification while open).
 // With a backend these same rules would run server-side and go out as push.
 
-import { addDays, diffDays, formatKo, isBetween } from '../dates'
+import { addDays, addMonths, diffDays, formatKo, isBetween } from '../dates'
 import { uid } from '../id'
 import { MEMBER_IDS, type AppNotification, type AppState, type ISODate, type MemberId, type NotificationKind } from '../types'
 import { koreanDays } from './baby'
-import { fertilityStatus, upcomingWindows } from './cycle'
-import { gestationalAge } from './pregnancy'
+import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows } from './cycle'
+import { gestationalAge, recentlyEnded } from './pregnancy'
 
 export interface Notice {
   key: string
@@ -46,8 +46,28 @@ export function doctorThresholdMonths(age: number | undefined): number {
   return 12
 }
 
+/**
+ * Whole calendar months from `from` to `to` (same rule as the baby's age:
+ * 2025-09-26 → 2026-09-26 is 12). 0 when `to` is not after `from`.
+ */
 export function monthsBetween(from: ISODate, to: ISODate): number {
-  return Math.floor(diffDays(from, to) / 30.44)
+  if (to <= from) return 0
+  let n = Math.max(0, Math.floor(diffDays(from, to) / 31) - 1)
+  while (addMonths(from, n + 1) <= to) n++
+  return n
+}
+
+/**
+ * Where "함께 준비한 지 N개월" counts from: ttcStart, or the day a pregnancy
+ * ended if that is later — conceiving means the couple wasn't "trying without
+ * success" before it, and the pregnancy months are not trying months.
+ */
+export function ttcClockStart(state: Pick<AppState, 'settings' | 'stage' | 'pregnancy'>): ISODate | undefined {
+  const ttc = state.settings.ttcStart
+  if (!ttc) return undefined
+  const p = state.pregnancy
+  const ended = state.stage === 'preparing' && p?.endedAt && p.endedAt > p.confirmedAt ? p.endedAt : undefined
+  return ended && ended > ttc ? ended : ttc
 }
 
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
@@ -57,7 +77,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
 
   if (state.stage === 'preparing') {
     const status = fertilityStatus(state, today)
-    if (status.kind === 'late' && status.daysLate <= 14) {
+    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS) {
       out.push({
         key: `late:${status.expected}:${owner.id}`,
         to: owner.id,
@@ -67,7 +87,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       })
     }
     // Low-pressure mode (NICE: every 2–3 days, all cycle long) sends no fertile-day alerts.
-    if (status.kind !== 'late' && status.kind !== 'no-data' && !low) {
+    if (status.kind !== 'late' && status.kind !== 'no-data' && status.kind !== 'after-pregnancy' && !low) {
       const [w] = upcomingWindows(state, today, 1)
       if (w) {
         for (const m of state.couple.members) {
@@ -93,7 +113,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
               to: m.id,
               kind: 'peak',
               title: '🌟 가능성이 가장 높은 날들이에요',
-              body: `${formatKo(w.peakStart, { weekday: false })}~${formatKo(w.peakEnd, { weekday: false })} (예상). 이 기간엔 하루나 이틀에 한 번이면 충분해요. 숙제처럼 느끼지 않아도 괜찮아요.`,
+              body: `${formatKo(w.peakStart, { weekday: false })}~${formatKo(w.peakEnd, { weekday: false })} (예상). 이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.`,
             })
           }
         }
@@ -109,8 +129,10 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       })
     }
 
-    const ttcStart = state.settings.ttcStart
-    if (ttcStart) {
+    // Counted from the later of ttcStart and an ended pregnancy, and quiet for a
+    // while after a pregnancy ended (same rules as the home DoctorCard).
+    const ttcStart = ttcClockStart(state)
+    if (ttcStart && !recentlyEnded(state, today)) {
       const ownerAge = ageFromBirthYear(owner.birthYear, today)
       const threshold = doctorThresholdMonths(ownerAge)
       const months = monthsBetween(ttcStart, today)
@@ -183,13 +205,21 @@ export function mergeNotices(state: AppState, notices: Notice[], nowISO: string)
   return { state: { ...state, notifications: trim([...added, ...state.notifications]) }, added }
 }
 
+/**
+ * Keys the engine produces again for as long as a condition holds (the doctor
+ * notice repeats every day once N months have passed), so their record must
+ * outlive the cap — otherwise a read or dismissed notice comes back unread.
+ */
+const LONG_LIVED_KEY = /^doctor:/
+
 function trim(list: AppNotification[]): AppNotification[] {
   if (list.length <= MAX_KEPT) return list
-  // Drop the oldest read ones first.
-  const sorted = [...list].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-  const unread = sorted.filter((n) => !n.read)
-  const read = sorted.filter((n) => n.read)
-  return [...unread, ...read].slice(0, MAX_KEPT).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  // Keep, in order: long-lived dedup records, unread, other keyed (dedup) records,
+  // then the rest — newest first within each group. The oldest read, unkeyed
+  // ones go first.
+  const rank = (n: AppNotification) => (n.key && LONG_LIVED_KEY.test(n.key) ? 0 : !n.read ? 1 : n.key ? 2 : 3)
+  const sorted = [...list].sort((a, b) => rank(a) - rank(b) || (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
+  return sorted.slice(0, MAX_KEPT).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
 }
 
 // ── Partner interactions ────────────────────────────────────
@@ -206,7 +236,8 @@ export function nudgesSentToday(state: AppState, from: MemberId, today: ISODate)
  * turns into nagging. `nowISO` should be a local-date-prefixed timestamp.
  */
 export function sendNudge(state: AppState, from: MemberId, to: MemberId, today: ISODate, nowISO: string, itemLabel?: string): AppState {
-  if (nudgesSentToday(state, from, today) >= NUDGES_PER_DAY) return state
+  const sent = nudgesSentToday(state, from, today)
+  if (sent >= NUDGES_PER_DAY) return state
   const name = memberName(state, from)
   const n: AppNotification = {
     id: uid(),
@@ -216,6 +247,8 @@ export function sendNudge(state: AppState, from: MemberId, to: MemberId, today: 
     title: `👉 ${name}님이 콕 찔렀어요`,
     body: itemLabel ? `${itemLabel} 챙겼어요? 오늘도 같이 해요!` : '오늘 체크 잊지 않았죠? 같이 해요!',
     createdAt: nowISO,
+    // Keyed, so the recipient clearing the inbox leaves a stub and the daily cap still counts it.
+    key: `nudge:${from}:${today}:${sent}`,
     read: false,
   }
   return { ...state, notifications: trim([n, ...state.notifications]) }

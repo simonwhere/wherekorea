@@ -32,7 +32,7 @@ export default function MonthCalendar({
   onSelect: (date: ISODate) => void
 }) {
   const cells = useMemo(
-    () => monthGrid(month).map((d) => cellView(dayInfo(input, d), { month, today, view })),
+    () => monthGrid(month).map((d) => cellView(dayInfo(input, d, today), { month, today, view })),
     [input, month, today, view],
   )
   const isCurrent = startOfMonth(month) === startOfMonth(today)

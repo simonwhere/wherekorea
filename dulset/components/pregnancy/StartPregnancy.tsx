@@ -4,10 +4,10 @@ import { useCallback, useState } from 'react'
 import { Button, EmptyState, Field, Sheet, inputClass, useToast } from '@/components/ui'
 import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo } from '@/lib/dates'
-import { localNowISO } from '@/lib/logic/notifications'
-import { PREGNANCY_DAYS, updatePregnancy } from '@/lib/logic/pregnancy'
+import { PREGNANCY_DAYS } from '@/lib/logic/pregnancy'
 import { defaultLmp, dueDateBounds, lmpBounds, validateDueDate, validateLmp } from '@/lib/logic/pregnancyView'
-import { confirmPregnancy } from '@/lib/logic/today'
+import { markPregnant } from '@/lib/logic/settings'
+import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 
 /** Shown only if the stage is 'pregnant' but no pregnancy record exists. */
@@ -30,7 +30,7 @@ export default function StartPregnancy() {
 }
 
 function StartForm({ onDone }: { onDone: () => void }) {
-  const { state, update, today, me, partner } = useApp()
+  const { state, update, today, me } = useApp()
   const toast = useToast()
   const [lmp, setLmp] = useState(() => defaultLmp(state, today))
   const [due, setDue] = useState('')
@@ -42,10 +42,11 @@ function StartForm({ onDone }: { onDone: () => void }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (lmpError || dueError) return
-    const now = localNowISO()
+    const now = stampOn(today)
     const override = due || undefined
     // Same path as the 오늘 tab's "임신했어요": the partner hears about it too.
-    update((s) => updatePregnancy(confirmPregnancy(s, lmp, today, me.id, partner.id, now), { dueDateOverride: override }))
+    // (a no-op if the partner has already recorded it on their phone)
+    update((s) => markPregnant(s, { lmp, dueDate: override }, today, me.id, now))
     toast.show('축하해요! 임신 기록을 시작했어요')
     onDone()
   }

@@ -4,7 +4,7 @@ import { useId, useState } from 'react'
 import { Card, SectionTitle, cx, useToast } from '@/components/ui'
 import { programById } from '@/lib/content/programs'
 import { formatShort } from '@/lib/dates'
-import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import {
   prenatalTimeline,
   shareCheckWithPartner,
@@ -41,7 +41,7 @@ export default function PrenatalTimeline({ weeks, since }: { weeks: number; sinc
   }
 
   const share = (row: TimelineRow) => {
-    const now = localNowISO()
+    const now = stampOn(today)
     // Message from the state we render with; the updater re-checks (deduped per check per day).
     const { sent } = shareCheckWithPartner(state, me, partner.id, row, today, now)
     update((s) => shareCheckWithPartner(s, me, partner.id, row, today, now).state)

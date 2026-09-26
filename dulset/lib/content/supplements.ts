@@ -5,7 +5,7 @@
 // evidence is, and items without benefit are shown as information only — the
 // app never "sells" a supplement.
 
-import type { CheckItem, CheckKind } from '../types'
+import type { CheckItem, CheckKind, Stage } from '../types'
 
 /**
  * Who a suggestion is for. 'partner' means the member whose cycle is NOT
@@ -31,7 +31,12 @@ export interface Suggestion {
   infoOnly?: boolean
   /** Sperm-side advice (heat, men's supplements) — hidden for a non-owner who is '아내'. */
   sperm?: boolean
+  /** Stages the item makes sense in (default: every stage). */
+  stages?: readonly Stage[]
 }
+
+/** Conception-related advice: only while preparing, never after the baby is born. */
+const PREPARING_ONLY: readonly Stage[] = ['preparing']
 
 export const EVIDENCE_LABEL: Record<Evidence, string> = {
   strong: '근거 탄탄',
@@ -118,6 +123,7 @@ export const SUGGESTIONS: Suggestion[] = [
   {
     id: 'no-sauna',
     sperm: true,
+    stages: PREPARING_ONLY,
     label: '사우나·뜨거운 탕 피하기',
     kind: 'habit',
     note: '고환 온도',
@@ -130,6 +136,7 @@ export const SUGGESTIONS: Suggestion[] = [
   {
     id: 'no-laptop-lap',
     sperm: true,
+    stages: PREPARING_ONLY,
     label: '노트북 무릎 위에 두지 않기',
     kind: 'habit',
     audience: 'partner',
@@ -164,6 +171,7 @@ export const SUGGESTIONS: Suggestion[] = [
   {
     id: 'coq10',
     sperm: true,
+    stages: PREPARING_ONLY,
     label: '코엔자임Q10·항산화제',
     kind: 'supplement',
     note: '선택 · 의사와 상의',
@@ -172,10 +180,13 @@ export const SUGGESTIONS: Suggestion[] = [
     summary: '난임 남성 연구에서 항산화제가 출생률을 높일 수도 있다고 봤지만 근거의 확실성이 낮아요. 먹는다면 의사와 상의해 보세요.',
     source: { name: 'Cochrane 리뷰 2022', url: 'https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007411.pub5/full' },
     match: ['코엔자임', 'coq10', '항산화'],
+    // Low-certainty evidence in subfertile men only: a note, never a "추천 항목".
+    infoOnly: true,
   },
   {
     id: 'male-zinc-folate',
     sperm: true,
+    stages: PREPARING_ONLY,
     label: '남성 아연·엽산 영양제',
     kind: 'supplement',
     audience: 'partner',
@@ -203,12 +214,20 @@ export function isSuggestionAdded(s: Suggestion, items: Pick<CheckItem, 'label'>
 export interface SuggestionFilter {
   /** false hides sperm-side items (see lib/logic/today isSpermSide). Default true. */
   sperm?: boolean
+  /** The couple's stage — hides items that only fit another stage. Default: no stage filter. */
+  stage?: Stage
 }
 
 /** Everything relevant to this member, including info-only notes. */
 export function suggestionsForRole(role: Exclude<Audience, 'both'>, filter: SuggestionFilter = {}): Suggestion[] {
   const sperm = filter.sperm ?? true
-  return SUGGESTIONS.filter((s) => (s.audience === 'both' || s.audience === role) && (sperm || !s.sperm))
+  const stage = filter.stage
+  return SUGGESTIONS.filter(
+    (s) =>
+      (s.audience === 'both' || s.audience === role) &&
+      (sperm || !s.sperm) &&
+      (!stage || !s.stages || s.stages.includes(stage)),
+  )
 }
 
 /** Suggestions a member can still add (relevant, not info-only, not on their list yet). */

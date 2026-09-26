@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import RestoreBackup from '@/components/RestoreBackup'
 import { Button } from '@/components/ui'
 import type { Stage } from '@/lib/types'
 
@@ -30,10 +31,13 @@ function Mark() {
 export default function WelcomeStep({
   onStart,
   onDemo,
+  onRestored,
   focusTitle,
 }: {
   onStart: () => void
   onDemo: (stage: Stage) => void
+  /** After a backup was restored from here (e.g. after a wipe or cleared browser data). */
+  onRestored: () => void
   /** Move focus here when coming back from step 1 (the 뒤로 button is gone). */
   focusTitle?: boolean
 }) {
@@ -71,9 +75,13 @@ export default function WelcomeStep({
       </div>
 
       <div className="space-y-5 pb-4">
-        <Button size="lg" full onClick={onStart}>
-          시작하기
-        </Button>
+        <div className="grid gap-2">
+          <Button size="lg" full onClick={onStart}>
+            시작하기
+          </Button>
+          {/* Restoring shouldn't need a demo or a whole new onboarding first. */}
+          <RestoreBackup label="백업 파일로 복원하기" variant="ghost" onRestored={onRestored} />
+        </div>
 
         <section aria-labelledby="demo-title" className="rounded-xl2 bg-surface-2 p-3.5">
           <h2 id="demo-title" className="text-sm font-bold text-ink">

@@ -71,7 +71,7 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
                     aria-pressed={f === current}
                     onClick={() => setField(f)}
                     className={cx(
-                      'h-11 rounded-xl px-3 text-sm font-semibold transition-colors',
+                      'h-11 min-w-[44px] rounded-xl px-3 text-sm font-semibold transition-colors',
                       f === current ? 'bg-brand-soft text-brand-ink' : 'text-ink-3 hover:bg-surface-2',
                     )}
                   >

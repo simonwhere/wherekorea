@@ -15,7 +15,7 @@ import {
   upcomingPlans,
 } from '@/lib/logic/dateIdeas'
 import { buildIcs, downloadText } from '@/lib/logic/ics'
-import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { DatePlan } from '@/lib/types'
 
@@ -162,7 +162,7 @@ function PlanRow({ plan }: { plan: DatePlan }) {
             <button
               ref={deleteRef}
               type="button"
-              className="-mr-2 -mt-3 inline-flex h-11 shrink-0 items-center rounded-xl px-2 text-[11px] font-medium text-ink-3 hover:bg-surface-2"
+              className="-mr-2 -mt-3 inline-flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-xl px-2 text-[11px] font-medium text-ink-3 hover:bg-surface-2"
               aria-label={`${plan.title} 일정 삭제`}
               onClick={() => setConfirming(true)}
             >
@@ -203,7 +203,7 @@ function PlanRow({ plan }: { plan: DatePlan }) {
                   type="button"
                   className={cx(btn, 'bg-brand text-white hover:bg-brand/90')}
                   onClick={() => {
-                    update((s) => acceptDatePlan(s, plan.id, me.id, localNowISO()))
+                    update((s) => acceptDatePlan(s, plan.id, me.id, stampOn(today)))
                     toast.show(`${partner.name}님에게 좋다고 전했어요`)
                   }}
                 >

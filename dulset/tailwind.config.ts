@@ -12,6 +12,8 @@ const config: Config = {
         surface: v('surface'),
         'surface-2': v('surface-2'),
         line: v('line'),
+        /** Boundaries of form controls (inputs, off switches): ≥3:1 against surfaces. */
+        control: v('control'),
         ink: v('ink'),
         'ink-2': v('ink-2'),
         'ink-3': v('ink-3'),

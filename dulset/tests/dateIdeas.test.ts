@@ -565,7 +565,8 @@ describe('review fixes', () => {
     // window (10-08) is within a week — still, no "우리의 주간" suggestion.
     const s = fresh()
     expect(fertilityStatus(s, '2026-10-01').kind).toBe('late')
-    expect(upcomingWindows(s, '2026-10-01', 1)[0]!.fertileStart <= addDays('2026-10-01', 7)).toBe(true)
+    // The projection itself is withheld while late (cycle.forecastLimit).
+    expect(upcomingWindows(s, '2026-10-01', 1)).toEqual([])
     expect(suggestPlanDate(s, '2026-10-01', 'b')).toEqual({ date: '2026-10-03', reason: 'saturday' })
     expect(dateBanner(s, '2026-10-01', 'b').kind).toBe('preparing')
   })

@@ -4,9 +4,10 @@ import { useCallback, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import { Button, Card, cx, useToast } from '@/components/ui'
 import { dLabel, formatKo } from '@/lib/dates'
-import { babyAge, formatBabyAge, nextKoreanDay } from '@/lib/logic/baby'
-import { addPeriod, fertilityStatus, type FertilityStatus } from '@/lib/logic/cycle'
-import { dueDate, formatGA, gestationalAge } from '@/lib/logic/pregnancy'
+import { babyAge, nextKoreanDay } from '@/lib/logic/baby'
+import { ageAt } from '@/lib/logic/babyView'
+import { LONG_LATE_DAYS, addPeriod, fertilityStatus, type FertilityStatus } from '@/lib/logic/cycle'
+import { QUIET_DAYS_AFTER_END, dueDate, formatGA, gestationalAge } from '@/lib/logic/pregnancy'
 import { TRIMESTER_LABEL, fertilityVoice, type FertilityVoice } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import { Badge, LinkButton, ProgressBar } from './bits'
@@ -89,10 +90,38 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
   )
 
   const content = (() => {
+    // After a pregnancy ended (and before a new period is logged) everyone gets the
+    // same gentle card: no late-period / pregnancy-test talk, no "임신했어요 🎉".
+    if (status.kind === 'after-pregnancy') {
+      const quiet = status.daysSince < QUIET_DAYS_AFTER_END
+      return isOwner ? (
+        <HeroCard
+          tone="brand"
+          eyebrow={quiet ? '천천히 괜찮아요' : '기록 확인'}
+          title={quiet ? '몸과 마음을 먼저 챙겨요' : '최근 생리 기록이 없어요'}
+          body="생리가 다시 시작되면 달력에 기록해 주세요. 그때부터 다시 예상해 드릴게요."
+        >
+          <div className="mt-3 flex gap-2">
+            <Button variant={quiet ? 'secondary' : 'primary'} onClick={() => onNavigate('cycle')} className="flex-1">
+              달력에 기록하기
+            </Button>
+            {quiet ? null : pregnantButton('ghost')}
+          </div>
+        </HeroCard>
+      ) : (
+        <HeroCard
+          tone="brand"
+          eyebrow="함께예요"
+          title="서로를 천천히 챙겨요"
+          body={`${owner}님이 생리 시작일을 기록하면 다시 알려 드릴게요.`}
+        />
+      )
+    }
+
     // Calm mode: no fertile wording. The cycle owner still sees her own period/late/no-data.
     const ownerOnlyKinds: FertilityStatus['kind'][] = ['no-data', 'period', 'late']
     if (voice === 'calm' && !(isOwner && ownerOnlyKinds.includes(status.kind))) {
-      return <CalmCard lowPressure={state.settings.lowPressure} onNavigate={onNavigate} />
+      return <CalmCard lowPressure={state.settings.lowPressure} isOwner={isOwner} onNavigate={onNavigate} />
     }
 
     switch (status.kind) {
@@ -135,9 +164,11 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
             badge={<Badge tone="period">생리 중</Badge>}
             body={
               isOwner
-                ? voice === 'explicit'
+                ? voice === 'explicit' && status.nextFertileStart
                   ? `따뜻하게 쉬어요. 다음 예상 가임기는 ${formatKo(status.nextFertileStart)}부터예요.`
-                  : '따뜻하게 쉬어요. 무리하지 않아도 괜찮아요.'
+                  : voice === 'explicit' && status.fertileEnd
+                    ? `따뜻하게 쉬어요. 주기가 짧은 편이라 예상 가임기(${formatKo(status.fertileEnd, { weekday: false })}까지)와 겹쳐요.`
+                    : '따뜻하게 쉬어요. 무리하지 않아도 괜찮아요.'
                 : voice === 'explicit'
                   ? '따뜻한 차 한 잔, 컨디션을 챙겨 주세요.'
                   : '요즘 몸이 무거울 수 있어요. 따뜻한 말 한마디가 힘이 돼요.'
@@ -157,10 +188,13 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
             <CycleDisclaimer onNavigate={onNavigate} />
           </HeroCard>
         ) : (
+          // Soft wording: no countdown number, just "soon" or roughly when.
           <HeroCard
             tone="brand"
             eyebrow="다가오는 우리의 주간"
-            title={`우리의 주간까지 ${status.daysUntil}일`}
+            title={
+              status.daysUntil <= 3 ? '곧 우리의 주간이에요' : `${formatKo(status.fertileStart, { weekday: false })} 무렵부터예요`
+            }
             body="둘만의 시간을 미리 계획해 볼까요?"
           >
             <CycleDisclaimer onNavigate={onNavigate} />
@@ -225,7 +259,8 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
         )
 
       case 'late':
-        if (status.daysLate > 13) {
+        // Same threshold as the 달력 headline and the late-period notice.
+        if (status.daysLate > LONG_LATE_DAYS) {
           return isOwner ? (
             <HeroCard
               tone="brand"
@@ -294,7 +329,7 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
   )
 }
 
-function CalmCard({ lowPressure, onNavigate }: { lowPressure: boolean; onNavigate: Nav }) {
+function CalmCard({ lowPressure, isOwner, onNavigate }: { lowPressure: boolean; isOwner: boolean; onNavigate: Nav }) {
   return lowPressure ? (
     <HeroCard
       tone="brand"
@@ -309,7 +344,12 @@ function CalmCard({ lowPressure, onNavigate }: { lowPressure: boolean; onNavigat
       tone="brand"
       eyebrow="오늘의 우리"
       title="오늘도 둘이 함께해요 💞"
-      body="알림 방식을 ‘받지 않을래요’로 골라서 날짜 예측은 쉬고 있어요."
+      body={
+        // 'off' only silences the owner's alerts — her calendar still shows the estimates.
+        isOwner
+          ? '알림 방식을 ‘받지 않을래요’로 골라서 가임기 알림만 쉬고 있어요. 달력에서 예상은 볼 수 있어요.'
+          : '알림 방식을 ‘받지 않을래요’로 골라서 날짜 예측은 쉬고 있어요.'
+      }
     >
       <LinkButton onClick={() => onNavigate('settings')}>설정에서 바꾸기 →</LinkButton>
     </HeroCard>
@@ -378,7 +418,7 @@ function ParentingHero({ onNavigate }: { onNavigate: Nav }) {
   return (
     <HeroCard
       tone="brand"
-      eyebrow={formatBabyAge(age)}
+      eyebrow={ageAt(b.birthDate, today)}
       title={
         <>
           {b.name} <span className="whitespace-nowrap">태어난 지 {age.dayOfLife}일째</span>

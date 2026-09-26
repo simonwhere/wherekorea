@@ -25,8 +25,9 @@ export default function CycleTab() {
   const [selected, setSelected] = useState<ISODate | null>(null)
   const closeSheet = useCallback(() => setSelected(null), [])
 
-  const { periods, lhTests, cycle } = state
-  const input = useMemo<CycleInput>(() => ({ periods, lhTests, cycle }), [periods, lhTests, cycle])
+  const { periods, lhTests, cycle, pregnancy } = state
+  // The pregnancy record lets predictions pause after a pregnancy ended (see cycle.forecastLimit).
+  const input = useMemo<CycleInput>(() => ({ periods, lhTests, cycle, pregnancy }), [periods, lhTests, cycle, pregnancy])
   const hasData = periods.length > 0
   const summary = useMemo(() => (hasData ? cycleSummary(input, today, view) : null), [hasData, input, today, view])
   const ics = useMemo(
@@ -66,7 +67,7 @@ export default function CycleTab() {
       />
 
       <div className="mt-3">
-        <IcsExport availability={ics} view={view} discreet={state.settings.discreet} />
+        <IcsExport availability={ics} view={view} discreet={state.settings.discreet} coupleId={state.couple.inviteCode} />
       </div>
 
       <PeriodHistory periods={periods} today={today} onSelect={setSelected} />

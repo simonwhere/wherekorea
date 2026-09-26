@@ -8,9 +8,16 @@ import { addMonths, formatKo, isISODate, parts } from '../dates'
 import {
   MEMBER_IDS,
   type AlertStyle,
+  type AppNotification,
   type AppState,
   type BabySex,
+  type CheckItem,
+  type CheckKind,
   type CycleSettings,
+  type DatePlan,
+  type DiaryEntry,
+  type GrowthRecord,
+  type NotificationKind,
   type ISODate,
   type Member,
   type MemberId,
@@ -21,7 +28,7 @@ import {
 import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, otherMember } from '../initial'
 import type { CycleStats } from './cycle'
 import { confirmPregnancy } from './today'
-import { updatePregnancy } from './pregnancy'
+import { canStartPregnancy, updatePregnancy } from './pregnancy'
 
 // ── Members ─────────────────────────────────────────────────
 
@@ -272,6 +279,7 @@ export function markPregnant(
   from: MemberId,
   nowISO: string,
 ): AppState {
+  if (!canStartPregnancy(state)) return state
   const next = confirmPregnancy(state, input.lmp, today, from, otherMember(from), nowISO)
   return input.dueDate ? updatePregnancy(next, { dueDateOverride: input.dueDate }) : next
 }
@@ -322,6 +330,18 @@ export function backupSummary(state: AppState): BackupSummary {
 
 export const STAGES: readonly Stage[] = ['preparing', 'pregnant', 'parenting']
 const SEXES: readonly BabySex[] = ['girl', 'boy', 'unknown']
+const CHECK_KINDS: readonly CheckKind[] = ['supplement', 'medication', 'habit']
+const NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  'fertile-start',
+  'peak',
+  'period-due',
+  'nudge',
+  'cheer',
+  'date-idea',
+  'milestone',
+  'doctor',
+  'system',
+]
 
 type Loose = Record<string, unknown>
 const isObj = (v: unknown): v is Loose => !!v && typeof v === 'object' && !Array.isArray(v)
@@ -402,10 +422,81 @@ export function sanitizeBackup(input: AppState): AppState | null {
     p.end === undefined || (isISODate(p.end) && p.end >= p.start) ? p : { start: p.start },
   )
 
+  // checkLog[date][member] must be a list of item ids — screens call .includes() on it.
   const checkLog: AppState['checkLog'] = {}
   if (isObj(input.checkLog)) {
-    for (const [date, day] of Object.entries(input.checkLog)) if (isISODate(date) && isObj(day)) checkLog[date] = day
+    for (const [date, day] of Object.entries(input.checkLog)) {
+      if (!isISODate(date) || !isObj(day)) continue
+      const clean: Partial<Record<MemberId, string[]>> = {}
+      for (const id of MEMBER_IDS) {
+        const ids = day[id]
+        if (Array.isArray(ids)) clean[id] = ids.filter(isStr)
+      }
+      checkLog[date] = clean
+    }
   }
+
+  const fallbackDay = isStr(input.createdAt) && isISODate(input.createdAt.slice(0, 10)) ? input.createdAt.slice(0, 10) : '2000-01-01'
+  /** Optional text fields are rendered as-is, so anything but a string is dropped. */
+  const optStr = (o: Loose, ...keys: string[]) => {
+    for (const k of keys) if (o[k] !== undefined && !isStr(o[k])) delete o[k]
+  }
+
+  const checkItems = list<Loose>(input.checkItems, (i) => isStr(i.id) && isMemberId(i.owner) && isStr(i.label)).map(
+    (raw) => {
+      const i: Loose = { ...raw }
+      i.kind = CHECK_KINDS.includes(raw.kind as CheckKind) ? raw.kind : 'habit'
+      i.active = raw.active !== false
+      i.createdAt = isISODate(raw.createdAt) ? raw.createdAt : fallbackDay
+      if (!isISODate(raw.archivedAt)) delete i.archivedAt
+      if (!i.active && !i.archivedAt) i.archivedAt = i.createdAt
+      optStr(i, 'note')
+      return i as unknown as CheckItem
+    },
+  )
+
+  const notifications = list<Loose>(
+    input.notifications,
+    (n) =>
+      isStr(n.id) &&
+      isMemberId(n.to) &&
+      isStr(n.title) &&
+      isStr(n.body) &&
+      isStr(n.createdAt) &&
+      (n.key === undefined || isStr(n.key)) &&
+      (n.from === undefined || isMemberId(n.from)),
+  ).map((raw) => {
+    const n: Loose = { ...raw }
+    n.kind = NOTIFICATION_KINDS.includes(raw.kind as NotificationKind) ? raw.kind : 'system'
+    n.read = raw.read === true
+    if (raw.dismissed === true) n.dismissed = true
+    else delete n.dismissed
+    return n as unknown as AppNotification
+  })
+
+  const datePlans = list<Loose>(input.datePlans, (d) => isStr(d.id) && isISODate(d.date) && isStr(d.title)).map((raw) => {
+    const d: Loose = { ...raw, done: raw.done === true, createdBy: isMemberId(raw.createdBy) ? raw.createdBy : 'a' }
+    if (!isMemberId(raw.acceptedBy)) delete d.acceptedBy
+    optStr(d, 'ideaId', 'place', 'note')
+    return d as unknown as DatePlan
+  })
+
+  const diary = list<Loose>(
+    input.diary,
+    (d) => isStr(d.id) && isISODate(d.date) && isStr(d.text) && isMemberId(d.author),
+  ).map((raw) => {
+    const d: Loose = { ...raw }
+    d.stage = STAGES.includes(raw.stage as Stage) ? raw.stage : input.stage
+    d.createdAt = isStr(raw.createdAt) ? raw.createdAt : `${raw.date as string}T00:00:00`
+    optStr(d, 'mood', 'photoId')
+    return d as unknown as DiaryEntry
+  })
+
+  const growth = list<Loose>(input.growth, (g) => isStr(g.id) && isISODate(g.date)).map((raw) => {
+    const g: Loose = { ...raw }
+    for (const k of ['heightCm', 'weightKg', 'headCm']) if (g[k] !== undefined && !isNum(g[k])) delete g[k]
+    return g as unknown as GrowthRecord
+  })
 
   const next: AppState = {
     ...input,
@@ -415,16 +506,17 @@ export function sanitizeBackup(input: AppState): AppState | null {
     periods,
     checkLog,
     lhTests: list(input.lhTests, (t) => isISODate(t.date) && (t.result === 'positive' || t.result === 'negative')),
-    checkItems: list(input.checkItems, (i) => isStr(i.id) && isMemberId(i.owner) && isStr(i.label)),
-    notifications: list(
-      input.notifications,
-      (n) => isStr(n.id) && isMemberId(n.to) && isStr(n.title) && isStr(n.body) && isStr(n.createdAt),
-    ),
-    datePlans: list(input.datePlans, (d) => isStr(d.id) && isISODate(d.date) && isStr(d.title)),
-    diary: list(input.diary, (d) => isStr(d.id) && isISODate(d.date) && isStr(d.text) && isMemberId(d.author)),
-    growth: list(input.growth, (g) => isStr(g.id) && isISODate(g.date)),
+    checkItems,
+    notifications,
+    datePlans,
+    diary,
+    growth,
     milestones: list(input.milestones, (m) => isStr(m.key) && isISODate(m.date)),
   }
+
+  if (isObj(input.sync)) {
+    next.sync = Object.fromEntries(Object.entries(input.sync).filter(([, v]) => isNum(v)))
+  } else delete next.sync
 
   const p: unknown = input.pregnancy
   if (isObj(p) && isISODate(p.lmp)) {
@@ -433,6 +525,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       confirmedAt: isISODate(p.confirmedAt) ? p.confirmedAt : p.lmp,
     }
     if (!isISODate(pregnancy.dueDateOverride)) delete pregnancy.dueDateOverride
+    if (!isISODate(pregnancy.endedAt)) delete pregnancy.endedAt
     next.pregnancy = pregnancy
   } else delete next.pregnancy
 

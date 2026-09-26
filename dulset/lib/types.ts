@@ -105,6 +105,8 @@ export interface DatePlan {
   note?: string
   done: boolean
   createdBy: MemberId
+  /** The partner said 좋아요 to this plan (kept here, not inferred from the inbox). */
+  acceptedBy?: MemberId
 }
 
 // ── Diary / pregnancy / baby ────────────────────────────────
@@ -128,6 +130,11 @@ export interface Pregnancy {
   /** Optional doctor-given due date that overrides the LMP calculation. */
   dueDateOverride?: ISODate
   confirmedAt: ISODate
+  /**
+   * Set when the couple went back to preparing (e.g. after a loss). Until a new
+   * period is logged, cycle predictions pause and the "trying" clock restarts here.
+   */
+  endedAt?: ISODate
 }
 
 export type BabySex = 'girl' | 'boy' | 'unknown'
@@ -201,4 +208,9 @@ export interface AppState {
   growth: GrowthRecord[]
   milestones: MilestoneRecord[]
   settings: Settings
+  /**
+   * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser
+   * tab, the sequence number of its last update this state includes.
+   */
+  sync?: Record<string, number>
 }

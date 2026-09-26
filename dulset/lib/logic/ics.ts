@@ -49,6 +49,7 @@ export function foldLine(line: string): string {
 
 export function buildIcs(events: IcsEvent[], stamp: Date = new Date(), calName = '둘셋'): string {
   const dtstamp = stamp.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const sequence = Math.max(0, Math.floor(stamp.getTime() / 1000))
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -62,6 +63,8 @@ export function buildIcs(events: IcsEvent[], stamp: Date = new Date(), calName =
       'BEGIN:VEVENT',
       `UID:${e.uid}`,
       `DTSTAMP:${dtstamp}`,
+      // A newer export of the same UID replaces the event instead of adding a copy.
+      `SEQUENCE:${sequence}`,
       `DTSTART;VALUE=DATE:${icsDate(e.start)}`,
       // DTEND is exclusive for all-day events.
       `DTEND;VALUE=DATE:${icsDate(addDays(e.end, 1))}`,
@@ -84,19 +87,35 @@ export function buildIcs(events: IcsEvent[], stamp: Date = new Date(), calName =
   return lines.map(foldLine).join('\r\n') + '\r\n'
 }
 
+export interface FertileExportOptions {
+  /** Keep health wording out of the calendar (lock screens, shared calendars). */
+  discreet: boolean
+  /**
+   * Also add the peak days with their own alarm. Only for the explicit view —
+   * a soft viewer gets the one window heads-up the app promises, no disguised
+   * "D-day" alarm.
+   */
+  peak: boolean
+  /** Couple id (invite code) so UIDs never collide with another couple's export. */
+  id?: string
+}
+
 /**
- * Fertile windows for the next `cycles` cycles as calendar events. `discreet`
- * keeps health wording out of the calendar (it shows on lock screens and to
- * anyone the calendar is shared with).
+ * Fertile windows for the next cycles as calendar events. UIDs name the slot
+ * (1st/2nd/3rd upcoming window), not the predicted date, so importing a newer
+ * export after predictions moved replaces the earlier events and alarms
+ * instead of leaving stale copies on both phones.
  */
 export function fertileWindowEvents(
   windows: Array<{ start: ISODate; fertileStart: ISODate; fertileEnd: ISODate; peakStart: ISODate; peakEnd: ISODate }>,
-  discreet: boolean,
+  opts: FertileExportOptions,
 ): IcsEvent[] {
+  const { discreet, peak } = opts
+  const ns = opts.id ? `${opts.id.replace(/[^A-Za-z0-9-]/g, '')}-` : ''
   const events: IcsEvent[] = []
-  for (const w of windows) {
+  for (const [i, w] of windows.entries()) {
     events.push({
-      uid: `fertile-${w.fertileStart}@dulset`,
+      uid: `${ns}fertile-${i + 1}@dulset`,
       start: w.fertileStart,
       end: w.fertileEnd,
       title: discreet ? '💞 우리의 주간' : '💞 가임기 (예상)',
@@ -106,8 +125,9 @@ export function fertileWindowEvents(
       // 9:00 on the day before (all-day events start at 00:00 → 15 h before).
       alarmMinutesBefore: 15 * 60,
     })
+    if (!peak) continue
     events.push({
-      uid: `peak-${w.peakStart}@dulset`,
+      uid: `${ns}peak-${i + 1}@dulset`,
       start: w.peakStart,
       end: w.peakEnd,
       title: discreet ? '🌙 둘만의 저녁' : '🌟 가능성 가장 높은 날 (예상)',

@@ -1,7 +1,8 @@
 // Versioned localStorage persistence. Everything stays on the device in the
 // prototype — no server ever sees cycle or health data.
 
-import { sanitizeBackup } from './logic/settings'
+import { BACKUP_MAX_BYTES, extraStorageKeys, sanitizeBackup } from './logic/settings'
+import { clearAllPhotos } from './photos'
 import type { AppState, MemberId } from './types'
 
 export const STORAGE_KEY = 'dulset:state:v1'
@@ -126,6 +127,64 @@ export function clearViewer(): void {
 export function saveViewer(viewer: MemberId): void {
   try {
     safeSession()?.setItem(VIEWER_KEY, viewer)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Read a picked backup file: too big, not a 둘셋 backup (or damaged), or a
+ * checked and repaired state ready to show in the import confirmation.
+ */
+export async function readBackupFile(file: Blob): Promise<{ state: AppState } | { error: 'too-big' | 'invalid' }> {
+  if (file.size > BACKUP_MAX_BYTES) return { error: 'too-big' }
+  try {
+    const state = parseState(await file.text())
+    return state ? { state } : { error: 'invalid' }
+  } catch {
+    return { error: 'invalid' }
+  }
+}
+
+export const BACKUP_ERROR_TEXT: Record<'too-big' | 'invalid', string> = {
+  'too-big': '둘셋 백업 파일이 아닌 것 같아요 (파일이 너무 커요)',
+  invalid: '둘셋 백업 파일이 아니거나 손상된 파일이에요',
+}
+
+/** The raw saved data, as-is (for "지금 기록을 파일로 받기" when it can't be opened). */
+export function rawStoredState(): string | null {
+  try {
+    return safeLocal()?.getItem(STORAGE_KEY) ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Everything "모든 기록 지우기" removes besides the main state (the caller
+ * clears that with replace(null), so the other tab follows via the storage
+ * event): photos, other 둘셋 keys, this tab's viewer, the tab hash.
+ */
+export async function clearDeviceData(): Promise<void> {
+  try {
+    await clearAllPhotos()
+  } catch {
+    /* nothing stored */
+  }
+  try {
+    const ls = window.localStorage
+    const keys: string[] = []
+    for (let i = 0; i < ls.length; i++) {
+      const k = ls.key(i)
+      if (k) keys.push(k)
+    }
+    extraStorageKeys(keys, STORAGE_KEY).forEach((k) => ls.removeItem(k))
+  } catch {
+    /* storage unavailable — nothing else to clear */
+  }
+  clearViewer()
+  try {
+    window.history.replaceState(null, '', window.location.pathname + window.location.search)
   } catch {
     /* ignore */
   }

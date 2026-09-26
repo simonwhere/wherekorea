@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import AppErrorBoundary from '@/components/AppErrorBoundary'
 import Onboarding from '@/components/Onboarding'
 import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
@@ -10,7 +11,7 @@ import DiaryTab from '@/components/tabs/DiaryTab'
 import PregnancyTab from '@/components/tabs/PregnancyTab'
 import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
-import { Avatar, ToastProvider, cx } from '@/components/ui'
+import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { useApp, useStore } from '@/lib/store'
 import type { Stage } from '@/lib/types'
@@ -66,10 +67,18 @@ export default function AppShell() {
       </div>
     )
   }
-  if (!state || !state.onboarded) return <Onboarding />
+  // A new state (restore, the other tab's change) retries after an error.
+  if (!state || !state.onboarded)
+    return (
+      <AppErrorBoundary resetKey={state}>
+        <Onboarding />
+      </AppErrorBoundary>
+    )
   return (
     <ToastProvider>
-      <MainApp />
+      <AppErrorBoundary resetKey={state}>
+        <MainApp />
+      </AppErrorBoundary>
     </ToastProvider>
   )
 }
@@ -93,6 +102,18 @@ function MainApp() {
     window.addEventListener('hashchange', sync)
     return () => window.removeEventListener('hashchange', sync)
   }, [tabs])
+
+  // After a tab change that dropped focus (e.g. a stage change routed here from
+  // a sheet), start keyboard / screen-reader users at the new tab's heading.
+  const firstTab = useRef(true)
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false
+      return
+    }
+    const a = document.activeElement
+    if (!a || a === document.body) focusMainHeading()
+  }, [tab])
 
   const go = (key: TabKey) => {
     if (readHash() !== key) window.location.hash = key
@@ -137,7 +158,7 @@ function MainApp() {
           <button
             type="button"
             onClick={() => setViewer(partner.id)}
-            className="flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 text-xs font-medium text-ink-2 hover:bg-surface-2"
+            className="relative flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 text-xs font-medium text-ink-2 before:absolute before:-inset-y-[6px] before:inset-x-0 before:content-[''] hover:bg-surface-2"
             title="프로토타입: 한 기기에서 두 사람의 화면을 바꿔 볼 수 있어요"
           >
             <Avatar member={me} size="sm" />
@@ -148,7 +169,7 @@ function MainApp() {
           <button
             type="button"
             onClick={() => setNotifOpen(true)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-surface-2"
+            className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface-2"
             aria-label={unread ? `알림 ${unread}개` : '알림'}
           >
             <span aria-hidden className="text-lg">🔔</span>

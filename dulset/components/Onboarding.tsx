@@ -67,7 +67,8 @@ export default function Onboarding() {
     replace(createDemoState(today, new Date(), stage))
   }
 
-  if (step === 0) return <WelcomeStep onStart={() => setStep(1)} onDemo={startDemo} focusTitle={cameBack} />
+  if (step === 0)
+    return <WelcomeStep onStart={() => setStep(1)} onDemo={startDemo} onRestored={() => setViewer('a')} focusTitle={cameBack} />
 
   const names = draftNames(draft)
   const problem = stepProblem(step, draft, today)

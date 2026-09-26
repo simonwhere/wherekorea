@@ -57,7 +57,8 @@ function parenting(birthDate = '2026-01-01'): AppState {
     },
     new Date(2025, 3, 1, 9, 0),
   )
-  return recordBirth(s, { name: '튼튼이', birthDate, sex: 'girl' })
+  // A birth is recorded from the pregnancy stage (recordBirth ignores other stages).
+  return recordBirth({ ...s, stage: 'pregnant' }, { name: '튼튼이', birthDate, sex: 'girl' })
 }
 
 const spec = (id: string) => CHECKUPS.find((c) => c.id === id)!

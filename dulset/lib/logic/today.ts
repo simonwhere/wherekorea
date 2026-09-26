@@ -11,8 +11,9 @@ import {
   mergeNotices,
   monthsBetween,
   notifyCompleted,
+  ttcClockStart,
 } from './notifications'
-import { startPregnancy } from './pregnancy'
+import { MAX_GESTATION_DAYS, canStartPregnancy, recentlyEnded, startPregnancy } from './pregnancy'
 
 // ── Clock anchored to the app's `today` ─────────────────────
 
@@ -198,11 +199,14 @@ export interface DoctorAdvice {
  */
 export function doctorAdvice(state: AppState, today: ISODate): DoctorAdvice | null {
   if (state.stage !== 'preparing') return null
+  // Right after a pregnancy ended, a "see a specialist" card is not what anyone needs.
+  if (recentlyEnded(state, today)) return null
   const owner = state.couple.members.find((m) => m.tracksCycle) ?? state.couple.members[0]
   const age = ageFromBirthYear(owner.birthYear, today)
   const threshold = doctorThresholdMonths(age)
   const reasons: DoctorReason[] = []
-  const ttc = state.settings.ttcStart
+  // Months of trying count from the later of ttcStart and an ended pregnancy.
+  const ttc = ttcClockStart(state)
   const months = ttc && ttc <= today ? monthsBetween(ttc, today) : undefined
   if (threshold === 0) reasons.push('age')
   else if (months !== undefined && months >= threshold) reasons.push('months')
@@ -222,10 +226,10 @@ export function lastPeriodStart(state: Pick<AppState, 'periods'>): ISODate | und
   return starts[starts.length - 1]
 }
 
-/** Oldest LMP the confirm sheet accepts (~43 weeks). */
-export const LMP_MAX_DAYS = 300
+/** Oldest LMP the confirm sheet accepts — the same 44 weeks as every other LMP field. */
+export const LMP_MAX_DAYS = MAX_GESTATION_DAYS
 
-/** A plausible LMP: not in the future and at most ~43 weeks ago. */
+/** A plausible LMP: not in the future and at most 44 weeks ago. */
 export function isValidLmp(lmp: string, today: ISODate): boolean {
   if (!isISODate(lmp) || lmp > today) return false
   return diffDays(lmp, today) <= LMP_MAX_DAYS
@@ -240,6 +244,9 @@ export function confirmPregnancy(
   to: MemberId,
   nowISO: string,
 ): AppState {
+  // A sheet left open on the other phone must not overwrite a pregnancy the
+  // partner already recorded (or re-send the "기쁜 소식").
+  if (!canStartPregnancy(state)) return state
   const next = startPregnancy(state, lmp, today)
   const name = state.couple.members.find((m) => m.id === from)?.name ?? ''
   return mergeNotices(

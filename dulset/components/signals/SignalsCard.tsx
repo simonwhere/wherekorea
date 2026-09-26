@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, SectionTitle, cx, useToast } from '@/components/ui'
-import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import { REPLIES, SIGNALS, SIGNALS_PER_DAY, pendingSignal, sendSignal, signalsSentToday } from '@/lib/logic/signals'
 import { useApp } from '@/lib/store'
 
@@ -17,7 +17,7 @@ export default function SignalsCard() {
 
   const send = (id: string, label: string) => {
     if (left <= 0) return
-    update((s) => sendSignal(s, me.id, partner.id, id, today, localNowISO()))
+    update((s) => sendSignal(s, me.id, partner.id, id, today, stampOn(today)))
     toast.show(`${partner.name}님에게 “${label}” 보냈어요`)
   }
 

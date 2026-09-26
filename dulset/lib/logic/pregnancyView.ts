@@ -18,10 +18,9 @@ import type { AppState, Baby, BabySex, ISODate, Member, MemberId, Pregnancy } fr
 import { setMilestone } from './baby'
 import { sortedStarts } from './cycle'
 import { mergeNotices } from './notifications'
-import { PREGNANCY_DAYS } from './pregnancy'
+import { MAX_GESTATION_DAYS, PREGNANCY_DAYS } from './pregnancy'
 
-/** Longest pregnancy we accept when dating from an LMP (44 weeks). */
-export const MAX_GESTATION_DAYS = 308
+export { MAX_GESTATION_DAYS }
 
 export const prenatalKey = (id: string) => `prenatal:${id}`
 export const bagKey = (id: string) => `bag:${id}`

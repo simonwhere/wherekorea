@@ -57,7 +57,8 @@ function DayBody({ date, view }: { date: ISODate; view: FertilityView }) {
   const toast = useToast()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const info = useMemo(() => dayInfo(state, date), [state, date])
+  // `today` stops projections past a missed period / an ended pregnancy, like the grid.
+  const info = useMemo(() => dayInfo(state, date, today), [state, date, today])
   const cycle = useMemo(() => cycleAt(state, date), [state, date])
   const actions = useMemo(
     () => dayActions(state.periods, date, today, state.cycle.periodLength),
@@ -94,7 +95,12 @@ function DayBody({ date, view }: { date: ISODate; view: FertilityView }) {
           <span className={cx('mt-0.5 h-5 w-5 shrink-0 rounded-full', phase === 'none' ? 'bg-surface-2' : PHASE_CLASS[phase])} aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink">
-              {label || (cycleDay !== undefined ? `주기 ${cycleDay}일째` : info.cycleDay !== undefined ? '예측 없음' : '기록 전')}
+              {label ||
+                (cycleDay !== undefined
+                  ? `주기 ${cycleDay}일째`
+                  : info.cycleDay !== undefined || info.unpredicted
+                    ? '예측 없음'
+                    : '기록 전')}
               {label && cycleDay !== undefined ? (
                 <span className="ml-1.5 text-xs font-medium text-ink-3">주기 {cycleDay}일째</span>
               ) : null}

@@ -91,7 +91,7 @@ export const WEEKS: WeekInfo[] = [
     size: '청포도 한 알',
     sizeEmoji: '🍇',
     highlights: ['주요 기관들이 하나씩 자리를 잡아 가요.'],
-    mom: '카페인은 하루 300mg 이하로 줄여요 (식약처 임신부 기준).',
+    mom: '카페인은 하루 200mg 이하가 좋아요 (ACOG). 식약처 임신부 상한은 300mg이에요.',
     partner: '커피 대신 둘이 같이 마실 차를 골라 봐요.',
   },
   {

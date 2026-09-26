@@ -14,7 +14,7 @@ import {
   validatePlan,
   type PlanError,
 } from '@/lib/logic/dateIdeas'
-import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 
 const ERROR_TEXT: Record<PlanError, string> = {
@@ -48,7 +48,7 @@ export default function PlanSheet({ idea, onClose }: { idea?: DateIdea; onClose:
     // Id and timestamp are made here so the updater stays pure (StrictMode may run it twice).
     const input = { date, title, ideaId: idea?.id, place, note, createdBy: me.id }
     const id = uid()
-    const now = localNowISO()
+    const now = stampOn(today)
     update((s) => proposeDatePlan(s, input, now, id))
     toast.show(`${partner.name}님에게 제안했어요`)
     onClose()

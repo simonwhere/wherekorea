@@ -12,7 +12,9 @@ import {
 import { addDays, formatKo, isISODate, parts, weekdayIndex } from '../dates'
 import { uid } from '../id'
 import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
-import { fertilityStatus, upcomingWindows } from './cycle'
+import { dayInfo, fertilityStatus, upcomingWindows, type DayPhase } from './cycle'
+
+const isPeriodDay = (phase: DayPhase) => phase === 'period' || phase === 'period-predicted'
 import { mergeNotices } from './notifications'
 
 // ── Season / week ───────────────────────────────────────────
@@ -198,7 +200,7 @@ export interface DateBanner {
 const PREPARING_NOTE = '🍹 술은 잠시 쉬고, ♨️ 뜨거운 탕·사우나 대신 산책으로 골라요.'
 const PREGNANT_NOTE = '🍹 음료는 무알콜로, ♨️ 뜨거운 탕·사우나는 피하고 틈틈이 쉬어 가요.'
 
-type BannerState = Pick<AppState, 'stage' | 'settings' | 'couple' | 'periods' | 'lhTests' | 'cycle'>
+type BannerState = Pick<AppState, 'stage' | 'settings' | 'couple' | 'periods' | 'lhTests' | 'cycle' | 'pregnancy'>
 
 /** The viewer's alert style, with the same defaults as the calendar. */
 export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, viewer: MemberId) {
@@ -274,11 +276,14 @@ export function suggestPlanDate(state: BannerState, today: ISODate, viewer: Memb
   // A late period may mean a pregnancy — never steer toward a projected window then
   // (same rule as the fertile-day alerts).
   const status = fertileHintsAllowed(state, viewer) ? fertilityStatus(state, today).kind : 'no-data'
-  if (status !== 'late' && status !== 'no-data') {
+  if (status !== 'late' && status !== 'no-data' && status !== 'after-pregnancy') {
     const [w] = upcomingWindows(state, today, 1)
     const tomorrow = addDays(today, 1)
     if (w) {
-      const candidate = w.fertileStart > tomorrow ? w.fertileStart : tomorrow
+      let candidate = w.fertileStart > tomorrow ? w.fertileStart : tomorrow
+      // Short cycles: the window can start during a (logged or predicted) period —
+      // never offer a period day as "우리의 주간".
+      while (candidate <= w.fertileEnd && isPeriodDay(dayInfo(state, candidate, today).phase)) candidate = addDays(candidate, 1)
       if (candidate <= w.fertileEnd && candidate <= addDays(today, 7)) return { date: candidate, reason: 'our-week' }
     }
   }
@@ -423,8 +428,13 @@ export function proposeDatePlan(state: AppState, input: NewDatePlan, nowISO: str
 
 const acceptKey = (planId: string, by: MemberId) => `date-ok:${planId}:${by}`
 
-/** Did `by` already say "좋아요" to this plan? (The reply notice is the record.) */
-export function isPlanAccepted(state: Pick<AppState, 'notifications'>, planId: string, by: MemberId): boolean {
+/**
+ * Did `by` already say "좋아요" to this plan? Stored on the plan itself — the
+ * inbox is trimmed, so the reply notice can't be the record. (Older data only
+ * has the notice, so that still counts.)
+ */
+export function isPlanAccepted(state: Pick<AppState, 'notifications' | 'datePlans'>, planId: string, by: MemberId): boolean {
+  if (state.datePlans.some((p) => p.id === planId && p.acceptedBy === by)) return true
   const key = acceptKey(planId, by)
   return state.notifications.some((n) => n.key === key)
 }
@@ -432,15 +442,14 @@ export function isPlanAccepted(state: Pick<AppState, 'notifications'>, planId: s
 /** The partner's "좋아요 👍" reply to a proposal (once per plan). */
 export function acceptDatePlan(state: AppState, planId: string, by: MemberId, nowISO: string): AppState {
   const plan = state.datePlans.find((p) => p.id === planId)
-  if (!plan || plan.createdBy === by) return state
+  if (!plan || plan.createdBy === by || isPlanAccepted(state, planId, by)) return state
   // Replying answers the proposal, so it no longer counts as unread for `by`.
   const proposalKey = `date-plan:${planId}`
-  const answered: AppState = state.notifications.some((n) => n.key === proposalKey && n.to === by && !n.read)
-    ? {
-        ...state,
-        notifications: state.notifications.map((n) => (n.key === proposalKey && n.to === by ? { ...n, read: true } : n)),
-      }
-    : state
+  const answered: AppState = {
+    ...state,
+    datePlans: state.datePlans.map((p) => (p.id === planId ? { ...p, acceptedBy: by } : p)),
+    notifications: state.notifications.map((n) => (n.key === proposalKey && n.to === by && !n.read ? { ...n, read: true } : n)),
+  }
   return mergeNotices(
     answered,
     [
