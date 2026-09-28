@@ -14,6 +14,8 @@ import { addDays, addMonths, diffDays, isISODate, weekdayIndex } from '@/lib/dat
 import {
   DEMO_COUPLE_DAYS,
   DEMO_START_VIEWER,
+  PREP_APPLIED_DAYS_AGO,
+  PREP_APPOINTMENTS,
   applyPrefs,
   birthYearOptions,
   cleanBirthYear,
@@ -47,6 +49,7 @@ import { CLAIM_KEY } from '@/lib/logic/babyView'
 import { activeItems, coupleStreak, firstCheckedDate, isDone, itemsFor, progress, streak } from '@/lib/logic/checks'
 import { cycleAt, cycleStats, dayInfo, fertilityStatus, isSurge, sortedStarts } from '@/lib/logic/cycle'
 import { lhTestsOn } from '@/lib/logic/logs'
+import { FERTILITY_TEST_ID, completeMonthlyTask, fertilityChain, monthlyTask } from '@/lib/logic/partnerTrack'
 import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor } from '@/lib/logic/prefs'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
@@ -308,7 +311,9 @@ describe('preparing demo: the preconception model', () => {
       const s = createDemoState(day, NOW, 'preparing')
       const mine = activeItems(s, 'a')
       expect(mine.filter((i) => !weekly(i)).map((i) => i.label)).toEqual(['30분 걷기·운동', '7시간 이상 자기'])
-      expect(mine.filter(weekly).map((i) => i.label)).toEqual(['사우나·뜨거운 탕 피하기', '술 안 마시기'])
+      // Named like the onboarding starter list (initial.defaultCheckItems with habits).
+      expect(mine.filter(weekly).map((i) => i.label)).toEqual(['사우나·뜨거운 탕 쉬기', '금주'])
+      expect(mine.filter(weekly).every((i) => i.note?.includes('주 1회 체크인'))).toBe(true)
       expect(mine.some((i) => i.label.includes('담배'))).toBe(false) // he doesn't smoke
       expect(activeItems(s, 'b').every((i) => !weekly(i))).toBe(true)
       const start = s.settings.ttcStart!
@@ -324,6 +329,28 @@ describe('preparing demo: the preconception model', () => {
         for (let w = mondayOf(start); w < thisMonday; w = addDays(w, 7)) expect(weeks).toContain(w)
         expect(weeks).not.toContain(thisMonday)
       }
+    })
+  }
+
+  for (const day of TODAYS) {
+    it(`gives 민수 the 정액검사 step of the 임신 사전건강관리 chain as this month’s task, with its deadline (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'preparing')
+      const applied = addDays(day, -PREP_APPLIED_DAYS_AGO)
+      expect(fertilityChain(s, day)).toMatchObject({ step: 'test', appliedAt: applied, lapsed: false })
+      const task = monthlyTask(s, day, 'a')!
+      expect(task).toMatchObject({ step: 'test', title: '정액검사 받기', top: true, status: 'now', id: FERTILITY_TEST_ID })
+      // 3 months from the application, counting that day as day 1.
+      expect(task.dueBy).toBe(addDays(addMonths(applied, 3), -1))
+      expect(task.dueText).toContain('검사 마감')
+      expect(task.dueText).toContain('신청 후 3개월')
+      // Booked inside the window.
+      const semen = s.appointments.find((a) => a.taskId === FERTILITY_TEST_ID)!
+      expect(semen.date > day && semen.date <= task.dueBy!).toBe(true)
+      // 민수 hears the soft wording: no fertility words in his task.
+      expect(`${task.title} ${task.dueText} ${task.why}`).not.toMatch(/가임|배란|LH/)
+      // Doing it moves the chain on to 청구.
+      const tested = completeMonthlyTask(s, task, day, 'a')
+      expect(fertilityChain(tested, day).step).toBe('claim')
     })
   }
 
@@ -723,23 +750,34 @@ describe('demo 우리 둘 · 챙길 것', () => {
     })
   }
 
-  it('preparing: 보건소 together, 지은’s dentist, 민수’s test, one task of their own', () => {
+  it('preparing: applied at 보건소 together, then 지은’s check, her dentist, 민수’s test, one task of their own', () => {
     const s = createDemoState(today, NOW, 'preparing')
     expect(upcomingAppointments(s.appointments, today).map((a) => [a.title, a.who, diffDays(today, a.date)])).toEqual([
-      ['보건소 가임력 검사 신청', 'both', 3],
+      ['산부인과 임신 전 검사', 'b', 5],
       ['치과 검진·스케일링', 'b', 8],
       ['정액검사', 'a', 12],
     ])
-    expect(Object.keys(s.planDone).sort()).toEqual(['pre-folic', 'pre-habits-partner', 'pre-rubella'])
+    expect(Object.keys(s.planDone).sort()).toEqual(['pre-folic', 'pre-habits-partner', 'pre-health-check-support', 'pre-rubella'])
     // 임신 사전건강관리 is applied for at 보건소 *before* the test (no refund for a
     // test done first), and the test itself is at a clinic with the referral.
-    const [apply, , semen] = upcomingAppointments(s.appointments, today)
-    expect(apply!.kind).toBe('admin')
-    expect(apply!.taskId).toBe('pre-health-check-support')
-    expect(apply!.note).toContain('검사 전에')
-    expect(semen!.date > apply!.date).toBe(true)
-    expect(semen!.place).not.toContain('보건소')
-    expect(semen!.note).toContain('검사의뢰서')
+    const apply = s.appointments.find((a) => a.title === PREP_APPOINTMENTS.healthCenter)!
+    expect(apply.kind).toBe('admin')
+    expect(apply.who).toBe('both')
+    expect(apply.done).toBe(true)
+    expect(apply.taskId).toBe('pre-health-check-support')
+    expect(apply.note).toContain('검사 전에')
+    expect(apply.date).toBe(addDays(today, -PREP_APPLIED_DAYS_AGO))
+    expect(s.planDone['pre-health-check-support']!.at).toBe(apply.date)
+    const [carrier, , semen] = upcomingAppointments(s.appointments, today)
+    for (const test of [carrier!, semen!]) {
+      expect(test.date > apply.date).toBe(true)
+      expect(test.place).not.toContain('보건소')
+      expect(test.note).toContain('검사의뢰서')
+    }
+    expect(semen!.taskId).toBe('pre-checkup-partner')
+    expect(carrier!.taskId).toBe('pre-checkup-carrier')
+    // No fertility words in what 민수 (soft wording) sees on his home.
+    for (const a of s.appointments) expect(`${a.title} ${a.note ?? ''}`).not.toMatch(/가임|배란|LH/)
     // MMR needs 4 weeks before trying: 풍진 is ticked as handled by the day they
     // started, never while they were already trying.
     expect(s.planDone['pre-rubella']!.at <= s.settings.ttcStart!).toBe(true)
@@ -849,7 +887,7 @@ describe('오늘 · 우리 둘 / 챙길 것 cards', () => {
 
   it('lists the next two appointments within two weeks, with 오늘/내일/D-N and who goes', () => {
     const s = createDemoState(today, NOW, 'preparing')
-    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['보건소 가임력 검사 신청', '치과 검진·스케일링'])
+    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['산부인과 임신 전 검사', '치과 검진·스케일링'])
     // Two weeks later everything booked has passed.
     expect(upcomingForToday(s.appointments, addDays(today, 13)).map((a) => a.title)).toEqual([])
     expect(dayLabel(today, today)).toBe('오늘')

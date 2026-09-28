@@ -21,6 +21,7 @@ import {
   undoLog,
   type LogTarget,
 } from '@/lib/logic/logs'
+import { mergeNotices, scheduledNotices } from '@/lib/logic/notifications'
 import { startRestCycle } from '@/lib/logic/ttc'
 import type { AppState } from '@/lib/types'
 
@@ -255,6 +256,25 @@ describe('되돌리기', () => {
     // Meanwhile another day changed (e.g. the other tab).
     const later = addLHTest(after, { date: '2026-09-15', time: '08:00', result: 'peak' })
     expect(undoLog(later, undo).lhTests.map((t) => t.date)).toEqual(['2026-09-13', '2026-09-15'])
+  })
+
+  it('takes back the once-per-cycle window notice an undone LH log sent', () => {
+    // The notification engine (useNotificationEngine) runs after every change.
+    const today = '2026-09-10'
+    const engine = (x: AppState) => mergeNotices(x, scheduledNotices(x, today), NOW).state
+    const keys = (x: AppState) => x.notifications.map((n) => n.key)
+    const s = engine(preparing())
+    expect(keys(s).some((k) => k?.startsWith('peak:'))).toBe(false)
+    const { after, undo } = run(s, { kind: 'lh', date: today }, (x) =>
+      addLHTest(x, { date: today, time: '08:00', result: 'positive' }),
+    )
+    const sent = engine(after)
+    expect(keys(sent).some((k) => k?.startsWith('peak:'))).toBe(true)
+    const back = undoLog(sent, undo)
+    expect(keys(back)).toEqual(keys(s))
+    // Not due for the restored records — and still free to go out on the right day.
+    expect(keys(engine(back))).toEqual(keys(s))
+    expect(keys(mergeNotices(back, scheduledNotices(back, '2026-09-13'), NOW).state).some((k) => k?.startsWith('peak:'))).toBe(true)
   })
 
   it('undoes a period start, restoring the rest cycle and the waiting state it cleared', () => {

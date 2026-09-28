@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import AppErrorBoundary from '@/components/AppErrorBoundary'
 import LogSheet from '@/components/log/LogSheet'
 import Onboarding from '@/components/Onboarding'
+import { isSettingsAnchor } from '@/components/settings/anchors'
 import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
 import CycleTab from '@/components/tabs/CycleTab'
@@ -114,6 +115,7 @@ function MainApp() {
     const sync = () => {
       const h = readHash()
       if (h === 'days') setTab('diary') // 우리 → 기념일
+      else if (isSettingsAnchor(h)) setTab('settings') // 설정 → 공유 범위 / 내 알림 / 데이터
       else if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
       else setTab('today')
     }

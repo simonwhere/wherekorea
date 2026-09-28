@@ -240,9 +240,28 @@ export function addNote(
 
 // ── 되돌리기 ────────────────────────────────────────────────
 
+// An LH or period log can move this cycle's window, and the notification engine
+// then sends the once-per-cycle "우리의 주간" / "가장 좋은 날" notice right away
+// (keyed by cycle, notifications.fertileKey / peakKey). Undoing the log takes
+// back such a notice sent since: its dates were wrong, and its key would block
+// the right notice later in the same cycle. The engine re-sends whatever is
+// still due for the restored records.
+const WINDOW_NOTICE_KEY = /^(fertile|peak):/
+
+function windowNoticeKeys(state: Pick<AppState, 'notifications'>): string[] {
+  return state.notifications.flatMap((n) => (n.key && WINDOW_NOTICE_KEY.test(n.key) ? [n.key] : []))
+}
+
+function dropNewWindowNotices(state: AppState, before: string[] | undefined): AppState {
+  if (!before) return state
+  const keep = new Set(before)
+  const notifications = state.notifications.filter((n) => !n.key || !WINDOW_NOTICE_KEY.test(n.key) || keep.has(n.key))
+  return notifications.length === state.notifications.length ? state : { ...state, notifications }
+}
+
 export type LogUndo =
-  | { kind: 'lh'; date: ISODate; tests: LHTest[] }
-  | { kind: 'period'; periods: PeriodLog[]; restCycle?: RestCycle; positivePending?: PositivePending }
+  | { kind: 'lh'; date: ISODate; tests: LHTest[]; notices?: string[] }
+  | { kind: 'period'; periods: PeriodLog[]; restCycle?: RestCycle; positivePending?: PositivePending; notices?: string[] }
   | { kind: 'ptest'; id: string; before?: PregnancyTest; positivePending?: PositivePending }
   | { kind: 'note'; id: string }
 
@@ -256,11 +275,12 @@ export type LogTarget =
 export function logUndo(before: AppState, target: LogTarget): LogUndo {
   switch (target.kind) {
     case 'lh':
-      return { kind: 'lh', date: target.date, tests: lhTestsOn(before.lhTests, target.date) }
+      return { kind: 'lh', date: target.date, tests: lhTestsOn(before.lhTests, target.date), notices: windowNoticeKeys(before) }
     case 'period':
       return {
         kind: 'period',
         periods: before.periods,
+        notices: windowNoticeKeys(before),
         ...(before.restCycle ? { restCycle: before.restCycle } : {}),
         ...(before.positivePending ? { positivePending: before.positivePending } : {}),
       }
@@ -289,10 +309,10 @@ function withOptional<K extends 'restCycle' | 'positivePending'>(state: AppState
 export function undoLog(state: AppState, undo: LogUndo): AppState {
   switch (undo.kind) {
     case 'lh':
-      return replaceLHDay(state, undo.date, undo.tests)
+      return dropNewWindowNotices(replaceLHDay(state, undo.date, undo.tests), undo.notices)
     case 'period': {
       const s = withOptional({ ...state, periods: undo.periods }, 'restCycle', undo.restCycle)
-      return withOptional(s, 'positivePending', undo.positivePending)
+      return dropNewWindowNotices(withOptional(s, 'positivePending', undo.positivePending), undo.notices)
     }
     case 'ptest': {
       const others = state.pregnancyTests.filter((t) => t.id !== undo.id)

@@ -6,6 +6,7 @@ import {
   FERTILITY_TEST_ID,
   completeMonthlyTask,
   fertilityChain,
+  canHandOverCycle,
   handOverCycle,
   monthlyTask,
   ownerAge,
@@ -196,7 +197,7 @@ describe('이번 달 할 일', () => {
 describe('handing the cycle over', () => {
   it('starts private again: the new owner decides what the partner sees', () => {
     const shared = setShareCycleDetails(fresh(), 'b', true)
-    const moved = handOverCycle(shared, 'a')
+    const moved = handOverCycle(shared, 'a', 'b')
     expect(moved.couple.members.map((m) => [m.id, m.tracksCycle])).toEqual([
       ['a', true],
       ['b', false],
@@ -206,7 +207,23 @@ describe('handing the cycle over', () => {
     expect(setShareCycleDetails(moved, 'b', true)).toBe(moved)
     expect(setShareCycleDetails(moved, 'a', true).settings.shareCycleDetails).toBe(true)
     // Already the owner: nothing changes.
-    expect(handOverCycle(shared, 'b')).toBe(shared)
+    expect(handOverCycle(shared, 'b', 'b')).toBe(shared)
+  })
+
+  it("won't let the partner take over the owner's records", () => {
+    const withRecords = { ...fresh(), periods: [{ start: '2026-09-18' }] }
+    expect(canHandOverCycle(withRecords, 'b')).toBe(true)
+    expect(canHandOverCycle(withRecords, 'a')).toBe(false)
+    // 민수 can't make himself the owner of 지은's period log…
+    expect(handOverCycle(withRecords, 'a', 'a')).toBe(withRecords)
+    // …but 지은 can hand it over.
+    expect(handOverCycle(withRecords, 'a', 'b').couple.members.find((m) => m.tracksCycle)?.id).toBe('a')
+    // LH or test records count too.
+    expect(canHandOverCycle({ ...fresh(), lhTests: [{ date: '2026-09-28', result: 'positive' }] }, 'a')).toBe(false)
+    expect(canHandOverCycle({ ...fresh(), pregnancyTests: [{ id: 't', date: '2026-09-28', result: 'negative' }] }, 'a')).toBe(false)
+    // Nothing logged yet (set up with the wrong person): either of them can fix it.
+    expect(canHandOverCycle(fresh(), 'a')).toBe(true)
+    expect(handOverCycle(fresh(), 'a', 'a').couple.members.find((m) => m.tracksCycle)?.id).toBe('a')
   })
 })
 

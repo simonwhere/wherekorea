@@ -9,13 +9,29 @@ import {
   type Evidence,
   type Suggestion,
 } from '@/lib/content/supplements'
-import { activeItems, addCheckItem, archiveCheckItem, restoreCheckItem } from '@/lib/logic/checks'
+import {
+  activeItems,
+  addCheckItem,
+  archiveCheckItem,
+  isWeekly,
+  restoreCheckItem,
+  updateCheckItem,
+  type Cadence,
+} from '@/lib/logic/checks'
 import { isSpermSide } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem, CheckKind } from '@/lib/types'
 import { Badge, ExternalLink, KIND_ICON, KIND_LABEL } from './bits'
 
 const KINDS: CheckKind[] = ['supplement', 'medication', 'habit']
+
+const CADENCES: { value: Cadence; label: string }[] = [
+  { value: 'daily', label: '매일' },
+  { value: 'weekly', label: '주 1회 체크인' },
+]
+
+/** One short line under the cadence choice. */
+const WEEKLY_NOTE = '‘주 1회 체크인’은 금주·사우나 쉬기처럼 참는 습관용이에요. 한 주에 한 번만 남기고, 콕은 가지 않아요.'
 
 const EVIDENCE_TONE: Record<Evidence, 'ok' | 'brand' | 'muted' | 'warn'> = {
   strong: 'ok',
@@ -30,6 +46,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
   const toast = useToast()
   const [label, setLabel] = useState('')
   const [kind, setKind] = useState<CheckKind>('supplement')
+  const [cadence, setCadence] = useState<Cadence>('daily')
   const [note, setNote] = useState('')
   const kindGroup = useId()
   const labelRef = useRef<HTMLInputElement>(null)
@@ -52,8 +69,10 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
   const add = () => {
     const clean = label.trim()
     if (!clean) return
-    update((s) => addCheckItem(s, me.id, clean, kind, today, note))
-    toast.show(`'${clean}'을(를) 추가했어요`)
+    // Only habits can be a weekly check-in (a supplement or medicine is daily).
+    const every: Cadence = kind === 'habit' ? cadence : 'daily'
+    update((s) => addCheckItem(s, me.id, clean, kind, today, note, every))
+    toast.show(`'${clean}'을(를) ${every === 'weekly' ? '주 1회 체크인으로 ' : ''}추가했어요`)
     setLabel('')
     setNote('')
     // Keep the keyboard up for adding several in a row (the submit button disables itself).
@@ -76,7 +95,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
           tabIndex={-1}
           className="mb-2 text-xs font-bold text-ink-2 outline-none"
         >
-          매일 체크하는 항목 {active.length > 0 ? `(${active.length})` : ''}
+          체크하는 항목 {active.length > 0 ? `(${active.length})` : ''}
         </h3>
         {active.length === 0 ? (
           <p className="rounded-xl bg-surface-2 px-3 py-3 text-xs text-ink-3">아직 없어요. 아래에서 추가해 보세요.</p>
@@ -87,8 +106,26 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
                 <span aria-hidden>{KIND_ICON[i.kind]}</span>
                 <span className="min-w-0 flex-1 py-2">
                   <span className="block truncate text-sm font-medium text-ink">{i.label}</span>
-                  {i.note ? <span className="block truncate text-[11px] text-ink-3">{i.note}</span> : null}
+                  {i.note || isWeekly(i) ? (
+                    <span className="block truncate text-[11px] text-ink-3">{cadenceLine(i)}</span>
+                  ) : null}
                 </span>
+                {i.kind === 'habit' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next: Cadence = isWeekly(i) ? 'daily' : 'weekly'
+                      // Starter notes say '주 1회 체크인' — drop that when it becomes daily.
+                      const note = next === 'daily' && i.note?.includes(WEEKLY_WORD) ? withoutWeekly(i.note) : undefined
+                      update((s) => updateCheckItem(s, i.id, note !== undefined ? { cadence: next, note } : { cadence: next }))
+                      toast.show(next === 'weekly' ? `'${i.label}'은(는) 주 1회 체크인으로 바꿨어요` : `'${i.label}'은(는) 매일 체크로 바꿨어요`)
+                    }}
+                    className="min-h-[44px] shrink-0 px-2 text-xs font-semibold text-brand-ink hover:underline"
+                    aria-label={`${i.label}: ${isWeekly(i) ? '매일 체크로 바꾸기' : '주 1회 체크인으로 바꾸기'}`}
+                  >
+                    {isWeekly(i) ? '매일로' : '주 1회로'}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
@@ -144,6 +181,29 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
               </button>
             ))}
           </div>
+          {kind === 'habit' ? (
+            <div>
+              <div role="group" aria-label="체크 주기" className="grid grid-cols-2 gap-1.5">
+                {CADENCES.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    aria-pressed={cadence === c.value}
+                    onClick={() => setCadence(c.value)}
+                    className={cx(
+                      'flex h-11 items-center justify-center rounded-xl border text-xs font-semibold transition-colors',
+                      cadence === c.value
+                        ? 'border-brand bg-brand-soft text-brand-ink'
+                        : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">{WEEKLY_NOTE}</p>
+            </div>
+          ) : null}
           <Field label="메모 (선택)">
             <input
               className={inputClass}
@@ -265,6 +325,23 @@ function SuggestionRow({ s, onAdd }: { s: Suggestion; onAdd?: () => void }) {
       ) : null}
     </li>
   )
+}
+
+const WEEKLY_WORD = '주 1회 체크인'
+
+/** '주 1회 체크인 · 메모' — without saying it twice when the note already does. */
+function cadenceLine(i: CheckItem): string {
+  if (!isWeekly(i)) return i.note ?? ''
+  return i.note?.includes(WEEKLY_WORD) ? i.note : [WEEKLY_WORD, i.note].filter(Boolean).join(' · ')
+}
+
+/** '고환 온도 · 주 1회 체크인' → '고환 온도'. */
+function withoutWeekly(note: string): string {
+  return note
+    .split('·')
+    .map((p) => p.trim())
+    .filter((p) => p && p !== WEEKLY_WORD)
+    .join(' · ')
 }
 
 function latestArchivedByLabel(items: CheckItem[]): CheckItem[] {

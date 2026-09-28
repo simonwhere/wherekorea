@@ -18,14 +18,32 @@ import {
 import { useApp } from '@/lib/store'
 import type { AlertStyle } from '@/lib/types'
 import { Pill, RadioCard, SettingsSection } from './bits'
-import { canSeeCycleDetails, discreetFor, lowPressureFor, setPersonalPref, settingsFor } from '@/lib/logic/prefs'
+import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor, setPersonalPref, settingsFor } from '@/lib/logic/prefs'
+import { fertilityVoice } from '@/lib/logic/today'
+
+/**
+ * Does this viewer read 가임기 / 배란 wording? Only with their own explicit
+ * choice (not soft, off or 부담 없이). The choice list itself still names the
+ * explicit option — it's what they'd be choosing.
+ */
+function useExplicitWords(): boolean {
+  const { state, viewer, cycleOwner } = useApp()
+  return fertilityVoice(settingsFor(state.settings, viewer), viewer, viewer === cycleOwner.id) === 'explicit'
+}
+
+/** The partner's choice, named without health words (for a soft / off / 부담 없이 viewer). */
+const PLAIN_STYLE_LABEL: Record<AlertStyle, string> = {
+  explicit: '날짜와 함께 알림',
+  soft: '은근하게',
+  off: '받지 않음',
+}
 
 export default function AlertsSection() {
   const { state, update, viewer, me, partner } = useApp()
   const preparing = state.stage === 'preparing'
   const low = lowPressureFor(state.settings, viewer)
   return (
-    <SettingsSection title="내 알림" sub={`${me.name}님 폰에만 적용돼요 · ${partner.name}님은 각자 정해요`}>
+    <SettingsSection id="alerts" title="내 알림" sub={`${me.name}님 폰에만 적용돼요 · ${partner.name}님은 각자 정해요`}>
       <div className="grid gap-2">
         {preparing ? <MyAlertStyle /> : null}
         <Card>
@@ -40,7 +58,7 @@ export default function AlertsSection() {
                 </>
               }
               description={
-                preparing && !low
+                preparing && !low && canLogCycle(state, viewer)
                   ? '잠금화면에는 ‘둘셋 — 새 알림이 있어요’로만 보여요. 캘린더 파일에도 건강 용어 대신 ‘우리의 주간’으로 적혀요.'
                   : '잠금화면에는 ‘둘셋 — 새 알림이 있어요’로만 보여요.'
               }
@@ -50,8 +68,9 @@ export default function AlertsSection() {
             <BrowserNotifications />
           </div>
         </Card>
-        {/* Low-pressure mode makes no date alarms, so the export isn't offered at all. */}
-        {preparing && !low ? <IcsCard /> : null}
+        {/* The cycle owner's own dates, so only the owner exports them (as on the 주기 tab).
+            Low-pressure mode makes no date alarms, so the export isn't offered at all. */}
+        {preparing && !low && canLogCycle(state, viewer) ? <IcsCard /> : null}
       </div>
     </SettingsSection>
   )
@@ -75,14 +94,16 @@ function MyAlertStyle() {
   const choose = (next: AlertStyle) => update((s) => setAlertStyle(s, viewer, next))
   const headingId = useId()
   const group = useId()
+  const explicitWords = useExplicitWords()
 
   return (
     <Card>
       <h3 id={headingId} className="text-sm font-bold text-ink">
-        {me.name}님의 가임기 알림
+        {explicitWords ? `${me.name}님의 가임기 알림` : `${me.name}님의 알림 방식`}
       </h3>
       <p className="mt-0.5 text-xs text-ink-3">
-        각자 자기 방식만 바꿀 수 있어요 · {partner.name}님 선택: {alertStyleLabel(partnerStyle)}
+        각자 자기 방식만 바꿀 수 있어요 · {partner.name}님 선택:{' '}
+        {explicitWords ? alertStyleLabel(partnerStyle) : PLAIN_STYLE_LABEL[partnerStyle]}
       </p>
 
       <div role="radiogroup" aria-labelledby={headingId} className={cx('mt-3 grid gap-2', low && 'opacity-60')}>
@@ -107,7 +128,9 @@ function MyAlertStyle() {
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-medium text-ink">{o.label}</span>
-                <span className="block text-[11px] text-ink-3">{o.hint}</span>
+                <span className="block text-[11px] text-ink-3">
+                  {!explicitWords && o.value === 'off' ? '‘우리의 주간’ 알림만 쉬어요' : o.hint}
+                </span>
               </span>
             </RadioCard>
           )
@@ -128,9 +151,7 @@ function MyAlertStyle() {
             <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{preview.message.body}</p>
           </div>
         ) : null}
-        <p className="mt-1.5 text-xs leading-relaxed text-ink-2">
-          {low ? '부담 없이 모드라 내 폰에서는 가임기 알림과 카운트다운 없이 지내요. 체크·응원 알림은 그대로 와요.' : preview.note}
-        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-ink-2">{preview.note}</p>
         {limited && !low ? (
           <p className="mt-1 text-[11px] text-ink-3">
             {cycleOwner.name}님이 자세한 기록을 공유하기 전까지는 ‘우리의 주간’으로 알려 드려요.
@@ -151,6 +172,8 @@ function LowPressureToggle() {
   const { state, update, viewer, partner } = useApp()
   const toast = useToast()
   const on = lowPressureFor(state.settings, viewer)
+  const explicitWords = useExplicitWords()
+  const dateAlerts = explicitWords ? '가임기 알림' : '날짜 알림'
   return (
     <div>
       <Toggle
@@ -164,7 +187,7 @@ function LowPressureToggle() {
             부담 없이 모드 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
           </>
         }
-        description={`가임기 알림과 카운트다운 없이, 날짜를 맞추지 않고 지내는 방식이에요. ${partner.name}님 설정은 그대로예요.`}
+        description={`${dateAlerts}과 카운트다운 없이, 날짜를 맞추지 않고 지내는 방식이에요. ${partner.name}님 설정은 그대로예요.`}
       />
       <details className="group">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-brand-ink [&::-webkit-details-marker]:hidden">
@@ -175,11 +198,12 @@ function LowPressureToggle() {
         </summary>
         <div className="pb-2 text-xs leading-relaxed text-ink-2">
           <p>
-            영국 NICE 지침(NG257, 2026)은 배란일을 맞추기보다 <strong className="font-semibold text-ink">주기 내내 2~3일에 한 번</strong>{' '}
+            영국 NICE 지침(NG257, 2026)은 {explicitWords ? '배란일을' : '날짜를'} 맞추기보다{' '}
+            <strong className="font-semibold text-ink">주기 내내 2~3일에 한 번</strong>{' '}
             함께하는 방식을 권해요. 날짜에 맞춘 알림이 부담으로 느껴진다면 이 모드가 잘 맞을 수 있어요.
           </p>
           <p className="mt-1.5">
-            켜 두면 내 폰에서는 가임기 알림과 카운트다운이 사라지고, 둘만의 시간으로만 안내해요.{' '}
+            켜 두면 내 폰에서는 {dateAlerts}과 카운트다운이 사라지고, 둘만의 시간으로만 안내해요.{' '}
             {`${partner.name}님 화면과 알림은 ${partner.name}님 설정을 따라요.`} 체크·응원 알림은 그대로 와요.
           </p>
           <a
@@ -336,12 +360,11 @@ function IcsCard() {
   const { state, today, viewer } = useApp()
   const toast = useToast()
   const mine = settingsFor(state.settings, viewer)
-  // The calendar's lens: a partner without shared details gets the soft view
-  // (no peak days), and a rest cycle or a positive test awaiting the clinic
-  // pauses date alarms too.
+  // The calendar's lens (the owner's own wording), and cyclePause: a rest cycle or a
+  // positive test awaiting the clinic makes no date alarms either.
   const lens = cycleLens(state, viewer)
   const view = lens.view
-  const { enabled, reason, windows } = icsAvailability(state, today, mine, view, lens.pause)
+  const { enabled, reason, windows } = icsAvailability(state, today, mine, view, cyclePause(state))
   // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
   const discreet = mine.discreet || view === 'soft'
   const label = view === 'explicit' ? '가임기 일정 캘린더로 내보내기 (.ics)' : '우리의 주간 캘린더로 내보내기 (.ics)'
@@ -361,7 +384,7 @@ function IcsCard() {
         <span aria-hidden>🗓️ </span>휴대폰 캘린더에 알람 넣기
       </h3>
       <p className="mt-1 text-xs leading-relaxed text-ink-2">
-        파일을 열어 구글·애플·삼성 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요. 두 사람 모두 추가하면 함께 받아요.
+        파일을 열어 구글·애플·삼성 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요. 내 캘린더에만 들어가요.
       </p>
       {enabled ? (
         <p className="mt-1 text-[11px] text-ink-3">

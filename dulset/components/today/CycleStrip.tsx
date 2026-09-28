@@ -4,6 +4,9 @@
 // estimated window as a gradient with the 2–3 peak days darker, logged period
 // days and LH marks. A partner without shared details sees two calendar weeks
 // with only the shared "우리의 주간" band (lib/logic/ttcFlow.cycleStrip).
+// Peak days and LH marks follow the calendar's rule (calendarView.showsPeak /
+// showsLH): the peak for anyone with details — "특히 좋은 때 (예상)" in soft
+// wording — and LH only in explicit wording.
 
 import { cx } from '@/components/ui'
 import { formatKo, weekdayKo } from '@/lib/dates'
@@ -41,6 +44,10 @@ function describe(strip: Strip): string {
   if (band.length && strip.windowLabel) {
     parts.push(`${strip.windowLabel} ${formatKo(band[0]!.date, { weekday: false })}부터 ${formatKo(band[band.length - 1]!.date, { weekday: false })}까지`)
   }
+  const peak = strip.days.filter((d) => d.tone === 'peak')
+  if (peak.length && strip.peakLabel) {
+    parts.push(`${strip.peakLabel} ${formatKo(peak[0]!.date, { weekday: false })}부터 ${formatKo(peak[peak.length - 1]!.date, { weekday: false })}까지`)
+  }
   const period = strip.days.filter((d) => d.tone === 'period')
   if (period.length) parts.push(`생리 기록 ${period.length}일`)
   return parts.join('. ')
@@ -52,7 +59,7 @@ export default function CycleStrip({ strip }: { strip: Strip }) {
   const hasSurge = strip.days.some((d) => d.lh === 'surge')
   const hasLow = strip.days.some((d) => d.lh === 'low')
   const hasBand = strip.days.some((d) => d.tone === 'fertile' || d.tone === 'peak')
-  const hasPeak = strip.days.some((d) => d.tone === 'peak')
+  const hasPeak = strip.days.some((d) => d.tone === 'peak') && !!strip.peakLabel
   const today = strip.days[strip.todayIndex]
 
   return (
@@ -111,9 +118,14 @@ export default function CycleStrip({ strip }: { strip: Strip }) {
           ) : null}
           {hasBand && strip.windowLabel ? (
             <li className="inline-flex items-center gap-1">
-              <span className="h-2.5 w-4 rounded-sm bg-gradient-to-r from-fert/30 to-fert" />
+              <span className="h-2.5 w-4 rounded-sm bg-gradient-to-r from-fert/30 to-fert/60" />
               {strip.windowLabel}
-              {hasPeak && strip.view === 'explicit' ? <span className="text-ink-3">· 진한 날이 가능성 높은 날</span> : null}
+            </li>
+          ) : null}
+          {hasPeak ? (
+            <li className="inline-flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-sm bg-fert" />
+              {strip.peakLabel}
             </li>
           ) : null}
           {hasSurge || hasLow ? (

@@ -5,6 +5,8 @@ import RestoreBackup from '@/components/RestoreBackup'
 import { Button, Card, Sheet, useToast } from '@/components/ui'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
+import { stampOn } from '@/lib/logic/today'
+import { markBackedUp } from '@/lib/persist'
 import { useApp } from '@/lib/store'
 import { clearDeviceData } from '@/lib/storage'
 import { ConfirmActions, SettingsSection } from './bits'
@@ -17,7 +19,7 @@ const PRINCIPLES: ReadonlyArray<{ icon: string; title: string; body: string }> =
   {
     icon: '🔒',
     title: '민감정보는 따로 동의받기',
-    body: '생리 주기·가임기 같은 건강 정보는 개인정보보호법(제23조)의 민감정보예요. 다른 동의와 분리해 별도로 동의를 받아요.',
+    body: '생리 주기·임신 준비 기록 같은 건강 정보는 개인정보보호법(제23조)의 민감정보예요. 다른 동의와 분리해 별도로 동의를 받아요.',
   },
   {
     icon: '💑',
@@ -47,7 +49,7 @@ const PRINCIPLES: ReadonlyArray<{ icon: string; title: string; body: string }> =
 ]
 
 export default function DataSection() {
-  const { state, replace, setViewer } = useApp()
+  const { state, replace, setViewer, today } = useApp()
   const toast = useToast()
   const [wipeStep, setWipeStep] = useState<0 | 1 | 2>(0)
   const [busy, setBusy] = useState(false)
@@ -61,7 +63,14 @@ export default function DataSection() {
   }, [wipeStep])
 
   const exportBackup = () => {
-    downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
+    try {
+      downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
+    } catch {
+      toast.show('백업 파일을 만들지 못했어요. 잠시 뒤 다시 해 주세요')
+      return
+    }
+    // Resets the weekly "백업한 지 N일" nudge (InstallBackupCard) on this device.
+    markBackedUp(stampOn(today))
     toast.show('백업 파일을 저장했어요')
   }
 
@@ -74,7 +83,7 @@ export default function DataSection() {
   }
 
   return (
-    <SettingsSection title="데이터와 개인정보">
+    <SettingsSection id="data" title="데이터와 개인정보">
       <div className="grid gap-2">
         <Card>
           <div className="flex items-start gap-3">

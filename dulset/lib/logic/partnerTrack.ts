@@ -12,7 +12,8 @@
 //   Wording follows the viewer's fertilityVoice: "가임력 검사" only for an
 //   explicit viewer; soft / calm viewers read "임신 전 검사" (the roadmap's own
 //   name for the 임신 사전건강관리 check), so no fertility word reaches them.
-// • What the partner may see of the cycle (shareCycleDetails) — only the person
+// • Handing the cycle over (handOverCycle). What the partner may see of it
+//   (shareCycleDetails) is set in prefs.setShareCycleDetails — only the person
 //   whose cycle it is changes it.
 
 import { diffDays, formatKo } from '../dates'
@@ -249,22 +250,32 @@ export function completeMonthlyTask(
 
 // ── What the partner sees ───────────────────────────────────
 
+// setShareCycleDetails lives in prefs.ts (with canSeeCycleDetails); re-exported
+// here for callers that imported it from the partner track.
+export { setShareCycleDetails } from './prefs'
+
 /**
- * Share the cycle details (생리일·배테기·임테기 결과) with the partner, or keep
- * to "우리의 주간" only. Only the person whose cycle it is can change it.
+ * May `by` change who tracks the cycle? The person whose cycle it is always may.
+ * The other person only while there are no cycle records yet (setting up, or the
+ * wrong person picked at onboarding): taking the role over later would open the
+ * owner's period, LH and test records to them without the owner's say.
  */
-export function setShareCycleDetails(state: AppState, by: MemberId, share: boolean): AppState {
-  if (!canLogCycle(state, by) || state.settings.shareCycleDetails === share) return state
-  return { ...state, settings: { ...state.settings, shareCycleDetails: share } }
+export function canHandOverCycle(
+  state: Pick<AppState, 'couple' | 'periods' | 'lhTests' | 'pregnancyTests'>,
+  by: MemberId,
+): boolean {
+  if (canLogCycle(state, by)) return true
+  return state.periods.length === 0 && state.lhTests.length === 0 && state.pregnancyTests.length === 0
 }
 
 /**
- * Hand the cycle over to `id` (설정 › 두 사람). The sharing choice was the
- * previous owner's, about their own records, so it starts private again and the
- * new owner decides. No-op when `id` already tracks the cycle.
+ * Hand the cycle over to `id` (설정 › 두 사람), asked by `by`. The sharing choice
+ * was the previous owner's, about their own records, so it starts private again
+ * and the new owner decides (settings.setCycleOwner resets it). No-op when `id`
+ * already tracks the cycle, or when `by` may not change it (canHandOverCycle).
  */
-export function handOverCycle(state: AppState, id: MemberId): AppState {
+export function handOverCycle(state: AppState, id: MemberId, by: MemberId): AppState {
   if (state.couple.members.find((m) => m.tracksCycle)?.id === id) return state
-  const next = setCycleOwner(state, id)
-  return { ...next, settings: { ...next.settings, shareCycleDetails: false } }
+  if (!canHandOverCycle(state, by)) return state
+  return setCycleOwner(state, id)
 }

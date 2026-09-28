@@ -19,6 +19,7 @@ import type { ShareChoice } from '@/components/onboarding/consentCopy'
 import { ProgressDots } from '@/components/onboarding/parts'
 import { Button } from '@/components/ui'
 import {
+  DEMO_START_VIEWER,
   createDemoState,
   draftNames,
   draftToChoices,
@@ -108,10 +109,10 @@ export default function Onboarding() {
     setHabits(EMPTY_HABITS)
   }
 
-  // The demo opens on the cycle owner's screen (지은) — the app's main user — at the top.
+  // The demo opens on the cycle owner's screen (지은, DEMO_START_VIEWER) — the app's main user — at the top.
   const startDemo = (stage: Stage) => {
     const demo = createDemoState(today, new Date(), stage)
-    setViewer(demo.couple.members.find((m) => m.tracksCycle)?.id ?? 'a')
+    setViewer(DEMO_START_VIEWER)
     openOnHome()
     replace(demo)
     scrollTopSoon()

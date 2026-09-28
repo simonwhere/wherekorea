@@ -77,7 +77,8 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
             <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{explainDayFor(info, lens, date < today)}</p>
             {star ? (
               <p className="mt-2 text-[13px] font-medium text-fert">
-                <span aria-hidden>⭐ </span>배란 예상일 · {cycle.basis === 'lh' ? 'LH 양성 다음 날로 계산했어요' : '달력으로 계산했어요'}
+                <span aria-hidden>⭐ </span>배란 예상일 ·{' '}
+                {cycle.basis !== 'lh' ? '달력으로 계산했어요' : showsLH(lens) ? 'LH 양성 다음 날로 계산했어요' : '기록으로 계산했어요'}
               </p>
             ) : null}
             {chance ? (

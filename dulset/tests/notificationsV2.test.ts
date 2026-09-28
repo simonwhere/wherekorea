@@ -5,17 +5,34 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { programById } from '@/lib/content/programs'
 import { templateById } from '@/lib/content/roadmap'
+import { range } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { addPeriod, cycleAt, setLHTest } from '@/lib/logic/cycle'
+import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
 import {
+  clearNotifications,
   deliveredUnderOldKey,
   fertileKey,
+  inbox,
   mergeNotices,
   peakKey,
   scheduledNotices,
+  sendCheer,
+  softFertileBody,
   type Notice,
 } from '@/lib/logic/notifications'
+import { alertPreview, sanitizeBackup } from '@/lib/logic/settings'
+import { noticeTarget } from '@/lib/logic/today'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
+import {
+  dismissVaccineRest,
+  periodTellState,
+  skipTellPartnerPeriod,
+  tellPartnerPeriod,
+  tellPartnerPositive,
+  vaccineRestHint,
+} from '@/lib/logic/ttcFlow'
+import { parseState } from '@/lib/storage'
 import {
   BACKUP_NUDGE_DAYS,
   INSTALL_STEPS,
@@ -147,6 +164,123 @@ describe('fertile notices are keyed by the cycle, not the window', () => {
     expect(`${soft!.title} ${soft!.body}`).not.toMatch(/가임|배란|가능성|데이트 탭|숙제|노력|실패|오늘 꼭/)
     const [plain] = fertileTo(scheduledNotices(fresh(), '2026-09-11'), 'b')
     expect(plain!.body).toContain('예상')
+  })
+})
+
+describe('the soft 우리의 주간 notice: what it promises and where it opens', () => {
+  const soft = () => fresh({ alertStyle: { a: 'soft', b: 'soft' } })
+
+  it('points the partner at the 우리의 주간 card on 오늘, and promises the owner no ideas', () => {
+    const n = scheduledNotices(soft(), '2026-09-11')
+    const [toA] = fertileTo(n, 'a') // 민수, the partner
+    const [toB] = fertileTo(n, 'b') // 지은, whose cycle it is (soft by choice)
+    expect(toA!.body).toBe(softFertileBody(false))
+    expect(toA!.body).toContain('오늘 화면의 ‘우리의 주간’ 카드')
+    expect(toB!.body).toBe(softFertileBody(true))
+    expect(toB!.body).not.toContain('아이디어')
+    for (const x of [toA!, toB!]) {
+      expect(`${x.title} ${x.body}`).not.toMatch(/가임|배란|LH|가능성|데이트|숙제|노력|실패|오늘 꼭|관계를 가져야/)
+      // Opens the home card, where the ideas are.
+      expect(noticeTarget(x.kind, 'preparing', x.key)).toBe('today')
+    }
+  })
+
+  it('reads the same in the 설정 preview, per person', () => {
+    const n = scheduledNotices(soft(), '2026-09-11')
+    const msg = (x?: Notice) => ({ title: x!.title, body: x!.body })
+    expect(alertPreview('soft', { lowPressure: false, isCycleOwner: false }).message).toEqual(msg(fertileTo(n, 'a')[0]))
+    expect(alertPreview('soft', { lowPressure: false, isCycleOwner: true }).message).toEqual(msg(fertileTo(n, 'b')[0]))
+  })
+
+  it('says low-pressure is my own choice, not the couple’s', () => {
+    const { message, note } = alertPreview('explicit', { lowPressure: true, isCycleOwner: false })
+    expect(message).toBeNull()
+    expect(note).toContain('내 화면과 알림에만 적용돼요')
+    expect(note).not.toContain('두 사람 모두')
+  })
+})
+
+describe('the partner hears nothing about period, LH or tests without the details', () => {
+  // A whole cycle and past the expected period: LH strips rising to a surge, a
+  // negative test, then late. 민수 (a) picked the explicit style; 지은 (b) keeps
+  // her details (the default).
+  function eventful(settings: Partial<Settings> = {}): AppState {
+    let s = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, ttcStart: '2025-01-01', ...settings })
+    for (const [date, result] of [
+      ['2026-09-10', 'negative'],
+      ['2026-09-11', 'faint'],
+      ['2026-09-12', 'positive'],
+      ['2026-09-13', 'peak'],
+    ] as const)
+      s = addLHTest(s, { date, time: '08:30', result, by: 'b' })
+    return addPregnancyTest(s, { date: '2026-09-27', time: '07:00', result: 'negative', by: 'b' }).state
+  }
+  const toPartner = (s: AppState) => run(s, range('2026-09-01', '2026-10-06')).added.filter((n) => n.to === 'a')
+
+  it('gets only the shared 우리의 주간 and couple-wide notices', () => {
+    const got = toPartner(eventful())
+    expect(got.map((n) => n.kind).sort()).toEqual(['doctor', 'fertile-start'])
+    for (const n of got) expect(`${n.title} ${n.body}`).not.toMatch(/생리|LH|배란|가임|양성|음성|테스트|예정일|\d+월 \d+일/)
+    // The owner still gets her own: window, peak, 내일 생리 예정일, and the late notice.
+    const own = run(eventful(), range('2026-09-01', '2026-10-06')).added.filter((n) => n.to === 'b')
+    expect(own.map((n) => n.kind)).toEqual(expect.arrayContaining(['fertile-start', 'peak', 'period-due']))
+  })
+
+  it('once she shares the details, gets the dated window and peak — still never the period or tests', () => {
+    const got = toPartner(eventful({ shareCycleDetails: true }))
+    expect(got.map((n) => n.kind).sort()).toEqual(['doctor', 'fertile-start', 'peak'])
+    expect(got.some((n) => n.kind === 'period-due' || n.key?.startsWith('late:'))).toBe(false)
+  })
+
+  it('hears what she chose to tell, and it opens his card on 오늘', () => {
+    let s = tellPartnerPeriod(fresh(), '2026-09-01', at('2026-09-01'))
+    s = tellPartnerPositive(markPositivePending(s, '2026-09-26'), at('2026-09-26'))
+    const told = inbox(s, 'a')
+    expect(told.map((n) => n.key).sort()).toEqual(['period-told:2026-09-01', 'positive-told:2026-09-26'])
+    for (const n of told) {
+      expect(noticeTarget(n.kind, 'preparing', n.key)).toBe('today')
+      expect(`${n.title} ${n.body}`).not.toContain('🎉')
+    }
+  })
+})
+
+describe('answers kept as dismissed notice records (알릴까요? · 접종 뒤 쉬어 가기)', () => {
+  const NOW_ = at('2026-09-25')
+  function answered(): AppState {
+    let s: AppState = { ...fresh(), planDone: { 'pre-rubella': { at: '2026-09-20', by: 'b' } } }
+    s = skipTellPartnerPeriod(s, '2026-09-01', NOW_)
+    s = tellPartnerPeriod(s, '2026-08-04', NOW_)
+    return dismissVaccineRest(s, vaccineRestHint(s, '2026-09-25', 'b')!, NOW_)
+  }
+
+  it('survive 모두 지우기 on either phone, so the questions never come back', () => {
+    const s = answered()
+    expect(periodTellState(s, '2026-09-01')).toBe('skipped')
+    const cleared = clearNotifications(clearNotifications(s, 'a'), 'b')
+    expect(inbox(cleared, 'a')).toEqual([])
+    expect(inbox(cleared, 'b')).toEqual([])
+    expect(periodTellState(cleared, '2026-09-01')).toBe('skipped')
+    expect(periodTellState(cleared, '2026-08-04')).toBe('told')
+    expect(vaccineRestHint(cleared, '2026-09-25', 'b')).toBeNull()
+  })
+
+  it('outlive the inbox cap, however many notices come after', () => {
+    let s = answered()
+    for (let i = 0; i < 260; i++) s = sendCheer(s, i % 2 ? 'a' : 'b', i % 2 ? 'b' : 'a', `2026-09-26T09:${String(i % 60).padStart(2, '0')}:00+09:00`)
+    expect(s.notifications.length).toBeLessThanOrEqual(200)
+    expect(periodTellState(s, '2026-09-01')).toBe('skipped')
+    expect(periodTellState(s, '2026-08-04')).toBe('told')
+    expect(vaccineRestHint(s, '2026-09-25', 'b')).toBeNull()
+  })
+
+  it('survive a backup and a reload', () => {
+    const s = clearNotifications(answered(), 'b')
+    for (const back of [sanitizeBackup(JSON.parse(JSON.stringify(s)))!, parseState(JSON.stringify(s))!]) {
+      expect(back.notifications).toEqual(s.notifications)
+      expect(periodTellState(back, '2026-09-01')).toBe('skipped')
+      expect(periodTellState(back, '2026-08-04')).toBe('told')
+      expect(vaccineRestHint(back, '2026-09-25', 'b')).toBeNull()
+    }
   })
 })
 

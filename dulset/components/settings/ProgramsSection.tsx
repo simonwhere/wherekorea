@@ -2,21 +2,27 @@
 
 import { Card } from '@/components/ui'
 import { PROGRAMS_CHECKED_AT, programsFor } from '@/lib/content/programs'
+import { settingsFor } from '@/lib/logic/prefs'
 import { effectiveLabel, formatDot } from '@/lib/logic/settings'
+import { fertilityVoice } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import { ExternalLinkButton, SettingsSection } from './bits'
 
 export default function ProgramsSection() {
-  const { state } = useApp()
+  const { state, viewer, cycleOwner } = useApp()
   const programs = programsFor(state.stage)
   if (programs.length === 0) return null
+  // A soft / off / 부담 없이 viewer reads '임신 전 검사' — the roadmap's own name
+  // for this check (as partnerTrack's monthly task does).
+  const explicit = fertilityVoice(settingsFor(state.settings, viewer), viewer, viewer === cycleOwner.id) === 'explicit'
+  const titleOf = (title: string) => (explicit ? title : title.replace('가임력 검사', '임신 전 검사'))
 
   return (
     <SettingsSection title="도움이 되는 정부 지원" sub="지금 단계에서 챙겨 볼 만한 제도예요">
       <ul className="grid gap-2">
         {programs.map((p) => (
           <Card as="li" key={p.id} className="py-3">
-            <p className="text-sm font-bold text-ink">{p.title}</p>
+            <p className="text-sm font-bold text-ink">{titleOf(p.title)}</p>
             <p className="mt-0.5 text-sm leading-relaxed text-ink-2">{p.benefit}</p>
             <dl className="mt-2 space-y-1 text-xs leading-relaxed">
               <div className="flex gap-2">
@@ -35,7 +41,7 @@ export default function ProgramsSection() {
             </dl>
             <div className="mt-2 flex items-center justify-between gap-2">
               <span className="min-w-0 text-[11px] leading-snug text-ink-3">{effectiveLabel(p.effective)}</span>
-              <ExternalLinkButton href={p.url} label={`${p.title} — ${p.urlLabel}에서 보기 (새 창)`}>
+              <ExternalLinkButton href={p.url} label={`${titleOf(p.title)} — ${p.urlLabel}에서 보기 (새 창)`}>
                 {p.urlLabel}
               </ExternalLinkButton>
             </div>

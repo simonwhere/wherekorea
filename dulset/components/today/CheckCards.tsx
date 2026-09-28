@@ -2,13 +2,27 @@
 
 import { useCallback, useState } from 'react'
 import { Avatar, Button, Card, cx, useToast } from '@/components/ui'
-import { activeItems, coupleStreak, doneIds, streak } from '@/lib/logic/checks'
+import {
+  activeItems,
+  coupleWeekCount,
+  doneIds,
+  isWeekly,
+  nudgeableItem,
+  weekCount,
+  weekCountLabel,
+  weeklyDone,
+} from '@/lib/logic/checks'
 import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
-import { firstUnchecked, rowProgress, stampOn, toggleWithCompletion } from '@/lib/logic/today'
+import { rowProgress, stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
-import type { CheckItem } from '@/lib/types'
+import type { AppState, CheckItem, ISODate, MemberId } from '@/lib/types'
 import { Badge, KIND_ICON, KIND_LABEL, ProgressBar } from './bits'
 import CheckEditor from './CheckEditor'
+
+/** Daily items: checked today. Weekly check-ins: checked any day this week. */
+function checkedNow(state: Pick<AppState, 'checkLog'>, member: MemberId, item: CheckItem, today: ISODate, done: string[]): boolean {
+  return isWeekly(item) ? weeklyDone(state, member, item.id, today) : done.includes(item.id)
+}
 
 // ── My checklist ────────────────────────────────────────────
 
@@ -21,7 +35,8 @@ export function MyChecks() {
   const items = activeItems(state, me.id)
   const done = doneIds(state, me.id, today)
   const prog = rowProgress(state, me.id, today)
-  const days = streak(state, me.id, today)
+  // "이번 주 N/7" — days this week with every daily item done (a missed day never resets it).
+  const week = weekCount(state, me.id, today)
   const tone = me.tracksCycle ? 'her' : 'him'
 
   const onToggle = (id: string) => {
@@ -41,7 +56,7 @@ export function MyChecks() {
         <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
           나의 체크 <span className="font-medium text-ink-3">· {me.name}</span>
         </h3>
-        {days > 0 ? <Badge tone="ok">연속 {days}일</Badge> : null}
+        {week > 0 ? <Badge tone="ok">{weekCountLabel(week)}</Badge> : null}
         <button
           type="button"
           onClick={() => setEditorOpen(true)}
@@ -70,7 +85,7 @@ export function MyChecks() {
           <ul className="mt-3 space-y-2">
             {items.map((item) => (
               <li key={item.id}>
-                <CheckRow item={item} checked={done.includes(item.id)} onToggle={() => onToggle(item.id)} />
+                <CheckRow item={item} checked={checkedNow(state, me.id, item, today, done)} onToggle={() => onToggle(item.id)} />
               </li>
             ))}
           </ul>
@@ -116,7 +131,11 @@ function CheckRow({ item, checked, onToggle }: { item: CheckItem; checked: boole
           {item.label}
         </span>
         <span className="block truncate text-xs text-ink-3">
-          {item.note ? (
+          {isWeekly(item) ? (
+            <>
+              <span className="sr-only">{KIND_LABEL[item.kind]} · </span>주 1회 체크인
+            </>
+          ) : item.note ? (
             <>
               <span className="sr-only">{KIND_LABEL[item.kind]} · </span>
               {item.note}
@@ -140,12 +159,14 @@ export function PartnerChecks() {
   const prog = rowProgress(state, partner.id, today)
   const sent = nudgesSentToday(state, me.id, today)
   const left = Math.max(0, NUDGES_PER_DAY - sent)
-  const canNudge = items.length > 0 && !prog.complete && left > 0
+  // A 콕 only ever points at an unchecked daily item — never a weekly check-in.
+  const target = nudgeableItem(state, partner.id, today)
+  const canNudge = !!target && left > 0
   const tone = partner.tracksCycle ? 'her' : 'him'
 
   const nudge = () => {
     if (!canNudge) return
-    const label = firstUnchecked(state, partner.id, today)?.label
+    const label = target?.label
     update((s) => sendNudge(s, me.id, partner.id, today, stampOn(today), label))
     toast.show(`${partner.name}님에게 콕! 보냈어요 (⇄로 ${partner.name}님 화면에서 확인)`)
   }
@@ -180,7 +201,7 @@ export function PartnerChecks() {
           />
           <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label={`${partner.name}님의 항목`}>
             {items.map((item) => {
-              const isDone = done.includes(item.id)
+              const isDone = checkedNow(state, partner.id, item, today, done)
               return (
                 <li
                   key={item.id}
@@ -191,6 +212,7 @@ export function PartnerChecks() {
                 >
                   <span aria-hidden>{isDone ? '✓' : KIND_ICON[item.kind]}</span>
                   {item.label}
+                  {isWeekly(item) ? <span className="text-[11px] font-normal text-ink-3">· 주 1회</span> : null}
                   <span className="sr-only">{isDone ? ' 완료' : ' 아직'}</span>
                 </li>
               )
@@ -220,15 +242,16 @@ export function PartnerChecks() {
   )
 }
 
-// ── Couple streak ───────────────────────────────────────────
+// ── Couple week count ───────────────────────────────────────
 
+/** "둘 다 마친 날 · 이번 주 N/7" — counts days this week, so one missed day never resets it. */
 export function CoupleStreak() {
   const { state, today } = useApp()
-  const n = coupleStreak(state, today)
+  const n = coupleWeekCount(state, today)
   if (n === 0) return null
   return (
     <p className="flex items-center justify-center gap-1.5 rounded-xl bg-ok-soft px-3 py-2.5 text-sm font-semibold text-ok">
-      <span aria-hidden>💑</span> 둘 다 완료 연속 {n}일
+      <span aria-hidden>💑</span> 둘 다 마친 날 · <span className="tabular-nums">{weekCountLabel(n)}</span>
     </p>
   )
 }

@@ -1,12 +1,11 @@
 'use client'
 
 import { useDiaryExport } from '@/components/diary/useDiaryExport'
+import { goToSettings } from '@/components/settings/anchors'
 import { Button, Card } from '@/components/ui'
 
-function openSettings() {
-  if (window.location.hash.replace(/^#/, '') !== 'settings') window.location.hash = 'settings'
-  window.scrollTo({ top: 0 })
-}
+/** 설정 › 데이터와 개인정보, where the full backup is. */
+const openSettings = () => goToSettings('data')
 
 /**
  * Records must never feel hostage: everything stays on this device and can be

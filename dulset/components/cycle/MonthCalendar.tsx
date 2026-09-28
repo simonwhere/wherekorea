@@ -40,7 +40,17 @@ export default function MonthCalendar({
     [input, tests, month, today, lens],
   )
   const legend = legendItems(lens.view, lens)
-  const marks = cells.some((c) => c.lhBadge || c.ptestBadge)
+  // LH badges only reach explicit wording (calendarView.showsLH), so name LH only then.
+  const lhMarks = cells.some((c) => c.lhBadge)
+  const testMarks = cells.some((c) => c.ptestBadge)
+  const marks =
+    lhMarks && testMarks
+      ? '초록 글씨는 LH 결과, ‘임’은 임테기 기록이에요.'
+      : lhMarks
+        ? '초록 글씨는 LH 결과예요.'
+        : testMarks
+          ? '‘임’은 임테기 기록이에요.'
+          : ''
   const isCurrent = startOfMonth(month) === startOfMonth(today)
   const canPrev = canShiftMonth(month, -1, today)
   const canNext = canShiftMonth(month, 1, today)
@@ -145,9 +155,7 @@ export default function MonthCalendar({
           ))}
         </ul>
       ) : null}
-      {marks ? (
-        <p className="mt-1.5 px-2 text-[11px] text-ink-3">초록 글씨는 LH 결과, ‘임’은 임테기 기록이에요.</p>
-      ) : null}
+      {marks ? <p className="mt-1.5 px-2 text-[11px] text-ink-3">{marks}</p> : null}
       <p className="mt-2 px-2 text-[11px] text-ink-3">
         {lens.owner ? '날짜를 누르면 그날을 기록할 수 있어요.' : '날짜를 누르면 자세히 볼 수 있어요.'}
       </p>

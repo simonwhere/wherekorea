@@ -72,8 +72,10 @@ export function normalize(state: AppState): AppState {
       },
       ttcStart: settings.ttcStart,
       ...(settings.personal ? { personal: settings.personal } : {}),
-      // Data saved before this setting existed was fully shared — keep that.
-      shareCycleDetails: settings.shareCycleDetails ?? true,
+      // Privacy by default, same as a new couple and sanitizeBackup: until the
+      // cycle owner opts in (설정 › 공유 범위), the partner sees only 우리의 주간.
+      // Data saved before this setting existed never recorded that consent.
+      shareCycleDetails: settings.shareCycleDetails ?? false,
     },
   }
 }

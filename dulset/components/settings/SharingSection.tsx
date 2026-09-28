@@ -6,8 +6,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Card, cx, useToast } from '@/components/ui'
 import { SHARE_OPTIONS, ShareConsentNotice, type ShareChoice } from '@/components/onboarding/consentCopy'
-import { setShareCycleDetails } from '@/lib/logic/partnerTrack'
-import { canLogCycle, canSeeCycleDetails } from '@/lib/logic/prefs'
+import { canLogCycle, canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
 import { useApp } from '@/lib/store'
 import { ConfirmActions, Pill, RadioCard, SettingsSection } from './bits'
 
@@ -16,6 +15,7 @@ export default function SharingSection() {
   const isOwner = canLogCycle(state, viewer)
   return (
     <SettingsSection
+      id="share"
       title="공유 범위"
       sub={isOwner ? `${partner.name}님에게 보여 줄 것 · ${cycleOwner.name}님만 바꿀 수 있어요` : `${cycleOwner.name}님이 정해요`}
     >

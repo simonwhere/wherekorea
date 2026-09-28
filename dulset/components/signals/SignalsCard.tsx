@@ -1,8 +1,17 @@
 'use client'
 
 import { Card, SectionTitle, cx, useToast } from '@/components/ui'
+import { canLogCycle } from '@/lib/logic/prefs'
 import { stampOn } from '@/lib/logic/today'
-import { REPLIES, SIGNALS, SIGNALS_PER_DAY, pendingSignal, sendSignal, signalsSentToday } from '@/lib/logic/signals'
+import {
+  SIGNALS_PER_DAY,
+  pendingSignal,
+  repliesFor,
+  sendSignal,
+  signalIdOf,
+  signalsFor,
+  signalsSentToday,
+} from '@/lib/logic/signals'
 import { useApp } from '@/lib/store'
 
 function useSend() {
@@ -19,18 +28,20 @@ function useSend() {
 
 /**
  * The signal the viewer received today and hasn't answered, with one-tap
- * replies — or nothing. Used on its own in the home's "우리 한 줄".
+ * replies that fit it (repliesFor: '위로가 필요해요' gets '옆에 있을게요', never
+ * '다음에 해요') — or nothing. Used on its own in the home's "우리 한 줄".
  */
 export function PendingSignal({ className }: { className?: string }) {
   const { state, today, me } = useApp()
   const { send, left } = useSend()
   const pending = pendingSignal(state, me.id, today)
   if (!pending) return null
+  const replies = repliesFor(signalIdOf(pending))
   return (
     <div className={cx('rounded-xl bg-brand-soft p-3', className)}>
       <p className="text-sm font-semibold text-brand-ink">{pending.title}</p>
       <div className="mt-2 flex flex-wrap gap-2">
-        {REPLIES.map((r) => (
+        {replies.map((r) => (
           <button
             key={r.id}
             type="button"
@@ -52,7 +63,10 @@ export function PendingSignal({ className }: { className?: string }) {
  * when the reply already sits elsewhere on the screen.
  */
 export default function SignalsCard({ showPending = true, title = true }: { showPending?: boolean; title?: boolean }) {
+  const { state, me } = useApp()
   const { send, left } = useSend()
+  // While preparing: the trying-month set ('이번 달은 아니었어요' only for the person whose cycle it is).
+  const signals = signalsFor(state.stage, canLogCycle(state, me.id))
 
   return (
     <>
@@ -60,7 +74,7 @@ export default function SignalsCard({ showPending = true, title = true }: { show
       <Card>
         {showPending ? <PendingSignal className="mb-3" /> : null}
         <div className="grid grid-cols-2 gap-2">
-          {SIGNALS.map((s) => (
+          {signals.map((s) => (
             <button
               key={s.id}
               type="button"

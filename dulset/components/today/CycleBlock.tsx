@@ -28,6 +28,7 @@ import {
 import { useApp } from '@/lib/store'
 import CycleStrip from './CycleStrip'
 import LossSupport from './LossSupport'
+import { MonthlyTaskBody } from './MonthlyTask'
 import OurWeekIdeas from './OurWeekIdeas'
 import PregnancyConfirmSheet from './PregnancyConfirmSheet'
 import { ExternalLink, LinkButton } from './bits'
@@ -54,11 +55,14 @@ const EYEBROW: Record<Moment['tone'], string> = {
 export default function CycleBlock({
   moment,
   task,
+  onTaskDone,
   onNavigate,
 }: {
   moment: Moment
   /** The partner's "이번 달 할 일", when this card features it. */
   task?: MonthlyTask
+  /** [했어요] for the featured task (completeMonthlyTask, with 되돌리기). */
+  onTaskDone?: (task: MonthlyTask) => void
   onNavigate: Nav
 }) {
   const { state, update, today, me, partner } = useApp()
@@ -100,7 +104,8 @@ export default function CycleBlock({
     toast.show(`${partner.name}님에게 차분히 알렸어요`)
   }
 
-  const primary = featuredTask ? ({ type: 'nav', to: 'plan', label: '이번 달 할 일 보기' } as const) : m.primary
+  // A featured month task brings its own [했어요] and 챙길 것 link.
+  const primary = m.primary
   // The strip header already links to 주기.
   const secondary = m.secondary?.type === 'nav' && m.secondary.to === 'cycle' && strip ? undefined : m.secondary
   const secondaryIsLink = secondary?.type === 'nav'
@@ -146,12 +151,13 @@ export default function CycleBlock({
             </p>
           ) : null}
 
-          {featuredTask ? (
-            <div className="mt-3 rounded-xl bg-surface-2 px-3 py-2.5">
-              <p className="text-[11px] font-semibold text-ink-3">이번 달 할 일</p>
-              <p className="text-sm font-semibold text-ink">{featuredTask.title}</p>
-              <p className="text-xs text-ink-3">{featuredTask.dueText ?? featuredTask.when}</p>
-            </div>
+          {featuredTask && onTaskDone ? (
+            <MonthlyTaskBody
+              task={featuredTask}
+              onDone={onTaskDone}
+              onNavigate={onNavigate}
+              className="mt-3 rounded-xl bg-surface-2 px-3 pb-1 pt-2.5"
+            />
           ) : null}
 
           {m.partnerTip ? (

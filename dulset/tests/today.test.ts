@@ -390,7 +390,12 @@ describe('inbox helpers', () => {
   it('opens only tabs that exist in the current stage', () => {
     expect(noticeTarget('nudge', 'preparing')).toBe('today')
     expect(noticeTarget('cheer', 'parenting')).toBe('today')
-    expect(noticeTarget('fertile-start', 'preparing')).toBe('cycle')
+    // 우리의 주간 opens the home card (its date ideas live there, not in a 데이트 tab).
+    expect(noticeTarget('fertile-start', 'preparing', 'fertile:2026-09-10:a')).toBe('today')
+    expect(noticeTarget('fertile-start', 'preparing')).toBe('today')
+    expect(noticeTarget('fertile-start', 'pregnant')).toBeNull()
+    expect(noticeTarget('peak', 'preparing', 'peak:2026-09-10:b')).toBe('cycle')
+    expect(noticeTarget('period-due', 'preparing')).toBe('cycle')
     expect(noticeTarget('peak', 'pregnant')).toBeNull() // no 달력 tab while pregnant
     expect(noticeTarget('milestone', 'pregnant')).toBe('pregnancy')
     expect(noticeTarget('milestone', 'parenting')).toBe('baby')
@@ -402,6 +407,13 @@ describe('inbox helpers', () => {
     expect(noticeTarget('date-idea', 'parenting')).toBe('date')
     expect(noticeTarget('doctor', 'preparing')).toBe('today')
     expect(noticeTarget('system', 'preparing')).toBeNull()
+  })
+
+  it('opens the partner’s card on 오늘 for what the cycle owner chose to tell', () => {
+    expect(noticeTarget('system', 'preparing', 'period-told:2026-09-20')).toBe('today')
+    expect(noticeTarget('system', 'preparing', 'positive-told:2026-09-24')).toBe('today')
+    // Confirmed at the clinic since: the pregnant home is still 오늘.
+    expect(noticeTarget('system', 'pregnant', 'positive-told:2026-09-24')).toBe('today')
   })
 
   it('groups by the local date prefix', () => {

@@ -28,6 +28,7 @@ import {
 } from './cycle'
 import { canSeeCycleDetails, settingsFor } from './prefs'
 import { alertStyleLabel } from './settings'
+import { fertilityVoice } from './today'
 import { activePositivePending, activeRest } from './ttc'
 
 // ── Who sees what ───────────────────────────────────────────
@@ -105,12 +106,22 @@ type PauseState = Pick<AppState, 'restCycle' | 'positivePending' | 'periods' | '
  *   partner the owner shared them with — prefs.canSeeCycleDetails). Without
  *   them only the shared "우리의 주간" band is left, always in soft wording.
  * - owner: the viewer is the person whose cycle it is
+ * - lh: LH marks — the viewer's own wording is explicit (soft, off and
+ *   low-pressure never see LH, even an owner whose calendar stays explicit)
  * - pause: see CyclePause
+ *
+ * One rule for the calendar and the home strip (ttcFlow.cycleStrip):
+ * - peak (the 2–3 darker days): anyone with details, unless hidden or paused —
+ *   named "특히 좋은 때 (예상)" in soft wording (showsPeak, peakLabel)
+ * - LH marks: details + explicit wording only (showsLH)
+ * - no details: only the shared "우리의 주간" band, no peak
  */
 export interface Lens {
   view: FertilityView
   details: boolean
   owner: boolean
+  /** Defaults to `view === 'explicit'` for a hand-built lens. */
+  lh?: boolean
   pause?: CyclePause
   /** When the positive test awaiting the clinic was logged. */
   pendingSince?: ISODate
@@ -122,12 +133,15 @@ export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseSt
   const ownerId = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
   const details = canSeeCycleDetails(state, viewer)
   const own = fertilityView(settingsFor(state.settings, viewer), viewer, ownerId)
+  const view: FertilityView = !details && own === 'explicit' ? 'soft' : own
   const pause = cyclePause(state)
   const pending = activePositivePending(state)
   return {
-    view: !details && own === 'explicit' ? 'soft' : own,
+    view,
     details,
     owner: viewer === ownerId,
+    // The home's wording rule (today.fertilityVoice): soft, off and low-pressure → no LH.
+    lh: details && view === 'explicit' && fertilityVoice(state.settings, viewer, viewer === ownerId) === 'explicit',
     ...(pause ? { pause } : {}),
     ...(pending ? { pendingSince: pending.since } : {}),
   }
@@ -136,8 +150,8 @@ export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseSt
 /**
  * The phase this viewer sees. On top of visiblePhase: a pause drops the fertile
  * band (and, while a positive test waits, the projected period); a partner
- * without details sees only the band, with no 가장 좋은 때 / 가능 범위; a soft
- * partner sees no 가장 좋은 때.
+ * without details sees only the band, with no peak / 가능 범위. Anyone with
+ * details sees the peak days (showsPeak) — in soft wording as 특히 좋은 때.
  */
 export function lensPhase(phase: DayPhase, lens: Lens): DayPhase {
   const p = visiblePhase(phase, lens.view)
@@ -145,13 +159,25 @@ export function lensPhase(phase: DayPhase, lens: Lens): DayPhase {
   if (lens.pause && fertile) return 'none'
   if (lens.pause === 'positive' && p === 'period-predicted') return 'none'
   if (!lens.details) return p === 'peak' || p === 'fertile' ? 'fertile' : 'none'
-  if (!lens.owner && lens.view !== 'explicit' && p === 'peak') return 'fertile'
   return p
 }
 
-/** LH marks: details, not hidden, and (own record or explicit wording). */
+/** How a soft-wording viewer reads the peak days (calendar, home strip, day labels). */
+export const PEAK_SOFT_LABEL = '특히 좋은 때 (예상)'
+
+/** The 2–3 darker peak days: anyone with details, unless estimates are hidden or paused. */
+export function showsPeak(lens: Pick<Lens, 'view' | 'details' | 'pause'>): boolean {
+  return lens.details && lens.view !== 'hidden' && !lens.pause
+}
+
+/** The peak days' name: '가능성 높음' in explicit wording, '특히 좋은 때 (예상)' in soft. */
+export function peakLabel(view: FertilityView): string {
+  return view === 'explicit' ? '가능성 높음' : PEAK_SOFT_LABEL
+}
+
+/** LH marks: details and explicit wording only — soft, off and low-pressure viewers never see them. */
 export function showsLH(lens: Lens): boolean {
-  return lens.details && lens.view !== 'hidden' && (lens.owner || lens.view === 'explicit')
+  return lens.details && lens.view === 'explicit' && (lens.lh ?? true)
 }
 
 /** Pregnancy-test marks: the owner always; a partner with details and explicit wording. */
@@ -167,7 +193,7 @@ export function phaseLabel(phase: DayPhase, view: FertilityView): string {
     case 'period-predicted':
       return '생리 예정'
     case 'peak':
-      return view === 'soft' ? '우리의 주간 예상, 가장 좋은 때' : '가임기 예상, 가능성 높음'
+      return view === 'soft' ? PEAK_SOFT_LABEL : '가임기 예상, 가능성 높음'
     case 'fertile':
       return view === 'soft' ? '우리의 주간 예상' : '가임기 예상'
     case 'possible':
@@ -365,7 +391,6 @@ export const LEGEND_MAX = 5
 
 export function legendItems(view: FertilityView, lens?: Partial<Omit<Lens, 'view'>>): LegendItem[] {
   const details = lens?.details ?? true
-  const owner = lens?.owner ?? true
   const v: FertilityView = !details && view === 'explicit' ? 'soft' : view
   const items: LegendItem[] = []
   if (details)
@@ -374,7 +399,8 @@ export function legendItems(view: FertilityView, lens?: Partial<Omit<Lens, 'view
   if (!details) return [{ key: 'fertile', label: '우리의 주간 (예상)', swatch: PHASE_CLASS.fertile }]
   const soft = v === 'soft'
   items.push({ key: 'fertile', label: soft ? '우리의 주간' : '가임기 예상', swatch: PHASE_CLASS.fertile })
-  if (!soft || owner) items.push({ key: 'peak', label: soft ? '가장 좋은 때' : '가능성 높음', swatch: PHASE_CLASS.peak })
+  // Peak days for everyone with details (the home strip shows the same days).
+  items.push({ key: 'peak', label: peakLabel(v), swatch: PHASE_CLASS.peak })
   items.push({ key: 'possible', label: '가능 범위', swatch: PHASE_CLASS.possible })
   if (v === 'explicit') items.push({ key: 'ovulation', label: '배란 예상', swatch: '', mark: '⭐' })
   return items
@@ -645,7 +671,8 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
         key: 'ovulation',
         label: '배란 (예상)',
         value: formatKo(window.ovulation),
-        sub: window.basis === 'lh' ? 'LH 테스트 기준' : '달력 계산',
+        // (No LH by name for an owner who turned alerts off — showsLH's rule.)
+        sub: window.basis === 'lh' ? (opts.lh ?? true ? 'LH 테스트 기준' : '기록 기준') : '달력 계산',
       })
     }
   }
@@ -695,9 +722,11 @@ export function partnerHeadline(status: FertilityStatus, view: FertilityView, ow
 }
 
 export function irregularMessage(view: FertilityView): string {
-  return view === 'hidden'
-    ? '주기가 들쭉날쭉하면 생리 예정일 예측이 더 부정확해요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
-    : '주기가 들쭉날쭉하면 달력 예측이 더 부정확해요. LH 테스트를 쓰거나 전문의와 상담해 보세요.'
+  if (view === 'hidden') return '주기가 들쭉날쭉하면 생리 예정일 예측이 더 부정확해요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
+  // LH by name only in explicit wording (soft viewers never see LH).
+  return view === 'explicit'
+    ? '주기가 들쭉날쭉하면 달력 예측이 더 부정확해요. LH 테스트를 쓰거나 전문의와 상담해 보세요.'
+    : '주기가 들쭉날쭉하면 달력 예측이 더 부정확해요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
 }
 
 // ── Day sheet ───────────────────────────────────────────────
@@ -783,9 +812,10 @@ export const OUTSIDE_RANGE_NOTE = '예상 범위 밖이에요 · 예측은 주�
 
 /** Shown instead of the logging buttons for days after today. */
 export function futureDayNote(view: FertilityView): string {
-  return view === 'hidden'
-    ? '아직 오지 않은 날이라 예정일만 보여줘요. 그날이 되면 생리를 기록할 수 있어요.'
-    : '아직 오지 않은 날이라 예측만 보여줘요. 그날이 되면 생리나 LH 테스트를 기록할 수 있어요.'
+  if (view === 'hidden') return '아직 오지 않은 날이라 예정일만 보여줘요. 그날이 되면 생리를 기록할 수 있어요.'
+  return view === 'explicit'
+    ? '아직 오지 않은 날이라 예측만 보여줘요. 그날이 되면 생리나 LH 테스트를 기록할 수 있어요.'
+    : '아직 오지 않은 날이라 예측만 보여줘요. 그날이 되면 생리나 테스트 결과를 기록할 수 있어요.'
 }
 
 /**
@@ -803,7 +833,7 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean, 
         : '생리가 시작될 것으로 예상되는 무렵이에요. 시작하면 기록해 주세요 — 다음 예측이 더 정확해져요.'
     case 'peak':
       return view === 'soft'
-        ? '우리의 주간 한가운데예요 (예상). 둘만의 시간을 편하게 챙겨 보세요.'
+        ? '우리의 주간 중 특히 좋은 때예요 (예상). 부담은 내려놓고 편하게 보내요.'
         : '배란 예상일과 그 전 이틀이에요. 가임기 중에서도 가능성이 가장 높은 때예요 (예상).'
     case 'fertile':
       return view === 'soft'
@@ -1008,7 +1038,7 @@ export function icsAvailability(
   if (view === 'hidden')
     return {
       enabled: false,
-      reason: `내 알림 방식이 ‘${alertStyleLabel('off')}’로 되어 있어요. 설정 › 알림에서 바꿀 수 있어요.`,
+      reason: `내 알림 방식이 ‘${alertStyleLabel('off')}’로 되어 있어요. 설정 › 내 알림에서 바꿀 수 있어요.`,
       windows: [],
     }
   if (input.periods.length === 0)

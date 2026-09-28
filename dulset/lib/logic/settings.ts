@@ -27,6 +27,7 @@ import {
 } from '../types'
 import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, otherMember } from '../initial'
 import type { CycleStats } from './cycle'
+import { SOFT_FERTILE_TITLE, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
 import { canStartPregnancy, updatePregnancy } from './pregnancy'
 
@@ -95,10 +96,21 @@ export function updateMember(state: AppState, id: MemberId, patch: MemberPatch):
   return { ...state, couple: { ...state.couple, members } }
 }
 
-/** Make `id` the one member whose cycle is tracked (the other one never is). */
+/**
+ * Make `id` the one member whose cycle is tracked (the other one never is).
+ * Whether the partner sees the details (settings.shareCycleDetails) was the
+ * previous owner's choice about their own records: a new owner hasn't agreed
+ * to anything, so it goes back to private ("우리의 주간만") unless `id` already
+ * was the only owner.
+ */
 export function setCycleOwner(state: AppState, id: MemberId): AppState {
+  const owners = state.couple.members.filter((m) => m.tracksCycle)
+  const unchanged = owners.length === 1 && owners[0]!.id === id
   const members = state.couple.members.map((m) => ({ ...m, tracksCycle: m.id === id })) as [Member, Member]
-  return { ...state, couple: { ...state.couple, members } }
+  const next = { ...state, couple: { ...state.couple, members } }
+  return unchanged || state.settings.shareCycleDetails !== true
+    ? next
+    : { ...next, settings: { ...state.settings, shareCycleDetails: false } }
 }
 
 // ── Linking (simulated in the prototype) ────────────────────
@@ -222,7 +234,8 @@ export function alertPreview(
   if (opts.lowPressure) {
     return {
       message: null,
-      note: '부담 없이 모드라 두 사람 모두 가임기 알림과 카운트다운 없이 지내요. 체크·응원 알림은 그대로 와요.',
+      // Low-pressure is each person's own choice (prefs.lowPressureFor).
+      note: '부담 없이 모드라 날짜 알림과 카운트다운 없이 지내요. 내 화면과 알림에만 적용돼요. 체크·응원 알림은 그대로 와요.',
     }
   }
   if (style === 'off') {
@@ -235,10 +248,7 @@ export function alertPreview(
   }
   if (style === 'soft') {
     return {
-      message: {
-        title: '💞 이번 주는 우리의 주간이에요',
-        body: '둘만의 시간을 챙겨 볼까요? 데이트 탭에 아이디어를 골라 뒀어요.',
-      },
+      message: { title: SOFT_FERTILE_TITLE, body: softFertileBody(opts.isCycleOwner) },
       note: '우리의 주간이 시작되기 하루 전에 한 번만, 건강 용어 없이 알려 드려요.',
     }
   }
@@ -262,7 +272,7 @@ export function lockScreenText(message: { title: string; body: string }, discree
 // ── Stage ───────────────────────────────────────────────────
 
 export const STAGE_INFO: Record<Stage, { icon: string; label: string; body: string }> = {
-  preparing: { icon: '🌱', label: '임신 준비 중', body: '두 사람의 체크, 달력, 데이트를 함께 챙기고 있어요.' },
+  preparing: { icon: '🌱', label: '임신 준비 중', body: '두 사람의 매일 체크, 주기 기록, 챙길 것을 함께 보고 있어요.' },
   pregnant: { icon: '🤰', label: '임신 중', body: '주수와 검사 일정, 태교일기를 함께 챙기고 있어요.' },
   parenting: { icon: '👶', label: '육아 중', body: '아기의 하루하루와 기념일을 함께 기록하고 있어요.' },
 }
@@ -429,6 +439,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
     }
     settings.personal = personal
   } else delete settings.personal
+  // Privacy by default (like storage.normalize and a new couple): only an
+  // explicit opt-in by the cycle owner shares the details.
   settings.shareCycleDetails = st.shareCycleDetails === true
 
   const list = <T>(v: unknown, ok: (x: Loose) => boolean): T[] =>

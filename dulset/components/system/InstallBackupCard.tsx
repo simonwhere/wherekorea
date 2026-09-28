@@ -17,6 +17,7 @@ import {
   requestPersist,
   type InstallPlatform,
 } from '@/lib/persist'
+import { goToSettings } from '@/components/settings/anchors'
 import { useApp } from '@/lib/store'
 
 /** Chrome's install prompt (Android): kept so a button can open it later. */
@@ -62,17 +63,8 @@ const rowAction =
   'mt-2 inline-flex min-h-[44px] items-center rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-brand-ink ' +
   'transition-colors hover:bg-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
-/** Go to 설정 and bring the 데이터와 개인정보 section (백업 파일 내보내기) into view. */
-function goToBackup() {
-  window.location.hash = 'settings'
-  window.scrollTo({ top: 0 })
-  // After the settings screen renders; falls back to its top.
-  window.requestAnimationFrame(() =>
-    window.requestAnimationFrame(() => {
-      document.querySelector('section[aria-label="데이터와 개인정보"]')?.scrollIntoView({ block: 'start' })
-    }),
-  )
-}
+/** Go to 설정 › 데이터와 개인정보 (#data, 백업 파일 내보내기). */
+const goToBackup = () => goToSettings('data')
 
 export default function InstallBackupCard() {
   const { state, today } = useApp()

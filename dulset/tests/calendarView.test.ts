@@ -28,6 +28,9 @@ import {
   explainDayFor,
   lensPhase,
   lhBadge,
+  PEAK_SOFT_LABEL,
+  peakLabel,
+  showsPeak,
   ptestBadge,
   sharedHeadline,
   showsLH,
@@ -38,6 +41,7 @@ import {
   dayChanceLabel,
   dayTitle,
   explainDay,
+  futureDayNote,
   fertilityView,
   icsAvailability,
   irregularMessage,
@@ -129,8 +133,11 @@ describe('phase labels', () => {
   })
 
   it('narrows for the partner and while paused', () => {
-    // Soft partner: no 가장 좋은 때.
-    expect(legendItems('soft', { owner: false }).map((l) => l.key)).toEqual(['period', 'fertile', 'possible'])
+    // Soft partner with details: the peak days too, named softly (same as the home strip).
+    expect(legendItems('soft', { owner: false }).map((l) => l.key)).toEqual(['period', 'fertile', 'peak', 'possible'])
+    expect(legendItems('soft', { owner: false }).find((l) => l.key === 'peak')?.label).toBe('특히 좋은 때 (예상)')
+    expect(legendItems('soft').find((l) => l.key === 'peak')?.label).toBe(PEAK_SOFT_LABEL)
+    expect(legendItems('explicit', { owner: false }).find((l) => l.key === 'peak')?.label).toBe('가능성 높음')
     // No details: only the shared band.
     expect(legendItems('explicit', { details: false, owner: false }).map((l) => l.label)).toEqual(['우리의 주간 (예상)'])
     expect(legendItems('hidden', { details: false, owner: false })).toEqual([])
@@ -183,13 +190,24 @@ describe('cellView', () => {
     expect(hidden.ariaLabel).not.toMatch(/가임기|배란|가능/)
   })
 
-  it('shows LH results except in the hidden view', () => {
+  it('names LH in notes only for the explicit view', () => {
+    expect(futureDayNote('explicit')).toContain('LH')
+    for (const v of ['soft', 'hidden'] as const) {
+      expect(futureDayNote(v)).not.toMatch(/LH|가임기|배란/)
+      expect(irregularMessage(v)).not.toMatch(/LH|가임기|배란/)
+    }
+    expect(irregularMessage('explicit')).toContain('LH')
+  })
+
+  it('shows LH results only in the explicit view', () => {
     // A positive LH on 09-11 moves ovulation to 09-12.
     const neg = cellView(dayInfo(input, '2026-09-12'), ctx('explicit'))
     expect(neg.lh).toBe('negative')
     expect(neg.star).toBe(true)
     expect(neg.ariaLabel).toContain('LH 음성')
-    expect(cellView(dayInfo(input, '2026-09-11'), ctx('soft')).lh).toBe('positive')
+    expect(cellView(dayInfo(input, '2026-09-11'), ctx('explicit')).lh).toBe('positive')
+    // Soft wording never shows LH (the home strip follows the same rule).
+    expect(cellView(dayInfo(input, '2026-09-11'), ctx('soft')).lh).toBeUndefined()
     expect(cellView(dayInfo(input, '2026-09-11'), ctx('hidden')).lh).toBeUndefined()
   })
 
@@ -253,6 +271,9 @@ describe('cycleSummary', () => {
     const s = cycleSummary(base({ lhTests: [{ date: '2026-09-16', result: 'positive' }] }), '2026-09-08', 'explicit')
     expect(s.window?.ovulation).toBe('2026-09-17')
     expect(s.rows.find((r) => r.key === 'ovulation')?.sub).toBe('LH 테스트 기준')
+    // An owner who turned alerts off keeps her explicit calendar, but no LH by name.
+    const off = cycleSummary(base({ lhTests: [{ date: '2026-09-16', result: 'positive' }] }), '2026-09-08', 'explicit', { lh: false })
+    expect(off.rows.find((r) => r.key === 'ovulation')?.sub).toBe('기록 기준')
   })
 
   it('handles a late period', () => {
@@ -528,7 +549,9 @@ describe('day sheet helpers', () => {
   })
 
   it('names the settings option when export is off for this viewer', () => {
-    expect(icsAvailability(base(), '2026-09-07', settings(), 'hidden').reason).toContain('받지 않을래요')
+    const reason = icsAvailability(base(), '2026-09-07', settings(), 'hidden').reason
+    expect(reason).toContain('받지 않을래요')
+    expect(reason).toContain('설정 › 내 알림')
   })
 })
 
@@ -574,7 +597,7 @@ function couple(over: Partial<AppState> = {}, settingsOver: Partial<Settings> = 
 
 describe('cycleLens', () => {
   it('the owner sees details in their own wording', () => {
-    expect(cycleLens(couple(), 'b')).toEqual({ view: 'explicit', details: true, owner: true })
+    expect(cycleLens(couple(), 'b')).toEqual({ view: 'explicit', details: true, owner: true, lh: true })
   })
 
   it('a partner sees details only when shared; otherwise soft wording at most', () => {
@@ -582,10 +605,12 @@ describe('cycleLens', () => {
       view: 'soft',
       details: false,
       owner: false,
+      lh: false,
     })
     expect(cycleLens(couple({}, { shareCycleDetails: true, alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toMatchObject({
       view: 'explicit',
       details: true,
+      lh: true,
     })
     // 부담 없이 is per person.
     expect(cycleLens(couple({}, { personal: { a: { lowPressure: true } } }), 'a').view).toBe('hidden')
@@ -640,15 +665,46 @@ describe('what each viewer sees on the calendar', () => {
     for (const d of range('2026-09-01', '2026-10-31')) expect(['none', 'fertile']).toContain(cell(d, noDetails).phase)
   })
 
-  it('a soft partner with details: no LH, no 가장 좋은 때, no tests', () => {
+  it('a soft partner with details: the peak days, named softly — no LH, no tests', () => {
     expect(showsLH(softPartner)).toBe(false)
     expect(showsTests(softPartner)).toBe(false)
-    expect(lensPhase('peak', softPartner)).toBe('fertile')
+    expect(showsPeak(softPartner)).toBe(true)
+    expect(lensPhase('peak', softPartner)).toBe('peak')
     expect(lensPhase('period', softPartner)).toBe('period')
-    // The owner in soft wording still sees their own LH record.
-    expect(showsLH({ view: 'soft', details: true, owner: true })).toBe(true)
+    const c = cell('2026-09-14', softPartner)
+    expect(c.phase).toBe('peak')
+    expect(c.ariaLabel).toContain('특히 좋은 때 (예상)')
+    expect(c.ariaLabel).not.toMatch(/가임기|배란|LH|가능성/)
+    expect(c.star).toBe(false)
+    expect(peakLabel('soft')).toBe('특히 좋은 때 (예상)')
+    expect(peakLabel('explicit')).toBe('가능성 높음')
+    // Soft, off and low-pressure never see LH marks — the owner included (her
+    // records stay in "+ 기록"); hidden or paused never shows the peak.
+    expect(showsLH({ view: 'soft', details: true, owner: true })).toBe(false)
+    expect(showsLH({ view: 'explicit', details: true, owner: true, lh: false })).toBe(false)
     expect(showsLH({ view: 'hidden', details: true, owner: true })).toBe(false)
+    expect(showsPeak({ view: 'hidden', details: true })).toBe(false)
+    expect(showsPeak({ view: 'explicit', details: true, pause: 'rest' })).toBe(false)
+    expect(showsPeak(noDetails)).toBe(false)
     expect(showsTests({ view: 'hidden', details: true, owner: true })).toBe(true)
+  })
+
+  it('cycleLens applies the LH rule per viewer (soft / off / low-pressure → no LH)', () => {
+    const owner = (over: Partial<Settings>) => cycleLens(couple({}, over), 'b')
+    expect(showsLH(owner({ alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(true)
+    expect(showsLH(owner({ alertStyle: { a: 'soft', b: 'soft' } }))).toBe(false)
+    // 'off' keeps the owner's calendar explicit (her record) but drops LH marks.
+    const off = owner({ alertStyle: { a: 'soft', b: 'off' } })
+    expect(off.view).toBe('explicit')
+    expect(showsLH(off)).toBe(false)
+    expect(showsPeak(off)).toBe(true)
+    expect(showsLH(owner({ alertStyle: { a: 'soft', b: 'explicit' }, personal: { b: { lowPressure: true } } }))).toBe(false)
+    // The partner: LH only with details and explicit wording; the peak with details.
+    const partner = (over: Partial<Settings>) => cycleLens(couple({}, over), 'a')
+    expect(showsLH(partner({ shareCycleDetails: true, alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(true)
+    expect(showsLH(partner({ shareCycleDetails: true, alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(false)
+    expect(showsPeak(partner({ shareCycleDetails: true, alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(true)
+    expect(showsPeak(partner({ shareCycleDetails: false, alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(false)
   })
 
   it('a pause drops the fertile band (and, while waiting, the projected period)', () => {

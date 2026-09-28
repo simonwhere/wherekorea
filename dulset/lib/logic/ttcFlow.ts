@@ -30,8 +30,9 @@ import type {
   PregnancyTestResult,
   RestCycle,
 } from '../types'
-import { LH_LABEL, fertilityView, type FertilityView } from './calendarView'
+import { LH_LABEL, cycleLens, peakLabel, showsLH, showsPeak, type FertilityView } from './calendarView'
 import { mondayOf } from './checks'
+import { fertileHintsAllowed } from './dateIdeas'
 import {
   LONG_LATE_DAYS,
   cycleAt,
@@ -337,7 +338,14 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId): Mo
     ownerName: nameOf(state, owner),
     partnerName: nameOf(state, owner === 'a' ? 'b' : 'a'),
   }
-  const m = isOwner ? ownerMoment(ctx) : partnerMoment(ctx)
+  let m = isOwner ? ownerMoment(ctx) : partnerMoment(ctx)
+  // The "우리의 주간" teaser and its date ideas follow the 둘만의 시간 rule too
+  // (dateIdeas.fertileHintsAllowed: not in low-pressure mode or with alerts
+  // off, not while resting or waiting for the clinic).
+  if (!fertileHintsAllowed(state, viewer)) {
+    if (m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') m = partnerNeutral()
+    else if (m.dateIdeas) m = { ...m, dateIdeas: false }
+  }
   return {
     kind: phase.kind,
     voice,
@@ -961,7 +969,7 @@ export interface StripDay {
   /** 0–1 strength of the window gradient (fertile < peak). */
   level: number
   today: boolean
-  /** LH mark (owner / shared details, explicit view only). */
+  /** LH mark (details + explicit wording only — calendarView.showsLH). */
   lh?: 'surge' | 'low'
 }
 
@@ -978,6 +986,8 @@ export interface CycleStrip {
   hasWindow: boolean
   /** Legend for the window band, in this viewer's wording. */
   windowLabel?: string
+  /** Legend for the darker peak days ('가능성 높음' / '특히 좋은 때 (예상)'), when drawn. */
+  peakLabel?: string
   view: FertilityView
 }
 
@@ -993,22 +1003,27 @@ function windowTone(date: ISODate, w: CycleWindow, withPeak: boolean): Pick<Stri
  * details with): this cycle, day 1..length, with logged period days and LH
  * marks. Partner without details: this week and next with only the shared
  * "우리의 주간" band — nothing that shows when her period started.
+ *
+ * Peak days and LH marks follow the calendar's lens (calendarView.cycleLens):
+ * the darker peak days for anyone with details (showsPeak — "특히 좋은 때
+ * (예상)" in soft wording), LH marks only for explicit wording (showsLH).
  */
 export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): CycleStrip | null {
   const phase = ttcPhase(state, today)
   if (!phase || phase.kind === 'no-data' || phase.kind === 'after-loss') return null
-  const owner = cycleOwnerId(state)
+  const lens = cycleLens(state, viewer)
   // The calendar's view (hidden for low-pressure / a partner who turned it off),
   // worded like the moment card: an owner with alerts off and a partner without
   // shared details see only "우리의 주간" — no 가임기, no LH marks.
-  const own = fertilityView(settingsFor(state.settings, viewer), viewer, owner)
-  const view: FertilityView = own === 'hidden' ? 'hidden' : homeVoice(state, viewer) === 'explicit' ? 'explicit' : 'soft'
-  const details = canSeeCycleDetails(state, viewer)
+  const view: FertilityView = lens.view === 'hidden' ? 'hidden' : homeVoice(state, viewer) === 'explicit' ? 'explicit' : 'soft'
+  const details = lens.details
   const paused = phase.kind === 'rest' || phase.kind === 'positive-pending'
   // Period days 1–3 are for "수고했어요" — the next window shows from day 4.
   // (The partner without details keeps the shared band, so its absence says nothing.)
   const showWindow = view !== 'hidden' && !paused && !(details && phase.kind === 'period-early')
   const windowLabel = showWindow ? (view === 'explicit' ? '가임기 (예상)' : '우리의 주간 (예상)') : undefined
+  const withPeak = showWindow && showsPeak(lens)
+  const withLH = showsLH(lens) && view === 'explicit'
 
   if (details) {
     let start: ISODate
@@ -1041,14 +1056,15 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
         tone = 'period-predicted'
         level = 0.35
       } else if (showWindow && w) {
-        const wt = windowTone(date, w, true)
+        const wt = windowTone(date, w, withPeak)
         if (wt) ({ tone, level } = wt)
       }
       const lh = strongestLH(state.lhTests.filter((t) => t.date === date).map((t) => t.result))
       // LH marks use the test's own name, so only in the explicit view.
-      const mark = lh && view === 'explicit' ? { lh: isSurge(lh) ? ('surge' as const) : ('low' as const) } : {}
+      const mark = lh && withLH ? { lh: isSurge(lh) ? ('surge' as const) : ('low' as const) } : {}
       days.push({ date, tone, level, today: date === today, ...mark })
     }
+    const hasPeak = days.some((d) => d.tone === 'peak')
     return {
       mode: 'cycle',
       days,
@@ -1059,6 +1075,7 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
       endLabel: `${length}일`,
       hasWindow: showWindow && !!w,
       windowLabel,
+      ...(hasPeak ? { peakLabel: peakLabel(view) } : {}),
       view,
     }
   }

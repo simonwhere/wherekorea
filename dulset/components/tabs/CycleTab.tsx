@@ -23,7 +23,9 @@ import {
 } from '@/lib/logic/calendarView'
 import { ageFromBirthYear, ttcClockStart } from '@/lib/logic/notifications'
 import { canLogCycle, canSeeCycleDetails, discreetFor, settingsFor } from '@/lib/logic/prefs'
-import { endRestCycle, startRestCycle } from '@/lib/logic/ttc'
+import { stampOn } from '@/lib/logic/today'
+import { startRestCycle } from '@/lib/logic/ttc'
+import { endRestFromHome } from '@/lib/logic/ttcFlow'
 import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import type { ISODate, PregnancyTestResult } from '@/lib/types'
@@ -93,7 +95,9 @@ export default function CycleTab() {
                 <span>
                   {partner.name}님에게는 {sharedWithPartner ? '기록도 함께 보여요' : '우리의 주간만 보여요'}
                 </span>
-                <SettingsLink className="-my-3">바꾸기</SettingsLink>
+                <SettingsLink className="-my-3" anchor="share">
+                  바꾸기
+                </SettingsLink>
               </>
             ) : lens.details ? (
               `${cycleOwner.name}님이 기록하고 함께 봐요`
@@ -113,7 +117,9 @@ export default function CycleTab() {
             <span aria-hidden>{notice.icon} </span>
             {notice.text}
           </span>
-          <SettingsLink className="px-1">바꾸기</SettingsLink>
+          <SettingsLink className="px-1" anchor="alerts">
+            바꾸기
+          </SettingsLink>
         </p>
       ) : null}
 
@@ -134,7 +140,9 @@ export default function CycleTab() {
           onResume={
             canLog
               ? () => {
-                  update(endRestCycle)
+                  // Like the home's [다시 켜기]: turning a vaccine rest off is an answer too,
+                  // so the dismissed vaccine suggestion doesn't come straight back.
+                  update((s) => endRestFromHome(s, today, stampOn(today)))
                   toast.show('다시 켰어요')
                 }
               : undefined

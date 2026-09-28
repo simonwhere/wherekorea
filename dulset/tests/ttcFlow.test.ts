@@ -4,6 +4,9 @@ import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
 import { setPersonalPref } from '@/lib/logic/prefs'
+import { cycleLens, lensPhase, showsLH } from '@/lib/logic/calendarView'
+import { dayInfo } from '@/lib/logic/cycle'
+import { fertileHintsAllowed } from '@/lib/logic/dateIdeas'
 import {
   LIVE_VACCINE_REST_DAYS,
   activePositivePending,
@@ -729,5 +732,93 @@ describe('home rows: 오늘 할 일 / 우리 한 줄', () => {
     const a = (id: string, date: ISODate) => ({ id, date, title: id, who: 'both' as const, kind: 'hospital' as const, createdBy: OWNER })
     expect(soonAppointment([a('x', '2026-10-03'), a('y', '2026-09-29')], '2026-09-28')?.id).toBe('y')
     expect(soonAppointment([a('x', '2026-10-03')], '2026-09-28')).toBeUndefined()
+  })
+})
+
+describe('home strip and calendar agree on peak days and LH marks', () => {
+  const lh = { lhTests: [{ date: '2026-09-11', result: 'faint' as const }, { date: '2026-09-12', result: 'positive' as const }] }
+  const viewers: [string, AppState, 'a' | 'b'][] = [
+    ['owner explicit', fresh(lh), OWNER],
+    ['owner soft', withStyle(fresh(lh), OWNER, 'soft'), OWNER],
+    ['owner off', withStyle(fresh(lh), OWNER, 'off'), OWNER],
+    ['owner low-pressure', setPersonalPref(fresh(lh), OWNER, 'lowPressure', true), OWNER],
+    ['partner soft, no details', fresh(lh), PARTNER],
+    ['partner explicit, no details', withStyle(fresh(lh), PARTNER, 'explicit'), PARTNER],
+    ['partner soft, details', share(fresh(lh)), PARTNER],
+    ['partner explicit, details', withStyle(share(fresh(lh)), PARTNER, 'explicit'), PARTNER],
+    ['partner off, details', withStyle(share(fresh(lh)), PARTNER, 'off'), PARTNER],
+    ['partner low-pressure, details', setPersonalPref(share(fresh(lh)), PARTNER, 'lowPressure', true), PARTNER],
+  ]
+
+  it('a strip day is a peak day exactly when the calendar shows it as one', () => {
+    for (const [name, s, v] of viewers) {
+      for (const today of [DAYS.fertile, DAYS.peak, DAYS.tww]) {
+        const strip = cycleStrip(s, today, v)
+        if (!strip) continue
+        const lens = cycleLens(s, v)
+        for (const d of strip.days) {
+          // The strip only draws this cycle's window (the calendar also shows 가능 범위 around it).
+          if (d.tone === 'fertile' || d.tone === 'peak') {
+            const cal = lensPhase(dayInfo(s, d.date, today).phase, lens)
+            expect(d.tone === 'peak', `${name} ${today} ${d.date}`).toBe(cal === 'peak')
+          }
+          expect(!!d.lh && !showsLH(lens), `${name} ${d.date} LH`).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('a partner with shared details sees the darker peak days, softly named', () => {
+    const strip = cycleStrip(share(fresh(lh)), DAYS.fertile, PARTNER)!
+    expect(strip.mode).toBe('cycle')
+    expect(strip.days.filter((d) => d.tone === 'peak').length).toBeGreaterThanOrEqual(2)
+    expect(strip.peakLabel).toBe('특히 좋은 때 (예상)')
+    expect(strip.windowLabel).toBe('우리의 주간 (예상)')
+    expect(strip.days.some((d) => d.lh)).toBe(false)
+    // In explicit wording: 가능성 높음, with the LH marks.
+    const ex = cycleStrip(withStyle(share(fresh(lh)), PARTNER, 'explicit'), DAYS.fertile, PARTNER)!
+    expect(ex.peakLabel).toBe('가능성 높음')
+    expect(ex.days.find((d) => d.date === '2026-09-12')?.lh).toBe('surge')
+  })
+
+  it('without shared details: only the 우리의 주간 band, no peak', () => {
+    for (const s of [fresh(lh), withStyle(fresh(lh), PARTNER, 'explicit')]) {
+      const strip = cycleStrip(s, DAYS.fertile, PARTNER)!
+      expect(strip.mode).toBe('weeks')
+      expect(strip.peakLabel).toBeUndefined()
+      expect(strip.days.some((d) => d.tone === 'peak' || d.lh)).toBe(false)
+    }
+  })
+
+  it('no peak while resting or waiting for the clinic', () => {
+    expect(cycleStrip(startRestCycle(share(fresh()), '2026-09-05'), DAYS.peak, PARTNER)?.peakLabel).toBeUndefined()
+    const pending = markPositivePending(fresh(), '2026-09-28')
+    expect(cycleStrip(pending, '2026-09-28', OWNER)!.days.some((d) => d.tone === 'peak')).toBe(false)
+  })
+})
+
+describe('우리의 주간 teaser follows fertileHintsAllowed', () => {
+  it('date ideas only for a viewer who may see fertile hints', () => {
+    const cases: [AppState, 'a' | 'b'][] = [
+      [fresh(), PARTNER],
+      [share(fresh()), PARTNER],
+      [withStyle(fresh(), PARTNER, 'off'), PARTNER],
+      [setPersonalPref(fresh(), PARTNER, 'lowPressure', true), PARTNER],
+      [startRestCycle(fresh(), '2026-09-05'), PARTNER],
+      [fresh(), OWNER],
+      [withStyle(fresh(), OWNER, 'soft'), OWNER],
+    ]
+    let seen = 0
+    for (const [s, v] of cases) {
+      for (const d of Object.values(DAYS)) {
+        const m = ttcMoment(s, d, v)
+        if (!m) continue
+        if (m.dateIdeas || m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') {
+          seen++
+          expect(fertileHintsAllowed(s, v), `${v} ${d}`).toBe(true)
+        }
+      }
+    }
+    expect(seen).toBeGreaterThan(0)
   })
 })

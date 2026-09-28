@@ -113,6 +113,20 @@ export function deliveredUnderOldKey(
   })
 }
 
+/** The soft "우리의 주간" heads-up — no health words (설정's preview shows the same). */
+export const SOFT_FERTILE_TITLE = '💞 이번 주는 우리의 주간이에요'
+
+/**
+ * Its body. Date ideas sit in the partner's 우리의 주간 card on 오늘, where the
+ * notice opens (today.noticeTarget); the cycle owner's own card has none, so
+ * the owner isn't promised any. (The 데이트 tab is gone: #date is only linked from that card.)
+ */
+export function softFertileBody(isCycleOwner: boolean): string {
+  return isCycleOwner
+    ? '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.'
+    : '둘만의 시간을 챙겨 볼까요? 오늘 화면의 ‘우리의 주간’ 카드에 아이디어를 골라 뒀어요.'
+}
+
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
   const owner = state.couple.members.find((m) => m.tracksCycle) ?? state.couple.members[0]
@@ -161,9 +175,9 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
               key: fertileKey(w.start, m.id),
               to: m.id,
               kind: 'fertile-start',
-              title: soft ? '💞 이번 주는 우리의 주간이에요' : '💞 가임기가 다가왔어요',
+              title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
               body: soft
-                ? '둘만의 시간을 챙겨 볼까요? 가볍게 해 볼 만한 아이디어도 골라 뒀어요.'
+                ? softFertileBody(m.id === owner.id)
                 : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`,
             })
           }
@@ -278,11 +292,15 @@ export function mergeNotices(state: AppState, notices: Notice[], nowISO: string)
 }
 
 /**
- * Keys the engine produces again for as long as a condition holds (the doctor
- * notice repeats every day once N months have passed), so their record must
- * outlive the cap — otherwise a read or dismissed notice comes back unread.
+ * Records that must outlive the cap:
+ * - keys the engine produces again for as long as a condition holds (the doctor
+ *   notice repeats every day once N months have passed) — otherwise a read or
+ *   dismissed notice comes back unread;
+ * - the cycle owner's answers kept as dismissed records (ttcFlow: "알릴까요?"
+ *   told / skipped, the positive-test note, the live-vaccine rest suggestion) —
+ *   otherwise an answered question would be asked again. A few per cycle at most.
  */
-const LONG_LIVED_KEY = /^doctor:/
+const LONG_LIVED_KEY = /^(doctor|period-told|positive-told|rest-suggest):/
 
 function trim(list: AppNotification[]): AppNotification[] {
   if (list.length <= MAX_KEPT) return list

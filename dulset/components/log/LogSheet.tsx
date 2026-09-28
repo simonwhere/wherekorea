@@ -106,7 +106,7 @@ function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLo
           <p className="text-[11px] leading-relaxed text-ink-3">
             {partnerSees
               ? `${partner.name}님 화면에도 함께 보여요.`
-              : partnerLens.details || partnerLens.view === 'hidden'
+              : partnerLens.details || partnerLens.view === 'hidden' || partnerLens.pause
                 ? `${partner.name}님 화면에는 이 기록이 보이지 않아요.`
                 : `${partner.name}님에게는 기록 내용 없이 우리의 주간만 보여요.`}{' '}
             날짜 예상은 참고용이며 피임 목적으로 쓰면 안 돼요.

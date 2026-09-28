@@ -11,7 +11,10 @@
 // 희미 → 양성 → 가장 진함 with times, negative home tests in a past 기다리는 주)
 // and keeps the details to herself (shareCycleDetails: false), 민수 hears the
 // soft "우리의 주간" wording, checks two daily habits and two once-a-week
-// check-ins (N7), and every timer counts from a real first check.
+// check-ins (금주 · 사우나 쉬기, the starter list's labels — N7), and every timer
+// counts from a real first check. They applied for 임신 사전건강관리 at 보건소
+// nine days ago, so 민수's 이번 달 할 일 is the next step of that chain: his
+// 정액검사, due within 3 months of applying (partnerTrack.monthlyTask).
 
 import { addDays, addMonths, diffDays, isISODate, parts, range, weekdayIndex } from './dates'
 import { uid } from './id'
@@ -245,8 +248,7 @@ export function doctorPlan(ownerBirthYear: number | undefined, ttcStart: ISODate
 }
 
 // ── Onboarding draft (what the form holds while the user answers) ──
-
-export const ONBOARDING_STEPS = 6
+// (The step list itself lives in components/Onboarding.tsx.)
 
 export interface OnboardingDraft {
   myName: string
@@ -415,15 +417,16 @@ type DemoItem = Pick<CheckItem, 'label' | 'kind'> & Partial<Pick<CheckItem, 'not
 /**
  * The demo's check items. 지은: 엽산 first (the one supplement with strong
  * evidence), 비타민 D, and two habits. 민수 doesn't smoke, so there's no 금연
- * item: two daily habits, and the "keep not doing it" ones (사우나·술) as a
- * once-a-week check-in instead of a daily tap (N7).
+ * item: two daily habits, and the "keep not doing it" ones (금주 · 사우나) as a
+ * once-a-week check-in instead of a daily tap, labelled the way the onboarding
+ * starter list names them (initial.defaultCheckItems with habits — N7).
  */
 const DEMO_ITEMS: Record<MemberId, readonly DemoItem[]> = {
   a: [
     { label: '30분 걷기·운동', kind: 'habit' },
     { label: '7시간 이상 자기', kind: 'habit' },
-    { label: '사우나·뜨거운 탕 피하기', kind: 'habit', note: '고환 온도', cadence: 'weekly' },
-    { label: '술 안 마시기', kind: 'habit', cadence: 'weekly' },
+    { label: '사우나·뜨거운 탕 쉬기', kind: 'habit', note: '고환 온도 · 주 1회 체크인', cadence: 'weekly' },
+    { label: '금주', kind: 'habit', note: '주 1회 체크인', cadence: 'weekly' },
   ],
   b: [
     { label: '엽산', kind: 'supplement', note: '400µg' },
@@ -633,12 +636,20 @@ export const DEMO_COUPLE_DAYS = {
 
 export type DemoCoupleDays = Record<keyof typeof DEMO_COUPLE_DAYS, ISODate>
 
-/** The preparing demo's three upcoming appointments (in date order). */
+/**
+ * The preparing demo's appointments: the 보건소 application they already went
+ * to together (9 days ago, done), then three ahead in date order. No fertility
+ * words in the titles — 민수 (soft wording) sees them on his home too.
+ */
 export const PREP_APPOINTMENTS = {
-  healthCenter: '보건소 가임력 검사 신청',
+  healthCenter: '보건소 임신 사전건강관리 신청',
+  carrierCheck: '산부인과 임신 전 검사',
   dentist: '치과 검진·스케일링',
   semen: '정액검사',
 } as const
+
+/** Days before `today` that the preparing couple applied at 보건소 (임신 사전건강관리). */
+export const PREP_APPLIED_DAYS_AGO = 9
 
 /**
  * DEMO_COUPLE_DAYS, moved back whole years (every anniversary keeps its
@@ -867,7 +878,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     addDays(today, -1),
     'a',
     'preparing',
-    '사흘 연속 우리 둘 다 체크 완료! 작은 거지만 같이 하니까 은근히 재밌어요.',
+    '이번 주는 둘 다 체크한 날이 벌써 사흘이에요. 작은 거지만 같이 하니까 은근히 재밌어요.',
     '😊',
   )
   s = reactLast(s, '👏')
@@ -883,26 +894,44 @@ function demoPreparing(today: ISODate, now: Date): AppState {
 
   // 우리 둘 + 챙길 것: a few items done, three appointments ahead, one of their own.
   s = ourStory(s, ttcStart)
+  // 임신 사전건강관리: apply at 보건소 (or e보건소) first — tests done before
+  // applying aren't covered — then take the referral to a clinic for the test
+  // within 3 months. They applied together 9 days ago, so the chain is at 검사.
+  const applied = addDays(today, -PREP_APPLIED_DAYS_AGO)
   s = tick(s, [
     ['pre-folic', ttcStart, 'b'],
     ['pre-habits-partner', ttcStart, 'a'],
     // 풍진 항체 was checked before they started trying (MMR needs 4 weeks before
     // trying), so the tick is dated to the day they started, not mid-way.
     ['pre-rubella', ttcStart, 'b'],
+    ['pre-health-check-support', applied, 'b'],
   ])
-  // 임신 사전건강관리: apply at 보건소 (or e보건소) first — tests done before
-  // applying aren't covered — then take the referral to a clinic for the test.
   s = appointment(
     s,
     {
-      date: addDays(today, 3),
+      date: applied,
       time: '09:30',
       title: PREP_APPOINTMENTS.healthCenter,
       place: '보건소',
       who: 'both',
       kind: 'admin',
-      note: '임신 사전건강관리 · 검사 전에 먼저 신청해야 지원돼요. 검사의뢰서 받아 오기',
+      note: '검사 전에 먼저 신청해야 지원돼요. 검사의뢰서 받아 오기',
       taskId: 'pre-health-check-support',
+    },
+    'b',
+    true,
+  )
+  s = appointment(
+    s,
+    {
+      date: addDays(today, 5),
+      time: '10:00',
+      title: PREP_APPOINTMENTS.carrierCheck,
+      place: '산부인과',
+      who: 'b',
+      kind: 'test',
+      note: '보건소 검사의뢰서 챙기기 · 혈액·소변 검사',
+      taskId: 'pre-checkup-carrier',
     },
     'b',
   )
@@ -941,7 +970,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   s = notifyCompleted(s, 'a', 'b', yesterday, stamp(yesterday, 21, 40))
   const walk = activeItems(s, 'a').find((i) => i.label.includes(WALK) && !isDone(s, 'a', today, i.id))?.label
   s = sendNudge(s, 'b', 'a', today, earlierToday(today, now, 95), walk)
-  s = sendCheer(s, 'a', 'b', earlierToday(today, now, 40), '사흘 연속 우리 둘 다 완료! 오늘 저녁엔 같이 걸어요 🌙')
+  s = sendCheer(s, 'a', 'b', earlierToday(today, now, 40), '이번 주 벌써 사흘째 둘 다 체크했어요! 오늘 저녁엔 같이 걸어요 🌙')
   return settleInbox(s, today)
 }
 

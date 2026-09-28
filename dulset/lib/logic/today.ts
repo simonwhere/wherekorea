@@ -477,8 +477,13 @@ export function noticeTarget(kind: NotificationKind, stage: Stage, key?: string)
   // Couple-wide notices are routed by their key (kind alone is ambiguous).
   if (key?.startsWith('anniv:') || key?.startsWith('reaction:')) return 'diary'
   if (key?.startsWith('appt:') || key?.startsWith('deadline:')) return 'plan'
+  // What the cycle owner chose to tell (ttcFlow.tellPartnerPeriod / tellPartnerPositive):
+  // the partner's card on 오늘 says what to do with it.
+  if (key?.startsWith('period-told:') || key?.startsWith('positive-told:')) return 'today'
   switch (kind) {
     case 'fertile-start':
+      // The 우리의 주간 card (with its date ideas) is on 오늘 now, not the 데이트 tab.
+      return stage === 'preparing' ? 'today' : null
     case 'peak':
     case 'period-due':
       return stage === 'preparing' ? 'cycle' : null

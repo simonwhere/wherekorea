@@ -9,6 +9,7 @@ import {
   CYCLE_LENGTH_RANGE,
   NAME_MAX,
   PERIOD_LENGTH_RANGE,
+  STAGE_INFO,
   alertPreview,
   alertStyleOf,
   backupSummary,
@@ -35,7 +36,9 @@ import {
   updateMember,
   validateTtcStart,
 } from '@/lib/logic/settings'
-import { FERTILITY_CLAIM_ID, setFertilityClaimed, setShareCycleDetails } from '@/lib/logic/partnerTrack'
+import { FERTILITY_CLAIM_ID, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
+import { canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import { normalize } from '@/lib/storage'
 import { parseState } from '@/lib/storage'
 import type { AppState } from '@/lib/types'
 
@@ -120,6 +123,25 @@ describe('setCycleOwner', () => {
     expect(next.periods).toBe(s.periods)
     expect(next.settings.alertStyle).toEqual(s.settings.alertStyle)
     expect(next.couple.inviteCode).toBe(s.couple.inviteCode)
+  })
+
+  it('makes sharing private again for a new owner (they haven’t agreed to anything)', () => {
+    const shared = setShareCycleDetails(fresh(), 'b', true)
+    expect(canSeeCycleDetails(shared, 'a')).toBe(true)
+    const moved = setCycleOwner(shared, 'a')
+    expect(moved.settings.shareCycleDetails).toBe(false)
+    expect(canSeeCycleDetails(moved, 'b')).toBe(false)
+    // Same owner again: her choice stands.
+    expect(setCycleOwner(shared, 'b').settings.shareCycleDetails).toBe(true)
+    // Repairing a state with two owners is not a confirmed choice either.
+    const both = {
+      ...shared,
+      couple: { ...shared.couple, members: shared.couple.members.map((m) => ({ ...m, tracksCycle: true })) as AppState['couple']['members'] },
+    }
+    expect(setCycleOwner(both, 'b').settings.shareCycleDetails).toBe(false)
+    // handOverCycle (설정 › 두 사람) goes through the same rule.
+    expect(handOverCycle(shared, 'a', 'b').settings.shareCycleDetails).toBe(false)
+    expect(handOverCycle(shared, 'b', 'b')).toBe(shared)
   })
 })
 
@@ -260,6 +282,17 @@ describe('alertPreview', () => {
     const low = alertPreview('explicit', { lowPressure: true, isCycleOwner: true, window })
     expect(low.message).toBeNull()
     expect(low.note).toContain('부담 없이')
+    // Per person now, and no fertility words for someone who chose calm.
+    expect(low.note).toContain('내 화면과 알림에만 적용돼요')
+    expect(low.note).not.toMatch(/두 사람 모두|가임|배란|LH/)
+  })
+
+  it('never points at the removed 데이트 tab', () => {
+    for (const isCycleOwner of [true, false]) {
+      const p = alertPreview('soft', { lowPressure: false, isCycleOwner, window })
+      expect(`${p.message?.body}${p.note}`).not.toContain('데이트')
+    }
+    expect(alertPreview('soft', { lowPressure: false, isCycleOwner: false }).message?.body).toContain('‘우리의 주간’ 카드')
   })
 
   it('has an option label for every style, with no pressure wording', () => {
@@ -268,6 +301,11 @@ describe('alertPreview', () => {
       const p = alertPreview(style, { lowPressure: false, isCycleOwner: false, window })
       expect(`${p.message?.title ?? ''}${p.message?.body ?? ''}${p.note}`).not.toMatch(/숙제|실패|꼭/)
     }
+  })
+
+  it('describes the preparing stage by the tabs it has (no 데이트 tab)', () => {
+    expect(STAGE_INFO.preparing.body).not.toContain('데이트')
+    for (const info of Object.values(STAGE_INFO)) expect(info.body).toMatch(/요\.$/)
   })
 
   it('discreet lock screen hides the content', () => {
@@ -453,6 +491,21 @@ describe('sharing & per-person prefs survive a backup', () => {
 
   it('never lets the partner widen what they see', () => {
     const s = fresh()
+    expect(setShareCycleDetails(s, 'a', true)).toBe(s)
     expect(setShareCycleDetails(s, 'a', true).settings.shareCycleDetails).toBe(false)
+    // The old import path still works.
+    expect(viaPartnerTrack).toBe(setShareCycleDetails)
+  })
+
+  it('keeps data from before the setting existed private (normalize, like sanitizeBackup)', () => {
+    const s = fresh()
+    const { shareCycleDetails: _dropped, ...older } = setShareCycleDetails(s, 'b', true).settings
+    const legacy = { ...s, settings: older } as AppState
+    expect(normalize(legacy).settings.shareCycleDetails).toBe(false)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(legacy)))!.settings.shareCycleDetails).toBe(false)
+    expect(parseState(JSON.stringify(legacy))!.settings.shareCycleDetails).toBe(false)
+    expect(canSeeCycleDetails(parseState(JSON.stringify(legacy))!, 'a')).toBe(false)
+    // A stored choice is kept.
+    expect(parseState(JSON.stringify(setShareCycleDetails(s, 'b', true)))!.settings.shareCycleDetails).toBe(true)
   })
 })

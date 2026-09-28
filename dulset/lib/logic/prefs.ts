@@ -34,6 +34,16 @@ export function canLogCycle(state: Pick<AppState, 'couple'>, viewer: MemberId): 
   return viewer === owner
 }
 
+/**
+ * Share the cycle details (생리일·배테기·임테기 결과) with the partner, or keep
+ * to "우리의 주간" only (the default: privacy first). Only the person whose
+ * cycle it is can change it; anyone else's call is a no-op.
+ */
+export function setShareCycleDetails(state: AppState, by: MemberId, share: boolean): AppState {
+  if (!canLogCycle(state, by) || state.settings.shareCycleDetails === share) return state
+  return { ...state, settings: { ...state.settings, shareCycleDetails: share } }
+}
+
 /** Settings with lowPressure / discreet resolved for one person (for view helpers). */
 export function settingsFor<S extends Pick<Settings, 'lowPressure' | 'discreet' | 'personal'>>(settings: S, member: MemberId): S {
   return { ...settings, lowPressure: lowPressureFor(settings, member), discreet: discreetFor(settings, member) }

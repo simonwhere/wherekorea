@@ -12,7 +12,7 @@ import {
   membersViewerFirst,
   updateMember,
 } from '@/lib/logic/settings'
-import { handOverCycle } from '@/lib/logic/partnerTrack'
+import { canHandOverCycle, handOverCycle } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Member, MemberId, Role } from '@/lib/types'
 import { ConfirmActions, Pill, RadioCard, Segmented, SettingsSection } from './bits'
@@ -30,6 +30,8 @@ export default function MembersSection() {
   const members = membersViewerFirst(state, viewer)
   const editingMember = state.couple.members.find((m) => m.id === editing)
   const ownerCandidate = state.couple.members.find((m) => m.id === ownerTo)
+  // Once there are cycle records, only the person whose cycle it is hands it over.
+  const canChangeOwner = canHandOverCycle(state, viewer)
 
   return (
     <SettingsSection title="우리 둘" sub="이름과 역할은 두 사람 화면에 똑같이 보여요">
@@ -67,9 +69,10 @@ export default function MembersSection() {
                   name={ownerGroup}
                   checked={on}
                   onSelect={() => setOwnerTo(m.id)}
+                  disabled={!canChangeOwner}
                   className="min-w-0 justify-center gap-1.5 px-2 text-sm font-medium"
                   selectedClassName="border-her bg-her-soft text-ink"
-                  idleClassName="border-line bg-surface text-ink-3 hover:bg-bg"
+                  idleClassName={cx('border-line bg-surface text-ink-3', canChangeOwner && 'hover:bg-bg')}
                 >
                   <span aria-hidden>{m.emoji}</span>
                   <span className="truncate">{m.name}</span>
@@ -80,6 +83,7 @@ export default function MembersSection() {
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
             생리·배테기·임테기 기록과 주기 예상, 주기 알림이 이 사람을 기준으로 해요. 기록도 이 사람만 남겨요.
+            {canChangeOwner ? '' : ` 기록이 있어서 ${cycleOwner.name}님만 바꿀 수 있어요.`}
           </p>
         </div>
       </Card>
@@ -191,10 +195,11 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
 
 /** Hand the cycle over to `member` (sharing starts private again — partnerTrack.handOverCycle). */
 export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () => void }) {
-  const { update } = useApp()
+  const { state, update, viewer } = useApp()
   const toast = useToast()
   const confirm = () => {
-    update((s) => handOverCycle(s, member.id))
+    if (!canHandOverCycle(state, viewer)) return onDone()
+    update((s) => handOverCycle(s, member.id, viewer))
     toast.show(`이제 ${member.name}님 주기를 기록해요`)
     onDone()
   }

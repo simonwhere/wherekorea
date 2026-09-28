@@ -3,20 +3,25 @@
 // Small building blocks shared by the settings sections.
 
 import { Button, SectionTitle, cx } from '@/components/ui'
+import type { SettingsAnchor } from './anchors'
 
 export function SettingsSection({
+  id,
   title,
   sub,
   action,
   children,
 }: {
+  /** Stable anchor (SETTINGS_ANCHORS) that links like #share / #data land on. */
+  id?: SettingsAnchor
   title: string
   sub?: React.ReactNode
   action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <section aria-label={title} className="mt-7 first:mt-0">
+    // globals.css scroll-padding-top keeps the heading clear of the sticky top bar when scrolled to.
+    <section id={id} aria-label={title} className="mt-7 first:mt-0">
       <SectionTitle sub={sub} action={action}>
         {title}
       </SectionTitle>
@@ -78,6 +83,7 @@ export function RadioCard({
   className,
   selectedClassName = 'border-brand bg-brand-soft',
   idleClassName = 'border-line bg-surface hover:bg-surface-2',
+  disabled,
 }: {
   name: string
   checked: boolean
@@ -86,16 +92,20 @@ export function RadioCard({
   className?: string
   selectedClassName?: string
   idleClassName?: string
+  /** Shown but not choosable (e.g. only the other person may change it). */
+  disabled?: boolean
 }) {
   return (
     <label
       className={cx(
-        'relative flex min-h-[44px] cursor-pointer items-center rounded-xl border transition-colors',
+        'relative flex min-h-[44px] items-center rounded-xl border transition-colors',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
         checked ? selectedClassName : idleClassName,
+        disabled && !checked && 'opacity-60',
         className,
       )}
     >
-      <input type="radio" name={name} checked={checked} onChange={onSelect} className="peer sr-only" />
+      <input type="radio" name={name} checked={checked} onChange={onSelect} disabled={disabled} className="peer sr-only" />
       {children}
       <span
         aria-hidden
