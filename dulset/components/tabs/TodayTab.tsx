@@ -15,6 +15,7 @@ import HabitTimers from '@/components/today/HabitTimers'
 import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
 import SignalsCard from '@/components/signals/SignalsCard'
+import { settingsFor } from '@/lib/logic/prefs'
 
 export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
   const { state, today, me, cycleOwner } = useApp()
@@ -22,7 +23,7 @@ export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => 
   // Prominent date teaser only near "우리의 주간" and only if the viewer wants fertile hints.
   const teaser =
     preparing &&
-    showDateTeaser(fertilityStatus(state, today), fertilityVoice(state.settings, me.id, me.id === cycleOwner.id))
+    showDateTeaser(fertilityStatus(state, today), fertilityVoice(settingsFor(state.settings, me.id), me.id, me.id === cycleOwner.id))
   // The public-support tips that used to sit here now live in 챙길 것 (with their links).
   const doctor = preparing && doctorAdvice(state, today) !== null
 

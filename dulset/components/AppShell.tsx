@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppErrorBoundary from '@/components/AppErrorBoundary'
+import LogSheet from '@/components/log/LogSheet'
 import Onboarding from '@/components/Onboarding'
 import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
@@ -14,6 +15,7 @@ import TodayTab from '@/components/tabs/TodayTab'
 import UsTab from '@/components/tabs/UsTab'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
+import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
 import { useApp, useStore } from '@/lib/store'
 import type { Stage } from '@/lib/types'
 
@@ -25,21 +27,20 @@ interface TabDef {
   icon: string
 }
 
-// Settings lives behind the header ⚙️ so the bottom bar keeps five everyday tabs.
-// 'diary' is the 우리 tab (story · album · our days); the key stays for old links.
+// Settings lives behind the header ⚙️. Preparing is the core stage: its bar has
+// a center "+ 기록" action (not a tab). 데이트 moved into the 우리의 주간 card
+// and stays reachable at #date. 'diary' is the 우리 tab (key kept for old links).
 const TAB_SETS: Record<Stage, TabDef[]> = {
   preparing: [
     { key: 'today', label: '오늘', icon: '☀️' },
-    { key: 'cycle', label: '달력', icon: '📅' },
+    { key: 'cycle', label: '주기', icon: '📅' },
     { key: 'plan', label: '챙길 것', icon: '✅' },
-    { key: 'date', label: '데이트', icon: '💞' },
     { key: 'diary', label: '우리', icon: '💑' },
   ],
   pregnant: [
     { key: 'today', label: '오늘', icon: '☀️' },
     { key: 'pregnancy', label: '임신', icon: '🤰' },
     { key: 'plan', label: '챙길 것', icon: '✅' },
-    { key: 'date', label: '데이트', icon: '💞' },
     { key: 'diary', label: '우리', icon: '💑' },
   ],
   parenting: [
@@ -47,12 +48,14 @@ const TAB_SETS: Record<Stage, TabDef[]> = {
     { key: 'baby', label: '아기', icon: '👶' },
     { key: 'diary', label: '우리', icon: '💑' },
     { key: 'plan', label: '챙길 것', icon: '✅' },
-    { key: 'date', label: '둘만의', icon: '💞' },
   ],
 }
 
+/** Where the center "+ 기록" button sits (after this many tabs), per stage. */
+const LOG_BUTTON_AFTER: Partial<Record<Stage, number>> = { preparing: 2 }
+
 /** Routes reachable without a bottom-bar button. */
-const EXTRA_ROUTES: TabKey[] = ['settings']
+const EXTRA_ROUTES: TabKey[] = ['settings', 'date']
 
 export const STAGE_LABEL: Record<Stage, string> = {
   preparing: '임신 준비 중',
@@ -94,6 +97,15 @@ function MainApp() {
   const tabs = TAB_SETS[state.stage]
   const [tab, setTab] = useState<TabKey>('today')
   const [notifOpen, setNotifOpen] = useState(false)
+  const [logRequest, setLogRequest] = useState<LogRequest | null>(null)
+  const closeLog = useCallback(() => setLogRequest(null), [])
+  useEffect(() => {
+    const onOpen = (e: Event) => setLogRequest((e as CustomEvent<LogRequest>).detail ?? {})
+    window.addEventListener(OPEN_LOG_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_LOG_EVENT, onOpen)
+  }, [])
+  const logAfter = LOG_BUTTON_AFTER[state.stage]
+  const navCount = tabs.length + (logAfter === undefined ? 0 : 1)
 
   useNotificationEngine()
 
@@ -209,32 +221,52 @@ function MainApp() {
         className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-bg/95 backdrop-blur"
         aria-label="주요 메뉴"
       >
-        <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
-          {tabs.map((t) => {
+        <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${navCount}, minmax(0, 1fr))` }}>
+          {tabs.map((t, i) => {
             const active = t.key === tab
             return (
-              <li key={t.key}>
-                <button
-                  type="button"
-                  onClick={() => go(t.key)}
-                  aria-current={active ? 'page' : undefined}
-                  className={cx(
-                    'flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium',
-                    active ? 'text-brand' : 'text-ink-3',
-                  )}
-                >
-                  <span aria-hidden className={cx('text-lg transition-transform', active && 'scale-110')}>
-                    {t.icon}
-                  </span>
-                  {t.label}
-                </button>
-              </li>
+              <Fragment key={t.key}>
+                {logAfter === i ? <LogButton /> : null}
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => go(t.key)}
+                    aria-current={active ? 'page' : undefined}
+                    className={cx(
+                      'flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium',
+                      active ? 'text-brand' : 'text-ink-3',
+                    )}
+                  >
+                    <span aria-hidden className={cx('text-lg transition-transform', active && 'scale-110')}>
+                      {t.icon}
+                    </span>
+                    {t.label}
+                  </button>
+                </li>
+              </Fragment>
             )
           })}
         </ul>
       </nav>
 
       <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
+      <LogSheet request={logRequest} onClose={closeLog} />
     </div>
+  )
+}
+
+/** Center "+ 기록" action in the bottom bar (opens the one log sheet). */
+function LogButton() {
+  return (
+    <li className="flex items-center justify-center">
+      <button
+        type="button"
+        onClick={() => openLog()}
+        aria-label="기록하기"
+        className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-2xl font-bold text-white shadow-lg ring-4 ring-bg hover:bg-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      >
+        <span aria-hidden>＋</span>
+      </button>
+    </li>
   )
 }

@@ -59,6 +59,7 @@ export function normalize(state: AppState): AppState {
     appointments: s.appointments ?? [],
     planDone: s.planDone ?? {},
     customTasks: s.customTasks ?? [],
+    pregnancyTests: s.pregnancyTests ?? [],
     cycle: { cycleLength: cycle.cycleLength ?? 28, periodLength: cycle.periodLength ?? 5 },
     settings: {
       discreet: settings.discreet ?? false,
@@ -70,6 +71,9 @@ export function normalize(state: AppState): AppState {
         b: settings.alertStyle?.b ?? (s.couple.members[1]?.tracksCycle ? 'explicit' : 'soft'),
       },
       ttcStart: settings.ttcStart,
+      ...(settings.personal ? { personal: settings.personal } : {}),
+      // Data saved before this setting existed was fully shared — keep that.
+      shareCycleDetails: settings.shareCycleDetails ?? true,
     },
   }
 }

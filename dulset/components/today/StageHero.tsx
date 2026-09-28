@@ -12,6 +12,8 @@ import { TRIMESTER_LABEL, fertilityVoice, type FertilityVoice } from '@/lib/logi
 import { useApp } from '@/lib/store'
 import { Badge, LinkButton, ProgressBar } from './bits'
 import PregnancyConfirmSheet from './PregnancyConfirmSheet'
+import { lowPressureFor } from '@/lib/logic/prefs'
+import { settingsFor } from '@/lib/logic/prefs'
 
 type Nav = (tab: TabKey) => void
 
@@ -75,7 +77,7 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
   // Stable, so the Sheet's open effect doesn't re-run (and refocus) on every state change.
   const closeConfirm = useCallback(() => setConfirmOpen(false), [])
   const isOwner = me.id === cycleOwner.id
-  const voice = fertilityVoice(state.settings, me.id, isOwner)
+  const voice = fertilityVoice(settingsFor(state.settings, me.id), me.id, isOwner)
   const status = fertilityStatus(state, today)
   const owner = cycleOwner.name
 
@@ -121,7 +123,7 @@ function PreparingHero({ onNavigate }: { onNavigate: Nav }) {
     // Calm mode: no fertile wording. The cycle owner still sees her own period/late/no-data.
     const ownerOnlyKinds: FertilityStatus['kind'][] = ['no-data', 'period', 'late']
     if (voice === 'calm' && !(isOwner && ownerOnlyKinds.includes(status.kind))) {
-      return <CalmCard lowPressure={state.settings.lowPressure} isOwner={isOwner} onNavigate={onNavigate} />
+      return <CalmCard lowPressure={lowPressureFor(state.settings, me.id)} isOwner={isOwner} onNavigate={onNavigate} />
     }
 
     switch (status.kind) {

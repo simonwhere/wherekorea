@@ -10,6 +10,7 @@ import { anniversaryNotices } from './anniversary'
 import { koreanDays } from './baby'
 import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows } from './cycle'
 import { gestationalAge, recentlyEnded } from './pregnancy'
+import { lowPressureFor } from './prefs'
 
 export interface Notice {
   key: string
@@ -74,7 +75,6 @@ export function ttcClockStart(state: Pick<AppState, 'settings' | 'stage' | 'preg
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
   const owner = state.couple.members.find((m) => m.tracksCycle) ?? state.couple.members[0]
-  const low = state.settings.lowPressure
 
   if (state.stage === 'preparing') {
     const status = fertilityStatus(state, today)
@@ -87,13 +87,14 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         body: `예정일(${formatKo(status.expected)})이 ${status.daysLate}일 지났어요. 생리가 시작됐다면 기록해 주세요. 아니라면 임신 테스트를 해 볼 때예요.`,
       })
     }
-    // Low-pressure mode (NICE: every 2–3 days, all cycle long) sends no fertile-day alerts.
-    if (status.kind !== 'late' && status.kind !== 'no-data' && status.kind !== 'after-pregnancy' && !low) {
+    // Rest cycles and a positive test awaiting the clinic send no fertile-day alerts.
+    if (status.kind !== 'late' && status.kind !== 'no-data' && status.kind !== 'after-pregnancy' && !state.restCycle && !state.positivePending) {
       const [w] = upcomingWindows(state, today, 1)
       if (w) {
         for (const m of state.couple.members) {
           const style = state.settings.alertStyle?.[m.id] ?? 'soft'
-          if (style === 'off') continue
+          // Low-pressure mode (NICE: every 2–3 days, all cycle long): no fertile-day alerts for that person.
+          if (style === 'off' || lowPressureFor(state.settings, m.id)) continue
           const soft = style === 'soft'
           // Heads-up the day before the window, and on any day inside it (dedup by key).
           if (isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd)) {

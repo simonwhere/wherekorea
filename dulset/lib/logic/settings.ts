@@ -416,6 +416,20 @@ export function sanitizeBackup(input: AppState): AppState | null {
     alertStyle: { a: styleFor('a'), b: styleFor('b') },
   }
   if (!isISODate(settings.ttcStart)) delete settings.ttcStart
+  // Per-person prefs: only booleans for a/b.
+  if (isObj(st.personal)) {
+    const personal: NonNullable<Settings['personal']> = {}
+    for (const id of MEMBER_IDS) {
+      const p = (st.personal as Loose)[id]
+      if (!isObj(p)) continue
+      const out: { lowPressure?: boolean; discreet?: boolean } = {}
+      if (typeof p.lowPressure === 'boolean') out.lowPressure = p.lowPressure
+      if (typeof p.discreet === 'boolean') out.discreet = p.discreet
+      personal[id] = out
+    }
+    settings.personal = personal
+  } else delete settings.personal
+  settings.shareCycleDetails = st.shareCycleDetails === true
 
   const list = <T>(v: unknown, ok: (x: Loose) => boolean): T[] =>
     Array.isArray(v) ? (v.filter((x) => isObj(x) && ok(x)) as T[]) : []
@@ -453,6 +467,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (!isISODate(raw.archivedAt)) delete i.archivedAt
       if (!i.active && !i.archivedAt) i.archivedAt = i.createdAt
       optStr(i, 'note')
+      if (raw.cadence !== 'daily' && raw.cadence !== 'weekly') delete i.cadence
       return i as unknown as CheckItem
     },
   )
@@ -517,7 +532,24 @@ export function sanitizeBackup(input: AppState): AppState | null {
     settings,
     periods,
     checkLog,
-    lhTests: list(input.lhTests, (t) => isISODate(t.date) && (t.result === 'positive' || t.result === 'negative')),
+    lhTests: list<AppState['lhTests'][number]>(
+      input.lhTests,
+      (t) => isISODate(t.date) && ['negative', 'faint', 'positive', 'peak'].includes(t.result as string),
+    ).map((t) => {
+      const out = { ...t }
+      if (!(isStr(t.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.time))) delete out.time
+      if (!isMemberId(t.by)) delete out.by
+      return out
+    }),
+    pregnancyTests: list<AppState['pregnancyTests'][number]>(
+      input.pregnancyTests,
+      (t) => isStr(t.id) && isISODate(t.date) && ['negative', 'faint', 'positive'].includes(t.result as string),
+    ).map((t) => {
+      const out = { ...t }
+      if (!(isStr(t.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.time))) delete out.time
+      if (!isMemberId(t.by)) delete out.by
+      return out
+    }),
     checkItems,
     notifications,
     datePlans,
@@ -583,6 +615,15 @@ export function sanitizeBackup(input: AppState): AppState | null {
       sex: SEXES.includes(baby.sex as BabySex) ? (baby.sex as BabySex) : 'unknown',
     }
   } else delete next.baby
+
+  const rc: unknown = input.restCycle
+  if (isObj(rc) && isISODate(rc.since) && ['rest', 'vaccine', 'loss'].includes(rc.reason as string)) {
+    next.restCycle = { since: rc.since, reason: rc.reason as NonNullable<AppState['restCycle']>['reason'] }
+  } else delete next.restCycle
+  const pp: unknown = input.positivePending
+  if (isObj(pp) && isISODate(pp.since)) {
+    next.positivePending = { since: pp.since, ...(isStr(pp.testId) ? { testId: pp.testId } : {}) }
+  } else delete next.positivePending
 
   return next
 }

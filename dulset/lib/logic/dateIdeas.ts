@@ -14,6 +14,7 @@ import { uid } from '../id'
 import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
 import { dayInfo, fertilityStatus, ourWeekSoon, upcomingWindows, type DayPhase } from './cycle'
 import { mergeNotices } from './notifications'
+import { lowPressureFor } from './prefs'
 
 const isPeriodDay = (phase: DayPhase) => phase === 'period' || phase === 'period-predicted'
 
@@ -210,7 +211,7 @@ export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, v
 
 /** May the date tab use the fertile window (as "우리의 주간") for this viewer? */
 export function fertileHintsAllowed(state: Pick<AppState, 'stage' | 'settings' | 'couple'>, viewer: MemberId): boolean {
-  return state.stage === 'preparing' && !state.settings.lowPressure && viewerAlertStyle(state, viewer) !== 'off'
+  return state.stage === 'preparing' && !lowPressureFor(state.settings, viewer) && viewerAlertStyle(state, viewer) !== 'off'
 }
 
 export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId): DateBanner {
@@ -231,7 +232,7 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       body: '짧아도 괜찮아요. 서로 이야기 들어 주는 시간이면 충분해요.',
     }
   }
-  if (state.settings.lowPressure) {
+  if (lowPressureFor(state.settings, viewer)) {
     return {
       kind: 'low-pressure',
       emoji: '🌿',

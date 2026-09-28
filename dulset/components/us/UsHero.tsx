@@ -17,7 +17,7 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
   const met = isISODate(metDate) && metDate <= today ? metDate : undefined
   const married = isISODate(marriedDate) ? marriedDate : undefined
   const next = nextAnniversaries(state.couple, state.anniversaries, today, 1)[0]
-  const chain = ourDaysChain(state, today)
+  const chain = ourDaysChain(state, today, me.id)
 
   return (
     <Card tone="brand">

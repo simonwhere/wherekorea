@@ -16,6 +16,7 @@ import { useApp } from '@/lib/store'
 import type { Appointment } from '@/lib/types'
 import { Owners, btnBrand, btnDanger, btnSecondary } from './bits'
 import { ownerText, usableAppointments } from '@/lib/logic/plan'
+import { discreetFor } from '@/lib/logic/prefs'
 
 const PAST_PAGE = 3
 
@@ -121,7 +122,7 @@ function AppointmentRow({
   onDone: (a: Appointment, done: boolean) => void
   past?: boolean
 }) {
-  const { state, update, today } = useApp()
+  const { state, update, today, me } = useApp()
   const toast = useToast()
   const [confirming, setConfirming] = useState(false)
   const deleteRef = useRef<HTMLButtonElement>(null)
@@ -141,7 +142,7 @@ function AppointmentRow({
   const { month, day } = parts(appt.date)
 
   const addToCalendar = () => {
-    downloadText(`dulset-${appt.date}.ics`, buildIcs([appointmentIcsEvent(appt, state.settings.discreet)]))
+    downloadText(`dulset-${appt.date}.ics`, buildIcs([appointmentIcsEvent(appt, discreetFor(state.settings, me.id))]))
     toast.show('캘린더 파일을 받았어요. 열면 일정에 추가돼요')
   }
 

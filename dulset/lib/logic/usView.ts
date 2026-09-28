@@ -14,6 +14,7 @@ import { DIARY_NAME, groupByMonth, removeEntry } from './diary'
 import { STAGE_SHORT, entryStageLabel } from './diaryExport'
 import { mergeNotices, ttcClockStart } from './notifications'
 import { PREGNANCY_DAYS, gestationalAge, recentlyEnded } from './pregnancy'
+import { lowPressureFor } from './prefs'
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 
@@ -252,6 +253,7 @@ export function completedYears(start: ISODate, today: ISODate): number {
 export function ourDaysChain(
   state: Pick<AppState, 'couple' | 'settings' | 'stage' | 'pregnancy' | 'baby'>,
   today: ISODate,
+  viewer: MemberId = 'a',
 ): ChainLink[] {
   const out: ChainLink[] = []
   const { metDate, marriedDate } = state.couple
@@ -273,7 +275,7 @@ export function ourDaysChain(
     state.stage === 'preparing' &&
     isISODate(ttc) &&
     ttc <= today &&
-    !state.settings.lowPressure &&
+    !lowPressureFor(state.settings, viewer) &&
     !recentlyEnded(state, today)
   ) {
     out.push({ key: 'ttc', emoji: '🌱', text: `함께 준비한 지 D+${fmt(daysSince(ttc, today))}` })

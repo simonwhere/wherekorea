@@ -16,7 +16,19 @@
 // estimates, nudge toward LH tests, and never frame them as contraception or diagnosis.
 
 import { addDays, diffDays, isBetween } from '../dates'
-import type { CycleSettings, ISODate, LHTest, PeriodLog, Pregnancy } from '../types'
+import type { CycleSettings, ISODate, LHResult, LHTest, PeriodLog, Pregnancy } from '../types'
+
+const LH_RANK: Record<LHResult, number> = { negative: 0, faint: 1, positive: 2, peak: 3 }
+
+/** 'positive' and 'peak' (가장 진함) count as an LH surge. */
+export function isSurge(result: LHResult): boolean {
+  return result === 'positive' || result === 'peak'
+}
+
+/** The strongest of a day's results (two tests a day are allowed). */
+export function strongestLH(results: LHResult[]): LHResult | undefined {
+  return results.reduce<LHResult | undefined>((best, r) => (!best || LH_RANK[r] > LH_RANK[best] ? r : best), undefined)
+}
 
 export const LUTEAL_DAYS = 14
 /** Days before ovulation that sperm can survive and conception is possible. */
@@ -162,7 +174,7 @@ function buildWindow(
 /** First positive LH test inside [start, start + length + 7). */
 function lhOvulationFor(start: ISODate, length: number, lhTests: LHTest[]): ISODate | undefined {
   const positives = lhTests
-    .filter((t) => t.result === 'positive' && diffDays(start, t.date) >= 0 && diffDays(start, t.date) < length + 7)
+    .filter((t) => isSurge(t.result) && diffDays(start, t.date) >= 0 && diffDays(start, t.date) < length + 7)
     .map((t) => t.date)
     .sort()
   // Ignore a positive during the period itself (cycle day 1–5) — almost certainly noise.
@@ -283,7 +295,8 @@ export interface DayInfo {
   cycleDay?: number
   /** Days relative to estimated ovulation (0 = ovulation day). */
   ovulationOffset?: number
-  hasLH?: 'positive' | 'negative'
+  /** Strongest LH result logged that day. */
+  hasLH?: LHResult
   /** Past the forecast limit (late period / after a pregnancy): nothing is predicted here. */
   unpredicted?: 'late' | 'paused'
 }
@@ -302,7 +315,7 @@ function loggedPeriodCovers(periods: PeriodLog[], date: ISODate, periodLength: n
  * expected day instead of starting a projected one.
  */
 export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayInfo {
-  const lh = input.lhTests.find((t) => t.date === date)?.result
+  const lh = strongestLH(input.lhTests.filter((t) => t.date === date).map((t) => t.result))
   const w = cycleAt(input, date)
   const base: DayInfo = { date, phase: 'none', isOvulation: false, hasLH: lh }
   if (loggedPeriodCovers(input.periods, date, input.cycle.periodLength)) {

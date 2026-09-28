@@ -18,21 +18,22 @@ import {
 import { useApp } from '@/lib/store'
 import type { AlertStyle } from '@/lib/types'
 import { Pill, RadioCard, SettingsSection } from './bits'
+import { discreetFor, lowPressureFor, setPersonalPref, settingsFor } from '@/lib/logic/prefs'
 
 export default function AlertsSection() {
-  const { state, update } = useApp()
+  const { state, update, viewer } = useApp()
   const preparing = state.stage === 'preparing'
-  const low = state.settings.lowPressure
+  const low = lowPressureFor(state.settings, viewer)
   return (
-    <SettingsSection title="알림" sub={preparing ? '가임기 알림은 각자 원하는 방식으로 받아요' : '잠금화면 표시는 두 사람 모두에게 똑같이 적용돼요'}>
+    <SettingsSection title="알림" sub="알림 방식은 각자 정해요 · 내 폰에만 적용돼요">
       <div className="grid gap-2">
         {preparing ? <MyAlertStyle /> : null}
         <Card>
           {preparing ? <LowPressureToggle /> : null}
           <div className={cx(preparing && 'mt-1 border-t border-line pt-1')}>
             <Toggle
-              checked={state.settings.discreet}
-              onChange={(v) => update((s) => setSetting(s, 'discreet', v))}
+              checked={discreetFor(state.settings, viewer)}
+              onChange={(v) => update((s) => setPersonalPref(s, viewer, 'discreet', v))}
               label="잠금화면에서 조용히"
               description={
                 preparing && !low
@@ -57,10 +58,10 @@ function MyAlertStyle() {
   const style = alertStyleOf(state, viewer)
   const partnerStyle = alertStyleOf(state, partner.id)
   const isOwner = me.id === cycleOwner.id
-  const low = state.settings.lowPressure
+  const low = lowPressureFor(state.settings, viewer)
   const [w] = state.periods.length ? upcomingWindows(state, today, 1) : []
   const preview = alertPreview(style, { lowPressure: low, isCycleOwner: isOwner, window: w })
-  const lock = preview.message && state.settings.discreet ? lockScreenText(preview.message, true) : null
+  const lock = preview.message && discreetFor(state.settings, viewer) ? lockScreenText(preview.message, true) : null
 
   const choose = (next: AlertStyle) => update((s) => setAlertStyle(s, viewer, next))
   const headingId = useId()
@@ -131,20 +132,20 @@ function MyAlertStyle() {
 }
 
 function LowPressureToggle() {
-  const { state, update, partner } = useApp()
+  const { state, update, viewer } = useApp()
   const toast = useToast()
-  const on = state.settings.lowPressure
+  const on = lowPressureFor(state.settings, viewer)
   return (
     <div>
       <Toggle
         checked={on}
         onChange={(v) => {
-          update((s) => setSetting(s, 'lowPressure', v))
-          toast.show(v ? `부담 없이 모드를 켰어요 · ${partner.name}님에게도 적용돼요` : `부담 없이 모드를 껐어요 · ${partner.name}님에게도 적용돼요`)
+          update((s) => setPersonalPref(s, viewer, 'lowPressure', v))
+          toast.show(v ? '부담 없이 모드를 켰어요 · 내 폰에만 적용돼요' : '부담 없이 모드를 껐어요')
         }}
         label={
           <>
-            부담 없이 모드 <span className="text-xs font-normal text-ink-3">(두 사람 공통)</span>
+            부담 없이 모드 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
           </>
         }
         description="가임기 알림과 카운트다운 없이, 날짜를 맞추지 않고 지내는 방식이에요."
@@ -208,12 +209,12 @@ const PERMISSION_LABEL: Record<Permission, { text: string; tone: 'ok' | 'period'
 }
 
 function BrowserNotifications() {
-  const { state, update } = useApp()
+  const { state, update, viewer } = useApp()
   const toast = useToast()
   const [perm, setPerm] = useState<Permission>('default')
   const [asking, setAsking] = useState(false)
   const setting = state.settings.browserNotifications
-  const discreet = state.settings.discreet
+  const discreet = discreetFor(state.settings, viewer)
 
   const refresh = useCallback(() => setPerm(readPermission()), [])
   useEffect(() => {
@@ -318,10 +319,11 @@ function BrowserNotifications() {
 function IcsCard() {
   const { state, today, viewer, cycleOwner } = useApp()
   const toast = useToast()
-  const view = fertilityView(state.settings, viewer, cycleOwner.id)
-  const { enabled, reason, windows } = icsAvailability(state, today, state.settings, view)
+  const mine = settingsFor(state.settings, viewer)
+  const view = fertilityView(mine, viewer, cycleOwner.id)
+  const { enabled, reason, windows } = icsAvailability(state, today, mine, view)
   // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
-  const discreet = state.settings.discreet || view === 'soft'
+  const discreet = mine.discreet || view === 'soft'
   const label = view === 'explicit' ? '가임기 일정 캘린더로 내보내기 (.ics)' : '우리의 주간 캘린더로 내보내기 (.ics)'
 
   const download = () => {

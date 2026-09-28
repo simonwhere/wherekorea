@@ -6,7 +6,7 @@
 // can be unit-tested; tailwind.config scans lib/** so they are compiled.
 
 import { addDays, addMonths, diffDays, dLabel, formatKo, formatShort, parts, startOfMonth } from '../dates'
-import type { ISODate, MemberId, PeriodLog, Settings } from '../types'
+import type { ISODate, LHResult, MemberId, PeriodLog, Settings } from '../types'
 import {
   LONG_LATE_DAYS,
   MAX_CYCLE,
@@ -138,7 +138,7 @@ export interface CellView {
   phase: DayPhase
   /** Ovulation marker (explicit view only). */
   star: boolean
-  lh?: 'positive' | 'negative'
+  lh?: LHResult
   /** Classes for the round day marker inside the button. */
   className: string
   ariaLabel: string

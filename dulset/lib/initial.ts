@@ -101,12 +101,15 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     appointments: [],
     planDone: {},
     customTasks: [],
+    pregnancyTests: [],
     settings: {
       discreet: false,
       browserNotifications: false,
       lowPressure: false,
       alertStyle: { a: members[0].tracksCycle ? 'explicit' : 'soft', b: members[1].tracksCycle ? 'explicit' : 'soft' },
       ttcStart: input.ttcStart ?? today,
+      // Privacy by default: the partner sees the shared 우리의 주간, not the details.
+      shareCycleDetails: false,
     },
   }
 }

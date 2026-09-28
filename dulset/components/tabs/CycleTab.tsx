@@ -16,11 +16,14 @@ import { cycleSummary, fertilityView, icsAvailability, viewNotice } from '@/lib/
 import { ageFromBirthYear } from '@/lib/logic/notifications'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
+import { discreetFor } from '@/lib/logic/prefs'
+import { settingsFor } from '@/lib/logic/prefs'
 
 /** 달력 — the couple's shared cycle calendar. Both partners can view and log. */
 export default function CycleTab() {
   const { state, today, viewer, me, cycleOwner } = useApp()
-  const view = fertilityView(state.settings, viewer, cycleOwner.id)
+  const mine = settingsFor(state.settings, viewer)
+  const view = fertilityView(mine, viewer, cycleOwner.id)
   const [month, setMonth] = useState<ISODate>(() => startOfMonth(today))
   const [selected, setSelected] = useState<ISODate | null>(null)
   const closeSheet = useCallback(() => setSelected(null), [])
@@ -31,8 +34,8 @@ export default function CycleTab() {
   const hasData = periods.length > 0
   const summary = useMemo(() => (hasData ? cycleSummary(input, today, view) : null), [hasData, input, today, view])
   const ics = useMemo(
-    () => icsAvailability(input, today, state.settings, view),
-    [input, today, state.settings, view],
+    () => icsAvailability(input, today, mine, view),
+    [input, today, state.settings, viewer, view],
   )
   const isOwner = me.id === cycleOwner.id
 
@@ -48,7 +51,7 @@ export default function CycleTab() {
         </div>
       </header>
 
-      <ViewNotice notice={viewNotice(view, state.settings)} />
+      <ViewNotice notice={viewNotice(view, mine)} />
 
       {summary ? (
         <CycleSummary summary={summary} view={view} today={today} onLogToday={() => setSelected(today)} />
@@ -67,7 +70,7 @@ export default function CycleTab() {
       />
 
       <div className="mt-3">
-        <IcsExport availability={ics} view={view} discreet={state.settings.discreet} coupleId={state.couple.inviteCode} />
+        <IcsExport availability={ics} view={view} discreet={discreetFor(state.settings, viewer)} coupleId={state.couple.inviteCode} />
       </div>
 
       <PeriodHistory periods={periods} today={today} onSelect={setSelected} />

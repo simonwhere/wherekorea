@@ -40,6 +40,11 @@ export interface CheckItem {
   createdAt: ISODate
   /** First day the item no longer counts (set when archived). */
   archivedAt?: ISODate
+  /**
+   * 'daily' (default) or 'weekly' — a once-a-week check-in for "keep not doing
+   * it" habits (금주·금연 …), so they don't become a daily chore.
+   */
+  cadence?: 'daily' | 'weekly'
 }
 
 /** checkLog[date][memberId] = ids of CheckItems done that day. */
@@ -51,13 +56,51 @@ export interface PeriodLog {
   start: ISODate
   /** Last bleeding day, inclusive. Optional. */
   end?: ISODate
+  /** Who logged it. */
+  by?: MemberId
 }
 
-export type LHResult = 'positive' | 'negative'
+/**
+ * Urine LH (배테기) result as the user reads the strip: 음성, 희미(faint — test
+ * line lighter than control), 양성, 가장 진함(peak — the darkest of the cycle).
+ * 'positive' and 'peak' count as a surge.
+ */
+export type LHResult = 'negative' | 'faint' | 'positive' | 'peak'
 
 export interface LHTest {
   date: ISODate
   result: LHResult
+  /** 'HH:MM' — up to two tests a day are kept (morning / evening). */
+  time?: string
+  /** Who logged it. */
+  by?: MemberId
+}
+
+/** Home pregnancy test (임테기). */
+export type PregnancyTestResult = 'negative' | 'faint' | 'positive'
+
+export interface PregnancyTest {
+  id: string
+  date: ISODate
+  time?: string
+  result: PregnancyTestResult
+  by?: MemberId
+}
+
+/**
+ * "이번 주기는 쉬어요": fertile display and alerts off until the next period is
+ * logged after `since` (also suggested after a live vaccine or a loss).
+ */
+export interface RestCycle {
+  since: ISODate
+  reason: 'rest' | 'vaccine' | 'loss'
+}
+
+/** A positive home test, not yet confirmed at the clinic — no celebration yet. */
+export interface PositivePending {
+  since: ISODate
+  /** The first positive test that started this state. */
+  testId?: string
 }
 
 export interface CycleSettings {
@@ -182,6 +225,22 @@ export interface Settings {
   alertStyle: Record<MemberId, AlertStyle>
   /** When the couple started trying — drives the "see a doctor" guidance. */
   ttcStart?: ISODate
+  /**
+   * Per-person overrides of `lowPressure` / `discreet` (each partner decides for
+   * their own phone). Read through lib/logic/prefs.ts, never directly.
+   */
+  personal?: Partial<Record<MemberId, PersonalPrefs>>
+  /**
+   * Set by the person who tracks the cycle: whether the partner sees the details
+   * (period days, LH and pregnancy-test results). The shared "우리의 주간" is
+   * always visible. New couples start with false (privacy by default).
+   */
+  shareCycleDetails?: boolean
+}
+
+export interface PersonalPrefs {
+  lowPressure?: boolean
+  discreet?: boolean
 }
 
 export interface Couple {
@@ -264,6 +323,12 @@ export interface AppState {
   planDone: Record<string, { at: ISODate; by?: MemberId }>
   /** Roadmap items the couple added themselves. */
   customTasks: CustomTask[]
+  /** Home pregnancy tests (임테기). */
+  pregnancyTests: PregnancyTest[]
+  /** This cycle is a rest cycle (no fertile display / alerts). */
+  restCycle?: RestCycle
+  /** Positive home test awaiting clinic confirmation. */
+  positivePending?: PositivePending
   settings: Settings
   /**
    * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser

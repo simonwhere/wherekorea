@@ -6,6 +6,7 @@ import { appointmentReminders, planDeadlineNotices } from './logic/planNotices'
 import { stampOn } from './logic/today'
 import { useApp } from './store'
 import type { AppNotification } from './types'
+import { discreetFor } from './logic/prefs'
 
 /**
  * Runs the notification rules whenever the date or relevant data changes, and
@@ -32,7 +33,7 @@ export function useNotificationEngine(): void {
     update((s) => mergeNotices(s, rules(s), now).state)
     deliver(added.filter((n) => n.to === viewer))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.alertStyle, settings.ttcStart, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones])
+  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
   // Whatever is already unread when the app opens isn't re-announced.
@@ -57,8 +58,9 @@ export function useNotificationEngine(): void {
       shown.current.add(n.id)
       try {
         // Discreet mode keeps anything health-related off the lock screen.
-        const title = settings.discreet ? '둘셋' : n.title
-        const body = settings.discreet ? '새 알림이 있어요 💌' : n.body
+        const discreet = discreetFor(settings, viewer)
+        const title = discreet ? '둘셋' : n.title
+        const body = discreet ? '새 알림이 있어요 💌' : n.body
         new Notification(title, { body, tag: n.key ?? n.id, icon: './icon.svg' })
       } catch {
         /* Some mobile browsers only allow notifications via a service worker. */
