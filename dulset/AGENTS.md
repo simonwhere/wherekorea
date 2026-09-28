@@ -32,8 +32,9 @@ npm run build        # next build → out/ (정적 export)
 
 ```
 app/page.tsx            한 페이지짜리 앱. 탭 이동은 해시(#today …)로 해요.
-components/AppShell.tsx 상단 바(⇄ 화면 전환, 🔔 알림, ⚙️ 설정), 단계별 하단 탭
-components/tabs/*.tsx   TodayTab CycleTab PlanTab DateTab UsTab(=#diary) PregnancyTab BabyTab SettingsTab
+components/AppShell.tsx 상단 바(⇄ 화면 전환, 🔔 알림, ⚙️ 설정), 단계별 하단 탭(준비: 오늘 · 주기 · [+ 기록] · 챙길 것 · 우리)
+components/tabs/*.tsx   TodayTab CycleTab PlanTab DateTab(#date, 탭 아님) UsTab(=#diary) PregnancyTab BabyTab SettingsTab
+components/log/*        '+ 기록' 시트 (openLog()로 열어요, lib/logLauncher.ts)
 components/<기능>/*     화면 조각: today cycle plan date diary us pregnancy baby settings onboarding signals
 components/ui/index.tsx 공통 UI: Card Button Chip Toggle Field Sheet EmptyState Avatar useToast NumberStepper …
 lib/types.ts            도메인 타입 (AppState가 앱 전체 상태)
@@ -70,7 +71,10 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - **말투**: 해요체로 따뜻하고 짧게 써요.
 - **금지어**: 숙제, 실패, 노력, "오늘 꼭", "관계를 가져야". 가임기는 "둘만의 시간 / 우리의 주간"으로 표현해요.
 - **예측은 항상 '예상'이에요.** 피임이나 진단 용도라고 쓰지 않아요. "정확한 배란일", "임신 성공률을 높여요" 같은 표현도 금지예요(의료기기 경계).
-- 각자의 **알림 방식**(`settings.alertStyle[viewer]` = explicit / soft / off)과 **부담 줄이기 모드**(`lowPressure`)를 지켜요. soft·off인 사람에게는 가임기·배란 같은 단어가 보이면 안 돼요.
+- 각자의 **알림 방식**(`settings.alertStyle[viewer]` = explicit / soft / off)과 **부담 줄이기 모드**(`lowPressureFor(settings, viewer)`)를 지켜요. soft·off인 사람에게는 가임기·배란·LH 같은 단어가 보이면 안 돼요. 예외: 주기 주인의 달력(`주기` 탭)과 '+ 기록' 시트는 자기 기록 도구라서 알림을 꺼도 그대로 보여요. 홈 카드·띠·알림은 알림 방식을 따라요.
+- **공유 범위**: 주기 기록(생리·LH·임테기)은 주기 주인만 해요(`canLogCycle`). 상대는 주인이 동의했을 때만(`settings.shareCycleDetails`, 기본 꺼짐) 자세한 기록을 봐요(`canSeeCycleDetails`). 동의가 없으면 '우리의 주간'만 보여요. 화면을 새로 만들 때 `lib/logic/calendarView.ts`의 `cycleLens(state, viewer)`로 보이는 범위를 정해요.
+- **쉬는 주기·병원 확인 전**(`restCycle`, `positivePending`)에는 가임기 표시·알림·데이트 제안이 멈춰요. 판단은 `lib/logic/ttc.ts`의 `activeRest` / `activePositivePending`으로 해요.
+- 주기 기록은 `lib/logic/logs.ts`(기록자·되돌리기·쉬는 주기 해제가 함께 처리돼요)나 `openLog()`로만 바꿔요.
 - **잠금화면 숨김**(`discreet`)이 켜져 있으면 브라우저 알림과 .ics에 건강 용어를 넣지 않아요.
 - **유산·임신 종료 배려**: 끝난 뒤 42일(`QUIET_DAYS_AFTER_END`) 동안은 축하·상담 알림이 나가지 않아요.
 - 부부 둘 다 쓸 수 있게 써요. 역할은 `carrier / partner / both`예요. 예비부부·사실혼 커플도 사용자예요.
