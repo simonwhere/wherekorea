@@ -16,9 +16,17 @@
   --ink: 38 32 30;
   --ink-2: 92 82 77;
   --ink-3: 112 103 98;
-  --brand: 184 64 56;
-  --brand-soft: 252 233 229;
-  --brand-ink: 150 48 42;
+  /* Brand = deep teal, kept apart from --period (red: period days only) and
+     --fert (violet: the fertile window only), so a primary button never reads
+     as a period warning. Hue 186° sits between --ok (153°) and --him (216°).
+     WCAG contrast, light (checked with the WCAG 2.x formula):
+       brand      on bg 6.07 · surface 6.47 · surface-2 5.72 · brand-soft 5.48
+       brand-ink  on bg 8.29 · surface 8.84 · surface-2 7.82 · brand-soft 7.48
+       white on bg-brand 6.47 · white on bg-brand-ink 8.84
+       ink / ink-2 / ink-3 on brand-soft 13.59 / 6.42 / 4.67 */
+  --brand: 15 104 114;
+  --brand-soft: 223 239 242;
+  --brand-ink: 10 82 92;
   --him: 52 100 170;
   --him-soft: 228 238 250;
   --her: 180 60 104;
@@ -45,9 +53,12 @@
     --ink-2: 200 190 184;
     /* ≥4.8:1 on every *-soft tone and 5.3:1 on surface-2 (150 140 134 fell to 4.0). */
     --ink-3: 164 154 148;
-    --brand: 240 128 114;
-    --brand-soft: 66 38 34;
-    --brand-ink: 250 170 160;
+    /* Dark teal brand: brand on bg 8.96 · surface 8.10 · surface-2 7.15 ·
+       brand-soft 6.88; brand-ink 12.40 / 11.20 / 9.89 / 9.52; the bg color on
+       bg-brand (text-white flips, below) 8.96; ink-3 on brand-soft 5.16. */
+    --brand: 104 194 204;
+    --brand-soft: 24 46 52;
+    --brand-ink: 160 222 230;
     --him: 128 170 232;
     --him-soft: 32 44 62;
     --her: 238 132 168;

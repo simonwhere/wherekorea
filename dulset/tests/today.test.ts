@@ -7,14 +7,18 @@ import {
   normalizeLabel,
   suggestionsForRole,
 } from '@/lib/content/supplements'
-import { activeItems, addCheckItem, toggleCheck } from '@/lib/logic/checks'
+import { activeItems, addCheckItem, archiveCheckItem, toggleCheck } from '@/lib/logic/checks'
 import { fertilityStatus } from '@/lib/logic/cycle'
 import { NUDGES_PER_DAY, inbox, nudgesSentToday, sendNudge } from '@/lib/logic/notifications'
 import { fertilityView } from '@/lib/logic/calendarView'
 import {
+  FOLIC_GOAL_DAYS,
   LMP_MAX_DAYS,
-  SPERM_CYCLE_DAYS,
+  SPERM_GOAL_DAYS,
+  SPERM_GOAL_TEXT,
+  TIMER_BREAK_DAYS,
   confirmPregnancy,
+  currentRun,
   dayCount,
   doctorAdvice,
   fertilityVoice,
@@ -36,6 +40,7 @@ import {
   stampOn,
   toggleWithCompletion,
 } from '@/lib/logic/today'
+import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import type { AppState } from '@/lib/types'
 
@@ -80,6 +85,14 @@ describe('fertility voice', () => {
     const none = { lowPressure: false, alertStyle: undefined as never }
     expect(fertilityVoice(none, 'b', true)).toBe('explicit')
     expect(fertilityVoice(none, 'a', false)).toBe('soft')
+  })
+
+  it('reads each person’s own low-pressure choice', () => {
+    const personal = { ...base, personal: { a: { lowPressure: true } } }
+    expect(fertilityVoice(personal, 'a', false)).toBe('calm')
+    expect(fertilityVoice(personal, 'b', true)).toBe('explicit')
+    // A personal "off" overrides a couple-wide leftover.
+    expect(fertilityVoice({ ...base, lowPressure: true, personal: { b: { lowPressure: false } } }, 'b', true)).toBe('explicit')
   })
 
   it('goes calm with low-pressure mode or alerts off — even for the owner', () => {
@@ -130,6 +143,29 @@ describe('checks on the home screen', () => {
     s = toggleCheck(s, 'b', '2026-09-02', first!.id)
     expect(firstUnchecked(s, 'b', '2026-09-02')?.id).toBe(second!.id)
   })
+
+  it('leaves weekly check-ins out of the day: no completion, no 콕', () => {
+    let s = fresh({ checkItems: [] })
+    s = addCheckItem(s, 'a', '금연', 'habit', '2026-09-01', '주 1회 체크인', 'weekly')
+    s = addCheckItem(s, 'a', '걷기 30분', 'habit', '2026-09-01')
+    const [weekly, walk] = activeItems(s, 'a')
+    const day = '2026-09-02'
+    const now = '2026-09-02T09:00:00+09:00'
+    expect(firstUnchecked(s, 'a', day)?.id).toBe(walk!.id)
+    expect(rowProgress(s, 'a', day)).toEqual({ done: 0, total: 1, complete: false })
+    // The weekly check-in alone never "finishes the day" or tells the partner.
+    let r = toggleWithCompletion(s, 'a', 'b', day, weekly!.id, now)
+    expect(r.completed).toBe(false)
+    expect(rowProgress(r.state, 'a', day).complete).toBe(false)
+    expect(inbox(r.state, 'b')).toHaveLength(0)
+    // The daily row does.
+    r = toggleWithCompletion(r.state, 'a', 'b', day, walk!.id, now)
+    expect(r.completed).toBe(true)
+    expect(firstUnchecked(r.state, 'a', day)).toBeUndefined()
+    // Tapping the done weekly row later that week clears the week's check-in.
+    const cleared = toggleWithCompletion(r.state, 'a', 'b', '2026-09-04', weekly!.id, now).state
+    expect(cleared.checkLog[day]?.a).toEqual([walk!.id])
+  })
 })
 
 describe('clock anchored to today', () => {
@@ -164,15 +200,82 @@ describe('habit timers', () => {
     expect(laterOf('2026-09-01', undefined)).toBe('2026-09-01')
   })
 
-  it('uses ttcStart, or the first habit check when that is later', () => {
+  it('is "시작 전" until a habit is checked — never counting from ttcStart', () => {
+    const s = fresh() // ttcStart 2026-09-01, nothing checked
+    const t = habitTimer(s, 'a', '2026-12-31')
+    expect(t).toMatchObject({ state: 'not-started', label: '시작 전', progress: 0, goal: SPERM_GOAL_DAYS })
+    expect(t.day).toBeUndefined()
+    expect(t.start).toBeUndefined()
+    expect(t.note).toContain('시작 전')
+  })
+
+  it('counts from the first check of any habit item, in 약 3개월 (not "74일 채움")', () => {
     let s = fresh()
-    expect(habitTimer(s, 'a', '2026-09-10')).toMatchObject({ start: '2026-09-01', day: 10 })
+    const habits = activeItems(s, 'a').filter((i) => i.kind === 'habit')
+    // The *second* habit was checked first: it still starts the clock.
+    s = toggleCheck(s, 'a', '2026-09-07', habits[1]!.id)
+    s = toggleCheck(s, 'a', '2026-09-10', habits[0]!.id)
+    const t = habitTimer(s, 'a', '2026-09-16')
+    expect(t).toMatchObject({ state: 'running', start: '2026-09-07', day: 10, label: 'D+10', goal: SPERM_GOAL_DAYS })
+    expect(t.progress).toBeCloseTo(10 / SPERM_GOAL_DAYS)
+    expect(t.goalText).toBe(SPERM_GOAL_TEXT)
+    expect(SPERM_GOAL_TEXT).toBe('약 3개월(64~74일 + 성숙 1~2주)')
+    expect(t.note).toContain('64~74일')
+    expect(`${t.goalText} ${t.note}`).not.toMatch(/74일 채|한 바퀴/)
+    // About 3 months of weekly check-ins later the span has passed.
+    for (let d = '2026-09-17'; d <= '2026-12-31'; d = addDays(d, 7)) s = toggleCheck(s, 'a', d, habits[0]!.id)
+    const done = habitTimer(s, 'a', '2026-12-31')
+    expect(done).toMatchObject({ state: 'reached', start: '2026-09-07', progress: 1 })
+    expect(done.note).toContain('약 3개월')
+  })
+
+  it('never says "이어 왔어요" about one tap months ago: a long gap stops the count', () => {
+    let s = fresh()
+    const habit = activeItems(s, 'a').find((i) => i.kind === 'habit')!
+    s = toggleCheck(s, 'a', '2026-09-07', habit.id)
+    // Still counting within 4 weeks of the last check…
+    expect(habitTimer(s, 'a', addDays('2026-09-07', TIMER_BREAK_DAYS))).toMatchObject({ state: 'running', start: '2026-09-07' })
+    // …then it stops, gently, instead of running on to 'reached'.
+    const stopped = habitTimer(s, 'a', '2026-12-31')
+    expect(stopped).toMatchObject({ state: 'not-started', label: '다시 시작 전', lastCheck: '2026-09-07', progress: 0 })
+    expect(stopped.day).toBeUndefined()
+    expect(stopped.note).toContain('다시 체크한 날부터')
+    expect(stopped.note).not.toMatch(/실패|노력|숙제/)
+    // The next check starts a new count from that day.
+    s = toggleCheck(s, 'a', '2026-12-20', habit.id)
+    expect(habitTimer(s, 'a', '2026-12-31')).toMatchObject({ state: 'running', start: '2026-12-20', day: 12 })
+  })
+
+  it('keeps one run through the gaps of weekly check-ins, and ignores future days', () => {
+    // Monday of one week, Sunday of the next: 13 days apart, still one run.
+    expect(currentRun(['2026-09-07', '2026-09-20'], '2026-09-25')).toEqual({ start: '2026-09-07' })
+    expect(currentRun(['2026-08-01', '2026-09-20'], '2026-09-25')).toEqual({ start: '2026-09-20' })
+    expect(currentRun([], '2026-09-25')).toEqual({})
+    // A check logged for a later day doesn't start today's count.
+    expect(currentRun(['2026-10-01'], '2026-09-25')).toEqual({})
+    let s = fresh()
+    const habit = activeItems(s, 'a').find((i) => i.kind === 'habit')!
+    s = toggleCheck(s, 'a', '2026-10-01', habit.id)
+    expect(habitTimer(s, 'a', '2026-09-25').state).toBe('not-started')
+  })
+
+  it('keeps counting from an archived habit’s checks, but not an earlier child’s', () => {
+    let s = fresh()
     const habit = activeItems(s, 'a').find((i) => i.kind === 'habit')!
     s = toggleCheck(s, 'a', '2026-09-05', habit.id)
-    const t = habitTimer(s, 'a', '2026-09-10')
-    expect(t).toMatchObject({ start: '2026-09-05', day: 6, goal: SPERM_CYCLE_DAYS })
-    expect(t.progress).toBeCloseTo(6 / SPERM_CYCLE_DAYS)
-    expect(habitTimer(s, 'a', '2026-12-31').progress).toBe(1)
+    s = archiveCheckItem(s, habit.id, '2026-09-20')
+    expect(habitTimer(s, 'a', '2026-09-30').start).toBe('2026-09-05')
+    // Preparing for a second child: checks before the birth don't count.
+    const second = { ...s, baby: { name: '콩이', birthDate: '2026-09-10', sex: 'unknown' as const } }
+    expect(habitTimer(second, 'a', '2026-09-30').state).toBe('not-started')
+  })
+
+  it('ignores supplements for the habit timer', () => {
+    let s = fresh()
+    s = addCheckItem(s, 'a', '코엔자임Q10', 'supplement', '2026-09-01')
+    const pill = activeItems(s, 'a').find((i) => i.label === '코엔자임Q10')!
+    s = toggleCheck(s, 'a', '2026-09-03', pill.id)
+    expect(habitTimer(s, 'a', '2026-09-10').state).toBe('not-started')
   })
 
   it('only treats a non-owner who is not 아내 as the sperm side', () => {
@@ -187,9 +290,14 @@ describe('habit timers', () => {
     expect(folicTimer(s, 'a', '2026-09-10')).toBeNull() // 민수 has no 엽산 item
     const t0 = folicTimer(s, 'b', '2026-09-10')
     expect(t0?.item.label).toBe('엽산')
+    expect(t0).toMatchObject({ state: 'not-started', label: '시작 전', progress: 0 })
     expect(t0?.day).toBeUndefined()
     s = toggleCheck(s, 'b', '2026-09-03', t0!.item.id)
-    expect(folicTimer(s, 'b', '2026-09-10')?.day).toBe(8)
+    expect(folicTimer(s, 'b', '2026-09-10')).toMatchObject({ state: 'running', day: 8, label: 'D+8', goal: FOLIC_GOAL_DAYS })
+    // A single check months ago isn't 3 months of 엽산.
+    expect(folicTimer(s, 'b', '2026-12-31')).toMatchObject({ state: 'not-started', label: '다시 시작 전' })
+    for (let d = '2026-09-04'; d <= '2026-12-01'; d = addDays(d, 1)) s = toggleCheck(s, 'b', d, t0!.item.id)
+    expect(folicTimer(s, 'b', '2026-12-01')).toMatchObject({ state: 'reached', start: '2026-09-03', progress: 1 })
   })
 })
 
@@ -247,6 +355,15 @@ describe('pregnancy confirmation', () => {
     expect(msg).toHaveLength(1)
     expect(msg[0]!.body).toContain('지은')
     expect(inbox(next, 'b')).toHaveLength(0)
+  })
+
+  it('settles a positive test awaiting the clinic, so it can’t come back after 준비로 돌아가기', () => {
+    const s = fresh({ positivePending: { since: '2026-10-01' } })
+    const next = confirmPregnancy(s, '2026-09-01', '2026-10-05', 'b', 'a', '2026-10-05T08:00:00+09:00')
+    expect(next.stage).toBe('pregnant')
+    expect('positivePending' in next).toBe(false)
+    // Blocked (already pregnant): nothing changes.
+    expect(confirmPregnancy(next, '2026-09-01', '2026-10-06', 'b', 'a', '2026-10-06T08:00:00+09:00')).toBe(next)
   })
 })
 

@@ -1,6 +1,6 @@
 import { todayISO } from './dates'
 import { inviteCode, uid } from './id'
-import type { AppState, CheckItem, Member, MemberId, Role } from './types'
+import type { AppState, CheckItem, ISODate, Member, MemberId, Role } from './types'
 
 export const DEFAULT_CYCLE_LENGTH = 28
 export const DEFAULT_PERIOD_LENGTH = 5
@@ -22,27 +22,69 @@ export function otherMember(id: MemberId): MemberId {
 }
 
 /**
- * Starter checklist per member. Supplements are only suggestions the couple can
- * edit; the evidence note for each lives in lib/content/supplements.ts.
+ * The partner's habits, asked in onboarding (N7): they decide the starter list
+ * so nobody gets a daily "don't smoke" tap they don't need.
  */
-export function defaultCheckItems(members: [Member, Member], today = todayISO()): CheckItem[] {
+export interface HabitAnswers {
+  smokes: boolean
+  drinks: 'rarely' | 'sometimes' | 'often'
+  /** What they already do. */
+  exercises: boolean
+  takesSupplements: boolean
+}
+
+/** Daily rows stay short (1–2); "keep not doing it" habits are weekly check-ins. */
+export const MAX_DAILY_STARTERS = 2
+
+/**
+ * Starter checklist per member, built from the partner's answers:
+ *  • the cycle owner: 엽산 (daily — the one supplement with strong evidence:
+ *    USPSTF A, WHO, KDCA) + 비타민 D (optional);
+ *  • the partner: 1–2 daily rows (걷기 30분, or the 운동 they already do; the
+ *    supplement they already take) and weekly check-ins — 금연 only for smokers,
+ *    금주 only for drinkers, 사우나·뜨거운 탕 쉬기 for the sperm side.
+ *    No men's zinc/folate pill by default: FAZST (JAMA 2020) found no benefit.
+ *
+ * Without answers (the demo couple, older callers) the original list is kept.
+ */
+export function defaultCheckItems(members: [Member, Member], today = todayISO(), habits?: HabitAnswers): CheckItem[] {
   const items: CheckItem[] = []
   for (const m of members) {
-    const add = (label: string, kind: CheckItem['kind'], note?: string) =>
-      items.push({ id: uid(), owner: m.id, label, kind, note, active: true, createdAt: today })
+    const add = (label: string, kind: CheckItem['kind'], note?: string, cadence?: 'weekly') =>
+      items.push({
+        id: uid(),
+        owner: m.id,
+        label,
+        kind,
+        ...(note ? { note } : {}),
+        active: true,
+        createdAt: today,
+        ...(cadence ? { cadence } : {}),
+      })
     if (m.tracksCycle) {
-      // Folic acid is the one supplement with strong evidence (USPSTF A, WHO, KDCA).
       add('엽산', 'supplement', '400µg')
       add('비타민 D', 'supplement', '선택')
-    } else if (m.role !== 'wife') {
-      // For men, zinc/folate pills showed no benefit (FAZST, JAMA 2020) — habits matter more.
-      add('사우나·뜨거운 탕 피하기', 'habit', '고환 온도')
-      add('담배 안 피우기', 'habit')
-    } else {
-      add('담배 안 피우기', 'habit')
+      if (!habits) {
+        add('술 안 마시기', 'habit')
+        add('30분 걷기·운동', 'habit')
+      }
+      continue
     }
-    add('술 안 마시기', 'habit')
-    add('30분 걷기·운동', 'habit')
+    if (!habits) {
+      // Original list (kept for callers that don't ask).
+      if (m.role !== 'wife') add('사우나·뜨거운 탕 피하기', 'habit', '고환 온도')
+      add('담배 안 피우기', 'habit')
+      add('술 안 마시기', 'habit')
+      add('30분 걷기·운동', 'habit')
+      continue
+    }
+    // Daily: one habit to do, plus what they already take — at most two rows.
+    add(habits.exercises ? '운동 30분' : '걷기 30분', 'habit', habits.exercises ? '하던 운동 그대로' : '가볍게 시작해요')
+    if (habits.takesSupplements) add('먹던 영양제', 'supplement', '하던 그대로')
+    // Weekly check-ins: holding back isn't a daily chore (no 콕 on these).
+    if (habits.smokes) add('금연', 'habit', '주 1회 체크인', 'weekly')
+    if (habits.drinks !== 'rarely') add('금주', 'habit', '주 1회 체크인', 'weekly')
+    if (m.role !== 'wife') add('사우나·뜨거운 탕 쉬기', 'habit', '고환 온도 · 주 1회 체크인', 'weekly')
   }
   return items
 }
@@ -56,6 +98,8 @@ export interface OnboardingInput {
   cycleLength?: number
   periodLength?: number
   ttcStart?: string
+  /** The partner's (non-cycle-owner's) answers; omit to keep the original starter list. */
+  habits?: HabitAnswers
 }
 
 export function createInitialState(input: OnboardingInput, now = new Date()): AppState {
@@ -84,7 +128,7 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     onboarded: true,
     couple: { members, inviteCode: inviteCode() },
     stage: 'preparing',
-    checkItems: defaultCheckItems(members, today),
+    checkItems: defaultCheckItems(members, today, input.habits),
     checkLog: {},
     periods: input.lastPeriodStart ? [{ start: input.lastPeriodStart }] : [],
     lhTests: [],
@@ -110,6 +154,51 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       ttcStart: input.ttcStart ?? today,
       // Privacy by default: the partner sees the shared 우리의 주간, not the details.
       shareCycleDetails: false,
+    },
+  }
+}
+
+// ── Onboarding answers that the draft (lib/demo) doesn't carry ──
+
+export interface OnboardingExtras {
+  /** The partner's habits (builds their starter list). */
+  habits?: HabitAnswers
+  /** Chosen by the cycle owner: the partner also sees period days and LH / test results. */
+  shareCycleDetails?: boolean
+  /** The onboarding person's own (member 'a') 부담 없이 / 잠금화면 숨김 — per person, never couple-wide. */
+  myPrefs?: { lowPressure?: boolean; discreet?: boolean }
+}
+
+/**
+ * Apply the extra onboarding answers on top of a freshly built state:
+ * rebuild the starter checklist from the habit answers, set the sharing choice
+ * (only the cycle owner's answer counts — otherwise it stays private), and save
+ * the person's own prefs under settings.personal.a.
+ */
+export function applyOnboardingExtras(state: AppState, extras: OnboardingExtras, today: ISODate): AppState {
+  let s = state
+  if (extras.habits) {
+    s = { ...s, checkItems: defaultCheckItems(s.couple.members, today, extras.habits), checkLog: {} }
+  }
+  const ownerIsMe = s.couple.members.find((m) => m.tracksCycle)?.id === 'a'
+  const share = ownerIsMe ? extras.shareCycleDetails === true : false
+  const mine = extras.myPrefs
+  const personal = mine
+    ? {
+        ...(s.settings.personal ?? {}),
+        a: {
+          ...(s.settings.personal?.a ?? {}),
+          ...(mine.lowPressure !== undefined ? { lowPressure: mine.lowPressure } : {}),
+          ...(mine.discreet !== undefined ? { discreet: mine.discreet } : {}),
+        },
+      }
+    : s.settings.personal
+  return {
+    ...s,
+    settings: {
+      ...s.settings,
+      shareCycleDetails: share,
+      ...(personal ? { personal } : {}),
     },
   }
 }

@@ -61,13 +61,16 @@ export const PROGRAMS: Program[] = [
     urlLabel: '정부24',
   },
   {
+    // docs/research/admin-timeline.json (난임치료휴가 연 6일 활용) · kr-programs.json (난임치료휴가):
+    // 2025-02-23부터 연 6일(유급 2일), 2026-04 국회 통과 개정으로 2026-11-27부터 유급 4일,
+    // 우선지원대상기업은 정부가 최초 4일분 지원. Same facts as roadmap 'pre-infertility-support'.
     id: 'infertility-leave',
     stages: ['preparing'],
     title: '난임치료휴가',
-    benefit: '연 6일 (유급 2일 · 무급 4일), 하루 단위 사용',
-    who: '난임 치료를 받는 근로자',
-    how: '회사에 신청 (중소기업은 유급 2일분 정부 지원)',
-    effective: '2025-02-23',
+    benefit: '연 6일, 하루 단위 사용 · 2026-11-27부터 유급 4일 (그 전에는 유급 2일)',
+    who: '난임 치료를 받는 근로자 (남성도 쓸 수 있어요)',
+    how: '회사에 신청해요. 우선지원대상기업(중소기업)은 유급분을 정부가 지원해요 (2026-11-27부터 최초 4일분). 회사마다 절차가 달라요',
+    effective: '2025-02-23 (연 6일), 2026-11-27 (유급 4일)',
     url: 'https://www.moel.go.kr',
     urlLabel: '고용노동부',
   },
@@ -78,7 +81,9 @@ export const PROGRAMS: Program[] = [
     benefit: '태아 1명당 100만 원 (쌍둥이 200만 원)',
     who: '임신한 건강보험 가입자·피부양자',
     how: '임신 확인 후 카드사·국민건강보험공단 또는 정부24 “맘편한 임신”',
-    deadline: '분만예정일로부터 2년 안에 사용',
+    // kr-programs.json / admin-timeline.json: 분만예정일(출산 후 신청하면 출산일)부터 2년,
+    // 유산이면 유산 진단일부터 2년 (review [66]).
+    deadline: '분만예정일(출산 뒤 신청하면 출산일)부터 2년 안에 사용. 유산이면 진단일부터 2년',
     effective: '2024-01-01',
     url: 'http://www.voucher.go.kr/voucher/pregnancy.do',
     urlLabel: '사회서비스 전자바우처',

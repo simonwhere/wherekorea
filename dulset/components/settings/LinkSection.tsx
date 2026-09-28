@@ -84,7 +84,7 @@ export default function LinkSection() {
             </p>
             <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
               {linked
-                ? `${linkedDate && isISODate(linkedDate) ? `${formatKo(linkedDate)}부터 ` : ''}체크, 달력, 알림을 함께 받아요.`
+                ? `${linkedDate && isISODate(linkedDate) ? `${formatKo(linkedDate)}부터 ` : ''}체크, 일정, 알림을 함께 받아요.`
                 : `${partner.name}님이 둘셋에서 초대 코드를 입력하면 연결돼요.`}
             </p>
           </div>

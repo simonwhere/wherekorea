@@ -1,0 +1,118 @@
+'use client'
+
+// "더 보기" — everything that isn't needed every day, folded under the three
+// home blocks: signals, habit timers, this week's roadmap, the doctor card,
+// a diary prompt, backup/install and the rest-cycle switch.
+
+import type { TabKey } from '@/components/AppShell'
+import InstallBackupCard from '@/components/system/InstallBackupCard'
+import SignalsCard from '@/components/signals/SignalsCard'
+import { Card, Toggle, useToast } from '@/components/ui'
+import { canLogCycle } from '@/lib/logic/prefs'
+import { recentlyEnded } from '@/lib/logic/pregnancy'
+import { doctorAdvice, stampOn } from '@/lib/logic/today'
+import { activeRest, startRestCycle } from '@/lib/logic/ttc'
+import { endRestFromHome, homeDiaryPrompt, type Moment } from '@/lib/logic/ttcFlow'
+import { useApp } from '@/lib/store'
+import { DoctorCard } from './ExtraCards'
+import HabitTimers from './HabitTimers'
+import LossSupport from './LossSupport'
+import { PlanFocusCard, UpcomingCard } from './PlanCards'
+
+type Nav = (tab: TabKey) => void
+
+export default function MoreSection({ moment, onNavigate }: { moment: Moment | null; onNavigate: Nav }) {
+  const { state, today, me } = useApp()
+  const owner = canLogCycle(state, me.id)
+  const support = recentlyEnded(state, today) && moment?.kind !== 'after-loss'
+  const prompt = homeDiaryPrompt(state, today)
+
+  return (
+    <details className="group">
+      <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-ink-2 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
+        <span className="group-open:hidden">더 보기</span>
+        <span className="hidden group-open:inline">접기</span>
+        <span aria-hidden className="transition-transform group-open:rotate-180">
+          ⌄
+        </span>
+      </summary>
+
+      <div className="mt-2 space-y-3">
+        {owner ? <RestSwitch /> : null}
+        {support ? (
+          <Card>
+            <LossSupport />
+          </Card>
+        ) : null}
+        <UpcomingCard onNavigate={onNavigate} />
+        <PlanFocusCard onNavigate={onNavigate} />
+      </div>
+
+      <SignalsCard showPending={false} />
+
+      <HabitTimers />
+
+      {doctorAdvice(state, today) ? (
+        <div className="mt-6">
+          <DoctorCard />
+        </div>
+      ) : null}
+
+      <div className="mt-6 space-y-3">
+        {prompt ? (
+          <QuietRow icon="📔" title="준비 일기" body={prompt} onClick={() => onNavigate('diary')} />
+        ) : null}
+        <QuietRow icon="💞" title="둘만의 시간" body="가볍게 즐길 아이디어를 모아 뒀어요" onClick={() => onNavigate('date')} />
+        <InstallBackupCard />
+      </div>
+    </details>
+  )
+}
+
+function QuietRow({ icon, title, body, onClick }: { icon: string; title: string; body: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[52px] w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5 text-left transition-colors hover:bg-line/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+    >
+      <span aria-hidden>{icon}</span>
+      <span className="min-w-0 flex-1 text-xs text-ink-2">
+        <b className="font-semibold text-ink">{title}</b> · {body}
+      </span>
+      <span aria-hidden className="text-ink-3">
+        →
+      </span>
+    </button>
+  )
+}
+
+/** "이번 주기는 쉬어요" — the cycle owner's switch; the next period turns it back on. */
+function RestSwitch() {
+  const { state, update, today } = useApp()
+  const toast = useToast()
+  const rest = activeRest(state)
+  const onChange = (next: boolean) => {
+    if (next) {
+      update((s) => startRestCycle(s, today, 'rest'))
+      toast.show('이번 주기는 쉬어요. 날짜 예상과 알림을 잠시 꺼 둘게요')
+    } else {
+      update((s) => endRestFromHome(s, today, stampOn(today)))
+      toast.show('다시 켰어요')
+    }
+  }
+  return (
+    <Card className="py-2">
+      <Toggle
+        checked={!!rest}
+        onChange={onChange}
+        label="이번 주기는 쉬어요"
+        description={
+          rest?.reason === 'vaccine'
+            ? '접종 뒤 한 달이 지나고 첫 생리를 기록하면 다시 켜져요.'
+            : '날짜 예상과 알림을 쉬어요. 다음 생리를 기록하면 다시 켜져요.'
+        }
+      />
+    </Card>
+  )
+}

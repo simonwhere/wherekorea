@@ -4,8 +4,17 @@ import { ROADMAP } from '@/lib/content/roadmap'
 import { dLabel, diffDays, isISODate } from '@/lib/dates'
 import { daysSince, onThisDay, type AnniversaryEvent } from '@/lib/logic/anniversary'
 import { upcomingAppointments } from '@/lib/logic/appointments'
+import {
+  activeDailyItems,
+  activeWeeklyItems,
+  isDone,
+  nudgeableItem,
+  weeklyDue as checksWeeklyDue,
+  weeklyDone,
+} from '@/lib/logic/checks'
+import { rowProgress } from '@/lib/logic/today'
 import type { RoadmapTemplate } from '@/lib/logic/roadmap'
-import type { Appointment, AppState, ISODate, Member, MemberId, RoadmapPhase } from '@/lib/types'
+import type { Appointment, AppState, CheckItem, ISODate, Member, MemberId, RoadmapPhase } from '@/lib/types'
 
 /** How far ahead the 다가오는 일정 card looks, and how many it shows. */
 export const UPCOMING_DAYS = 14
@@ -87,4 +96,59 @@ export function withTicked<T extends { id: string; status: string }>(
     if (item && item.status === 'done') rows.splice(Math.min(t.index, rows.length), 0, item)
   }
   return rows
+}
+
+// ── 오늘 할 일 (preparing home) ─────────────────────────────
+// Thin wrappers over lib/logic/checks' cadence helpers (daily rows vs the
+// once-a-week check-in), shaped for the home rows.
+
+/** Today's one-tap rows: active daily items (weekly check-ins are separate). */
+export function dailyItems(state: Pick<AppState, 'checkItems'>, member: MemberId): CheckItem[] {
+  return activeDailyItems(state, member)
+}
+
+/** Checked on any day from this week's Monday to today. */
+export function doneThisWeek(state: Pick<AppState, 'checkLog'>, member: MemberId, itemId: string, today: ISODate): boolean {
+  return weeklyDone(state, member, itemId, today)
+}
+
+/** Weekly check-ins ("이번 주도 지켰어요") not yet done this week — shown until they are. */
+export function weeklyDue(state: Pick<AppState, 'checkItems' | 'checkLog'>, member: MemberId, today: ISODate): CheckItem[] {
+  return checksWeeklyDue(state, member, today)
+}
+
+/**
+ * The weekly check-in rows for today: the ones still due this week, plus any
+ * checked in today (shown ticked, so a mis-tap can be undone right there).
+ */
+export function weeklyRows(
+  state: Pick<AppState, 'checkItems' | 'checkLog'>,
+  member: MemberId,
+  today: ISODate,
+): { item: CheckItem; checked: boolean }[] {
+  return activeWeeklyItems(state, member)
+    .map((item) => ({ item, checked: isDone(state, member, today, item.id) }))
+    .filter((r) => r.checked || !weeklyDone(state, member, r.item.id, today))
+}
+
+/** "민수 1/2": today's progress over daily items only. */
+export function dailyProgress(
+  state: Pick<AppState, 'checkItems' | 'checkLog'>,
+  member: MemberId,
+  today: ISODate,
+): { done: number; total: number; complete: boolean } {
+  return rowProgress(state, member, today)
+}
+
+/**
+ * The partner's first unchecked daily item, for a 콕 — never a weekly
+ * "keep not doing it" habit (those are check-ins, not chores).
+ */
+export function nudgeTarget(state: Pick<AppState, 'checkItems' | 'checkLog'>, member: MemberId, today: ISODate): CheckItem | undefined {
+  return nudgeableItem(state, member, today)
+}
+
+/** Today's or tomorrow's appointment (the first one), for the 오늘 할 일 list. */
+export function soonAppointment(list: Appointment[], today: ISODate): Appointment | undefined {
+  return upcomingForToday(list, today).find((a) => diffDays(today, a.date) <= 1)
 }

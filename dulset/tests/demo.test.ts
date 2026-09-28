@@ -10,9 +10,10 @@ import {
 } from '@/components/today/model'
 import { DATE_IDEAS } from '@/lib/content/dateIdeas'
 import { ROADMAP } from '@/lib/content/roadmap'
-import { addDays, addMonths, diffDays, isISODate } from '@/lib/dates'
+import { addDays, addMonths, diffDays, isISODate, weekdayIndex } from '@/lib/dates'
 import {
   DEMO_COUPLE_DAYS,
+  DEMO_START_VIEWER,
   applyPrefs,
   birthYearOptions,
   cleanBirthYear,
@@ -43,15 +44,17 @@ import { nextAnniversaries } from '@/lib/logic/anniversary'
 import { addAppointment, isValidTime, upcomingAppointments } from '@/lib/logic/appointments'
 import { nextKoreanDay } from '@/lib/logic/baby'
 import { CLAIM_KEY } from '@/lib/logic/babyView'
-import { activeItems, coupleStreak, itemsFor, progress, streak } from '@/lib/logic/checks'
-import { cycleAt, cycleStats, dayInfo, fertilityStatus } from '@/lib/logic/cycle'
+import { activeItems, coupleStreak, firstCheckedDate, isDone, itemsFor, progress, streak } from '@/lib/logic/checks'
+import { cycleAt, cycleStats, dayInfo, fertilityStatus, isSurge, sortedStarts } from '@/lib/logic/cycle'
+import { lhTestsOn } from '@/lib/logic/logs'
+import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor } from '@/lib/logic/prefs'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
 import { buildItems, focusItems } from '@/lib/logic/roadmap'
 import { sanitizeBackup } from '@/lib/logic/settings'
 import { chapterContext, entryChapter, receivedReactions } from '@/lib/logic/usView'
 import { isAppState, parseState } from '@/lib/storage'
-import type { AppState, Stage } from '@/lib/types'
+import type { AppState, CheckItem, LHResult, Stage } from '@/lib/types'
 
 const STAGES: Stage[] = ['preparing', 'pregnant', 'parenting']
 const TODAYS = ['2026-09-26', '2026-01-31', '2026-02-28', '2028-02-29', '2026-03-01', '2026-12-31', '2027-01-01', '2026-04-30']
@@ -83,6 +86,7 @@ function fingerprint(s: AppState) {
     notifications: s.notifications.map(({ id: _id, key, ...rest }) => ({ ...rest, key: unId(key) })),
     diary: s.diary.map(({ id: _id, ...rest }) => rest),
     datePlans: s.datePlans.map(({ id: _id, ...rest }) => rest),
+    pregnancyTests: s.pregnancyTests.map(({ id: _id, ...rest }) => rest),
     growth: s.growth.map(({ id: _id, ...rest }) => rest),
   }
 }
@@ -206,6 +210,145 @@ describe('preparing demo', () => {
     const s = createDemoState(today, NOW, 'preparing')
     const nudge = inbox(s, 'a').find((n) => n.kind === 'nudge')!
     expect(nudge.body).toContain('걷기')
+  })
+})
+
+describe('preparing demo: the preconception model', () => {
+  const today = '2026-09-26'
+  const weekly = (i: Pick<CheckItem, 'cadence'>) => i.cadence === 'weekly'
+  const mondayOf = (d: string) => addDays(d, -((weekdayIndex(d) + 6) % 7))
+
+  it('opens on 지은’s screen: the person whose cycle it is', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(s.couple.members.find((m) => m.id === DEMO_START_VIEWER)!.tracksCycle).toBe(true)
+  })
+
+  it('keeps cycle details with 지은 (shareCycleDetails off) — she logs everything herself', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(s.settings.shareCycleDetails).toBe(false)
+    expect(canSeeCycleDetails(s, 'b')).toBe(true)
+    expect(canSeeCycleDetails(s, 'a')).toBe(false)
+    expect(canLogCycle(s, 'b')).toBe(true)
+    expect(canLogCycle(s, 'a')).toBe(false)
+    expect(s.periods.every((p) => p.by === 'b')).toBe(true)
+    expect(s.lhTests.every((t) => t.by === 'b')).toBe(true)
+    expect(s.pregnancyTests.every((t) => t.by === 'b')).toBe(true)
+    // Survives a reload and a backup file.
+    expect(parseState(JSON.stringify(s))!.settings.shareCycleDetails).toBe(false)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.shareCycleDetails).toBe(false)
+  })
+
+  it('has each person’s own preferences: 민수 soft and discreet, 지은 plain', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    expect(s.settings.alertStyle).toEqual({ a: 'soft', b: 'explicit' })
+    expect(discreetFor(s.settings, 'a')).toBe(true)
+    expect(discreetFor(s.settings, 'b')).toBe(false)
+    expect(lowPressureFor(s.settings, 'a')).toBe(false)
+    expect(lowPressureFor(s.settings, 'b')).toBe(false)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.personal).toEqual(s.settings.personal)
+  })
+
+  for (const day of TODAYS) {
+    it(`logs LH strips with times: earlier cycles rise 희미 → 양성 → 가장 진함, this one has no surge yet (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'preparing')
+      const [first, before, prev, last] = sortedStarts(s.periods)
+      expect(first).toBeDefined()
+      expect(s.lhTests.length).toBeGreaterThanOrEqual(10)
+      for (const t of s.lhTests) {
+        expect(t.time).toMatch(/^([01]\d|2[0-3]):[0-5]\d$/)
+        expect(t.date <= day).toBe(true)
+        expect(lhTestsOn(s.lhTests, t.date).length).toBeLessThanOrEqual(2)
+      }
+      const inCycle = (from: string, to: string) =>
+        s.lhTests
+          .filter((t) => t.date >= from && t.date < to)
+          .sort((x, y) => (x.date + x.time < y.date + y.time ? -1 : 1))
+          .map((t) => t.result)
+      const rising = (list: LHResult[]) => {
+        const at = (r: LHResult) => list.indexOf(r)
+        return at('faint') >= 0 && at('faint') < at('positive') && at('positive') < at('peak')
+      }
+      for (const [from, to] of [
+        [before!, prev!],
+        [prev!, last!],
+      ] as const) {
+        expect(rising(inCycle(from, to))).toBe(true)
+        // The surge pins that finished cycle's ovulation.
+        expect(cycleAt(s, from)!.basis).toBe('lh')
+      }
+      expect(cycleAt(s, prev!)!.ovulation).toBe(addDays(prev!, 13))
+      expect(cycleAt(s, before!)!.ovulation).toBe(addDays(before!, 14))
+      // This cycle: strips logged, still a calendar estimate (fertile today, peak tomorrow).
+      const now = s.lhTests.filter((t) => t.date >= last!)
+      expect(now.length).toBeGreaterThan(0)
+      expect(now.some((t) => isSurge(t.result))).toBe(false)
+      expect(cycleAt(s, day)!.basis).toBe('calendar')
+      expect(s.lhTests.some((t) => t.date === day)).toBe(false) // today's strip is still to do
+    })
+  }
+
+  it('has negative home tests in last cycle’s 기다리는 주, and no pending or rest state', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    const [, , prev, last] = sortedStarts(s.periods)
+    const ovulation = cycleAt(s, prev!)!.ovulation
+    expect(s.pregnancyTests).toHaveLength(2)
+    for (const t of s.pregnancyTests) {
+      expect(t.result).toBe('negative')
+      expect(t.date > ovulation && t.date < last!).toBe(true)
+      expect(t.time).toMatch(/^\d{2}:\d{2}$/)
+    }
+    // The early one came 11 days after ovulation; the retest the day before the period.
+    expect(s.pregnancyTests.map((t) => diffDays(ovulation, t.date))).toEqual([11, 14])
+    expect(s.positivePending).toBeUndefined()
+    expect(s.restCycle).toBeUndefined()
+  })
+
+  for (const day of TODAYS) {
+    it(`gives 민수 two daily habits and two weekly check-ins, once per week, open this week (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'preparing')
+      const mine = activeItems(s, 'a')
+      expect(mine.filter((i) => !weekly(i)).map((i) => i.label)).toEqual(['30분 걷기·운동', '7시간 이상 자기'])
+      expect(mine.filter(weekly).map((i) => i.label)).toEqual(['사우나·뜨거운 탕 피하기', '술 안 마시기'])
+      expect(mine.some((i) => i.label.includes('담배'))).toBe(false) // he doesn't smoke
+      expect(activeItems(s, 'b').every((i) => !weekly(i))).toBe(true)
+      const start = s.settings.ttcStart!
+      const thisMonday = mondayOf(day)
+      for (const item of mine.filter(weekly)) {
+        const days = Object.keys(s.checkLog)
+          .filter((d) => isDone(s, 'a', d, item.id))
+          .sort()
+        // At most once per Mon–Sun week…
+        const weeks = days.map(mondayOf)
+        expect(new Set(weeks).size).toBe(weeks.length)
+        // …every week since they started, except this one (still open today).
+        for (let w = mondayOf(start); w < thisMonday; w = addDays(w, 7)) expect(weeks).toContain(w)
+        expect(weeks).not.toContain(thisMonday)
+      }
+    })
+  }
+
+  it('dates every first check, so the timers count real days', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    const start = s.settings.ttcStart!
+    // 민수's habits (the 3-month timer) and 지은's 엽산 were first checked the day they started.
+    for (const item of activeItems(s, 'a')) expect(firstCheckedDate(s, 'a', item.id)).toBe(start)
+    const folic = activeItems(s, 'b').find((i) => i.label === '엽산')!
+    expect(firstCheckedDate(s, 'b', folic.id)).toBe(start)
+    // Nothing is ever ticked before the item existed.
+    for (const i of s.checkItems) {
+      const first = firstCheckedDate(s, i.owner, i.id)
+      if (first) expect(first >= i.createdAt).toBe(true)
+    }
+  })
+
+  it('never makes a weekly check-in part of "done for the day"', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    // 민수 did both daily habits on each of the last three days, with or without a check-in.
+    for (let back = 1; back <= 3; back++) {
+      const d = addDays(today, -back)
+      const daily = itemsFor(s, 'a', d).filter((i) => !weekly(i))
+      expect(daily.every((i) => isDone(s, 'a', d, i.id))).toBe(true)
+    }
   })
 })
 

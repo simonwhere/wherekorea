@@ -8,8 +8,9 @@
 //     (Setton et al., Obstet Gynecol 2016)
 //   • "peak" = the 3 days ending on ovulation day; fecundability is highest for
 //     intercourse in the 2 days before ovulation (ASRM 2022; Dunson 1999)
-//   • a positive LH test moves ovulation to the day after the first positive test
-//     (ovulation typically follows the LH surge by ~24–36 h)
+//   • an LH surge ('positive' or 'peak' — 양성 / 가장 진함) moves ovulation to the
+//     day after the cycle's first surge day (ovulation typically follows the LH
+//     surge by ~24–36 h). 'faint' (희미) is not a surge.
 // Calendar predictions are rough: only ~30% of women have their whole fertile window
 // inside cycle days 10–17 (Wilcox 2000, BMJ), and cycle-length-only methods hit the
 // real ovulation day ≤21% of the time (Johnson 2018). The UI must present these as
@@ -43,19 +44,6 @@ export const MIN_CYCLE = 15
 export const MAX_CYCLE = 60
 /** How many recent cycles to average. */
 const RECENT_CYCLES = 6
-
-/**
- * Approximate probability of conception from intercourse on a single day relative to
- * ovulation (day 0), from Wilcox, Weinberg & Baird, NEJM 1995;333:1517-21.
- */
-export const DAY_SPECIFIC_PROBABILITY: Readonly<Record<number, number>> = {
-  [-5]: 0.1,
-  [-4]: 0.16,
-  [-3]: 0.14,
-  [-2]: 0.27,
-  [-1]: 0.31,
-  [0]: 0.33,
-}
 
 export interface CycleStats {
   /** Measured cycle lengths, oldest → newest (only the plausible ones). */
@@ -171,14 +159,29 @@ function buildWindow(
   }
 }
 
-/** First positive LH test inside [start, start + length + 7). */
-function lhOvulationFor(start: ISODate, length: number, lhTests: LHTest[]): ISODate | undefined {
-  const positives = lhTests
-    .filter((t) => isSurge(t.result) && diffDays(start, t.date) >= 0 && diffDays(start, t.date) < length + 7)
+/** LH tests on cycle days 1–5 are ignored as surges — almost certainly noise during the period. */
+export const SURGE_MIN_CYCLE_DAY = 6
+
+/**
+ * The cycle's first LH surge day ('positive' or 'peak') inside
+ * [start, start + length + slack), from cycle day 6 on. The default week of
+ * slack lets a late surge still count while the period hasn't come; pass 0 for
+ * a completed cycle.
+ */
+export function firstSurge(start: ISODate, length: number, lhTests: LHTest[], slack = 7): ISODate | undefined {
+  return lhTests
+    .filter((t) => isSurge(t.result))
     .map((t) => t.date)
-    .sort()
-  // Ignore a positive during the period itself (cycle day 1–5) — almost certainly noise.
-  const first = positives.find((d) => diffDays(start, d) >= 5)
+    .filter((d) => {
+      const n = diffDays(start, d)
+      return n >= SURGE_MIN_CYCLE_DAY - 1 && n < length + slack
+    })
+    .sort()[0]
+}
+
+/** Ovulation ≈ the day after the first surge day. */
+function lhOvulationFor(start: ISODate, length: number, lhTests: LHTest[], slack?: number): ISODate | undefined {
+  const first = firstSurge(start, length, lhTests, slack)
   return first ? addDays(first, 1) : undefined
 }
 
@@ -263,7 +266,8 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
     // A completed, measured cycle — use its real length (unless it was a missed log).
     const len = diffDays(loggedStart, nextLogged)
     if (len >= MIN_CYCLE && len <= MAX_CYCLE) {
-      return buildWindow(loggedStart, true, len, lhOvulationFor(loggedStart, len, input.lhTests))
+      // Finished cycle: a surge after the next period began belongs to that next cycle, not this one.
+      return buildWindow(loggedStart, true, len, lhOvulationFor(loggedStart, len, input.lhTests, 0))
     }
   }
 
@@ -473,9 +477,15 @@ export function chanceLevel(ovulationOffset: number | undefined): ChanceLevel {
 
 // ── Mutations (pure) ────────────────────────────────────────
 
-export function addPeriod<S extends CycleInput>(state: S, start: ISODate, end?: ISODate): S {
+/**
+ * Add (or replace) the period starting on `start`. Replacing keeps who logged
+ * it unless `by` is given.
+ */
+export function addPeriod<S extends CycleInput>(state: S, start: ISODate, end?: ISODate, by?: PeriodLog['by']): S {
+  const prev = state.periods.find((p) => p.start === start)
+  const who = by ?? prev?.by
   const periods = state.periods.filter((p) => p.start !== start)
-  periods.push(end && end >= start ? { start, end } : { start })
+  periods.push({ start, ...(end && end >= start ? { end } : {}), ...(who ? { by: who } : {}) })
   periods.sort((a, b) => (a.start < b.start ? -1 : 1))
   return { ...state, periods }
 }
@@ -484,16 +494,23 @@ export function removePeriod<S extends CycleInput>(state: S, start: ISODate): S 
   return { ...state, periods: state.periods.filter((p) => p.start !== start) }
 }
 
+/** Set or clear the last bleeding day; keeps the rest of the record (who logged it). */
 export function setPeriodEnd<S extends CycleInput>(state: S, start: ISODate, end: ISODate | undefined): S {
   return {
     ...state,
-    periods: state.periods.map((p) =>
-      p.start === start ? (end && end >= start ? { start, end } : { start: p.start }) : p,
-    ),
+    periods: state.periods.map((p) => {
+      if (p.start !== start) return p
+      const { end: _old, ...rest } = p
+      return end && end >= start ? { ...rest, end } : rest
+    }),
   }
 }
 
-/** Set or clear (result = null) the LH test for a date. */
+/**
+ * Legacy single-result setter (the demo data uses it): replaces every LH test
+ * on `date` with one untimed result, or clears the day (result = null). The
+ * log sheet uses lib/logic/logs.ts addLHTest / removeLHTest (two a day, timed).
+ */
 export function setLHTest<S extends CycleInput>(state: S, date: ISODate, result: LHTest['result'] | null): S {
   const lhTests = state.lhTests.filter((t) => t.date !== date)
   if (result) lhTests.push({ date, result })

@@ -7,7 +7,14 @@ import { greetingFor } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import { togetherDays } from './model'
 
-export default function Greeting({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
+export default function Greeting({
+  onNavigate,
+  showTogether = true,
+}: {
+  onNavigate: (tab: TabKey) => void
+  /** The "함께한 지 D+N" pill (off on the preparing home — it lives in 우리). */
+  showTogether?: boolean
+}) {
   const { state, today, me } = useApp()
   // The clock hour only picks the greeting; date logic always uses `today`.
   const [hour, setHour] = useState(() => new Date().getHours())
@@ -15,7 +22,7 @@ export default function Greeting({ onNavigate }: { onNavigate: (tab: TabKey) => 
     const t = window.setInterval(() => setHour(new Date().getHours()), 5 * 60_000)
     return () => window.clearInterval(t)
   }, [])
-  const together = togetherDays(state.couple, today)
+  const together = showTogether ? togetherDays(state.couple, today) : null
 
   return (
     <div className="px-1 pb-1">

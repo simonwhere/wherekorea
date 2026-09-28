@@ -14,6 +14,7 @@ import {
   validateDueDate,
   validateLmp,
 } from '@/lib/logic/pregnancyView'
+import { canLogCycle } from '@/lib/logic/prefs'
 import { STAGE_INFO, markPregnant } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
@@ -35,7 +36,7 @@ const SEX_OPTIONS: ReadonlyArray<{ value: BabySex; label: string }> = [
 ]
 
 export default function StageSection() {
-  const { state } = useApp()
+  const { state, viewer } = useApp()
   const [sheet, setSheet] = useState<SheetKind>(null)
   const close = useCallback(() => setSheet(null), [])
   // The stage changed (here or on the partner's phone): whatever was open no longer applies.
@@ -57,10 +58,19 @@ export default function StageSection() {
           </div>
         </div>
 
+        {/* Celebration only after the clinic confirmed it: a positive home test
+            stays "병원 확인 전" (+ 기록 › 임테기) until then. */}
         {state.stage === 'preparing' ? (
-          <Button full className="mt-4" onClick={() => setSheet('pregnant')}>
-            임신했어요 <span aria-hidden>🎉</span>
-          </Button>
+          <>
+            <Button full className="mt-4" onClick={() => setSheet('pregnant')}>
+              병원에서 임신을 확인했어요
+            </Button>
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+              {canLogCycle(state, viewer)
+                ? '테스트기 결과만 나왔다면 ‘+ 기록’의 임테기에 먼저 남겨 두고, 병원에서 확인한 뒤에 바꿔요.'
+                : '병원에서 확인한 뒤에 바꿔요.'}
+            </p>
+          </>
         ) : null}
 
         {state.stage === 'pregnant' ? (

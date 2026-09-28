@@ -8,6 +8,7 @@ import DataSection from '@/components/settings/DataSection'
 import LinkSection from '@/components/settings/LinkSection'
 import MembersSection from '@/components/settings/MembersSection'
 import ProgramsSection from '@/components/settings/ProgramsSection'
+import SharingSection from '@/components/settings/SharingSection'
 import StageSection from '@/components/settings/StageSection'
 import { useApp } from '@/lib/store'
 
@@ -18,12 +19,18 @@ export default function SettingsTab() {
     <>
       <header className="mb-5 px-1">
         <h1 className="text-xl font-extrabold tracking-tight text-ink outline-none">설정</h1>
-        <p className="mt-1 text-sm text-ink-2">우리 둘 정보, 알림, 기록 백업을 여기서 관리해요</p>
+        <p className="mt-1 text-sm text-ink-2">
+          {state.stage === 'preparing'
+            ? '우리 둘 정보, 공유 범위, 내 알림, 기록 백업을 여기서 관리해요'
+            : '우리 둘 정보, 내 알림, 기록 백업을 여기서 관리해요'}
+        </p>
       </header>
       <div>
         <MembersSection />
         <CoupleDaysSection />
         <LinkSection />
+        {/* What the partner sees of the cycle — only while preparing, where it's recorded. */}
+        {state.stage === 'preparing' ? <SharingSection /> : null}
         <StageSection />
         {/* Cycle numbers only drive predictions while preparing. */}
         {state.stage === 'preparing' ? <CycleSection /> : null}

@@ -12,29 +12,9 @@ type Nav = (tab: TabKey) => void
 
 // ── Date idea teaser ────────────────────────────────────────
 
-/** Prominent near "우리의 주간", otherwise a quiet link. */
-export function DateCard({ onNavigate, prominent }: { onNavigate: Nav; prominent: boolean }) {
+/** A quiet link to date ideas (pregnant / parenting home; the preparing home has its own). */
+export function DateCard({ onNavigate }: { onNavigate: Nav }) {
   const { state } = useApp()
-  if (prominent) {
-    return (
-      <button
-        type="button"
-        onClick={() => onNavigate('date')}
-        className="flex min-h-[64px] w-full items-center gap-3 rounded-xl2 border border-fert/20 bg-fert-soft p-4 text-left shadow-card transition-colors hover:border-fert/40"
-      >
-        <span aria-hidden className="text-2xl">
-          💞
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-ink">이번 주 데이트 아이디어 골라 뒀어요</span>
-          <span className="mt-0.5 block text-xs text-ink-2">둘만의 시간, 부담 없이 즐겨요</span>
-        </span>
-        <span aria-hidden className="text-lg text-fert">
-          →
-        </span>
-      </button>
-    )
-  }
   const copy = DATE_CARD_COPY[state.stage]
   return (
     <button

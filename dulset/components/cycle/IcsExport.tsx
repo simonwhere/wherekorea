@@ -29,16 +29,23 @@ export default function IcsExport({
     toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
   }
 
+  // Tucked away: fertile-window alarms on the phone calendar are the owner's
+  // explicit choice, not something the screen pushes.
   return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <span aria-hidden className="text-2xl">
-          🗓️
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-ink">휴대폰 캘린더에 추가</h3>
-          <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-            두 사람 모두 휴대폰 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요.
+    <Card className="px-0 py-0">
+      <details className="group">
+        <summary className="flex min-h-[52px] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
+          <span aria-hidden className="text-lg">
+            🗓️
+          </span>
+          <span className="min-w-0 flex-1 text-sm font-semibold text-ink">휴대폰 캘린더에 추가</span>
+          <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">
+            ⌄
+          </span>
+        </summary>
+        <div className="px-4 pb-4">
+          <p className="text-[13px] leading-relaxed text-ink-2">
+            휴대폰 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요.
           </p>
           {enabled ? (
             <p className="mt-1 text-xs text-ink-3">
@@ -46,12 +53,12 @@ export default function IcsExport({
               {useDiscreet ? ' · 캘린더에는 건강 용어 없이 표시돼요' : ''}
             </p>
           ) : null}
+          <Button full variant="secondary" className="mt-3" disabled={!enabled} onClick={download}>
+            캘린더에 추가 (.ics)
+          </Button>
+          {!enabled && reason ? <p className="mt-2 text-xs text-ink-3">{reason}</p> : null}
         </div>
-      </div>
-      <Button full variant="secondary" className="mt-3" disabled={!enabled} onClick={download}>
-        캘린더에 추가 (.ics)
-      </Button>
-      {!enabled && reason ? <p className="mt-2 text-xs text-ink-3">{reason}</p> : null}
+      </details>
     </Card>
   )
 }

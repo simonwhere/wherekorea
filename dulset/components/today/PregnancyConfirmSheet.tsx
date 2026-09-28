@@ -5,9 +5,14 @@ import { Button, Disclaimer, Field, Sheet, inputClass, useToast } from '@/compon
 import { addDays, formatKo } from '@/lib/dates'
 import { dueDate, formatGA, gestationalAge } from '@/lib/logic/pregnancy'
 import { LMP_MAX_DAYS, confirmPregnancy, isValidLmp, lastPeriodStart, stampOn } from '@/lib/logic/today'
+import { clearPositivePending } from '@/lib/logic/ttc'
 import { useApp } from '@/lib/store'
 
-/** "임신했어요! 🎉" — confirm the LMP, then switch the space to the pregnancy stage. */
+/**
+ * "병원에서 확인했어요" — after the clinic confirmed it: check the LMP, then
+ * switch the space to the pregnancy stage (and settle the positive-test
+ * waiting state). Celebration only from here on.
+ */
 export default function PregnancyConfirmSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { state, update, today, me, partner } = useApp()
   const toast = useToast()
@@ -25,7 +30,7 @@ export default function PregnancyConfirmSheet({ open, onClose }: { open: boolean
 
   const confirm = () => {
     if (!valid) return
-    update((s) => confirmPregnancy(s, lmp, today, me.id, partner.id, stampOn(today)))
+    update((s) => clearPositivePending(confirmPregnancy(s, lmp, today, me.id, partner.id, stampOn(today))))
     toast.show(`축하해요! 🎉 ${partner.name}님에게도 알렸어요`)
     onClose()
   }

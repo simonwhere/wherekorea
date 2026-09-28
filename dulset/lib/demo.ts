@@ -6,8 +6,14 @@
 // pure helpers the app itself uses, so the demo exercises real logic instead of
 // hand-written JSON. Content is deterministic for a given (today, now); only ids
 // and the invite code are random.
+//
+// It shows the preconception-first model: 지은 logs her own cycle (LH strips at
+// 희미 → 양성 → 가장 진함 with times, negative home tests in a past 기다리는 주)
+// and keeps the details to herself (shareCycleDetails: false), 민수 hears the
+// soft "우리의 주간" wording, checks two daily habits and two once-a-week
+// check-ins (N7), and every timer counts from a real first check.
 
-import { addDays, addMonths, diffDays, isISODate, parts, range } from './dates'
+import { addDays, addMonths, diffDays, isISODate, parts, range, weekdayIndex } from './dates'
 import { uid } from './id'
 import { ROLE_LABEL, createInitialState, type OnboardingInput } from './initial'
 import { DATE_IDEAS } from './content/dateIdeas'
@@ -16,9 +22,10 @@ import { addAnniversary, setCoupleDates } from './logic/anniversary'
 import { addAppointment, setAppointmentDone, type AppointmentInput } from './logic/appointments'
 import { addGrowth, setMilestone } from './logic/baby'
 import { checkupKey, milestoneKey } from './logic/babyView'
-import { activeItems, archiveCheckItem, isDone, itemsFor, toggleCheck } from './logic/checks'
-import { addPeriod, setLHTest, upcomingWindows, type CycleWindow } from './logic/cycle'
+import { activeItems, archiveCheckItem, isDone, isWeekly, itemsFor, mondayOf, toggleCheck, weeklyDone } from './logic/checks'
+import { addPeriod, upcomingWindows, type CycleWindow } from './logic/cycle'
 import { addEntry } from './logic/diary'
+import { addLHTest, addPregnancyTest } from './logic/logs'
 import {
   ageFromBirthYear,
   doctorThresholdMonths,
@@ -34,7 +41,18 @@ import { recordBirth, startPregnancy } from './logic/pregnancy'
 import { prenatalKey } from './logic/pregnancyView'
 import { addCustomTask, setTemplateDone } from './logic/roadmap'
 import { setReaction } from './logic/usView'
-import type { AlertStyle, AppState, DatePlan, ISODate, MemberId, Role, Stage } from './types'
+import type {
+  AlertStyle,
+  AppState,
+  CheckItem,
+  DatePlan,
+  ISODate,
+  LHResult,
+  MemberId,
+  PregnancyTestResult,
+  Role,
+  Stage,
+} from './types'
 
 // ── Onboarding ──────────────────────────────────────────────
 
@@ -385,6 +403,36 @@ export function withRo(word: string): string {
 const DEMO_ME = { name: '민수', role: 'husband', birthYear: 1992 } as const
 const DEMO_PARTNER = { name: '지은', role: 'wife', birthYear: 1994 } as const
 
+/**
+ * Whose screen "예시로 둘러보기" opens on: 지은's, the person whose cycle the app
+ * follows — she is the one who logs, so her screen shows the app at its fullest.
+ * (Onboarding sets the viewer to this and starts at the top.)
+ */
+export const DEMO_START_VIEWER: MemberId = 'b'
+
+type DemoItem = Pick<CheckItem, 'label' | 'kind'> & Partial<Pick<CheckItem, 'note' | 'cadence'>>
+
+/**
+ * The demo's check items. 지은: 엽산 first (the one supplement with strong
+ * evidence), 비타민 D, and two habits. 민수 doesn't smoke, so there's no 금연
+ * item: two daily habits, and the "keep not doing it" ones (사우나·술) as a
+ * once-a-week check-in instead of a daily tap (N7).
+ */
+const DEMO_ITEMS: Record<MemberId, readonly DemoItem[]> = {
+  a: [
+    { label: '30분 걷기·운동', kind: 'habit' },
+    { label: '7시간 이상 자기', kind: 'habit' },
+    { label: '사우나·뜨거운 탕 피하기', kind: 'habit', note: '고환 온도', cadence: 'weekly' },
+    { label: '술 안 마시기', kind: 'habit', cadence: 'weekly' },
+  ],
+  b: [
+    { label: '엽산', kind: 'supplement', note: '400µg' },
+    { label: '비타민 D', kind: 'supplement', note: '선택' },
+    { label: '술 안 마시기', kind: 'habit' },
+    { label: '30분 걷기·운동', kind: 'habit' },
+  ],
+}
+
 /** Local timestamp (local-date prefixed) at a fixed clock time on `date`. */
 function stamp(date: ISODate, hours: number, minutes = 0): string {
   return localNowISO(atLocal(date, hours, minutes))
@@ -401,49 +449,102 @@ function demoBase(today: ISODate, now: Date, ttcStart: ISODate): AppState {
     { me: DEMO_ME, partner: DEMO_PARTNER, cycleOwner: 'b', ttcStart, cycleLength: 28, periodLength: 5 },
     anchorOn(today, now),
   )
+  // The space (and its items) has existed since the couple started, so past days count.
+  const checkItems: CheckItem[] = (['a', 'b'] as const).flatMap((owner) =>
+    DEMO_ITEMS[owner].map((item) => ({
+      id: uid(),
+      owner,
+      label: item.label,
+      kind: item.kind,
+      ...(item.note ? { note: item.note } : {}),
+      active: true,
+      createdAt: ttcStart,
+      ...(item.cadence === 'weekly' ? { cadence: 'weekly' as const } : {}),
+    })),
+  )
   return {
     ...s,
-    // The space (and its items) has existed since the couple started, so past days count.
     createdAt: stamp(ttcStart, 21, 0),
-    checkItems: s.checkItems.map((i) => ({ ...i, createdAt: ttcStart })),
+    checkItems,
     couple: { ...s.couple, linkedAt: stamp(ttcStart, 21, 10) },
+    settings: {
+      ...s.settings,
+      // 지은 keeps her period days, LH and test results to herself; 민수 sees the
+      // shared 우리의 주간 and gentle status only (privacy by default).
+      shareCycleDetails: false,
+      // Each person's own choices: 민수 hides health words on his lock screen.
+      personal: { a: { lowPressure: false, discreet: true }, b: { lowPressure: false, discreet: false } },
+    },
   }
 }
 
-/** Log periods (start + end) from [start, days] pairs. */
+/** Log periods (start + end) from [start, days] pairs — 지은 logs her own. */
 function logPeriods(state: AppState, list: Array<[ISODate, number]>): AppState {
   let s = state
-  for (const [start, days] of list) s = addPeriod(s, start, addDays(start, days - 1))
+  for (const [start, days] of list) s = addPeriod(s, start, addDays(start, days - 1), 'b')
+  return s
+}
+
+/** 지은's LH strips as she logged them: [date, 'HH:MM', result] (up to two a day). */
+function logLH(state: AppState, list: ReadonlyArray<readonly [ISODate, string, LHResult]>): AppState {
+  let s = state
+  for (const [date, time, result] of list) s = addLHTest(s, { date, time, result, by: 'b' })
+  return s
+}
+
+/** 지은's home pregnancy tests: [date, 'HH:MM', result]. */
+function logPregnancyTests(state: AppState, list: ReadonlyArray<readonly [ISODate, string, PregnancyTestResult]>): AppState {
+  let s = state
+  for (const [date, time, result] of list) s = addPregnancyTest(s, { date, time, result, by: 'b' }).state
   return s
 }
 
 /**
- * Mark items done on `date`, by position in the list that counted that day
- * (itemsFor), so an item archived earlier is never ticked afterwards.
+ * Tick the daily items that counted on `date` (itemsFor, so an item archived
+ * earlier is never ticked afterwards): those whose label contains an `only`
+ * word (every one when omitted), minus those containing a `skip` word.
  */
-function checkDay(state: AppState, member: MemberId, date: ISODate, indices: readonly number[]): AppState {
+function checkDaily(
+  state: AppState,
+  member: MemberId,
+  date: ISODate,
+  opts: { only?: readonly string[]; skip?: readonly string[] } = {},
+): AppState {
   let s = state
-  const items = itemsFor(s, member, date)
-  for (const i of indices) {
-    const item = items[i]
-    if (item && !isDone(s, member, date, item.id)) s = toggleCheck(s, member, date, item.id)
+  for (const item of itemsFor(s, member, date)) {
+    if (isWeekly(item)) continue
+    if (opts.only && !opts.only.some((w) => item.label.includes(w))) continue
+    if (opts.skip?.some((w) => item.label.includes(w))) continue
+    if (!isDone(s, member, date, item.id)) s = toggleCheck(s, member, date, item.id)
   }
   return s
 }
 
-/** Positions of every item that counted on `date` except those whose label contains a `skip` word. */
-function allBut(state: AppState, member: MemberId, date: ISODate, skip: readonly string[]): number[] {
-  return itemsFor(state, member, date)
-    .map((item, i) => (skip.some((w) => item.label.includes(w)) ? -1 : i))
-    .filter((i) => i >= 0)
+/**
+ * The once-a-week check-ins: tick each weekly item that counted on `date`,
+ * unless it was already ticked earlier in the same Mon–Sun week (checks.weeklyDone,
+ * the rule the home's weekly row uses).
+ */
+function checkWeekly(state: AppState, member: MemberId, date: ISODate): AppState {
+  let s = state
+  for (const item of itemsFor(s, member, date).filter(isWeekly)) {
+    if (!weeklyDone(s, member, item.id, date)) s = toggleCheck(s, member, date, item.id)
+  }
+  return s
 }
 
+/** Weekly check-ins happen on Sunday evenings — and on the day they started. */
+const isCheckInDay = (date: ISODate, first: boolean) => first || weekdayIndex(date) === 0
+
 const WALK = '걷기'
+const SLEEP = '7시간'
+const FOLIC = '엽산'
 const VITAMIN_D = '비타민 D'
 
 /**
- * Items skipped per day in the last 10 days ([민수, 지은], by label). The last
- * three days are complete for both → couple streak 3.
+ * Daily items skipped per day in the last 10 days ([민수, 지은], by label). The
+ * last three days are complete for both → couple streak 3. (Weekly check-ins
+ * never decide whether a day is complete.)
  */
 const RECENT_SKIPS: Record<number, [string[], string[]]> = {
   10: [[WALK], [VITAMIN_D]],
@@ -458,26 +559,38 @@ const RECENT_SKIPS: Record<number, [string[], string[]]> = {
   1: [[], []],
 }
 
-/** Sparse older history: 엽산 for 지은, the two core habits for 민수, most days. */
+/**
+ * Sparse older history from the day they started (`from` = ttcStart, when every
+ * item was first checked — so "엽산 D+N" and the habit timer count from a real
+ * first check): 엽산 most days and 비타민 D every other day for 지은; 잠 most
+ * days and 걷기 two days in three for 민수, plus his Sunday check-ins.
+ */
 function fillHistory(state: AppState, from: ISODate, to: ISODate): AppState {
   let s = state
   range(from, to).forEach((d, i) => {
-    if (i % 9 !== 4) s = checkDay(s, 'b', d, i % 2 === 0 ? [0, 1] : [0])
-    if (i % 11 !== 5) s = checkDay(s, 'a', d, [0, 1])
+    if (i % 9 !== 4) s = checkDaily(s, 'b', d, { only: i % 2 === 0 ? [FOLIC, VITAMIN_D] : [FOLIC] })
+    const onlyA = [...(i % 11 !== 5 ? [SLEEP] : []), ...(i % 3 !== 2 ? [WALK] : [])]
+    if (onlyA.length) s = checkDaily(s, 'a', d, { only: onlyA })
+    if (isCheckInDay(d, i === 0)) s = checkWeekly(s, 'a', d)
   })
   return s
 }
 
-/** The last 10 days (partial, streak ending yesterday) + today: 민수 half done, 지은 not started. */
+/**
+ * The last 10 days (partial, streak ending yesterday) + today: 민수 slept well
+ * but hasn't walked yet, 지은 not started. This week's check-ins are still open.
+ */
 function fillRecent(state: AppState, today: ISODate): AppState {
   let s = state
   for (let back = 10; back >= 1; back--) {
     const d = addDays(today, -back)
     const [skipA, skipB] = RECENT_SKIPS[back] ?? [[], []]
-    s = checkDay(s, 'a', d, allBut(s, 'a', d, skipA))
-    s = checkDay(s, 'b', d, allBut(s, 'b', d, skipB))
+    s = checkDaily(s, 'a', d, { skip: skipA })
+    s = checkDaily(s, 'b', d, { skip: skipB })
+    // Sundays before this week only: this week's check-in is what 민수 sees today.
+    if (isCheckInDay(d, false) && d < mondayOf(today)) s = checkWeekly(s, 'a', d)
   }
-  return checkDay(s, 'a', today, [0, 1])
+  return checkDaily(s, 'a', today, { only: [SLEEP] })
 }
 
 /**
@@ -687,14 +800,39 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   // estimated ovulation is today + 3: today is inside the fertile window and the
   // peak (ovulation − 2 … ovulation) starts tomorrow.
   const last = addDays(today, -11)
+  const prev = addDays(last, -28) // the cycle before this one (28 days)
+  const before = addDays(last, -57) // and the one before that (29 days)
   s = logPeriods(s, [
     [addDays(last, -85), 5],
-    [addDays(last, -57), 5],
-    [addDays(last, -28), 4],
+    [before, 5],
+    [prev, 4],
     [last, 5],
   ])
-  s = setLHTest(s, addDays(today, -2), 'negative')
-  s = setLHTest(s, addDays(today, -1), 'negative')
+  // LH strips since the second cycle, morning and sometimes evening. Earlier
+  // cycles rose 희미 → 양성 → 가장 진함 (the first surge pins that cycle's
+  // ovulation: day 15 of 29, day 14 of 28). This cycle is still rising — no
+  // surge yet, so today stays a calendar estimate and the home asks for today's strip.
+  s = logLH(s, [
+    [addDays(before, 11), '08:40', 'negative'],
+    [addDays(before, 12), '08:30', 'faint'],
+    [addDays(before, 13), '20:40', 'positive'],
+    [addDays(before, 14), '08:30', 'peak'],
+    [addDays(before, 15), '08:50', 'negative'],
+    [addDays(prev, 10), '08:30', 'negative'],
+    [addDays(prev, 11), '08:30', 'faint'],
+    [addDays(prev, 12), '08:20', 'positive'],
+    [addDays(prev, 12), '21:00', 'peak'],
+    [addDays(prev, 13), '08:30', 'faint'],
+    [addDays(today, -2), '08:30', 'negative'],
+    [addDays(today, -1), '08:40', 'faint'],
+    [addDays(today, -1), '20:50', 'faint'],
+  ])
+  // Last cycle's 기다리는 주: an early test 11 days after ovulation, one more the
+  // day before the expected period — both negative, then the period came.
+  s = logPregnancyTests(s, [
+    [addDays(prev, 24), '06:50', 'negative'],
+    [addDays(prev, 27), '06:40', 'negative'],
+  ])
 
   s = fillHistory(s, ttcStart, addDays(today, -11))
   s = fillRecent(s, today)

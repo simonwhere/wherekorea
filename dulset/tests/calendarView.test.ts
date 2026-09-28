@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   GUIDE_SECTIONS,
+  LH_CHOICES,
   NICE_GUIDANCE,
   ESTIMATE_DISCLAIMER,
+  PTEST_CHOICES,
+  PTEST_EARLY_NOTE,
+  ptestAfterCopy,
   doctorAgeLine,
   doctorGuideMonths,
   guideSections,
@@ -14,8 +18,22 @@ import {
   averageSourceLabel,
   canShiftMonth,
   cellView,
+  LEGEND_MAX,
   PHASE_CLASS,
+  cycleHistory,
+  cycleLens,
   cycleSummary,
+  dayChanceFor,
+  dayLine,
+  explainDayFor,
+  lensPhase,
+  lhBadge,
+  ptestBadge,
+  sharedHeadline,
+  showsLH,
+  showsTests,
+  strongestTest,
+  type Lens,
   dayActions,
   dayChanceLabel,
   dayTitle,
@@ -35,7 +53,8 @@ import {
   visiblePhase,
   type FertilityView,
 } from '@/lib/logic/calendarView'
-import type { Settings } from '@/lib/types'
+import { createInitialState } from '@/lib/initial'
+import type { AppState, Settings } from '@/lib/types'
 
 const base = (over: Partial<CycleInput> = {}): CycleInput => ({
   periods: [{ start: '2026-09-01', end: '2026-09-05' }],
@@ -95,9 +114,28 @@ describe('phase labels', () => {
   })
 
   it('legend matches the view', () => {
-    expect(legendItems('hidden').map((l) => l.key)).toEqual(['period', 'period-predicted'])
+    expect(legendItems('hidden').map((l) => l.key)).toEqual(['period'])
     expect(legendItems('soft').map((l) => l.label)).toContain('우리의 주간')
-    expect(legendItems('explicit').map((l) => l.label)).toContain('가능 범위')
+    expect(legendItems('explicit').map((l) => l.label)).toEqual(['생리 · 예정', '가임기 예상', '가능성 높음', '가능 범위', '배란 예상'])
+  })
+
+  it('never has more than five items', () => {
+    for (const view of ['explicit', 'soft', 'hidden'] as const)
+      for (const details of [true, false])
+        for (const owner of [true, false])
+          for (const pause of [undefined, 'rest', 'positive'] as const)
+            expect(legendItems(view, { details, owner, pause }).length).toBeLessThanOrEqual(LEGEND_MAX)
+    expect(LEGEND_MAX).toBe(5)
+  })
+
+  it('narrows for the partner and while paused', () => {
+    // Soft partner: no 가장 좋은 때.
+    expect(legendItems('soft', { owner: false }).map((l) => l.key)).toEqual(['period', 'fertile', 'possible'])
+    // No details: only the shared band.
+    expect(legendItems('explicit', { details: false, owner: false }).map((l) => l.label)).toEqual(['우리의 주간 (예상)'])
+    expect(legendItems('hidden', { details: false, owner: false })).toEqual([])
+    // Rest / waiting for the clinic: periods only.
+    expect(legendItems('explicit', { pause: 'rest' }).map((l) => l.key)).toEqual(['period'])
   })
 })
 
@@ -166,6 +204,16 @@ describe('cellView', () => {
     expect(out.className).not.toContain('opacity-')
     expect(out.className).toMatch(/text-ink-[23]/)
     expect(cellView(dayInfo(base(), '2026-09-30'), ctx('explicit')).isFuture).toBe(true)
+  })
+
+  it('next-month days keep the same predicted colours (not dimmer)', () => {
+    // 10-08…10-13 is the next estimated window; 10-10 is the September grid's last cell.
+    const inSep = cellView(dayInfo(base(), '2026-10-10'), ctx('explicit'))
+    const inOct = cellView(dayInfo(base(), '2026-10-10'), { ...ctx('explicit'), month: '2026-10-01' })
+    expect(inSep.inMonth).toBe(false)
+    expect(inSep.phase).toBe('fertile')
+    expect(inSep.className).toBe(inOct.className)
+    expect(inSep.className).toContain(PHASE_CLASS.fertile)
   })
 
   it('keeps logged periods visible in every view', () => {
@@ -503,5 +551,294 @@ describe('guide in the hidden view', () => {
     expect(doctorAgeLine('지은', 33)).toBe('지은님(33세) 기준으로는 1년 동안 소식이 없으면 상담을 받아 보세요.')
     expect(doctorAgeLine('지은', 36)).toContain('6개월')
     expect(doctorAgeLine('지은', 41)).toBe('지은님(41세) 기준으로는 기다리지 말고 지금 상담해 보세요.')
+  })
+})
+
+// ── Lens: details sharing, partner wording, rest / positive pause ──
+
+/** 지은 (b) tracks the cycle and shares nothing by default; 민수 (a) is the partner. */
+function couple(over: Partial<AppState> = {}, settingsOver: Partial<Settings> = {}): AppState {
+  const s = createInitialState(
+    {
+      me: { name: '민수', role: 'husband' },
+      partner: { name: '지은', role: 'wife' },
+      cycleOwner: 'b',
+      lastPeriodStart: '2026-09-01',
+      ttcStart: '2026-09-01',
+    },
+    new Date(2026, 8, 1, 9, 0),
+  )
+  const periods = [{ start: '2026-09-01', end: '2026-09-05' }]
+  return { ...s, periods, ...over, settings: { ...s.settings, shareCycleDetails: false, ...settingsOver } }
+}
+
+describe('cycleLens', () => {
+  it('the owner sees details in their own wording', () => {
+    expect(cycleLens(couple(), 'b')).toEqual({ view: 'explicit', details: true, owner: true })
+  })
+
+  it('a partner sees details only when shared; otherwise soft wording at most', () => {
+    expect(cycleLens(couple({}, { alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toEqual({
+      view: 'soft',
+      details: false,
+      owner: false,
+    })
+    expect(cycleLens(couple({}, { shareCycleDetails: true, alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toMatchObject({
+      view: 'explicit',
+      details: true,
+    })
+    // 부담 없이 is per person.
+    expect(cycleLens(couple({}, { personal: { a: { lowPressure: true } } }), 'a').view).toBe('hidden')
+    expect(cycleLens(couple({}, { personal: { a: { lowPressure: true } } }), 'b').view).toBe('explicit')
+  })
+
+  it('pauses for a rest cycle or a positive test awaiting the clinic', () => {
+    expect(cycleLens(couple({ restCycle: { since: '2026-09-03', reason: 'rest' } }), 'b').pause).toBe('rest')
+    const pending = cycleLens(couple({ positivePending: { since: '2026-09-27' } }), 'b')
+    expect(pending).toMatchObject({ pause: 'positive', pendingSince: '2026-09-27' })
+    // A later period settles both.
+    const after = couple({
+      periods: [{ start: '2026-09-01' }, { start: '2026-09-29' }],
+      restCycle: { since: '2026-09-03', reason: 'rest' },
+      positivePending: { since: '2026-09-27' },
+    })
+    expect(cycleLens(after, 'b').pause).toBeUndefined()
+  })
+})
+
+describe('what each viewer sees on the calendar', () => {
+  const owner: Lens = { view: 'explicit', details: true, owner: true }
+  const noDetails: Lens = { view: 'soft', details: false, owner: false }
+  const softPartner: Lens = { view: 'soft', details: true, owner: false }
+  const input = base({ lhTests: [{ date: '2026-09-13', result: 'peak' }, { date: '2026-09-12', result: 'faint' }] })
+  const cell = (d: string, lens: Lens, ptest?: 'negative' | 'faint' | 'positive') =>
+    cellView(dayInfo(input, d), { month: '2026-09-01', today: '2026-09-26', view: lens.view, lens, ptest })
+
+  it('shows LH strength and 임테기 marks to the owner', () => {
+    expect(cell('2026-09-12', owner).lhBadge?.text).toBe('희미')
+    expect(cell('2026-09-13', owner).ariaLabel).toContain('LH 가장 진함')
+    expect(cell('2026-09-13', owner).lhBadge?.text).toBe('진함')
+    expect(lhBadge('positive').text).toBe('양성')
+    expect(lhBadge('negative').text).toBe('')
+    const t = cell('2026-09-26', owner, 'positive')
+    expect(t.ptestBadge?.text).toBe('임')
+    expect(t.ariaLabel).toContain('임테기 양성')
+    expect(ptestBadge('faint').className).not.toBe(ptestBadge('positive').className)
+    expect(strongestTest(['negative', 'faint'])).toBe('faint')
+  })
+
+  it('a partner without details sees only the 우리의 주간 band', () => {
+    expect(cell('2026-09-02', noDetails).phase).toBe('none') // logged period
+    expect(cell('2026-09-30', noDetails).phase).toBe('none') // projected period
+    expect(cell('2026-09-13', noDetails).phase).toBe('fertile') // LH moved the window here
+    const c = cell('2026-09-13', noDetails, 'positive')
+    expect(c.lh).toBeUndefined()
+    expect(c.ptest).toBeUndefined()
+    expect(c.star).toBe(false)
+    expect(c.ariaLabel).not.toMatch(/생리|LH|임테기|배란|가능성|가장/)
+    // No 가능 범위 band either.
+    for (const d of range('2026-09-01', '2026-10-31')) expect(['none', 'fertile']).toContain(cell(d, noDetails).phase)
+  })
+
+  it('a soft partner with details: no LH, no 가장 좋은 때, no tests', () => {
+    expect(showsLH(softPartner)).toBe(false)
+    expect(showsTests(softPartner)).toBe(false)
+    expect(lensPhase('peak', softPartner)).toBe('fertile')
+    expect(lensPhase('period', softPartner)).toBe('period')
+    // The owner in soft wording still sees their own LH record.
+    expect(showsLH({ view: 'soft', details: true, owner: true })).toBe(true)
+    expect(showsLH({ view: 'hidden', details: true, owner: true })).toBe(false)
+    expect(showsTests({ view: 'hidden', details: true, owner: true })).toBe(true)
+  })
+
+  it('a pause drops the fertile band (and, while waiting, the projected period)', () => {
+    const rest: Lens = { ...owner, pause: 'rest' }
+    const positive: Lens = { ...owner, pause: 'positive' }
+    for (const p of ['peak', 'fertile', 'possible'] as const) {
+      expect(lensPhase(p, rest)).toBe('none')
+      expect(lensPhase(p, positive)).toBe('none')
+    }
+    expect(lensPhase('period-predicted', rest)).toBe('period-predicted')
+    expect(lensPhase('period-predicted', positive)).toBe('none')
+    expect(lensPhase('period', positive)).toBe('period')
+    expect(cell('2026-09-14', rest).star).toBe(false)
+  })
+
+  it('explains days through the lens', () => {
+    const info = dayInfo(input, '2026-09-13')
+    expect(explainDayFor(info, { ...owner, pause: 'rest' }, false)).toContain('쉬는 중')
+    expect(explainDayFor(info, { ...owner, pause: 'positive' }, false)).toContain('병원')
+    expect(explainDayFor(info, noDetails, false)).toContain('우리의 주간')
+    expect(explainDayFor(dayInfo(input, '2026-09-02'), noDetails, true)).not.toMatch(/생리/)
+    // The partner is never asked to log.
+    expect(explainDayFor(dayInfo(input, '2026-09-29'), softPartner, true)).not.toContain('기록해')
+    expect(dayChanceFor(info, owner)).toBe('높음')
+    expect(dayChanceFor(info, { ...owner, pause: 'rest' })).toBeNull()
+    expect(dayChanceFor(info, noDetails)).toBeNull()
+    expect(dayLine(info, owner)).toBe('주기 13일째 · 가임기 예상, 가능성 높음')
+    expect(dayLine(info, { ...owner, pause: 'rest' })).toBe('주기 13일째')
+  })
+})
+
+describe('cycleSummary through the lens', () => {
+  it('a partner without details: only the shared band, no cycle day, nothing about periods', () => {
+    const texts: string[] = []
+    for (const d of range('2026-08-25', '2026-11-30')) {
+      const s = cycleSummary(base(), d, 'explicit', { details: false, owner: false })
+      expect(s.cycleDay).toBeUndefined()
+      expect(s.rows.every((r) => r.key === 'window')).toBe(true)
+      texts.push(s.headline.title, s.headline.sub ?? '', ...s.rows.flatMap((r) => [r.label, r.value]))
+    }
+    const all = texts.join('\n')
+    expect(all).toContain('우리의 주간')
+    expect(all).not.toMatch(/생리|가임기|배란|LH|임테기|지났어요|주기 \d+일째|임신/)
+    expect(all).not.toMatch(PRESSURE_WORDS)
+    // Hidden wording: no band at all.
+    const hidden = cycleSummary(base(), '2026-09-12', 'hidden', { details: false, owner: false })
+    expect(hidden.rows).toEqual([])
+    expect(hidden.headline.sub).toBe(sharedHeadline({ kind: 'no-data' }, 'hidden').sub)
+  })
+
+  it('a rest cycle: calm headline, no window rows', () => {
+    const s = cycleSummary(base(), '2026-09-07', 'explicit', { pause: 'rest' })
+    expect(s.headline.title).toBe('이번 주기는 쉬어요')
+    expect(s.headline.sub).toContain('다음 생리를 기록하면 다시 켜져요')
+    expect(s.rows.map((r) => r.key)).toEqual(['period', 'avg'])
+    expect(s.window).toBeUndefined()
+    expect(cycleSummary(base(), '2026-09-07', 'soft', { pause: 'rest' }).headline.sub).not.toMatch(/가임기|배란/)
+    expect(cycleSummary(base(), '2026-09-07', 'explicit', { pause: 'rest', owner: false }).headline.title).toBe('이번 주기는 쉬어 가요')
+  })
+
+  it('a positive test awaiting the clinic: calm, no celebration, no late-period nudge', () => {
+    const s = cycleSummary(base(), '2026-10-02', 'explicit', { pause: 'positive', pendingSince: '2026-09-30' })
+    expect(s.status.kind).toBe('late')
+    expect(s.headline.title).toBe('병원에서 확인해 봐요')
+    expect(s.headline.sub).not.toContain('임신 테스트')
+    expect(s.rows).toEqual([{ key: 'ptest', label: '임테기 양성', value: '9월 30일 (수)', sub: '병원 확인 전', wide: true }])
+    const partner = cycleSummary(base(), '2026-10-02', 'explicit', { pause: 'positive', owner: false })
+    expect(`${partner.headline.title} ${partner.headline.sub}`).toContain('확인 전')
+    for (const h of [s.headline, partner.headline]) expect(`${h.title}${h.sub}`).not.toMatch(/🎉|축하/)
+    // A soft-wording partner (details shared): no test result by name, like the calendar.
+    const soft = cycleSummary(base(), '2026-10-02', 'soft', { pause: 'positive', owner: false, pendingSince: '2026-09-30' })
+    expect(soft.rows).toEqual([])
+    expect(`${soft.headline.title} ${soft.headline.sub}`).not.toMatch(/임테기|양성/)
+  })
+
+  it('a partner with details reads the status without the owner-only asks', () => {
+    const partnerTexts: string[] = []
+    for (const d of range('2026-08-25', '2026-11-30'))
+      for (const view of ['explicit', 'soft', 'hidden'] as const) {
+        const h = cycleSummary(base(), d, view, { owner: false }).headline
+        partnerTexts.push(h.title, h.sub ?? '')
+      }
+    const all = partnerTexts.join('\n')
+    expect(all).not.toMatch(/기록해 주세요|LH 테스트를 해 보면|임신 테스트를 해 봐도/)
+    expect(all).not.toMatch(PRESSURE_WORDS)
+    // After the window: a calm "don't ask" line (review: 배란 뒤 남편 화면).
+    expect(cycleSummary(base(), '2026-09-20', 'soft', { owner: false }).headline.sub).toBe('기다리는 시간이에요. 증상은 묻지 말고 평소처럼 보내요.')
+    // …but no waiting framing in the hidden view.
+    expect(cycleSummary(base(), '2026-09-20', 'hidden', { owner: false }).headline.sub).not.toContain('기다리는')
+    // Late: same title, no nudge to test.
+    const late = cycleSummary(base(), '2026-10-02', 'explicit', { owner: false }).headline
+    expect(late.title).toBe('생리 예정일이 3일 지났어요')
+    expect(late.sub).toContain('재촉하지 말고')
+    // The owner's wording is unchanged.
+    expect(cycleSummary(base(), '2026-10-02', 'explicit').headline.sub).toContain('임신 테스트')
+    // The next window stays visible to a partner during the period.
+    expect(cycleSummary(base(), '2026-09-02', 'soft', { owner: false }).headline.sub).toContain('우리의 주간')
+  })
+
+  it('no calendar export while paused', () => {
+    expect(icsAvailability(base(), '2026-09-07', settings(), 'explicit', 'rest')).toMatchObject({ enabled: false })
+    const p = icsAvailability(base(), '2026-09-07', settings(), 'explicit', 'positive')
+    expect(p.enabled).toBe(false)
+    expect(p.reason).not.toMatch(/가임기|배란/)
+  })
+})
+
+describe('cycleHistory (시도 N번째 주기)', () => {
+  const periods = [
+    { start: '2026-06-01', end: '2026-06-05' },
+    { start: '2026-06-29' },
+    { start: '2026-07-28' },
+    { start: '2026-08-25' },
+    { start: '2026-09-22' },
+  ]
+  const input = { periods, lhTests: [], cycle: { cycleLength: 28, periodLength: 5 } }
+
+  it('numbers the cycle containing ttcStart as #1', () => {
+    const h = cycleHistory(input, '2026-09-28', '2026-07-10')
+    const byStart = Object.fromEntries(h.rows.map((r) => [r.start, r.attempt]))
+    expect(byStart['2026-06-29']).toBe(1)
+    expect(byStart['2026-07-28']).toBe(2)
+    expect(byStart['2026-09-22']).toBe(4)
+    expect(byStart['2026-06-01']).toBeUndefined()
+    expect(h.current).toBe(4)
+    expect(h.estimated).toBe(false)
+    // Started on a period day: that period is #1.
+    expect(cycleHistory(input, '2026-09-28', '2026-08-25').current).toBe(2)
+  })
+
+  it('estimates cycles before the first log and across a missed log', () => {
+    // Trying since March, first log in June: about three unlogged starts in between.
+    const early = cycleHistory(input, '2026-09-28', '2026-03-01')
+    expect(early.estimated).toBe(true)
+    expect(early.rows.at(-1)!.attempt).toBe(5)
+    // Just before the first log: its own cycle is #1, the first logged start #2, exact.
+    const near = cycleHistory(input, '2026-09-28', '2026-05-25')
+    expect(near.estimated).toBe(false)
+    expect(near.rows.at(-1)!.attempt).toBe(2)
+    const gap = cycleHistory({ ...input, periods: [{ start: '2026-03-01' }, { start: '2026-06-01' }] }, '2026-06-10', '2026-03-01')
+    expect(gap.estimated).toBe(true)
+    expect(gap.current).toBe(4) // 92 days ≈ 3 cycles of 28
+    expect(cycleHistory(input, '2026-09-28').current).toBeUndefined()
+  })
+
+  it('a start date still ahead numbers nothing; a duplicate log is not another try', () => {
+    expect(cycleHistory(input, '2026-09-28', '2026-10-15').current).toBeUndefined()
+    expect(cycleHistory(input, '2026-09-28', '2026-10-15').rows.every((r) => r.attempt === undefined)).toBe(true)
+    // 08-25 logged twice, three days apart (flagged 'short'): still the same try.
+    const dup = cycleHistory({ ...input, periods: [...periods, { start: '2026-08-28' }] }, '2026-09-28', '2026-07-10')
+    const byStart = Object.fromEntries(dup.rows.map((r) => [r.start, r.attempt]))
+    expect(byStart['2026-08-25']).toBe(3)
+    expect(byStart['2026-08-28']).toBe(3)
+    expect(dup.current).toBe(4)
+  })
+
+  it('shows each cycle’s first LH surge day', () => {
+    const lhTests = [
+      { date: '2026-07-11', result: 'faint' as const },
+      { date: '2026-07-12', result: 'positive' as const },
+      { date: '2026-07-13', result: 'peak' as const },
+      { date: '2026-10-05', result: 'positive' as const },
+      { date: '2026-09-23', result: 'positive' as const }, // cycle day 2 — ignored
+    ]
+    const h = cycleHistory({ ...input, lhTests }, '2026-09-28', '2026-07-10')
+    const surge = Object.fromEntries(h.rows.map((r) => [r.start, r.surge]))
+    expect(surge['2026-06-29']).toEqual({ date: '2026-07-12', cycleDay: 14 })
+    expect(surge['2026-07-28']).toBeUndefined()
+    // The running cycle only counts days up to today.
+    expect(surge['2026-09-22']).toBeUndefined()
+  })
+})
+
+describe('log sheet copy', () => {
+  it('explains the strip plainly and stays calm', () => {
+    expect(LH_CHOICES.map((c) => c.result)).toEqual(['negative', 'faint', 'positive', 'peak'])
+    expect(LH_CHOICES.find((c) => c.result === 'faint')!.hint).toBe('검사선이 대조선보다 연해요')
+    expect(PTEST_CHOICES.map((c) => c.result)).toEqual(['negative', 'faint', 'positive'])
+    expect(PTEST_EARLY_NOTE).toBe('생리 예정일 전이면 음성이 나올 수 있어요.')
+    const after = (['negative', 'faint', 'positive'] as const).flatMap((r) =>
+      [true, false].map((explicit) => ptestAfterCopy(r, explicit)),
+    )
+    expect(ptestAfterCopy('positive', true).title).toBe('병원에서 확인해 봐요')
+    expect(ptestAfterCopy('positive', false).body.join(' ')).not.toMatch(/가임기|배란/)
+    // A past positive already followed by a period: just a record, nothing pauses.
+    const settled = ptestAfterCopy('positive', true, false)
+    expect(`${settled.title} ${settled.body.join(' ')}`).not.toMatch(/병원 확인 전|멈춰요/)
+    after.push(settled)
+    const text = [...LH_CHOICES.map((c) => c.hint), ...PTEST_CHOICES.map((c) => c.hint), ...after.flatMap((a) => [a.title, ...a.body])].join('\n')
+    expect(text).not.toMatch(PRESSURE_WORDS)
+    expect(text).not.toMatch(/노력|🎉|축하|정확한 배란일|성공률/)
   })
 })

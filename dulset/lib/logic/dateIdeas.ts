@@ -1,5 +1,8 @@
-// Date tab logic (pure): weekly idea rotation, map links, shared date plans and
-// the partner notice that goes out when one of us proposes a date.
+// 둘만의 시간 (#date, no longer a tab) logic (pure): weekly idea rotation, map
+// links, shared date plans and the partner notice that goes out when one of us
+// proposes a date. A plan's default day never follows the fertile window: a
+// pattern the partner learns ("she always suggests those days") turns a date
+// into pressure (docs/review-preconception.md, 데이트).
 
 import {
   CATEGORY_ORDER,
@@ -12,11 +15,10 @@ import {
 import { addDays, formatKo, isISODate, parts, weekdayIndex } from '../dates'
 import { uid } from '../id'
 import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
-import { dayInfo, fertilityStatus, ourWeekSoon, upcomingWindows, type DayPhase } from './cycle'
+import { fertilityStatus, ourWeekSoon } from './cycle'
 import { mergeNotices } from './notifications'
 import { lowPressureFor } from './prefs'
-
-const isPeriodDay = (phase: DayPhase) => phase === 'period' || phase === 'period-predicted'
+import { activePositivePending, activeRest } from './ttc'
 
 // ── Season / week ───────────────────────────────────────────
 
@@ -160,13 +162,13 @@ export function categoriesFor(ideas: DateIdea[], stage: Stage): DateCategory[] {
 }
 
 /**
- * Health badges only make sense while preparing / pregnant; the other flags
- * (체력 부담 적음, 아기와 함께) show in every stage.
+ * Health badges only make sense while preparing / pregnant; '아기와 함께' only
+ * once the baby is here. 체력 부담 적음 shows in every stage.
  */
 export function visibleFlags(idea: Pick<DateIdea, 'flags'>, stage: Stage): DateFlag[] {
   const flags = idea.flags ?? []
   if (stage === 'parenting') return flags.filter((f) => f !== 'no-alcohol' && f !== 'no-heat')
-  return flags
+  return flags.filter((f) => f !== 'baby-friendly')
 }
 
 export function ideaTip(idea: Pick<DateIdea, 'tip' | 'stageTips'>, stage: Stage): string | undefined {
@@ -201,7 +203,10 @@ export interface DateBanner {
 const PREPARING_NOTE = '🍹 술은 잠시 쉬고, ♨️ 뜨거운 탕·사우나 대신 산책으로 골라요.'
 const PREGNANT_NOTE = '🍹 음료는 무알콜로, ♨️ 뜨거운 탕·사우나는 피하고 틈틈이 쉬어 가요.'
 
-type BannerState = Pick<AppState, 'stage' | 'settings' | 'couple' | 'periods' | 'lhTests' | 'cycle' | 'pregnancy'>
+type BannerState = Pick<
+  AppState,
+  'stage' | 'settings' | 'couple' | 'periods' | 'lhTests' | 'cycle' | 'pregnancy' | 'restCycle' | 'positivePending'
+>
 
 /** The viewer's alert style, with the same defaults as the calendar. */
 export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, viewer: MemberId) {
@@ -209,9 +214,22 @@ export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, v
   return state.settings.alertStyle?.[viewer] ?? (viewer === owner.id ? 'explicit' : 'soft')
 }
 
-/** May the date tab use the fertile window (as "우리의 주간") for this viewer? */
-export function fertileHintsAllowed(state: Pick<AppState, 'stage' | 'settings' | 'couple'>, viewer: MemberId): boolean {
-  return state.stage === 'preparing' && !lowPressureFor(state.settings, viewer) && viewerAlertStyle(state, viewer) !== 'off'
+/**
+ * May the 둘만의 시간 screen mention the fertile window (as "우리의 주간") to this
+ * viewer? Not in low-pressure mode or with alerts off, and not while the cycle
+ * rests ("이번 주기는 쉬어요") or a positive test waits for the clinic.
+ */
+export function fertileHintsAllowed(
+  state: Pick<AppState, 'stage' | 'settings' | 'couple'> &
+    Partial<Pick<AppState, 'periods' | 'restCycle' | 'positivePending'>>,
+  viewer: MemberId,
+): boolean {
+  if (state.stage !== 'preparing') return false
+  if (lowPressureFor(state.settings, viewer) || viewerAlertStyle(state, viewer) === 'off') return false
+  const periods = state.periods ?? []
+  if (activeRest({ restCycle: state.restCycle, periods })) return false
+  if (activePositivePending({ positivePending: state.positivePending, periods, stage: state.stage })) return false
+  return true
 }
 
 export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId): DateBanner {
@@ -266,36 +284,32 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
 
 export interface SuggestedDate {
   date: ISODate
-  reason: 'our-week' | 'saturday'
+  /** saturday: the coming Saturday · next-saturday: that one already has a plan. */
+  reason: 'saturday' | 'next-saturday'
 }
 
 /**
- * Preparing (and allowed for this viewer): the next day inside the current or
- * upcoming fertile window within a week. Otherwise this Saturday.
+ * The day a new plan starts on: the coming Saturday (today, if it is Saturday),
+ * or the Saturday after when that one already has a plan. Never the fertile
+ * window — the couple picks any other day in the sheet. `_viewer` is accepted
+ * for older call sites; the suggestion is the same for both people.
  */
-export function suggestPlanDate(state: BannerState, today: ISODate, viewer: MemberId): SuggestedDate {
-  // A late period may mean a pregnancy — never steer toward a projected window then
-  // (same rule as the fertile-day alerts).
-  const status = fertileHintsAllowed(state, viewer) ? fertilityStatus(state, today).kind : 'no-data'
-  if (status !== 'late' && status !== 'no-data' && status !== 'after-pregnancy') {
-    const [w] = upcomingWindows(state, today, 1)
-    const tomorrow = addDays(today, 1)
-    if (w) {
-      let candidate = w.fertileStart > tomorrow ? w.fertileStart : tomorrow
-      // Short cycles: the window can start during a (logged or predicted) period —
-      // never offer a period day as "우리의 주간".
-      while (candidate <= w.fertileEnd && isPeriodDay(dayInfo(state, candidate, today).phase)) candidate = addDays(candidate, 1)
-      if (candidate <= w.fertileEnd && candidate <= addDays(today, 7)) return { date: candidate, reason: 'our-week' }
-    }
-  }
-  return { date: thisSaturday(today), reason: 'saturday' }
+export function suggestPlanDate(
+  state: Pick<AppState, 'datePlans'>,
+  today: ISODate,
+  _viewer?: MemberId,
+): SuggestedDate {
+  const saturday = thisSaturday(today)
+  const taken = state.datePlans.some((p) => !p.done && p.date === saturday)
+  return taken ? { date: addDays(saturday, 7), reason: 'next-saturday' } : { date: saturday, reason: 'saturday' }
 }
 
 /** Helper line under the date field while the suggested day is still selected. */
 export function planDateHint(suggested: SuggestedDate, today: ISODate): string {
-  if (suggested.reason === 'our-week') return '우리의 주간(예상) 중 하루로 골라 뒀어요. 편한 날로 바꿔도 좋아요.'
+  const day = formatKo(suggested.date, { weekday: false })
+  if (suggested.reason === 'next-saturday') return `이번 토요일엔 일정이 있어서 다음 토요일(${day})로 골라 뒀어요. 편한 날로 바꿔도 좋아요.`
   // "이번 주 토요일" is ambiguous on a Sunday, so say what we mean.
-  return suggested.date === today ? '오늘, 토요일로 골라 뒀어요.' : `다가오는 토요일(${formatKo(suggested.date, { weekday: false })})로 골라 뒀어요.`
+  return suggested.date === today ? '오늘, 토요일로 골라 뒀어요.' : `다가오는 토요일(${day})로 골라 뒀어요.`
 }
 
 // ── Plans (pure mutations) ──────────────────────────────────

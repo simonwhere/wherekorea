@@ -2,7 +2,15 @@
 
 import { diffDays, formatKo, isISODate, parts } from '../dates'
 import type { AppState, CheckItem, ISODate, Member, MemberId, NotificationKind, Settings, Stage } from '../types'
-import { activeItems, doneIds, firstCheckedDate, toggleCheck } from './checks'
+import {
+  activeDailyItems,
+  activeItems,
+  doneIds,
+  isWeekly,
+  nudgeableItem,
+  toggleCheck,
+  toggleWeekly,
+} from './checks'
 import { cycleStats, ourWeekSoon, sortedStarts, type FertilityStatus } from './cycle'
 import {
   ageFromBirthYear,
@@ -13,7 +21,9 @@ import {
   notifyCompleted,
   ttcClockStart,
 } from './notifications'
+import { lowPressureFor } from './prefs'
 import { MAX_GESTATION_DAYS, canStartPregnancy, recentlyEnded, startPregnancy } from './pregnancy'
+import { clearPositivePending } from './ttc'
 
 // ── Clock anchored to the app's `today` ─────────────────────
 
@@ -55,11 +65,12 @@ export function greetingFor(hour: number): string {
 export type FertilityVoice = 'explicit' | 'soft' | 'calm'
 
 export function fertilityVoice(
-  settings: Pick<Settings, 'lowPressure' | 'alertStyle'>,
+  settings: Pick<Settings, 'lowPressure' | 'alertStyle' | 'personal'>,
   viewer: MemberId,
   isCycleOwner: boolean,
 ): FertilityVoice {
-  if (settings.lowPressure) return 'calm'
+  // Low-pressure is each person's own choice (settings.personal) — never the partner's.
+  if (lowPressureFor(settings, viewer)) return 'calm'
   const style = settings.alertStyle?.[viewer] ?? (isCycleOwner ? 'explicit' : 'soft')
   if (style === 'off') return 'calm'
   return style === 'explicit' ? 'explicit' : 'soft'
@@ -79,26 +90,30 @@ export interface RowProgress {
   complete: boolean
 }
 
-/** Progress over the rows the checklist shows (active items). */
+/**
+ * Progress over today's one-tap rows: active *daily* items. Weekly check-ins
+ * (금연·금주 …) never decide whether the day is done.
+ */
 export function rowProgress(state: Pick<AppState, 'checkItems' | 'checkLog'>, member: MemberId, date: ISODate): RowProgress {
-  const rows = activeItems(state, member)
+  const rows = activeDailyItems(state, member)
   const done = doneIds(state, member, date)
   const count = rows.filter((i) => done.includes(i.id)).length
   return { done: count, total: rows.length, complete: rows.length > 0 && count === rows.length }
 }
 
+/** The first unchecked daily item — what a 콕 may point at (never a weekly check-in). */
 export function firstUnchecked(
   state: Pick<AppState, 'checkItems' | 'checkLog'>,
   member: MemberId,
   date: ISODate,
 ): CheckItem | undefined {
-  const done = doneIds(state, member, date)
-  return activeItems(state, member).find((i) => !done.includes(i.id))
+  return nudgeableItem(state, member, date)
 }
 
 /**
- * Toggle one item; when that toggle finishes the list, tell the partner (once a
- * day — notifyCompleted dedups by key).
+ * Toggle one item; when that toggle finishes the day's daily list, tell the
+ * partner (once a day — notifyCompleted dedups by key). A weekly check-in is
+ * toggled for the whole week (toggleWeekly) and never counts as "finishing".
  */
 export function toggleWithCompletion(
   state: AppState,
@@ -108,6 +123,8 @@ export function toggleWithCompletion(
   itemId: string,
   nowISO: string,
 ): { state: AppState; completed: boolean } {
+  const item = state.checkItems.find((i) => i.id === itemId)
+  if (item && isWeekly(item)) return { state: toggleWeekly(state, member, date, itemId), completed: false }
   const before = rowProgress(state, member, date).complete
   let next = toggleCheck(state, member, date, itemId)
   const completed = !before && rowProgress(next, member, date).complete
@@ -116,11 +133,32 @@ export function toggleWithCompletion(
 }
 
 // ── Habit timers ────────────────────────────────────────────
+//
+// Honest timers: they count from the first day the relevant items were actually
+// checked — never from the day preparing started — and show "시작 전" until then.
+// A count only goes on while checks keep coming: after TIMER_BREAK_DAYS without
+// any, it stops ("다시 시작 전") and the next check starts a new count, so
+// "약 3개월을 이어 왔어요" is never said about one tap months ago.
 
-/** Spermatogenesis takes about 74 days (~3 months with transport/maturation). */
+/** Sperm take about 64–74 days to form (J Androl; research medical-checklist.json). */
 export const SPERM_CYCLE_DAYS = 74
+/**
+ * …plus 1–2 weeks to mature in the epididymis: about 3 months in all, so a
+ * habit shows in semen quality after roughly 3 months (74 + 14 ≈ 90 days).
+ */
+export const SPERM_GOAL_DAYS = 90
 /** Folic acid: at least 1 month before, Korean norm 3 months before conception. */
 export const FOLIC_GOAL_DAYS = 90
+
+/**
+ * Days without any check of a timer's items after which its count stops (4
+ * weeks — longer than the widest gap between two weekly check-ins, 13 days).
+ */
+export const TIMER_BREAK_DAYS = 28
+
+/** How the timers describe their goal (no "74일 채움" — the science is a range). */
+export const SPERM_GOAL_TEXT = '약 3개월(64~74일 + 성숙 1~2주)'
+export const FOLIC_GOAL_TEXT = '임신 3개월 전부터(최소 1개월 전)'
 
 export function laterOf(a?: ISODate, b?: ISODate): ISODate | undefined {
   if (!a) return b
@@ -134,31 +172,147 @@ export function dayCount(start: ISODate | undefined, today: ISODate): number | u
   return diffDays(start, today) + 1
 }
 
+/**
+ * not-started: not counting — nothing checked yet, or no check for
+ * TIMER_BREAK_DAYS (then `lastCheck` is set) · running: counting · reached: the
+ * goal span has passed while checks kept coming.
+ */
+export type TimerState = 'not-started' | 'running' | 'reached'
+
 export interface Timer {
+  state: TimerState
+  /** First check of the current run of checks (day 1). */
   start?: ISODate
+  /** Set when an earlier run stopped: the last check before the long gap. */
+  lastCheck?: ISODate
+  /** Korean-style day count from `start` (undefined while not started). */
   day?: number
+  /** Days the goal span covers (for the progress bar). */
   goal: number
   /** 0–1 */
   progress: number
+  /** '시작 전' · '다시 시작 전' · 'D+12' */
+  label: string
+  /** The goal in words, e.g. '약 3개월(64~74일 + 성숙 1~2주)'. */
+  goalText: string
+  /** One honest line for under the bar. */
+  note: string
 }
 
-function timer(start: ISODate | undefined, today: ISODate, goal: number): Timer {
-  const day = dayCount(start, today)
-  return { start: day ? start : undefined, day, goal, progress: day ? Math.min(1, day / goal) : 0 }
+interface TimerCopy {
+  goalText: string
+  notStarted: string
+  stopped: string
+  running: string
+  reached: string
+}
+
+const SPERM_COPY: TimerCopy = {
+  goalText: SPERM_GOAL_TEXT,
+  notStarted: '시작 전이에요. 습관을 처음 체크한 날부터 세어 드려요.',
+  stopped: '한동안 체크가 없었어요. 다시 체크한 날부터 새로 세어 드려요.',
+  running: '새 정자가 만들어지는 데 64~74일, 성숙하는 데 1~2주가 더 걸려 모두 약 3개월이에요. 오늘의 습관이 3개월 뒤를 만들어요.',
+  reached: '약 3개월을 이어 왔어요. 지금처럼 이어 가요.',
+}
+
+const FOLIC_COPY: TimerCopy = {
+  goalText: FOLIC_GOAL_TEXT,
+  notStarted: '시작 전이에요. 엽산을 처음 체크한 날부터 세어 드려요.',
+  stopped: '한동안 체크가 없었어요. 다시 체크한 날부터 새로 세어 드려요.',
+  running: '임신 3개월 전부터(최소 1개월 전) 임신 12주까지 하루 400µg을 권해요.',
+  reached: '3개월을 챙겼어요. 임신 12주까지 이어 가요.',
+}
+
+/** The current run of checks: its first day, or where the last run stopped. */
+interface CheckRun {
+  start?: ISODate
+  lastCheck?: ISODate
 }
 
 /**
- * "건강 습관 D+N" for the member whose cycle isn't tracked. Counts from the
- * later of ttcStart and the first check of their first habit item.
+ * From the sorted days with a check: the run still going on `today` (no gap
+ * longer than TIMER_BREAK_DAYS, up to today), else the day it stopped.
  */
-export function habitTimer(state: AppState, member: MemberId, today: ISODate): Timer {
-  const firstHabit = activeItems(state, member).find((i) => i.kind === 'habit')
-  const checked = firstHabit ? firstCheckedDate(state, member, firstHabit.id) : undefined
-  return timer(laterOf(state.settings.ttcStart, checked), today, SPERM_CYCLE_DAYS)
+export function currentRun(days: readonly ISODate[], today: ISODate): CheckRun {
+  const past = days.filter((d) => d <= today)
+  const last = past[past.length - 1]
+  if (!last) return {}
+  if (diffDays(last, today) > TIMER_BREAK_DAYS) return { lastCheck: last }
+  let start = last
+  for (let i = past.length - 2; i >= 0; i--) {
+    if (diffDays(past[i]!, start) > TIMER_BREAK_DAYS) break
+    start = past[i]!
+  }
+  return { start }
+}
+
+function timer(run: CheckRun, today: ISODate, goal: number, copy: TimerCopy): Timer {
+  const start = run.start
+  const day = dayCount(start, today)
+  if (day === undefined) {
+    return run.lastCheck
+      ? {
+          state: 'not-started',
+          lastCheck: run.lastCheck,
+          goal,
+          progress: 0,
+          label: '다시 시작 전',
+          goalText: copy.goalText,
+          note: copy.stopped,
+        }
+      : { state: 'not-started', goal, progress: 0, label: '시작 전', goalText: copy.goalText, note: copy.notStarted }
+  }
+  const reached = day >= goal
+  return {
+    state: reached ? 'reached' : 'running',
+    start,
+    day,
+    goal,
+    progress: Math.min(1, day / goal),
+    label: `D+${day}`,
+    goalText: copy.goalText,
+    note: reached ? copy.reached : copy.running,
+  }
+}
+
+/** The items the habit timer follows: every habit the member has (archived ones keep their history). */
+export function habitItems(state: Pick<AppState, 'checkItems'>, member: MemberId): CheckItem[] {
+  return state.checkItems.filter((i) => i.owner === member && i.kind === 'habit')
+}
+
+type TimerInput = Pick<AppState, 'checkItems' | 'checkLog'> & Partial<Pick<AppState, 'stage' | 'baby'>>
+
+/**
+ * Checks before this day belong to an earlier child (preparing for a second
+ * one): a timer for this preparation doesn't count them.
+ */
+function timerFloor(state: TimerInput): ISODate | undefined {
+  return state.stage === 'preparing' && state.baby?.birthDate ? state.baby.birthDate : undefined
+}
+
+/** Sorted days (from the floor, up to today) on which any of `ids` was checked. */
+function checkDays(state: TimerInput, member: MemberId, ids: readonly string[], today: ISODate): ISODate[] {
+  const set = new Set(ids)
+  if (!set.size) return []
+  const floor = timerFloor(state) ?? ''
+  return Object.keys(state.checkLog)
+    .filter((d) => d >= floor && d <= today && (state.checkLog[d]?.[member] ?? []).some((id) => set.has(id)))
+    .sort()
 }
 
 /**
- * Whether sperm-side guidance (74-day timer, sauna/laptop heat, men's
+ * "건강 습관 D+N" for the member whose cycle isn't tracked: counts from the
+ * first day any of their habit items (걷기·금연·금주·사우나 쉬기 …) was
+ * checked in the current run. Nothing checked yet → 'not-started' ("시작 전");
+ * no check for TIMER_BREAK_DAYS → 'not-started' ("다시 시작 전").
+ */
+export function habitTimer(state: TimerInput, member: MemberId, today: ISODate): Timer {
+  const days = checkDays(state, member, habitItems(state, member).map((i) => i.id), today)
+  return timer(currentRun(days, today), today, SPERM_GOAL_DAYS, SPERM_COPY)
+}
+
+/**
+ * Whether sperm-side guidance (3-month timer, sauna/laptop heat, men's
  * supplements) fits this member: the one whose cycle isn't tracked, unless
  * they're '아내' (e.g. two women preparing together).
  */
@@ -170,11 +324,11 @@ export function isFolicLabel(label: string): boolean {
   return label.replace(/\s/g, '').includes('엽산')
 }
 
-/** "엽산 먹은 지 D+N", or null when there's no folic-acid item. */
-export function folicTimer(state: AppState, member: MemberId, today: ISODate): (Timer & { item: CheckItem }) | null {
+/** "엽산 먹은 지 D+N" from its first check ('not-started' until then), or null without a 엽산 item. */
+export function folicTimer(state: TimerInput, member: MemberId, today: ISODate): (Timer & { item: CheckItem }) | null {
   const item = activeItems(state, member).find((i) => isFolicLabel(i.label))
   if (!item) return null
-  return { ...timer(firstCheckedDate(state, member, item.id), today, FOLIC_GOAL_DAYS), item }
+  return { ...timer(currentRun(checkDays(state, member, [item.id], today), today), today, FOLIC_GOAL_DAYS, FOLIC_COPY), item }
 }
 
 // ── "See a doctor" guidance ─────────────────────────────────
@@ -247,7 +401,9 @@ export function confirmPregnancy(
   // A sheet left open on the other phone must not overwrite a pregnancy the
   // partner already recorded (or re-send the "기쁜 소식").
   if (!canStartPregnancy(state)) return state
-  const next = startPregnancy(state, lmp, today)
+  // The clinic confirmed it: the "병원 확인 전" state is settled here, whichever
+  // screen recorded it — a leftover would come back after a later 준비로 돌아가기.
+  const next = clearPositivePending(startPregnancy(state, lmp, today))
   const name = state.couple.members.find((m) => m.id === from)?.name ?? ''
   return mergeNotices(
     next,

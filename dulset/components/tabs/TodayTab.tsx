@@ -1,32 +1,63 @@
 'use client'
 
 // 오늘 — the home screen both partners open every day.
+//
+// Preparing (the core stage): three blocks and a folded "더 보기"
+//   1. 주기 띠 + today's moment (one title, one sentence, one action)
+//   2. 오늘 할 일 — my checks, a weekly check-in when due, today's/tomorrow's appointment
+//   3. 우리 한 줄 — the partner's month task, the other's progress, a signal to answer
+// Pregnant / parenting keep their existing home.
 
+import { useMemo } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import { SectionTitle } from '@/components/ui'
-import { fertilityStatus } from '@/lib/logic/cycle'
-import { doctorAdvice, fertilityVoice, showDateTeaser } from '@/lib/logic/today'
+import { monthlyTask } from '@/lib/logic/partnerTrack'
+import { canLogCycle } from '@/lib/logic/prefs'
+import { ttcMoment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import AnniversaryBanner from '@/components/today/AnniversaryBanner'
 import { CoupleStreak, MyChecks, PartnerChecks } from '@/components/today/CheckCards'
-import { DateCard, DiaryPromptCard, DoctorCard } from '@/components/today/ExtraCards'
+import CycleBlock from '@/components/today/CycleBlock'
+import { DateCard, DiaryPromptCard } from '@/components/today/ExtraCards'
 import Greeting from '@/components/today/Greeting'
-import HabitTimers from '@/components/today/HabitTimers'
+import MoreSection from '@/components/today/MoreSection'
 import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
+import TodayTasks from '@/components/today/TodayTasks'
+import UsLine from '@/components/today/UsLine'
 import SignalsCard from '@/components/signals/SignalsCard'
-import { settingsFor } from '@/lib/logic/prefs'
 
-export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => void }) {
-  const { state, today, me, cycleOwner } = useApp()
-  const preparing = state.stage === 'preparing'
-  // Prominent date teaser only near "우리의 주간" and only if the viewer wants fertile hints.
-  const teaser =
-    preparing &&
-    showDateTeaser(fertilityStatus(state, today), fertilityVoice(settingsFor(state.settings, me.id), me.id, me.id === cycleOwner.id))
-  // The public-support tips that used to sit here now live in 챙길 것 (with their links).
-  const doctor = preparing && doctorAdvice(state, today) !== null
+type Nav = (tab: TabKey) => void
 
+export default function TodayTab({ onNavigate }: { onNavigate: Nav }) {
+  const { state } = useApp()
+  return state.stage === 'preparing' ? <PreparingHome onNavigate={onNavigate} /> : <StageHome onNavigate={onNavigate} />
+}
+
+function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
+  const { state, today, me } = useApp()
+  const moment = ttcMoment(state, today, me.id)
+  // The partner's one meaningful task this month (not the cycle owner's).
+  // Not right after a loss — that time is for each other, not for tasks.
+  const showTask = !canLogCycle(state, me.id) && moment?.kind !== 'after-loss'
+  const task = useMemo(() => (showTask ? monthlyTask(state, today, me.id) : undefined), [showTask, state, today, me.id])
+  // Featured inside the moment card when that card has nothing else to say.
+  const taskInCard = !!moment?.monthlyTask && !!task
+
+  return (
+    <div>
+      <Greeting onNavigate={onNavigate} showTogether={false} />
+      <div className="mt-3 space-y-4">
+        {moment ? <CycleBlock moment={moment} task={task} onNavigate={onNavigate} /> : null}
+        <TodayTasks onNavigate={onNavigate} />
+        <UsLine task={taskInCard ? undefined : task} onNavigate={onNavigate} />
+        <MoreSection moment={moment} onNavigate={onNavigate} />
+      </div>
+    </div>
+  )
+}
+
+function StageHome({ onNavigate }: { onNavigate: Nav }) {
   return (
     <div>
       <Greeting onNavigate={onNavigate} />
@@ -34,7 +65,6 @@ export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => 
       <div className="mt-3 space-y-3">
         <AnniversaryBanner onNavigate={onNavigate} />
         <StageHero onNavigate={onNavigate} />
-        {teaser ? <DateCard onNavigate={onNavigate} prominent /> : null}
         <UpcomingCard onNavigate={onNavigate} />
         <PlanFocusCard onNavigate={onNavigate} />
       </div>
@@ -48,20 +78,11 @@ export default function TodayTab({ onNavigate }: { onNavigate: (tab: TabKey) => 
 
       <SignalsCard />
 
-      {preparing ? <HabitTimers /> : null}
-
       <SectionTitle>우리 둘의 기록</SectionTitle>
       <div className="space-y-3">
         <DiaryPromptCard onNavigate={onNavigate} />
-        {teaser ? null : <DateCard onNavigate={onNavigate} prominent={false} />}
+        <DateCard onNavigate={onNavigate} />
       </div>
-
-      {doctor ? (
-        <>
-          <SectionTitle>함께 알아 두면 좋아요</SectionTitle>
-          <DoctorCard />
-        </>
-      ) : null}
     </div>
   )
 }

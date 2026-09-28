@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createInitialState } from '@/lib/initial'
+import { applyOnboardingExtras, createInitialState } from '@/lib/initial'
 import { cycleStats } from '@/lib/logic/cycle'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { dueDate } from '@/lib/logic/pregnancy'
@@ -35,6 +35,7 @@ import {
   updateMember,
   validateTtcStart,
 } from '@/lib/logic/settings'
+import { FERTILITY_CLAIM_ID, setFertilityClaimed, setShareCycleDetails } from '@/lib/logic/partnerTrack'
 import { parseState } from '@/lib/storage'
 import type { AppState } from '@/lib/types'
 
@@ -428,5 +429,30 @@ describe('sanitizeBackup', () => {
     const s = clone(fresh())
     s.pregnancy = { lmp: '2026-08-20', dueDateOverride: '2027-02-30', confirmedAt: 'x' }
     expect(sanitizeBackup(s)!.pregnancy).toEqual({ lmp: '2026-08-20', confirmedAt: '2026-08-20' })
+  })
+})
+
+describe('sharing & per-person prefs survive a backup', () => {
+  it('keeps weekly check-ins, the claim mark, the sharing choice and personal prefs', () => {
+    let s = applyOnboardingExtras(
+      fresh(),
+      {
+        habits: { smokes: true, drinks: 'often', exercises: false, takesSupplements: false },
+        myPrefs: { lowPressure: true },
+      },
+      TODAY,
+    )
+    s = setShareCycleDetails(s, 'b', true)
+    s = setFertilityClaimed(s, true, TODAY, 'a')
+    const back = parseState(JSON.stringify(s))!
+    expect(back.checkItems.filter((i) => i.cadence === 'weekly').map((i) => i.label)).toEqual(['금연', '금주', '사우나·뜨거운 탕 쉬기'])
+    expect(back.planDone[FERTILITY_CLAIM_ID]).toEqual({ at: TODAY, by: 'a' })
+    expect(back.settings.shareCycleDetails).toBe(true)
+    expect(back.settings.personal).toEqual({ a: { lowPressure: true } })
+  })
+
+  it('never lets the partner widen what they see', () => {
+    const s = fresh()
+    expect(setShareCycleDetails(s, 'a', true).settings.shareCycleDetails).toBe(false)
   })
 })

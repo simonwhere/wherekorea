@@ -4,6 +4,7 @@
 // only: no contraception, no diagnosis, no "success-rate" promises.
 
 import { doctorThresholdMonths } from '../logic/notifications'
+import type { LHResult, PregnancyTestResult } from '../types'
 
 export interface Source {
   name: string
@@ -76,6 +77,12 @@ export const SOURCES = {
     name: 'e보건소 — 임신 사전건강관리 지원',
     url: 'https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097',
   },
+  /** Early tests miss more pregnancies the earlier they are taken (manufacturer data, snippet only). */
+  earlyTest: {
+    name: 'First Response Early Result 제품 안내 (조기 임테기, 제조사 실험)',
+    url: 'https://www.firstresponse.com/en/product-listings/early-result-pregnancy-test',
+    note: '제조사 실험 수치라 앱에는 숫자 대신 ‘이르면 음성일 수 있어요’만 적어요.',
+  },
 } as const satisfies Record<string, Source>
 
 export const GUIDE_SECTIONS: GuideSection[] = [
@@ -105,7 +112,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '처음 양성이 나온 날과 그다음 날이 가장 좋은 때예요.',
       '배란은 보통 LH가 급상승하고 24~36시간 뒤에 일어나요.',
       '연구를 모아 보면, LH 테스트로 시기를 맞춘 경우 출생률이 더 높게 나왔어요 (상대위험 1.36, 근거 수준 중간).',
-      '달력에서 날짜를 눌러 결과를 기록하면 둘셋이 예측을 바로 다시 계산해요.',
+      '‘+ 기록’에서 결과를 남기면 둘셋이 예측을 바로 다시 계산해요. 하루 두 번까지 남길 수 있어요.',
     ],
     sources: [SOURCES.cochrane2023, SOURCES.lhSurge],
     showWhenHidden: false,
@@ -137,7 +144,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       '기초체온은 배란 뒤에 0.3~0.6°C 올라가요. 지난 배란을 확인하는 용도라 미리 알려주진 못해요.',
       '맑고 미끈하게 늘어나는 점액은 배란이 가까워졌다는 신호예요.',
-      '여러 주기를 기록하면 내 패턴을 알아가는 데 도움이 돼요. 꼭 하지 않아도 괜찮아요.',
+      '둘셋에는 아직 기초체온·점액 기록 칸이 없어요. 꼭 하지 않아도 괜찮아요.',
     ],
     sources: [SOURCES.bbt, SOURCES.mucus],
     showWhenHidden: false,
@@ -208,3 +215,53 @@ export const NICE_GUIDANCE = {
 
 export const ESTIMATE_DISCLAIMER =
   '달력 계산에 기록을 더한 참고용 예상이에요. 피임 목적으로 쓰지 말고, 의학적인 판단은 의사와 상의해 주세요.'
+
+// ── "+ 기록" sheet ──────────────────────────────────────────
+// Reading a strip: the test line (T) against the control line (C). The app
+// never reads photos or judges a result — the user picks what they see.
+
+export const LH_CHOICES: ReadonlyArray<{ result: LHResult; hint: string }> = [
+  { result: 'negative', hint: '검사선이 안 보여요' },
+  { result: 'faint', hint: '검사선이 대조선보다 연해요' },
+  { result: 'positive', hint: '검사선이 대조선만큼 진해요' },
+  { result: 'peak', hint: '이번 주기에서 가장 진해요' },
+]
+
+export const PTEST_CHOICES: ReadonlyArray<{ result: PregnancyTestResult; hint: string }> = [
+  { result: 'negative', hint: '검사선이 안 보여요' },
+  { result: 'faint', hint: '검사선이 아주 연하게 보여요' },
+  { result: 'positive', hint: '검사선이 또렷하게 보여요' },
+]
+
+/** Shown above the 임테기 choices (SOURCES.earlyTest — no numbers on purpose). */
+export const PTEST_EARLY_NOTE = '생리 예정일 전이면 음성이 나올 수 있어요.'
+
+/**
+ * What the sheet says right after a 임테기 result. A positive test is "병원
+ * 확인 전": calm, no celebration (about 10% of confirmed pregnancies end
+ * early — ACOG, docs/research/couple-record.json), and fertile-day display
+ * pauses. `explicit` = the viewer's wording allows 가임기. `waiting` = false
+ * when a period was already logged on/after the test's day (a past test
+ * entered late): it is kept as a record and nothing pauses.
+ */
+export function ptestAfterCopy(
+  result: PregnancyTestResult,
+  explicit: boolean,
+  waiting = true,
+): { title: string; body: string[] } {
+  if (result === 'positive' && !waiting)
+    return { title: '남겨 뒀어요', body: ['그 뒤에 생리 기록이 있어서 날짜 예상은 그대로 둬요.'] }
+  if (result === 'positive')
+    return {
+      title: '병원에서 확인해 봐요',
+      body: [
+        '확인하기 전까지는 ‘병원 확인 전’으로 둘게요.',
+        explicit ? '가임기 표시와 알림은 잠시 멈춰요.' : '날짜 표시와 알림은 잠시 멈춰요.',
+      ],
+    }
+  if (result === 'faint') return { title: '희미한 선도 남겨 뒀어요', body: ['헷갈릴 땐 2~3일 뒤 다시 해 보거나 병원에서 확인해 봐요.'] }
+  return {
+    title: '남겨 뒀어요',
+    body: ['생리 예정일 전이었다면 2~3일 뒤 다시 해 봐도 좋아요.', '생리가 시작되면 생리로 기록해 주세요.'],
+  }
+}

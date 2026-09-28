@@ -5,18 +5,19 @@ import RestoreBackup from '@/components/RestoreBackup'
 import { Button } from '@/components/ui'
 import type { Stage } from '@/lib/types'
 
+// Preparing comes first (founder direction); pregnancy / baby / 기록장 follow later.
 const VALUE_PROPS = [
-  { emoji: '✅', title: '매일 영양제·습관 서로 체크', body: '엽산·생활습관을 같이 챙기고, 콕 찔러 응원해요.' },
-  { emoji: '💞', title: '가임기를 두 사람에게 같이 알려 줘요', body: '부담 없이, 각자 편한 말투로 받아요.' },
+  { emoji: '✅', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 매일 1~2개만. 참는 습관은 주 1회만 체크해요.' },
+  { emoji: '💞', title: '가임기 예상을 두 사람에게', body: '각자 편한 말투로 받아요. ‘우리의 주간’처럼 은근하게, 또는 알림 없이도요.' },
   {
     emoji: '🏥',
-    title: '병원·검사·신청까지 함께 챙기기',
-    body: '임신 준비부터 출산 뒤까지, 챙길 것과 병원 예약을 둘이 같이 봐요.',
+    title: '검사·신청 기한까지 함께',
+    body: '가임력 검사 신청부터 검사·청구 기한까지, 병원 일정과 함께 둘이 봐요.',
   },
   {
-    emoji: '📔',
-    title: '비트윈처럼 둘이 쌓는 기록장',
-    body: '만난 날과 기념일, 사진과 일기가 아기가 생긴 뒤에도 한 권으로 이어져요.',
+    emoji: '🔒',
+    title: '자세한 기록은 허용할 때만',
+    body: '생리일·테스트 결과를 보여 줄지는 주기를 기록하는 사람이 정해요.',
   },
 ] as const
 
@@ -97,7 +98,8 @@ export default function WelcomeStep({
             예시로 둘러보기
           </h2>
           <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
-            가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요. 둘러본 뒤 설정에서 지우고 새로 시작하면 돼요.
+            가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요. 주기를 기록하는 지은님 화면에서 시작하고, 위쪽 ⇄로 민수님
+            화면도 볼 수 있어요. 둘러본 뒤 설정에서 지우고 새로 시작하면 돼요.
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {DEMOS.map((d) => (

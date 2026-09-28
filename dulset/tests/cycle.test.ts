@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import * as cycleModule from '@/lib/logic/cycle'
 import {
   addPeriod,
   chanceLevel,
@@ -6,7 +7,11 @@ import {
   cycleStats,
   dayInfo,
   fertilityStatus,
+  firstSurge,
+  isSurge,
   setLHTest,
+  setPeriodEnd,
+  strongestLH,
   upcomingWindows,
   type CycleInput,
 } from '@/lib/logic/cycle'
@@ -196,5 +201,69 @@ describe('mutations', () => {
 
   it('rejects an end date before the start', () => {
     expect(addPeriod(base(), '2026-09-05', '2026-09-01').periods).toEqual([{ start: '2026-09-05' }])
+  })
+})
+
+describe('LH strength (음성 · 희미 · 양성 · 가장 진함)', () => {
+  const input = base({ periods: [{ start: '2026-09-01' }] })
+
+  it('counts 양성 and 가장 진함 as a surge, not 희미', () => {
+    expect(isSurge('positive')).toBe(true)
+    expect(isSurge('peak')).toBe(true)
+    expect(isSurge('faint')).toBe(false)
+    expect(isSurge('negative')).toBe(false)
+    expect(cycleAt({ ...input, lhTests: [{ date: '2026-09-14', result: 'faint' }] }, '2026-09-10')!.basis).toBe('calendar')
+    expect(cycleAt({ ...input, lhTests: [{ date: '2026-09-14', result: 'peak' }] }, '2026-09-10')!.ovulation).toBe('2026-09-15')
+  })
+
+  it('uses the earliest surge day of the cycle: ovulation the next day', () => {
+    const lhTests = [
+      { date: '2026-09-17', result: 'peak' as const },
+      { date: '2026-09-16', time: '20:00', result: 'positive' as const },
+      { date: '2026-09-16', time: '08:00', result: 'faint' as const },
+      { date: '2026-09-15', result: 'faint' as const },
+    ]
+    expect(firstSurge('2026-09-01', 28, lhTests)).toBe('2026-09-16')
+    expect(cycleAt({ ...input, lhTests }, '2026-09-10')!.ovulation).toBe('2026-09-17')
+    // The day shows its strongest result (two tests a day).
+    expect(dayInfo({ ...input, lhTests }, '2026-09-16').hasLH).toBe('positive')
+    expect(strongestLH(['faint', 'negative'])).toBe('faint')
+    expect(strongestLH([])).toBeUndefined()
+  })
+
+  it('ignores surges on cycle days 1–5 and, for a finished cycle, after it', () => {
+    expect(firstSurge('2026-09-01', 28, [{ date: '2026-09-05', result: 'positive' }])).toBeUndefined()
+    expect(firstSurge('2026-09-01', 28, [{ date: '2026-09-06', result: 'positive' }])).toBe('2026-09-06')
+    // A late surge still counts for the running cycle (a week of slack) but not with slack 0.
+    expect(firstSurge('2026-09-01', 28, [{ date: '2026-10-01', result: 'positive' }])).toBe('2026-10-01')
+    expect(firstSurge('2026-09-01', 28, [{ date: '2026-10-01', result: 'positive' }], 0)).toBeUndefined()
+  })
+
+  it('a finished cycle never takes a surge from the cycle after it', () => {
+    // 09-01 → 09-29 (28 days). A surge on 10-05 is cycle day 7 of the next cycle.
+    const two = base({ periods: [{ start: '2026-09-01' }, { start: '2026-09-29' }], lhTests: [{ date: '2026-10-05', result: 'positive' }] })
+    const first = cycleAt(two, '2026-09-10')!
+    expect(first.basis).toBe('calendar')
+    expect(first.ovulation).toBe('2026-09-15')
+    expect(first.fertileEnd < '2026-09-29').toBe(true)
+    // It moves the next cycle instead.
+    expect(cycleAt(two, '2026-10-02')!.ovulation).toBe('2026-10-06')
+  })
+
+  it('no longer exports the unverified per-day probability table', () => {
+    // Only the ~10% / ~33% endpoints were verified (review N1).
+    expect('DAY_SPECIFIC_PROBABILITY' in cycleModule).toBe(false)
+  })
+})
+
+describe('who logged it', () => {
+  it('addPeriod and setPeriodEnd keep the author', () => {
+    let s = addPeriod(base(), '2026-09-01', undefined, 'b')
+    expect(s.periods).toEqual([{ start: '2026-09-01', by: 'b' }])
+    s = setPeriodEnd(s, '2026-09-01', '2026-09-05')
+    expect(s.periods).toEqual([{ start: '2026-09-01', end: '2026-09-05', by: 'b' }])
+    s = addPeriod(s, '2026-09-01', '2026-09-04')
+    expect(s.periods).toEqual([{ start: '2026-09-01', end: '2026-09-04', by: 'b' }])
+    expect(setPeriodEnd(s, '2026-09-01', undefined).periods).toEqual([{ start: '2026-09-01', by: 'b' }])
   })
 })

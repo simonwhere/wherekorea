@@ -23,15 +23,15 @@ const ERROR_TEXT: Record<PlanError, string> = {
 }
 
 /**
- * "일정에 담기": pick a day (defaults to a day in 우리의 주간 when that's shown to
- * this viewer, otherwise this Saturday) and send it to the partner.
+ * "일정에 담기": pick a day (defaults to the coming Saturday — never the fertile
+ * window, so a date never reads as a signal) and send it to the partner.
  */
 export default function PlanSheet({ idea, onClose }: { idea?: DateIdea; onClose: () => void }) {
   const { state, update, today, me, partner } = useApp()
   const toast = useToast()
   const errorId = useId()
   // The suggestion is made once, when the sheet opens.
-  const [suggested] = useState(() => suggestPlanDate(state, today, me.id))
+  const [suggested] = useState(() => suggestPlanDate(state, today))
   const [date, setDate] = useState(suggested.date)
   const [title, setTitle] = useState(idea?.title ?? '')
   const [place, setPlace] = useState('')

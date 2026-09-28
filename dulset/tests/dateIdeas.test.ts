@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DATE_IDEAS, DATE_TIP_SOURCES, type DateIdea } from '@/lib/content/dateIdeas'
-import { addDays } from '@/lib/dates'
+import { addDays, weekdayIndex } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import {
   acceptDatePlan,
@@ -10,6 +10,7 @@ import {
   canMarkDone,
   categoriesFor,
   dateBanner,
+  fertileHintsAllowed,
   hashString,
   ideaTip,
   isPlanAccepted,
@@ -35,6 +36,7 @@ import {
   visibleFlags,
 } from '@/lib/logic/dateIdeas'
 import { fertilityStatus, upcomingWindows } from '@/lib/logic/cycle'
+import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import type { AppState, DatePlan, Settings, Stage } from '@/lib/types'
 
 // Cycle: period 2026-09-01, 28 days → fertile 09-10..09-15 (ovulation 09-15),
@@ -262,6 +264,13 @@ describe('badges and tips', () => {
     expect(visibleFlags({}, 'preparing')).toEqual([])
   })
 
+  it("shows '아기와 함께' only once the baby is here", () => {
+    const flags = { flags: ['baby-friendly', 'low-energy'] as DateIdea['flags'] }
+    expect(visibleFlags(flags, 'preparing')).toEqual(['low-energy'])
+    expect(visibleFlags(flags, 'pregnant')).toEqual(['low-energy'])
+    expect(visibleFlags(flags, 'parenting')).toEqual(['baby-friendly', 'low-energy'])
+  })
+
   it('shows the heat tip with its source while preparing', () => {
     expect(ideaTip(hocance, 'preparing')).toBe(
       '뜨거운 탕·사우나 대신 수영장·산책 (남성은 고환 온도가 오르면 정자 질이 떨어져요 — Garolla 2013)',
@@ -375,43 +384,62 @@ describe('dateBanner', () => {
   it('works without cycle data', () => {
     expect(dateBanner(fresh({ periods: [] }), '2026-09-11', 'a').kind).toBe('preparing')
   })
+
+  it('stays quiet about 우리의 주간 in a rest cycle or while a positive test awaits the clinic', () => {
+    const rest = startRestCycle(fresh(), '2026-09-05')
+    const pending = markPositivePending(fresh(), '2026-09-09')
+    for (const s of [rest, pending]) {
+      for (const viewer of ['a', 'b'] as const) {
+        expect(dateBanner(s, '2026-09-11', viewer).kind).toBe('preparing')
+        expect(fertileHintsAllowed(s, viewer)).toBe(false)
+      }
+    }
+    // The next logged period ends the rest cycle (and settles the pending test): back to normal.
+    const after = { ...rest, periods: [...rest.periods, { start: '2026-09-29' }] }
+    expect(dateBanner(after, '2026-10-06', 'a').kind).toBe('our-week')
+    expect(fertileHintsAllowed({ ...pending, periods: [...pending.periods, { start: '2026-09-29' }] }, 'b')).toBe(true)
+  })
 })
 
 describe('suggestPlanDate', () => {
-  it('picks the next day inside our week', () => {
-    expect(suggestPlanDate(fresh(), '2026-09-11', 'a')).toEqual({
-      date: '2026-09-12',
-      reason: 'our-week',
-    })
-    expect(suggestPlanDate(fresh(), '2026-09-08', 'a')).toEqual({
-      date: '2026-09-10',
-      reason: 'our-week',
-    })
+  it('suggests the coming Saturday, never a day picked from the fertile window', () => {
+    // 09-11 is inside the estimated window (09-10..09-15): still the Saturday.
+    expect(suggestPlanDate(fresh(), '2026-09-11', 'a')).toEqual({ date: '2026-09-12', reason: 'saturday' })
+    expect(suggestPlanDate(fresh(), '2026-09-08', 'a')).toEqual({ date: '2026-09-12', reason: 'saturday' })
+    expect(suggestPlanDate(fresh(), '2026-09-15', 'a')).toEqual({ date: '2026-09-19', reason: 'saturday' })
+    expect(suggestPlanDate(fresh(), '2026-09-20', 'a')).toEqual({ date: '2026-09-26', reason: 'saturday' })
+    expect(suggestPlanDate(fresh({ stage: 'pregnant' }), '2026-09-11', 'a')).toEqual({ date: '2026-09-12', reason: 'saturday' })
+    expect(suggestPlanDate(fresh({ periods: [] }), '2026-09-21', 'a')).toEqual({ date: '2026-09-26', reason: 'saturday' })
   })
 
-  it('falls back to this Saturday', () => {
-    // Last fertile day → tomorrow is outside the window.
-    expect(suggestPlanDate(fresh(), '2026-09-15', 'a')).toEqual({
-      date: '2026-09-19',
-      reason: 'saturday',
-    })
-    // Next window is more than a week away.
-    expect(suggestPlanDate(fresh(), '2026-09-20', 'a')).toEqual({
-      date: '2026-09-26',
-      reason: 'saturday',
-    })
-    expect(suggestPlanDate(fresh({}, { lowPressure: true }), '2026-09-11', 'a').reason).toBe('saturday')
-    expect(suggestPlanDate(fresh({}, { alertStyle: { a: 'off', b: 'soft' } }), '2026-09-11', 'a').reason).toBe(
-      'saturday',
-    )
-    expect(suggestPlanDate(fresh({ stage: 'pregnant' }), '2026-09-11', 'a')).toEqual({
-      date: '2026-09-12',
-      reason: 'saturday',
-    })
-    expect(suggestPlanDate(fresh({ periods: [] }), '2026-09-21', 'a')).toEqual({
-      date: '2026-09-26',
-      reason: 'saturday',
-    })
+  it('is the same for both people and every alert style (no pattern to learn)', () => {
+    const states = [
+      fresh(),
+      fresh({}, { lowPressure: true }),
+      fresh({}, { alertStyle: { a: 'explicit', b: 'explicit' } }),
+      fresh({}, { alertStyle: { a: 'off', b: 'soft' } }),
+    ]
+    for (let d = 0; d < 28; d++) {
+      const today = addDays('2026-09-01', d)
+      for (const s of states) {
+        for (const viewer of ['a', 'b'] as const) {
+          const got = suggestPlanDate(s, today, viewer)
+          expect(got).toEqual({ date: thisSaturday(today), reason: 'saturday' })
+          // Never a weekday picked for the window: always a Saturday.
+          expect(weekdayIndex(got.date)).toBe(6)
+        }
+      }
+    }
+  })
+
+  it('moves to the Saturday after when the coming one already has a plan', () => {
+    let s = addDatePlan(fresh(), { date: '2026-09-12', title: '산책', createdBy: 'b' }, 'p1')
+    expect(suggestPlanDate(s, '2026-09-08')).toEqual({ date: '2026-09-19', reason: 'next-saturday' })
+    // A plan already done (or on another day) doesn't count.
+    s = toggleDatePlanDone(s, 'p1')
+    expect(suggestPlanDate(s, '2026-09-08')).toEqual({ date: '2026-09-12', reason: 'saturday' })
+    const other = addDatePlan(fresh(), { date: '2026-09-13', title: '산책', createdBy: 'b' }, 'p2')
+    expect(suggestPlanDate(other, '2026-09-08').reason).toBe('saturday')
   })
 })
 
@@ -572,13 +600,15 @@ describe('review fixes', () => {
   })
 
   it('explains the suggested date without ambiguity', () => {
-    expect(planDateHint({ date: '2026-09-12', reason: 'our-week' }, '2026-09-11')).toContain('(예상)')
     expect(planDateHint({ date: '2026-10-03', reason: 'saturday' }, '2026-09-27')).toBe(
       '다가오는 토요일(10월 3일)로 골라 뒀어요.',
     )
     expect(planDateHint({ date: '2026-09-26', reason: 'saturday' }, '2026-09-26')).toBe('오늘, 토요일로 골라 뒀어요.')
+    expect(planDateHint({ date: '2026-10-10', reason: 'next-saturday' }, '2026-09-28')).toBe(
+      '이번 토요일엔 일정이 있어서 다음 토요일(10월 10일)로 골라 뒀어요. 편한 날로 바꿔도 좋아요.',
+    )
     for (const h of [
-      planDateHint({ date: '2026-09-12', reason: 'our-week' }, '2026-09-11'),
+      planDateHint({ date: '2026-10-10', reason: 'next-saturday' }, '2026-09-28'),
       planDateHint({ date: '2026-10-03', reason: 'saturday' }, '2026-09-27'),
     ]) {
       expect(h).not.toMatch(PRESSURE_WORDS)

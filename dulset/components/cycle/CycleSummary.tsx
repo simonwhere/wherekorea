@@ -3,24 +3,33 @@
 import { Button, Card, Disclaimer, cx } from '@/components/ui'
 import { ESTIMATE_DISCLAIMER, NICE_GUIDANCE } from '@/lib/content/fertility'
 import { formatKo } from '@/lib/dates'
-import { irregularMessage, type CycleSummary as Summary, type FertilityView } from '@/lib/logic/calendarView'
+import { irregularMessage, type CycleSummary as Summary, type Lens } from '@/lib/logic/calendarView'
 import type { ISODate } from '@/lib/types'
 
 export default function CycleSummary({
   summary,
-  view,
+  lens,
   today,
-  onLogToday,
+  onLog,
+  onRest,
+  onResume,
 }: {
   summary: Summary
-  view: FertilityView
+  lens: Lens
   today: ISODate
-  onLogToday: () => void
+  /** Owner only: opens "+ 기록" on today. */
+  onLog?: () => void
+  /** Owner only: "이번 주기는 쉬어 갈래요". */
+  onRest?: () => void
+  /** Owner only: end the rest cycle. */
+  onResume?: () => void
 }) {
   const { status, headline, rows, cycleDay, stats } = summary
-  const fertileNow = view !== 'hidden' && status.kind === 'fertile'
-  const tone = fertileNow ? 'fert' : status.kind === 'late' || status.kind === 'after-pregnancy' ? 'brand' : 'default'
-  const waitingForPeriod = status.kind === 'late' || status.kind === 'after-pregnancy'
+  const { view, pause, details } = lens
+  const fertileNow =
+    view !== 'hidden' && !pause && (status.kind === 'fertile' || (!details && status.kind === 'period' && !!status.fertileEnd))
+  const waitingForPeriod = details && !pause && (status.kind === 'late' || status.kind === 'after-pregnancy')
+  const tone = fertileNow ? 'fert' : waitingForPeriod ? 'brand' : 'default'
 
   return (
     <div className="space-y-3">
@@ -32,27 +41,56 @@ export default function CycleSummary({
         <h2 className={cx('mt-1 text-xl font-bold leading-snug', fertileNow ? 'text-fert' : 'text-ink')}>{headline.title}</h2>
         {headline.sub ? <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{headline.sub}</p> : null}
 
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line/70 pt-3">
-          {rows.map((r) => (
-            <div key={r.key} className={cx('min-w-0', r.wide && 'col-span-2')}>
-              <dt className="text-[11px] font-medium text-ink-3">{r.label}</dt>
-              <dd className="mt-0.5 text-sm font-bold tabular-nums text-ink">
-                {r.value}
-                {r.sub ? <span className="ml-1.5 text-[11px] font-medium text-ink-3">{r.sub}</span> : null}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        {rows.length > 0 ? (
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line/70 pt-3">
+            {rows.map((r) => (
+              <div key={r.key} className={cx('min-w-0', r.wide && 'col-span-2')}>
+                <dt className="text-[11px] font-medium text-ink-3">{r.label}</dt>
+                <dd className="mt-0.5 text-sm font-bold tabular-nums text-ink">
+                  {r.value}
+                  {r.sub ? <span className="ml-1.5 text-[11px] font-medium text-ink-3">{r.sub}</span> : null}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
 
-        <div className="mt-4 flex">
-          <Button variant={waitingForPeriod ? 'primary' : 'secondary'} onClick={onLogToday}>
-            {waitingForPeriod ? '생리 시작 기록하기' : '오늘 기록하기'}
-          </Button>
-        </div>
+        {onLog ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {pause === 'rest' && onResume ? (
+              <Button variant="secondary" onClick={onResume}>
+                다시 켜기
+              </Button>
+            ) : null}
+            {pause === 'positive' ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  window.location.hash = 'plan'
+                  window.scrollTo({ top: 0 })
+                }}
+              >
+                병원 일정 넣기
+              </Button>
+            ) : null}
+            <Button variant={waitingForPeriod ? 'primary' : 'secondary'} onClick={onLog}>
+              {waitingForPeriod ? '생리 시작 기록하기' : '오늘 기록하기'}
+            </Button>
+          </div>
+        ) : null}
         <Disclaimer>{ESTIMATE_DISCLAIMER}</Disclaimer>
+        {onRest && !pause ? (
+          <button
+            type="button"
+            onClick={onRest}
+            className="mt-1 inline-flex min-h-[44px] items-center text-xs font-semibold text-ink-2 underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            이번 주기는 쉬어 갈래요
+          </button>
+        ) : null}
       </Card>
 
-      {stats.irregular ? (
+      {details && !pause && stats.irregular ? (
         <Card tone="warn" as="div">
           <p className="flex gap-2 text-[13px] leading-relaxed text-ink">
             <span aria-hidden>🌀</span>

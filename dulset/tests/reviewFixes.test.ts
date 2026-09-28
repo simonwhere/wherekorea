@@ -231,10 +231,9 @@ describe('short cycles', () => {
     expect(dateBanner(normal, '2026-09-16', 'a').kind).toBe('preparing')
   })
 
-  it('does not suggest a period day as 우리의 주간', () => {
-    const plan = suggestPlanDate(s, '2026-09-30', 'a')
-    expect(plan.reason).toBe('our-week')
-    expect(plan.date).toBe('2026-10-04') // first day after the logged (default 5-day) period
+  it('never suggests a date from the window (the coming Saturday instead)', () => {
+    // A default that lands in 우리의 주간 is a pattern the partner learns (review N1).
+    expect(suggestPlanDate(s, '2026-09-30', 'a')).toEqual({ date: '2026-10-03', reason: 'saturday' })
   })
 })
 

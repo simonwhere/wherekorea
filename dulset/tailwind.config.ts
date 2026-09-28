@@ -17,6 +17,9 @@ const config: Config = {
         ink: v('ink'),
         'ink-2': v('ink-2'),
         'ink-3': v('ink-3'),
+        // Color roles (values + contrast notes in app/globals.css):
+        // brand = deep teal (actions, the app's voice) · period = red, period days
+        // only · fert = violet, the fertile window only (deeper = most likely days).
         brand: v('brand'),
         'brand-soft': v('brand-soft'),
         'brand-ink': v('brand-ink'),

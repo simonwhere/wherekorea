@@ -10,9 +10,9 @@ import {
   emojiChoices,
   isValidBirthYear,
   membersViewerFirst,
-  setCycleOwner,
   updateMember,
 } from '@/lib/logic/settings'
+import { handOverCycle } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Member, MemberId, Role } from '@/lib/types'
 import { ConfirmActions, Pill, RadioCard, Segmented, SettingsSection } from './bits'
@@ -79,7 +79,7 @@ export default function MembersSection() {
             })}
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            생리 기록과 달력의 예상, 주기 알림이 이 사람을 기준으로 해요.
+            생리·배테기·임테기 기록과 주기 예상, 주기 알림이 이 사람을 기준으로 해요. 기록도 이 사람만 남겨요.
           </p>
         </div>
       </Card>
@@ -189,22 +189,23 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
   )
 }
 
+/** Hand the cycle over to `member` (sharing starts private again — partnerTrack.handOverCycle). */
 export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () => void }) {
   const { update } = useApp()
   const toast = useToast()
   const confirm = () => {
-    update((s) => setCycleOwner(s, member.id))
+    update((s) => handOverCycle(s, member.id))
     toast.show(`이제 ${member.name}님 주기를 기록해요`)
     onDone()
   }
   return (
     <div>
       <p className="text-sm leading-relaxed text-ink">
-        {member.name}님의 주기를 기록하도록 바꿀까요? 달력의 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
+        {member.name}님의 주기를 기록하도록 바꿀까요? 주기 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
       </p>
       <p className="mt-2 text-xs leading-relaxed text-ink-3">
-        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 달력에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지
-        않아요.
+        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 주기 탭에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지
+        않아요. 공유 범위는 ‘우리의 주간만’으로 돌아가고, {member.name}님이 다시 정해요.
       </p>
       <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
     </div>

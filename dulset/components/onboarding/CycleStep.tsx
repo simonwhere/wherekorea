@@ -31,7 +31,7 @@ export default function CycleStep({
 
   return (
     <div className="space-y-5">
-      <Group title="누구의 주기를 기록할까요?" hint="기록은 한 사람 기준이에요. 가임기 예상은 두 사람이 함께 봐요.">
+      <Group title="누구의 주기를 기록할까요?" hint="생리·배테기 기록은 이 사람만 남겨요. 가임기 예상은 ‘우리의 주간’으로 함께 봐요.">
         <ChoiceGroup<MemberId>
           label="주기를 기록할 사람"
           columns={2}
@@ -49,7 +49,7 @@ export default function CycleStep({
           <div>
             <p className="text-xs font-semibold text-ink-2">{whose}마지막 생리 시작일</p>
             <p className="mt-1.5 text-sm leading-relaxed text-ink">
-              괜찮아요. 다음 생리가 시작되면 달력에서 한 번만 기록해 주세요. 그때부터 예상을 보여 드릴게요.
+              괜찮아요. 다음 생리가 시작되면 ‘+ 기록’에서 한 번만 남겨 주세요. 그때부터 예상을 보여 드릴게요.
             </p>
             <Button variant="secondary" className="mt-3" onClick={() => patch({ periodUnknown: false })}>
               날짜 입력하기

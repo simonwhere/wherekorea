@@ -8,9 +8,10 @@ import { uid } from '../id'
 import { MEMBER_IDS, type AppNotification, type AppState, type ISODate, type MemberId, type NotificationKind } from '../types'
 import { anniversaryNotices } from './anniversary'
 import { koreanDays } from './baby'
-import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows } from './cycle'
+import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows, type CycleWindow } from './cycle'
 import { gestationalAge, recentlyEnded } from './pregnancy'
-import { lowPressureFor } from './prefs'
+import { canSeeCycleDetails, lowPressureFor } from './prefs'
+import { activePositivePending, activeRest } from './ttc'
 
 export interface Notice {
   key: string
@@ -72,13 +73,55 @@ export function ttcClockStart(state: Pick<AppState, 'settings' | 'stage' | 'preg
   return ended && ended > ttc ? ended : ttc
 }
 
+// ── Fertile-window notice keys ──────────────────────────────
+//
+// One "우리의 주간" heads-up (and, for the explicit style, one "가장 좋은 날"
+// notice) per cycle and person. The key carries the cycle's first day, not the
+// window's: an LH positive that moves the window inside the same cycle must not
+// send a second notice. Keys used before this change ('fertile-start:<window
+// start>' / 'peak:<peak start>') still count as delivered for their cycle.
+
+/** 'fertile:<cycle start>:<member>'. */
+export function fertileKey(cycleStart: ISODate, member: MemberId): string {
+  return `fertile:${cycleStart}:${member}`
+}
+
+/** 'peak:<cycle start>:<member>'. */
+export function peakKey(cycleStart: ISODate, member: MemberId): string {
+  return `peak:${cycleStart}:${member}`
+}
+
+const LEGACY_FERTILE_KEY = /^fertile-start:(\d{4}-\d{2}-\d{2}):([ab])$/
+const PEAK_KEY = /^peak:(\d{4}-\d{2}-\d{2}):([ab])$/
+
+/**
+ * Was this cycle's notice of `kind` already delivered to `member` under an old
+ * key? Old keys held a date inside the cycle (window / peak start), which is
+ * always after the cycle's first day and before the next period — so a new key
+ * ('peak:<cycle start>') never matches here, only an old one does.
+ */
+export function deliveredUnderOldKey(
+  notifications: Pick<AppNotification, 'key'>[],
+  w: Pick<CycleWindow, 'start' | 'nextPeriod'>,
+  member: MemberId,
+  kind: 'fertile' | 'peak',
+): boolean {
+  const re = kind === 'fertile' ? LEGACY_FERTILE_KEY : PEAK_KEY
+  return notifications.some((n) => {
+    const m = n.key ? re.exec(n.key) : null
+    return !!m && m[2] === member && m[1]! > w.start && m[1]! < w.nextPeriod
+  })
+}
+
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
   const owner = state.couple.members.find((m) => m.tracksCycle) ?? state.couple.members[0]
 
   if (state.stage === 'preparing') {
     const status = fertilityStatus(state, today)
-    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS) {
+    // A positive test awaiting the clinic already answers "late?" — no test prompt.
+    const pending = activePositivePending(state)
+    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending) {
       out.push({
         key: `late:${status.expected}:${owner.id}`,
         to: owner.id,
@@ -87,31 +130,51 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         body: `예정일(${formatKo(status.expected)})이 ${status.daysLate}일 지났어요. 생리가 시작됐다면 기록해 주세요. 아니라면 임신 테스트를 해 볼 때예요.`,
       })
     }
-    // Rest cycles and a positive test awaiting the clinic send no fertile-day alerts.
-    if (status.kind !== 'late' && status.kind !== 'no-data' && status.kind !== 'after-pregnancy' && !state.restCycle && !state.positivePending) {
+    // Rest cycles and a positive test awaiting the clinic send no fertile-day alerts
+    // (activeRest / activePositivePending: a period logged since settles both).
+    if (
+      status.kind !== 'late' &&
+      status.kind !== 'no-data' &&
+      status.kind !== 'after-pregnancy' &&
+      !activeRest(state) &&
+      !pending
+    ) {
       const [w] = upcomingWindows(state, today, 1)
       if (w) {
         for (const m of state.couple.members) {
           const style = state.settings.alertStyle?.[m.id] ?? 'soft'
           // Low-pressure mode (NICE: every 2–3 days, all cycle long): no fertile-day alerts for that person.
           if (style === 'off' || lowPressureFor(state.settings, m.id)) continue
-          const soft = style === 'soft'
-          // Heads-up the day before the window, and on any day inside it (dedup by key).
-          if (isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd)) {
+          // A partner the owner hasn't shared cycle details with gets only the
+          // shared "우리의 주간" wording — no window dates, no peak days (which
+          // would give away an LH result). Same rule as the home and calendar
+          // (ttcFlow.homeVoice, calendarView.cycleLens).
+          const soft = style === 'soft' || !canSeeCycleDetails(state, m.id)
+          // Heads-up the day before the window, and on any day inside it — once
+          // per cycle (the key is the cycle's first day, so an LH-shifted window
+          // in the same cycle is not announced again).
+          if (
+            isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd) &&
+            !deliveredUnderOldKey(state.notifications, w, m.id, 'fertile')
+          ) {
             out.push({
-              key: `fertile-start:${w.fertileStart}:${m.id}`,
+              key: fertileKey(w.start, m.id),
               to: m.id,
               kind: 'fertile-start',
               title: soft ? '💞 이번 주는 우리의 주간이에요' : '💞 가임기가 다가왔어요',
               body: soft
-                ? '둘만의 시간을 챙겨 볼까요? 데이트 탭에 아이디어를 골라 뒀어요.'
+                ? '둘만의 시간을 챙겨 볼까요? 가볍게 해 볼 만한 아이디어도 골라 뒀어요.'
                 : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`,
             })
           }
           // Explicit style only: soft style already got its one gentle nudge above.
-          if (!soft && isBetween(today, w.peakStart, w.peakEnd)) {
+          if (
+            !soft &&
+            isBetween(today, w.peakStart, w.peakEnd) &&
+            !deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
+          ) {
             out.push({
-              key: `peak:${w.peakStart}:${m.id}`,
+              key: peakKey(w.start, m.id),
               to: m.id,
               kind: 'peak',
               title: '🌟 가능성이 가장 높은 날들이에요',
@@ -121,7 +184,10 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         }
       }
     }
-    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1) {
+    // While a positive test waits for the clinic, "tomorrow is your period" and
+    // "time to see a fertility doctor" are the wrong messages; they wait until
+    // a period settles it (then still apply) or the pregnancy is confirmed.
+    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1 && !pending) {
       out.push({
         key: `period-due:${status.nextPeriod}:${owner.id}`,
         to: owner.id,
@@ -134,7 +200,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     // Counted from the later of ttcStart and an ended pregnancy, and quiet for a
     // while after a pregnancy ended (same rules as the home DoctorCard).
     const ttcStart = ttcClockStart(state)
-    if (ttcStart && !recentlyEnded(state, today)) {
+    if (ttcStart && !recentlyEnded(state, today) && !pending) {
       const ownerAge = ageFromBirthYear(owner.birthYear, today)
       const threshold = doctorThresholdMonths(ownerAge)
       const months = monthsBetween(ttcStart, today)

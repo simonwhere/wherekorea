@@ -1,14 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import { babyAge, dayOfLife, formatBabyAge, koreanDays, nextKoreanDay } from '@/lib/logic/baby'
 import {
+  activeDailyItems,
   activeItems,
+  activeWeeklyItems,
   addCheckItem,
   archiveCheckItem,
   coupleStreak,
+  coupleWeekCount,
+  firstCheckOf,
+  isDueThisWeek,
   itemsFor,
+  mondayOf,
+  nudgeableItem,
   progress,
   streak,
   toggleCheck,
+  toggleWeekly,
+  updateCheckItem,
+  weekCount,
+  weekCountLabel,
+  weekDays,
+  weeklyDone,
+  weeklyDue,
 } from '@/lib/logic/checks'
 import { buildIcs, foldLine } from '@/lib/logic/ics'
 import {
@@ -22,8 +36,8 @@ import {
   clearNotifications,
 } from '@/lib/logic/notifications'
 import { dueDate, formatGA, gestationalAge, startPregnancy } from '@/lib/logic/pregnancy'
-import { createInitialState } from '@/lib/initial'
-import type { AppState } from '@/lib/types'
+import { applyOnboardingExtras, createInitialState, defaultCheckItems, type HabitAnswers } from '@/lib/initial'
+import type { AppState, Member } from '@/lib/types'
 
 function fresh(over: Partial<AppState> = {}): AppState {
   const s = createInitialState(
@@ -82,6 +96,246 @@ describe('checks', () => {
     expect(itemsFor(s, 'a', '2026-09-09').some((i) => i.label === '코엔자임Q10')).toBe(false)
     expect(activeItems(s, 'a').some((i) => i.label === '코엔자임Q10')).toBe(true)
     expect(addCheckItem(s, 'a', '   ', 'habit', '2026-09-10')).toBe(s)
+  })
+})
+
+// ── Weekly cadence (N7) ─────────────────────────────────────
+
+/** 민수 with one daily row (걷기) and one weekly check-in (금주); 지은 with 엽산. */
+function withCadence(): AppState {
+  let s = fresh({ checkItems: [], checkLog: {} })
+  s = addCheckItem(s, 'a', '걷기 30분', 'habit', '2026-09-01')
+  s = addCheckItem(s, 'a', '금주', 'habit', '2026-09-01', '주 1회 체크인', 'weekly')
+  s = addCheckItem(s, 'b', '엽산', 'supplement', '2026-09-01', '400µg')
+  return s
+}
+const walk = (s: AppState) => activeItems(s, 'a').find((i) => i.label === '걷기 30분')!
+const noDrink = (s: AppState) => activeItems(s, 'a').find((i) => i.label === '금주')!
+const folic = (s: AppState) => activeItems(s, 'b')[0]!
+
+describe('check cadence', () => {
+  it('uses ISO weeks, Monday to Sunday', () => {
+    expect(mondayOf('2026-09-28')).toBe('2026-09-28') // Monday
+    expect(mondayOf('2026-10-04')).toBe('2026-09-28') // Sunday belongs to the week before it
+    expect(mondayOf('2026-09-01')).toBe('2026-08-31')
+    expect(weekDays('2026-10-01')).toEqual([
+      '2026-09-28',
+      '2026-09-29',
+      '2026-09-30',
+      '2026-10-01',
+      '2026-10-02',
+      '2026-10-03',
+      '2026-10-04',
+    ])
+  })
+
+  it('treats items without a cadence as daily (older data)', () => {
+    const s = fresh()
+    expect(activeItems(s, 'a').every((i) => i.cadence === undefined)).toBe(true)
+    expect(activeDailyItems(s, 'a')).toHaveLength(activeItems(s, 'a').length)
+    expect(activeWeeklyItems(s, 'a')).toHaveLength(0)
+  })
+
+  it('counts a weekly check-in once per ISO week', () => {
+    let s = withCadence()
+    const item = noDrink(s)
+    expect(item.cadence).toBe('weekly')
+    expect(isDueThisWeek(s, 'a', item, '2026-09-29')).toBe(true)
+    s = toggleCheck(s, 'a', '2026-09-29', item.id) // Tuesday
+    for (const d of ['2026-09-29', '2026-10-01', '2026-10-04']) {
+      expect(weeklyDone(s, 'a', item.id, d)).toBe(true)
+      expect(isDueThisWeek(s, 'a', item, d)).toBe(false)
+    }
+    // Monday before the check: not done yet that week.
+    expect(weeklyDone(s, 'a', item.id, '2026-09-28')).toBe(false)
+    // Next Monday it's due again.
+    expect(isDueThisWeek(s, 'a', item, '2026-10-05')).toBe(true)
+    expect(weeklyDue(s, 'a', '2026-10-05').map((i) => i.id)).toEqual([item.id])
+    expect(weeklyDue(s, 'a', '2026-10-01')).toEqual([])
+    // A daily item is never "due this week".
+    expect(isDueThisWeek(s, 'a', walk(s), '2026-10-01')).toBe(false)
+  })
+
+  it('un-checks a weekly check-in for the whole week from any day', () => {
+    let s = withCadence()
+    const id = noDrink(s).id
+    s = toggleWeekly(s, 'a', '2026-09-29', id)
+    expect(weeklyDone(s, 'a', id, '2026-10-02')).toBe(true)
+    // Tapping the (done) row again on Friday clears Tuesday's check-in.
+    s = toggleWeekly(s, 'a', '2026-10-02', id)
+    expect(weeklyDone(s, 'a', id, '2026-10-02')).toBe(false)
+    expect(s.checkLog['2026-09-29']?.a).toEqual([])
+    // A daily item toggles just that day.
+    s = toggleWeekly(s, 'a', '2026-10-02', walk(s).id)
+    expect(s.checkLog['2026-10-02']?.a).toEqual([walk(s).id])
+  })
+
+  it('leaves weekly check-ins out of daily progress and the week count', () => {
+    let s = withCadence()
+    expect(progress(s, 'a', '2026-09-29')).toEqual({ done: 0, total: 1, complete: false })
+    s = toggleCheck(s, 'a', '2026-09-29', walk(s).id)
+    expect(progress(s, 'a', '2026-09-29')).toEqual({ done: 1, total: 1, complete: true })
+    // Checking in the weekly item doesn't change the day.
+    s = toggleCheck(s, 'a', '2026-09-30', noDrink(s).id)
+    expect(progress(s, 'a', '2026-09-30').complete).toBe(false)
+    expect(streak(s, 'a', '2026-09-30')).toBe(1)
+  })
+
+  it('shows "이번 주 N/7" instead of a streak that breaks on one missed day', () => {
+    let s = withCadence()
+    // Mon, Tue, Thu done — Wed missed.
+    for (const d of ['2026-09-28', '2026-09-29', '2026-10-01']) s = toggleCheck(s, 'a', d, walk(s).id)
+    expect(weekCount(s, 'a', '2026-10-01')).toBe(3)
+    expect(weekCountLabel(weekCount(s, 'a', '2026-10-01'))).toBe('이번 주 3/7')
+    expect(streak(s, 'a', '2026-10-01')).toBe(1) // the old streak would say 1
+    // Days after `today` don't count; a new week starts from zero.
+    expect(weekCount(s, 'a', '2026-09-28')).toBe(1)
+    expect(weekCount(s, 'a', '2026-10-05')).toBe(0)
+    // The week before is its own week.
+    s = toggleCheck(s, 'a', '2026-09-27', walk(s).id)
+    expect(weekCount(s, 'a', '2026-10-01')).toBe(3)
+    // Both: only the days both finished.
+    s = toggleCheck(s, 'b', '2026-09-29', folic(s).id)
+    s = toggleCheck(s, 'b', '2026-09-30', folic(s).id)
+    expect(coupleWeekCount(s, '2026-10-01')).toBe(1)
+  })
+
+  it('never points a 콕 at a weekly check-in', () => {
+    let s = withCadence()
+    // Weekly item first in the list: still skipped.
+    s = { ...s, checkItems: [noDrink(s), ...s.checkItems.filter((i) => i.label !== '금주')] }
+    expect(nudgeableItem(s, 'a', '2026-09-29')?.label).toBe('걷기 30분')
+    s = toggleCheck(s, 'a', '2026-09-29', walk(s).id)
+    // Only the weekly check-in is left: nothing to nudge about.
+    expect(nudgeableItem(s, 'a', '2026-09-29')).toBeUndefined()
+  })
+
+  it('stores a cadence only when weekly and edits it', () => {
+    let s = withCadence()
+    expect('cadence' in walk(s)).toBe(false)
+    s = updateCheckItem(s, walk(s).id, { cadence: 'weekly' })
+    expect(walk(s).cadence).toBe('weekly')
+    s = updateCheckItem(s, walk(s).id, { cadence: 'daily' })
+    expect('cadence' in walk(s)).toBe(false)
+  })
+
+  it('finds the first check among several items', () => {
+    let s = withCadence()
+    const ids = [walk(s).id, noDrink(s).id]
+    expect(firstCheckOf(s, 'a', ids)).toBeUndefined()
+    s = toggleCheck(s, 'a', '2026-09-20', noDrink(s).id)
+    s = toggleCheck(s, 'a', '2026-09-10', walk(s).id)
+    expect(firstCheckOf(s, 'a', ids)).toBe('2026-09-10')
+    expect(firstCheckOf(s, 'a', [])).toBeUndefined()
+  })
+})
+
+// ── Starter items from the partner's answers (N7) ───────────
+
+const members = (partnerRole: Member['role'] = 'husband'): [Member, Member] => [
+  { id: 'a', name: '민수', role: partnerRole, tracksCycle: false, emoji: '👨' },
+  { id: 'b', name: '지은', role: 'wife', tracksCycle: true, emoji: '👩' },
+]
+const NONE: HabitAnswers = { smokes: false, drinks: 'rarely', exercises: false, takesSupplements: false }
+
+describe('starter check items', () => {
+  const of = (list: ReturnType<typeof defaultCheckItems>, owner: 'a' | 'b') => list.filter((i) => i.owner === owner)
+
+  it('gives the cycle owner 엽산 daily (+ optional 비타민 D)', () => {
+    const owner = of(defaultCheckItems(members(), '2026-09-28', NONE), 'b')
+    expect(owner.map((i) => [i.label, i.cadence ?? 'daily', i.note])).toEqual([
+      ['엽산', 'daily', '400µg'],
+      ['비타민 D', 'daily', '선택'],
+    ])
+  })
+
+  it('gives a non-smoker who rarely drinks one daily row and only the sauna check-in', () => {
+    const p = of(defaultCheckItems(members(), '2026-09-28', NONE), 'a')
+    expect(p.map((i) => i.label)).toEqual(['걷기 30분', '사우나·뜨거운 탕 쉬기'])
+    expect(p.find((i) => i.label.includes('사우나'))?.cadence).toBe('weekly')
+    expect(p.some((i) => i.label.includes('금연') || i.label.includes('담배'))).toBe(false)
+    expect(p.some((i) => i.label.includes('금주') || i.label.includes('술'))).toBe(false)
+  })
+
+  it('adds 금연 / 금주 as weekly check-ins only for smokers / drinkers', () => {
+    const p = of(defaultCheckItems(members(), '2026-09-28', { ...NONE, smokes: true, drinks: 'often' }), 'a')
+    const weekly = p.filter((i) => i.cadence === 'weekly').map((i) => i.label)
+    expect(weekly).toEqual(['금연', '금주', '사우나·뜨거운 탕 쉬기'])
+    expect(of(defaultCheckItems(members(), '2026-09-28', { ...NONE, drinks: 'sometimes' }), 'a').some((i) => i.label === '금주')).toBe(true)
+  })
+
+  it('keeps the daily list to 1–2 rows and never adds a men’s zinc/folate pill', () => {
+    for (const smokes of [true, false])
+      for (const drinks of ['rarely', 'sometimes', 'often'] as const)
+        for (const exercises of [true, false])
+          for (const takesSupplements of [true, false]) {
+            const p = of(defaultCheckItems(members(), '2026-09-28', { smokes, drinks, exercises, takesSupplements }), 'a')
+            const daily = p.filter((i) => i.cadence !== 'weekly')
+            expect(daily.length).toBeGreaterThanOrEqual(1)
+            expect(daily.length).toBeLessThanOrEqual(2)
+            expect(p.some((i) => /아연|엽산/.test(i.label))).toBe(false)
+          }
+    const already = of(defaultCheckItems(members(), '2026-09-28', { ...NONE, exercises: true, takesSupplements: true }), 'a')
+    expect(already.filter((i) => i.cadence !== 'weekly').map((i) => i.label)).toEqual(['운동 30분', '먹던 영양제'])
+  })
+
+  it('skips the sauna check-in for a partner who is 아내', () => {
+    const p = of(defaultCheckItems(members('wife'), '2026-09-28', { ...NONE, smokes: true }), 'a')
+    expect(p.map((i) => i.label)).toEqual(['걷기 30분', '금연'])
+  })
+
+  it('keeps the original list when nobody was asked', () => {
+    const p = of(defaultCheckItems(members(), '2026-09-28'), 'a')
+    expect(p.map((i) => i.label)).toEqual(['사우나·뜨거운 탕 피하기', '담배 안 피우기', '술 안 마시기', '30분 걷기·운동'])
+    expect(p.every((i) => i.cadence === undefined)).toBe(true)
+  })
+
+  it('builds the list from answers through createInitialState too', () => {
+    const s = createInitialState(
+      {
+        me: { name: '민수', role: 'husband' },
+        partner: { name: '지은', role: 'wife' },
+        cycleOwner: 'b',
+        habits: { ...NONE, smokes: true },
+      },
+      new Date(2026, 8, 28, 9),
+    )
+    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['걷기 30분', '금연', '사우나·뜨거운 탕 쉬기'])
+    expect(s.settings.shareCycleDetails).toBe(false)
+  })
+})
+
+describe('onboarding extras', () => {
+  const base = (cycleOwner: 'a' | 'b') =>
+    createInitialState(
+      {
+        me: { name: cycleOwner === 'a' ? '지은' : '민수', role: cycleOwner === 'a' ? 'wife' : 'husband' },
+        partner: { name: cycleOwner === 'a' ? '민수' : '지은', role: cycleOwner === 'a' ? 'husband' : 'wife' },
+        cycleOwner,
+      },
+      new Date(2026, 8, 28, 9),
+    )
+
+  it('rebuilds the starter list from the habit answers', () => {
+    const s = applyOnboardingExtras(base('a'), { habits: { ...NONE, drinks: 'often' } }, '2026-09-28')
+    expect(activeItems(s, 'b').map((i) => i.label)).toEqual(['걷기 30분', '금주', '사우나·뜨거운 탕 쉬기'])
+    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(s.checkItems.every((i) => i.createdAt === '2026-09-28')).toBe(true)
+  })
+
+  it('lets only the cycle owner share the cycle details (private by default)', () => {
+    expect(applyOnboardingExtras(base('a'), {}, '2026-09-28').settings.shareCycleDetails).toBe(false)
+    expect(applyOnboardingExtras(base('a'), { shareCycleDetails: true }, '2026-09-28').settings.shareCycleDetails).toBe(true)
+    // The person onboarding isn't the cycle owner: the owner decides later.
+    expect(applyOnboardingExtras(base('b'), { shareCycleDetails: true }, '2026-09-28').settings.shareCycleDetails).toBe(false)
+  })
+
+  it('saves 부담 없이 / 잠금화면 숨김 for the person onboarding only', () => {
+    const s = applyOnboardingExtras(base('a'), { myPrefs: { lowPressure: true, discreet: true } }, '2026-09-28')
+    expect(s.settings.personal).toEqual({ a: { lowPressure: true, discreet: true } })
+    expect(s.settings.lowPressure).toBe(false)
+    expect(s.settings.discreet).toBe(false)
+    expect(applyOnboardingExtras(base('a'), {}, '2026-09-28').settings.personal).toBeUndefined()
   })
 })
 

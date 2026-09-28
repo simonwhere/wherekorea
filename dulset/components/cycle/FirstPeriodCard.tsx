@@ -4,24 +4,23 @@ import { useId, useState } from 'react'
 import SettingsLink from '@/components/cycle/SettingsLink'
 import { Button, Card, inputClass, useToast } from '@/components/ui'
 import { formatKo, isISODate } from '@/lib/dates'
-import { addPeriod } from '@/lib/logic/cycle'
 import type { FertilityView } from '@/lib/logic/calendarView'
+import { logPeriodStart } from '@/lib/logic/logs'
 import { useApp } from '@/lib/store'
 
-/** Empty state: nothing logged yet — one date is enough to start predicting. */
+/** Empty state for the cycle owner: nothing logged yet — one date is enough to start predicting. */
 export default function FirstPeriodCard({ view }: { view: FertilityView }) {
-  const { state, update, today, cycleOwner, me } = useApp()
+  const { state, update, today, viewer } = useApp()
   const toast = useToast()
   const inputId = useId()
   const errorId = useId()
   const [date, setDate] = useState('')
   const valid = isISODate(date) && date <= today
   const error = date && !valid ? (isISODate(date) ? '오늘 이후 날짜는 기록할 수 없어요.' : '날짜를 다시 골라 주세요.') : null
-  const forPartner = me.id !== cycleOwner.id
 
   const save = () => {
     if (!valid) return
-    update((s) => addPeriod(s, date))
+    update((s) => logPeriodStart(s, date, viewer))
     toast.show(`${formatKo(date, { weekday: false })} 생리 시작으로 기록했어요`)
   }
 
@@ -34,7 +33,6 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
       <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
         한 번만 기록해도 다음 생리 예정일
         {view === 'hidden' ? '을' : view === 'soft' ? '과 우리의 주간을' : '과 예상 가임기를'} 계산해 달력에 보여줘요.
-        {forPartner ? ` ${cycleOwner.name}님 대신 기록해도 괜찮아요.` : ''}
       </p>
       <form
         className="mt-4 space-y-3"

@@ -1,21 +1,24 @@
 'use client'
 
 // First-run flow: welcome (or a demo couple) → 우리 둘 → 주기 → 시작 시점 →
-// 알림 방식 → 개인정보 → 초대 코드. Answers live in a draft (lib/demo.ts) and
-// become the app state only on the last "시작하기".
+// 생활 습관 (the partner's starter checklist) → 알림 방식 (+ my own 부담 없이 /
+// 잠금화면) → 개인정보 (general + separate 민감정보 consent, and what the partner
+// may see) → 초대 코드. Answers live in a draft (lib/demo.ts) plus the extras
+// kept here, and become the app state only on the last "시작하기".
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import AlertStep from '@/components/onboarding/AlertStep'
+import AlertStep, { DEFAULT_MY_PREFS, type MyPrefs } from '@/components/onboarding/AlertStep'
 import ConsentStep from '@/components/onboarding/ConsentStep'
 import CoupleStep from '@/components/onboarding/CoupleStep'
 import CycleStep from '@/components/onboarding/CycleStep'
 import DoneStep from '@/components/onboarding/DoneStep'
+import HabitStep, { EMPTY_HABITS, habitAnswers, habitProblem, habitSubject, type HabitDraft } from '@/components/onboarding/HabitStep'
 import StartStep from '@/components/onboarding/StartStep'
 import WelcomeStep from '@/components/onboarding/WelcomeStep'
+import type { ShareChoice } from '@/components/onboarding/consentCopy'
 import { ProgressDots } from '@/components/onboarding/parts'
 import { Button } from '@/components/ui'
 import {
-  ONBOARDING_STEPS,
   createDemoState,
   draftNames,
   draftToChoices,
@@ -25,30 +28,64 @@ import {
   type OnboardingDraft,
 } from '@/lib/demo'
 import { inviteCode } from '@/lib/id'
+import { applyOnboardingExtras } from '@/lib/initial'
 import { useStore } from '@/lib/store'
 import type { Stage } from '@/lib/types'
 
-function stepMeta(step: number, partner: string): { title: string; sub?: string } {
-  switch (step) {
-    case 1:
+type StepKey = 'couple' | 'cycle' | 'start' | 'habits' | 'alerts' | 'consent' | 'done'
+
+const STEPS: readonly StepKey[] = ['couple', 'cycle', 'start', 'habits', 'alerts', 'consent', 'done']
+
+/** lib/demo's stepProblem numbers its steps without the habits step. */
+const DRAFT_STEP: Record<StepKey, number> = { couple: 1, cycle: 2, start: 3, habits: 0, alerts: 4, consent: 5, done: 6 }
+
+function stepMeta(key: StepKey, names: { a: string; b: string }, subjectIsMe: boolean, subject: string): { title: string; sub?: string } {
+  switch (key) {
+    case 'couple':
       return { title: '우리 둘을 소개해 주세요', sub: '서로 부르는 이름이나 애칭이면 돼요.' }
-    case 2:
-      return { title: '주기를 알려 주세요', sub: '가임기 예상에 쓰여요. 몰라도 괜찮아요, 나중에 달력에서 기록하면 돼요.' }
-    case 3:
+    case 'cycle':
+      return { title: '주기를 알려 주세요', sub: '가임기 예상에 쓰여요. 몰라도 괜찮아요, 나중에 ‘+ 기록’에서 남기면 돼요.' }
+    case 'start':
       return { title: '언제부터 함께 준비했나요?', sub: '오래 준비했는데 소식이 없으면, 전문의 상담 시기를 알려 드려요.' }
-    case 4:
+    case 'habits':
+      return {
+        title: subjectIsMe ? '나의 생활 습관을 알려 주세요' : `${subject}님의 생활 습관을 알려 주세요`,
+        sub: '체크 항목을 고르는 데만 써요. 필요한 것만 담을게요.',
+      }
+    case 'alerts':
       return { title: '가임기 소식은 어떻게 받을까요?', sub: '각자 편한 방식으로 골라요. 언제든 설정에서 바꿀 수 있어요.' }
-    case 5:
+    case 'consent':
       return { title: '기록은 이렇게 지켜요', sub: '시작하기 전에 확인해 주세요.' }
     default:
-      return { title: '준비됐어요! 이제 둘이 함께예요', sub: `${partner}님과 연결하는 방법이에요.` }
+      return { title: '준비됐어요! 이제 둘이 함께예요', sub: `${names.b}님과 연결하는 방법이에요.` }
   }
+}
+
+/**
+ * Open the app on 오늘: a hash left from before (e.g. #settings after 모두
+ * 지우기) would otherwise open that tab. replaceState keeps ?today= and adds no
+ * history entry; the app reads the hash when it mounts after `replace`.
+ */
+function openOnHome() {
+  if (typeof window === 'undefined' || !window.location.hash) return
+  window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search)
+}
+
+/** Scroll to the top once the new screen has painted (the onboarding unmounts on replace). */
+function scrollTopSoon() {
+  if (typeof window === 'undefined') return
+  window.scrollTo({ top: 0 })
+  requestAnimationFrame(() => requestAnimationFrame(() => window.scrollTo({ top: 0 })))
 }
 
 export default function Onboarding() {
   const { replace, today, setViewer } = useStore()
   const [step, setStep] = useState(0)
   const [draft, setDraft] = useState<OnboardingDraft>(initialDraft)
+  const [habits, setHabits] = useState<HabitDraft>(EMPTY_HABITS)
+  const [prefs, setPrefs] = useState<MyPrefs>(DEFAULT_MY_PREFS)
+  const [sensitive, setSensitive] = useState(false)
+  const [share, setShare] = useState<ShareChoice>('week')
   // One code for the whole flow, so going back and forth doesn't change it.
   const [code] = useState(() => inviteCode())
   const headingRef = useRef<HTMLHeadingElement>(null)
@@ -62,18 +99,36 @@ export default function Onboarding() {
 
   const patch = useCallback((p: Partial<OnboardingDraft>) => setDraft((d) => ({ ...d, ...p })), [])
 
+  // The habit answers describe one person (whoever doesn't track the cycle). If
+  // going back changes who that is, ask again rather than move the answers over.
+  const subject = habitSubject(draft)
+  const [habitsOf, setHabitsOf] = useState(subject)
+  if (habitsOf !== subject) {
+    setHabitsOf(subject)
+    setHabits(EMPTY_HABITS)
+  }
+
+  // The demo opens on the cycle owner's screen (지은) — the app's main user — at the top.
   const startDemo = (stage: Stage) => {
-    setViewer('a')
-    replace(createDemoState(today, new Date(), stage))
+    const demo = createDemoState(today, new Date(), stage)
+    setViewer(demo.couple.members.find((m) => m.tracksCycle)?.id ?? 'a')
+    openOnHome()
+    replace(demo)
+    scrollTopSoon()
   }
 
   if (step === 0)
     return <WelcomeStep onStart={() => setStep(1)} onDemo={startDemo} onRestored={() => setViewer('a')} focusTitle={cameBack} />
 
+  const key = STEPS[step - 1] ?? 'done'
   const names = draftNames(draft)
-  const problem = stepProblem(step, draft, today)
-  const last = step === ONBOARDING_STEPS
-  const meta = stepMeta(step, names.b)
+  const last = key === 'done'
+  const meta = stepMeta(key, names, subject === 'a', names[subject])
+  const problem =
+    key === 'habits'
+      ? habitProblem(habits)
+      : (stepProblem(DRAFT_STEP[key], draft, today) ??
+        (key === 'consent' && !sensitive ? '민감정보 수집·이용에도 따로 동의해 주세요.' : null))
 
   const next = () => {
     if (problem) return
@@ -86,22 +141,42 @@ export default function Onboarding() {
       setStep(1)
       return
     }
+    // 부담 없이 is per person now (settings.personal) — never couple-wide from here.
+    const base = stateFromOnboarding({ ...choices, lowPressure: false }, today, new Date(), code)
+    const state = applyOnboardingExtras(
+      base,
+      { habits: habitAnswers(habits), shareCycleDetails: share === 'details', myPrefs: prefs },
+      today,
+    )
     setViewer('a')
-    replace(stateFromOnboarding(choices, today, new Date(), code))
+    openOnHome()
+    replace(state)
+    scrollTopSoon()
   }
 
   const body = (() => {
-    switch (step) {
-      case 1:
+    switch (key) {
+      case 'couple':
         return <CoupleStep draft={draft} patch={patch} today={today} />
-      case 2:
+      case 'cycle':
         return <CycleStep draft={draft} patch={patch} today={today} />
-      case 3:
+      case 'start':
         return <StartStep draft={draft} patch={patch} today={today} />
-      case 4:
-        return <AlertStep draft={draft} patch={patch} today={today} />
-      case 5:
-        return <ConsentStep draft={draft} patch={patch} />
+      case 'habits':
+        return <HabitStep draft={draft} habits={habits} setHabits={setHabits} today={today} />
+      case 'alerts':
+        return <AlertStep draft={draft} patch={patch} today={today} prefs={prefs} setPrefs={setPrefs} />
+      case 'consent':
+        return (
+          <ConsentStep
+            draft={draft}
+            patch={patch}
+            sensitive={sensitive}
+            onSensitive={setSensitive}
+            share={share}
+            onShare={setShare}
+          />
+        )
       default:
         return <DoneStep code={code} partner={names.b} />
     }
@@ -122,7 +197,7 @@ export default function Onboarding() {
             <span aria-hidden>‹</span> 뒤로
           </button>
           <div className="flex flex-1 justify-center">
-            <ProgressDots step={step} total={ONBOARDING_STEPS} />
+            <ProgressDots step={step} total={STEPS.length} />
           </div>
           <span aria-hidden className="min-w-[4.5rem]" />
         </div>
@@ -141,7 +216,7 @@ export default function Onboarding() {
           {problem ?? ''}
         </p>
         <Button size="lg" full onClick={next} disabled={!!problem}>
-          {last ? '시작하기' : step === 5 ? '동의하고 계속하기' : '다음'}
+          {last ? '시작하기' : key === 'consent' ? '동의하고 계속하기' : '다음'}
         </Button>
       </footer>
     </div>

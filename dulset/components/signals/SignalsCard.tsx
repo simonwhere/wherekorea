@@ -5,44 +5,60 @@ import { stampOn } from '@/lib/logic/today'
 import { REPLIES, SIGNALS, SIGNALS_PER_DAY, pendingSignal, sendSignal, signalsSentToday } from '@/lib/logic/signals'
 import { useApp } from '@/lib/store'
 
-/**
- * "우리 신호" — one tap to say what's awkward to say. Includes easy, guilt-free
- * "not today" options so the app never pushes anyone.
- */
-export default function SignalsCard() {
+function useSend() {
   const { state, update, today, me, partner } = useApp()
   const toast = useToast()
-  const pending = pendingSignal(state, me.id, today)
   const left = SIGNALS_PER_DAY - signalsSentToday(state, me.id, today)
-
   const send = (id: string, label: string) => {
     if (left <= 0) return
     update((s) => sendSignal(s, me.id, partner.id, id, today, stampOn(today)))
     toast.show(`${partner.name}님에게 “${label}” 보냈어요`)
   }
+  return { send, left }
+}
+
+/**
+ * The signal the viewer received today and hasn't answered, with one-tap
+ * replies — or nothing. Used on its own in the home's "우리 한 줄".
+ */
+export function PendingSignal({ className }: { className?: string }) {
+  const { state, today, me } = useApp()
+  const { send, left } = useSend()
+  const pending = pendingSignal(state, me.id, today)
+  if (!pending) return null
+  return (
+    <div className={cx('rounded-xl bg-brand-soft p-3', className)}>
+      <p className="text-sm font-semibold text-brand-ink">{pending.title}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {REPLIES.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => send(r.id, r.text)}
+            disabled={left <= 0}
+            className="relative h-9 rounded-full bg-surface px-3 text-xs font-medium text-ink shadow-sm before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-surface-2 disabled:opacity-40"
+          >
+            {r.emoji} {r.text}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * "우리 신호" — one tap to say what's awkward to say. Includes easy, guilt-free
+ * "not today" options so the app never pushes anyone. `showPending={false}`
+ * when the reply already sits elsewhere on the screen.
+ */
+export default function SignalsCard({ showPending = true, title = true }: { showPending?: boolean; title?: boolean }) {
+  const { send, left } = useSend()
 
   return (
     <>
-      <SectionTitle sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</SectionTitle>
+      {title ? <SectionTitle sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</SectionTitle> : null}
       <Card>
-        {pending ? (
-          <div className="mb-3 rounded-xl bg-brand-soft p-3">
-            <p className="text-sm font-semibold text-brand-ink">{pending.title}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {REPLIES.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => send(r.id, r.text)}
-                  disabled={left <= 0}
-                  className="h-9 rounded-full bg-surface px-3 text-xs font-medium text-ink shadow-sm hover:bg-surface-2 disabled:opacity-40"
-                >
-                  {r.emoji} {r.text}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
+        {showPending ? <PendingSignal className="mb-3" /> : null}
         <div className="grid grid-cols-2 gap-2">
           {SIGNALS.map((s) => (
             <button
