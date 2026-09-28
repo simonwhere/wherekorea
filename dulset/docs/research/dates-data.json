@@ -1,0 +1,270 @@
+{
+ "summary": "'데이트 추천' 기능은 키 없이 가능한 지도 딥링크와 공공·상용 API만으로 충분히 만들 수 있습니다. 한국관광공사 TourAPI(KorService2, 매뉴얼 v4.4, 2026-02-10)는 무료입니다. 반경 최대 20km 위치기반 조회, contentTypeId 25(여행코스, 가족·나홀로·힐링·도보·캠핑·맛코스), 축제 검색(searchFestival2)을 제공하지만 '커플/데이트' 분류는 따로 없습니다. 카카오 로컬 API는 키워드·카테고리 검색 한도가 넉넉합니다(각 일 10만 건, 페이지 45×15). 다만 2026-07-21 정책 변경으로 무료 쿼터가 개발자 계정의 첫 앱에만 적용된다는 보고가 있습니다. 네이버 지역검색은 한 번에 최대 5건만 주고 페이지 넘김이 안 됩니다. 게다가 2026-07-31부로 NAVER API HUB(NCP)로 이관되고 있어 주력으로 쓰기에는 불리합니다. 가장 싼 MVP는 map.kakao.com/link/search/, nmap://search 같은 딥링크만 쓰는 방식입니다. 의학 근거로는 NICE가 배란일에 정확히 맞춘 성관계를 권하지 않습니다. 성공률을 높이지 못하고 스트레스만 준다는 이유로, 2~3일 간격의 관계를 권고합니다. 배란일에 맞춘 성관계가 성수행 불안과 성기능 장애를 부른다는 연구도 여럿입니다. 또 가임기부터 임신 여부를 확인할 때까지는 금주하는 것이 신중하다는 코호트 연구(BMJ 2016)가 있습니다. 남성의 사우나·온열 노출은 정자 생성을 가역적으로 떨어뜨리고, 초기 임신의 고열 노출은 신경관 결손 위험과 연관됩니다. 기존 앱을 보면 비트윈·썸원은 기록과 질문 중심이고 데이트 코스 추천은 확인되지 않았습니다. 데이트팝은 제휴점 광고 기반의 데이트 코스 앱이었지만 현재 상태는 확인하지 못했고, 망고플레이트는 서비스를 종료했습니다. 주의할 점: 이번 조사에서는 웹검색 한도가 소진되었고 대부분의 공식 도메인(developers.kakao.com, data.go.kr, pubmed, nice.org.uk, 앱스토어)이 네트워크에서 차단되었습니다. 그래서 근거 대부분은 GitHub에 올라온 공식 문서 사본, 논문 원문 사본, 개발자 메모에서 가져왔고, 개발에 들어가기 전에 공식 문서로 다시 확인해야 합니다.",
+ "findings": [
+  {
+   "topic": "TourAPI 4.4 (KorService2) - 콘텐츠 타입/반경",
+   "claim": "한국관광공사 국문 관광정보 개방데이터 활용매뉴얼 v4.4(2026-02-10)는 8개 contentTypeId(12 관광지, 14 문화시설, 15 행사/공연/축제, 25 여행코스, 28 레포츠, 32 숙박, 38 쇼핑, 39 음식점)를 정의한다. locationBasedList2의 radius는 'Max값 20000m=20Km'이다.",
+   "sources": [
+    "https://raw.githubusercontent.com/TEAM-DOONOW/Gayadi-Server/c630deaa034e90d5679f10ffb43c3663c1cb17eb/docs/tourapi-manual/manual_v4.4.txt",
+    "https://raw.githubusercontent.com/woowacourse-teams/2025-Turip/29fc756421e109bd4966625fb3bfca8322c99435/mobile/deep-research-report.md"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "TourAPI - KorService1 폐기",
+   "claim": "구버전 KorService1/KorService는 폐기되어 HTTP 400 NO_OPENAPI_SERVICE_ERROR를 반환한다. 2025년 5월 이후 KorService2로, 2026년 1월에는 반려동물 서비스가 KorPetTourService2로 재편되었다. 따라서 v1 기반 블로그 예제는 쓸 수 없다.",
+   "sources": [
+    "https://raw.githubusercontent.com/IBORY-PURPLE/-/cee4f37c88b9d1ec3efaf30d31ad281c0216df46/Docs/TSD.md",
+    "https://raw.githubusercontent.com/woowacourse-teams/2025-Turip/29fc756421e109bd4966625fb3bfca8322c99435/mobile/deep-research-report.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "TourAPI - 추천코스 분류(cat2)",
+   "claim": "여행코스(contentTypeId 25)의 대분류 C01 '추천코스'에는 C0112 가족코스, C0113 나홀로코스, C0114 힐링코스, C0115 도보코스, C0116 캠핑코스, C0117 맛코스가 있다. '커플/데이트 코스' 전용 분류는 없다.",
+   "sources": [
+    "https://github.com/Chaw-p/TripMocha/blob/b98da0b25eafdacaa306aed4fb4649f039114ac9/services/api_service.py",
+    "https://raw.githubusercontent.com/rosaze/ac.t_backend/e22107c3ce69020c71035ada94273a53e1bb4919/openApiTest.js",
+    "https://github.com/CBNU-Rhino/MODUNURI/blob/108adf62e3f565544a8dfd86d02dffb26c00196d/src/main/java/app/app/Code/Category.java"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "TourAPI - 신분류체계(lclsSystm)와 구 cat 코드 커버리지",
+   "claim": "KorService2 목록 응답에서 신분류체계 lclsSystm1/2/3은 100% 채워진 반면 구 cat1/2/3은 약 44.8%가 비어 있었다는 실측 보고(2026-08-17, 780회 호출)가 있다. 구 C01xx 코드만으로 필터링하면 코스가 누락될 수 있다.",
+   "sources": [
+    "https://raw.githubusercontent.com/IBORY-PURPLE/-/cee4f37c88b9d1ec3efaf30d31ad281c0216df46/Docs/TSD.md"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "TourAPI - 코스 상세/축제",
+   "claim": "detailInfo2는 여행코스(25)에 대해 코스 구성 지점을 subnum, subname(코스명), subdetailoverview(코스개요), subdetailimg, subcontentid로 반복 제공한다. 축제는 searchFestival2(필수 eventStartDate=YYYYMMDD, 선택 eventEndDate)로 날짜 범위 검색이 가능하다.",
+   "sources": [
+    "https://raw.githubusercontent.com/TEAM-DOONOW/Gayadi-Server/c630deaa034e90d5679f10ffb43c3663c1cb17eb/docs/tourapi-manual/manual_v4.4.txt",
+    "https://github.com/yongchoooon/paravoca/blob/9402f95e5c0fb7d281a6c6ac54ac441a7541d0c4/paravoca-ax-agent-studio-docs/05_03_TOURAPI_KORSERVICE2_V44_SPEC.md",
+    "https://raw.githubusercontent.com/woowacourse-teams/2025-Turip/29fc756421e109bd4966625fb3bfca8322c99435/mobile/deep-research-report.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "TourAPI - 트래픽/라이선스",
+   "claim": "개발계정 기본 트래픽은 1,000이고, 운영계정은 활용사례를 등록하면 증설할 수 있다. 이미지 저작권 코드(cpyrhtDivCd)는 공공누리 제1유형(출처표시)과 제3유형(출처표시+변경금지)이 섞여 있어, 앱에서 이미지를 쓸 때 출처를 표기하고 제3유형은 변형하지 않아야 한다.",
+   "sources": [
+    "https://raw.githubusercontent.com/woowacourse-teams/2025-Turip/29fc756421e109bd4966625fb3bfca8322c99435/mobile/deep-research-report.md",
+    "https://raw.githubusercontent.com/TEAM-DOONOW/Gayadi-Server/c630deaa034e90d5679f10ffb43c3663c1cb17eb/docs/tourapi-manual/manual_v4.4.txt",
+    "https://raw.githubusercontent.com/IBORY-PURPLE/-/cee4f37c88b9d1ec3efaf30d31ad281c0216df46/Docs/TSD.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Kakao Local API - 파라미터/쿼터",
+   "claim": "카카오 로컬 키워드·카테고리 장소검색(dapi.kakao.com/v2/local/search/keyword.json, Authorization: KakaoAK)은 page 1~45, size 1~15, sort accuracy/distance, x/y+radius 반경 검색을 지원한다. 카테고리 코드는 FD6 음식점, CE7 카페, AT4 관광명소 등이다. 무료 한도는 API별 일 100,000건, 전체 월 3,000,000건이며, 초과 시 2원/건으로 정리된 개발자 문서가 있다.",
+   "sources": [
+    "https://raw.githubusercontent.com/easyhooon/ramen-dojang/d7fcf94fb1a285a0a747ec6182da609b58119a9b/docs/13-place-open-api-research.md",
+    "https://raw.githubusercontent.com/rnqhstmd/odiya2/be6fd4253c4cf78a1edb221a8b4ae4cc34141fc2/references/kakao-local-search.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Kakao 지도/로컬 - 2026-07-21 정책 변경",
+   "claim": "2026-07-21부터 앱 관리에서 [카카오맵] > [사용 설정]을 ON해야 지도·로컬 API를 쓸 수 있다는 개발자 기록이 있다. 같은 기록에 따르면 무료 쿼터는 개발자 계정당 첫 활성화 앱에만 적용되고, 추가 앱은 비즈월렛(유료) 연결이 필요하며, 관련 Kakao DevTalk 공지가 인용되어 있다. 별도 프로젝트 문서도 '첫 활성화 앱이므로 비즈월렛 없이 시작'이라고 적어 이를 뒷받침한다.",
+   "sources": [
+    "https://raw.githubusercontent.com/BEGAE4/ilchul/1ed59b4919b9719f74e6156e3a4af4db6ce58988/frontend/cc/ans/260725-ans-009-%EC%B9%B4%EC%B9%B4%EC%98%A4%EB%A7%B5_%EB%8F%84%EC%9E%85_%EC%B5%9C%EC%8B%A0_%EC%A0%88%EC%B0%A8.md",
+    "https://raw.githubusercontent.com/hoddukzoa12/incometax/d68474242d1ec0393267195095e15b682d7942e5/docs/external-apis.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Naver 지역검색 API - 제한",
+   "claim": "네이버 공식 가이드(naver/naver-openapi-guide)에 따르면 지역 검색은 display 기본 1·최대 5, start 최대 1(사실상 페이지 넘김 불가), sort는 random/comment, 일 호출 한도는 25,000회다. 실측에서도 start 값을 바꿔도 같은 5건이 반복되었다.",
+   "sources": [
+    "https://raw.githubusercontent.com/naver/naver-openapi-guide/master/ko/service-apis/search/local/local.md",
+    "https://raw.githubusercontent.com/hwkimv/nemo/682de6385935edd9c52d5f2d4615d34b5b3e580e/docs/case-studies/05-map-api-cache.md"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Naver 검색 API - NAVER API HUB 이관",
+   "claim": "2026-07-31부로 네이버 개발자센터에서 검색 API 신규 키 발급이 차단되고 지역검색은 NAVER API HUB(NCP)로 이관되었다. 새 엔드포인트는 naverapihub.apigw.ntruss.com/search/v1/local이고 헤더는 X-NCP-APIGW-API-KEY-ID/KEY다. 2027-06-30에는 기존 키도 사용할 수 없게 된다(인용된 공지: developers.naver.com/notice/article/32530).",
+   "sources": [
+    "https://raw.githubusercontent.com/isnow890/naver-search-mcp/18f72a4a162624dfdd269bd0dc463976ca534b55/README-ko.md",
+    "https://github.com/mick243/PrivateProject/blob/0095b4673e07df271f80dc7d314aacee26d879cf/lib/naver-local.ts",
+    "https://github.com/Chaehyunli/moduyaksok/blob/d0d66a5cea34396f39864b3f191903cb1c83b903/moduyaksok-backend/app/services/naver_local_search.py"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "카카오맵 딥링크(키 불필요)",
+   "claim": "카카오맵 웹 링크 규칙은 https://map.kakao.com/link/search/{검색어}, /link/map/{이름},{위도},{경도} 또는 /link/map/{장소ID}, /link/to/{이름},{위도},{경도}(길찾기)이다. 앱 스킴은 kakaomap://search?q={검색어}로, API 키 없이 검색 결과 화면을 열 수 있다.",
+   "sources": [
+    "https://github.com/antny-bot/myhome/blob/4dd2922c94c66347f4306bef8804d560d5f56afe/docs/archived/kakao-maps-api.md",
+    "https://github.com/chaeyun-sim/mollip/blob/a7855c54963531b8611a5395b9bce630e951505c/src/utils/externalMaps.ts"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "네이버지도 딥링크(키 불필요)",
+   "claim": "네이버지도 앱 URL Scheme은 nmap://search?query={검색어}&appname={번들ID}이고 appname은 필수다. iOS에서는 LSApplicationQueriesSchemes에 nmap을 추가해야 하며, 앱이 없을 때는 https://map.naver.com/p/search/{검색어} 웹으로 폴백하는 패턴이 쓰인다.",
+   "sources": [
+    "https://github.com/Morak-Team/Backend/blob/1b0ae0b2f6f620969c70c5b44e3aad39473aec28/README.md",
+    "https://github.com/DDD-Community/DDD-13-iOeS-iOS/blob/79e93a5bdaabb3d6c2c2dc47d3f5365e912026ef/docs/KAN-51/spot-detail-implementation-prompt.md",
+    "https://github.com/chaeyun-sim/mollip/blob/a7855c54963531b8611a5395b9bce630e951505c/src/utils/externalMaps.ts"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 관계 빈도(NICE CG156)",
+   "claim": "NICE CG156: 'vaginal sexual intercourse every 2 to 3 days optimises the chance of pregnancy' [2004, 2013 개정]. 또한 'stress in the male and/or female partner can affect the couple's relationship and is likely to reduce libido and frequency of intercourse'. 이 가이드라인은 2024~2025년 NG257로 개정되었다는 2차 자료가 있다.",
+   "sources": [
+    "https://raw.githubusercontent.com/caresetjournal/AHRQ_search_clone/bc1020ea005c60be623b592485e4de9fbcad91cf/www.guideline.gov/fertility-assessment-and-treatment-for-people-with-fertility-problems",
+    "https://github.com/shahriarpshuvo/rumpa/blob/0af2be6681b1f8d6365988ba5e3534d83cc8262f/content/blog/nhs-fertility-testing.mdx"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "근거: 배란일 맞춤 관계의 스트레스(NICE CKS)",
+   "claim": "NICE CKS 'Pre-conception - advice and management'(2025년 6월 개정): 'There is no need to plan intercourse to coincide exactly with ovulation — this does not increase the chances of success and can cause stress for the couple.' 같은 문서는 임신을 계획하는 여성에게 음주를 피하라고 권고한다.",
+   "sources": [
+    "https://raw.githubusercontent.com/raissaazarine/SAPA_Multimodal-Voice-Translation-App/3234b71a64e1d23dbfb0111ca0874463c927f17d/medical_docs/pre-conception_-_advice_and_management.txt"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 가임창 6일(Wilcox 1995)",
+   "claim": "Wilcox 등(NEJM 1995, 221명 여성, 625주기)에 따르면 임신은 배란일로 끝나는 6일 구간의 성관계에서만 발생했다. 정자는 약 3~5일, 난자는 약 1~2일 생존하므로 '배란 당일 하루'가 아니라 6일 창 전체가 의미 있다.",
+   "sources": [
+    "https://github.com/GAIA-Health/gaia-health.github.io/blob/d75da7a37e6e9ce19cfbfa8ff0962e57e21c283a/encyclopedia/fertile-window.html",
+    "https://github.com/idoshimoni/duedatelab/blob/e35c75f5240220dc750ef2e11b7f9a01abe82aa2/methodology/period-calculator.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "근거: 배란일 맞춤 관계와 성수행 불안",
+   "claim": "배란일에 맞춘 성관계를 하는 난임 여성 68명 대상 RCT(Int J Reprod BioMed)는 서론에서 이렇게 기술한다. 'Timed intercourse, often synchronized with ovulation, can intensify stress, leading to sexual performance anxiety'. 성수행 불안은 남성 9~25%, 여성 6~16%에게 나타나며, 커플 관계증진 치료가 배우자 만족도를 더 개선했다.",
+   "sources": [
+    "https://raw.githubusercontent.com/shashiKundur1/deeply/b728cc356826b9c8b30037af45d4696492ccc82c/kb-pipeline/corpus/sexual-performance-anxiety-couple-therapy-trial.txt",
+    "https://github.com/christophermayfield/simplepythonneuralnet/blob/43de49063d37991a242fbb905596af042ff67cfa/generate_bibliography.py"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 한국 연구 - 배란일 맞춤 관계로 인한 성기능 장애",
+   "claim": "Byun JS, Lyu SW, Seok HH 등의 'Sexual dysfunctions induced by stress of timed intercourse and medical treatment'(BJU Int 2013;111(4 Pt B):E227–E234)는 배란일 맞춤 관계의 스트레스가 성기능 장애를 유발함을 다룬 한국 연구진 논문이다. 제목과 서지만 확인했고 초록 수치는 확인하지 못했다.",
+   "sources": [
+    "https://raw.githubusercontent.com/qpec/Altmetric_17K_Top_Articles/5b4e880432e9431763ce4b9e41362cc493476270/txt_articles/Wesselink%20et%20al.%20-%202018%20-%20Perceived%20Stress%20and%20Fecundability%20A%20Preconceptio.txt"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 스트레스와 수태능",
+   "claim": "Wesselink 등(Am J Epidemiol 2018, PRESTO 코호트 4,769명)에서 지각된 스트레스 점수 PSS≥25인 여성은 <10 대비 수태능비가 0.87(95% CI 0.74–1.02)이었다. 이 연관의 약 10%는 성관계 빈도 감소로 매개되었다.",
+   "sources": [
+    "https://raw.githubusercontent.com/qpec/Altmetric_17K_Top_Articles/5b4e880432e9431763ce4b9e41362cc493476270/txt_articles/Wesselink%20et%20al.%20-%202018%20-%20Perceived%20Stress%20and%20Fecundability%20A%20Preconceptio.txt"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 음주(여성)",
+   "claim": "Mikkelsen 등(BMJ 2016;354:i4262, 덴마크 코호트 6,120명)에서 주 14잔 미만의 음주는 수태능에 뚜렷한 영향이 없었다(≥14잔 FR 0.82, 0.60–1.12). 그러나 저자들은 'prudent for women who are actively trying to become pregnant to abstain from alcohol during their fertile window until a pregnancy has been ruled out'이라고 결론지었다.",
+   "sources": [
+    "https://raw.githubusercontent.com/qpec/Altmetric_17K_Top_Articles/5b4e880432e9431763ce4b9e41362cc493476270/txt_articles/Mikkelsen%20et%20al.%20-%202016%20-%20Alcohol%20consumption%20and%20fecundability%20prospective.txt"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "근거: 남성 음주/음낭 온도(NICE)",
+   "claim": "NICE CG156: 남성의 음주가 하루 3~4유닛 권고 범위 안이면 정액 질에 영향을 줄 가능성이 낮다. 'there is an association between elevated scrotal temperature and reduced semen quality, but ... uncertain whether wearing loose-fitting underwear improves fertility'.",
+   "sources": [
+    "https://raw.githubusercontent.com/caresetjournal/AHRQ_search_clone/bc1020ea005c60be623b592485e4de9fbcad91cf/www.guideline.gov/fertility-assessment-and-treatment-for-people-with-fertility-problems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "근거: 사우나/온수욕과 정자",
+   "claim": "Garolla 등(Hum Reprod 2013, PMID 23411620)에서 정상 남성 10명이 핀란드식 사우나(80~90°C, 15분, 주 2회)를 3개월 이용하자 정자 생성이 유의하게 저하되었고, 이는 가역적이었다. Shefi 등(Int Braz J Urol 2007)도 온수욕(wet heat) 노출을 '가역적인 정액 질 저하 원인'으로 보고했으며, 노출을 멈추면 3~6개월에 걸쳐 회복된다고 요약된다.",
+   "sources": [
+    "https://raw.githubusercontent.com/cobuildwithus/murph/a3ae957f854d920fd1b8937e4d98215213b06403/packages/health-commons/content/sources/dry-sauna/pmid-23411620.md",
+    "https://github.com/AnslationDev/altftool/blob/b961de6dc90d5db2a876a4525fbb3d860c07aa4c/altftoolweb/src/tools/male-fertility-lifestyle-checklist/lib.js"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "근거: 초기 임신과 고열 노출",
+   "claim": "Milunsky 등(JAMA 1992, PMID 1640616)은 임신 1분기에 사우나·온수욕·발열 등 모체 열 노출이 신경관 결손 위험 증가와 연관된다고 보고했다(관찰연구). 메타분석(Moretti 2005)의 통합 OR은 1.92(1.61–2.29)로 인용된다. 배란 후(임신 가능성이 있는 2주)에는 여성에게도 온천·사우나·스파를 권하지 않는 편이 안전하다.",
+   "sources": [
+    "https://raw.githubusercontent.com/cobuildwithus/murph/a3ae957f854d920fd1b8937e4d98215213b06403/packages/health-commons/content/sources/dry-sauna/pmid-1640616.md",
+    "https://github.com/LWS0331/guns-up-app/blob/cae2f733a219482c4cd3399b19ec7dba83965172/src/data/gunny-corpus/overlays/pregnancy-postpartum.md"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "기존 커플앱: 비트윈/썸원",
+   "claim": "2026-07-29 작성된 커플앱 리서치 메모에 따르면 비트윈(VCNC)은 채팅·사진/앨범·기념일·공유 캘린더 중심이고(Google Play 2026-07-13 업데이트), 썸원은 매일 질문 1개에 둘 다 답해야 공개되는 구조다. 썸원 수치는 회사 주장으로 2025-02 기준 누적 1,400만 다운로드, MAU 260만이다. 두 앱 모두 데이트 코스·장소 추천 기능은 확인되지 않았다.",
+   "sources": [
+    "https://raw.githubusercontent.com/junans0boi/SecertBase/c71781f275c77950a33c5e0698d1d5ea4612ac64/docs/product/2026_COUPLE_APP_RETENTION_RESEARCH.md"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "기존 커플앱: 알림이 '숙제'가 되는 문제",
+   "claim": "같은 리서치 메모는 썸원 인터뷰와 나무위키를 인용한다. 일부 남성 사용자가 매일 답변을 '숙제'처럼 느끼고 다툼을 '쌈원'이라 부른다는 피드백이 있다. 다만 정량 검증되지 않은 가설로 분류되어 있다.",
+   "sources": [
+    "https://raw.githubusercontent.com/junans0boi/SecertBase/c71781f275c77950a33c5e0698d1d5ea4612ac64/docs/product/2026_COUPLE_APP_RETENTION_RESEARCH.md"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "기존 데이트 추천 서비스: 데이트팝",
+   "claim": "텐핑거스의 '데이트팝'은 20~30대 커플 대상 지역별 데이트 코스 추천 앱이다(서울데이트팝에 이어 부산데이트팝 출시 기사, 2015). 제휴점 할인 광고 '팝딜'이 수익 모델이었고, 23억 원 투자 유치(누적 37억, 2018-08 ZDNet 기사)를 받았다. 현재(2026) 운영 상태는 확인하지 못했다.",
+   "sources": [
+    "https://github.com/Dopany/DB/blob/72e23f91574d3675e413428f6d63de9f8edd28ca/company_app_data/news/%ED%85%90%ED%95%91%EA%B1%B0%EC%8A%A4_news.csv",
+    "http://www.zdnet.co.kr/ArticleView.asp?artice_id=20180822085021"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "기존 맛집/데이트 서비스: 망고플레이트 종료",
+   "claim": "여기어때 산하 맛집 추천 서비스 망고플레이트는 서비스를 종료했다. 경쟁사 식신이 '망고플레이트 종료 반사효과'를 노려 회원 모집에 나섰다는 기사가 근거이며, 정확한 종료일은 확인하지 못했다.",
+   "sources": [
+    "https://github.com/Dopany/DB/blob/72e23f91574d3675e413428f6d63de9f8edd28ca/company_app_data/news/%EB%A7%9D%EA%B3%A0%ED%94%8C%EB%A0%88%EC%9D%B4%ED%8A%B8_news.csv"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "데이트 장소 선택의 어려움(소규모 조사)",
+   "claim": "2023년 대학생 프로젝트(LIKIT) 설문에서 20~30대의 81%가 만남 장소 선정에 어려움을 겪었다. 광고성·객관성 낮은 리뷰를 우려한 응답은 40.6%였다. 비교 대상 서비스로 데이트팝(컨셉·위치 기반 추천과 제휴 할인), 완벽한 하루(사용자 제작 코스 공유)가 분석되었다.",
+   "sources": [
+    "https://raw.githubusercontent.com/27-kusitms-6/Frontend/2cd18bb61da8891b732adaf3406ddf8ed870b554/README.md"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "한국 커플 데이트 문화(정성적)",
+   "claim": "네이버 블로그를 크롤링한 데이터셋 제목에 '서울 호캉스 추천', '한강 피크닉(뚝섬 텐트 대여)', '향수공방·플라워 원데이클래스', '성수 데이트 ... 전시'가 반복해서 나타난다. 호캉스·한강 피크닉·공방 원데이클래스·전시는 흔한 데이트 콘텐츠로 보인다(정량 통계 아님).",
+   "sources": [
+    "https://github.com/joo9810/KDT/blob/c8ed44aa80248fbceac6b3d8970d87fe705c703e/%EA%B9%80%EC%86%8C%ED%98%84%20%EA%B0%95%EC%82%AC%EB%8B%98/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8/7%EB%B2%88%EC%A7%B8%20%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8/txt/habby.txt",
+    "https://github.com/shinh09/BigData_Project_Gentrification/blob/254a643bdaba86f51a0a151dae35ddf510d0a015/data_html/%EC%84%B1%EC%88%98%EB%8F%99/links_%EC%84%B1%EC%88%98%EB%8F%99_%EB%AA%85%EC%86%8C_2021.csv"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "데이트 코스 추천 구조 선례",
+   "claim": "2020년 경희대 프로젝트(서울 데이트 코스 추천)는 데이트 코스를 EAT(맛집/카페), GO(관광지·방탈출·보드게임 등), WATCH(영화)로 나누어 조합했다. 데이터는 한국관광공사, 카카오맵, 망고플레이트, 다이닝코드 등에서 수집했다.",
+   "sources": [
+    "https://raw.githubusercontent.com/DAC-KHUPID/seoul-date-course-recommendation/c3a53172a3c0f0b8a18a63b8d1c95947e16821ec/README.md"
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "implications": [
+  "MVP에서는 외부 API 없이 시작할 것을 권합니다. 태그를 단 데이트 아이디어 50~100개(실내/실외, 예산, 금주, 무열, 도보·힐링)를 직접 큐레이션하고, 장소는 map.kakao.com/link/search/와 nmap://search(웹 폴백 map.naver.com/p/search/) 딥링크로 넘깁니다. 이렇게 하면 쿼터, 비용, 약관 부담이 사라집니다.",
+  "2단계에서 서버 프록시로 TourAPI KorService2를 붙입니다. locationBasedList2(반경 ≤20km), 여행코스 25(힐링·도보·맛코스), searchFestival2로 가임기 날짜에 열리는 근교 축제를 찾습니다. 분류 필터는 구 cat 코드가 아니라 lclsSystm 기준으로 설계하고, 이미지는 공공누리 출처를 표기하며 제3유형은 변형하지 않습니다.",
+  "주변 카페·식당·전시장은 카카오 로컬 카테고리 검색(CE7, FD6, CT1, AT4)이 적합합니다. 네이버 지역검색은 최대 5건에 페이지 넘김이 안 되고 2026-07-31 이후 NCP로 이관 중이라 주력으로 쓰지 않습니다. 카카오는 2026-07-21 변경 이후 무료 쿼터가 계정당 첫 앱에만 적용될 수 있으니, 출시 전에 공식 쿼터·약관(결과 저장/캐시 허용 여부)을 직접 확인해야 합니다.",
+  "근거 기반 '가임기 안전 필터'를 규칙 엔진으로 넣습니다. 가임기와 배란 후 임신 확인 전(약 2주)에는 와인바·술집 중심 코스를 빼거나 '논알코올' 대안을 붙입니다(Mikkelsen BMJ 2016, NICE CKS). 남편에게는 사우나·찜질방·온천·자쿠지 호캉스를 권하지 않고(Garolla 2013, NICE), 배란 후에는 아내에게도 고열 노출을 권하지 않습니다(Milunsky 1992).",
+  "알림의 톤이 핵심 차별점입니다. NICE와 여러 연구가 배란일에 맞춘 관계의 스트레스와 성수행 불안을 경고하므로 'D-day 미션'이 아니라 '둘만의 시간 제안'으로 표현합니다. 알림은 6일 가임창 전체에 분산하고 2~3일 간격 리듬을 제안하며, 가임기가 아닌 날의 데이트도 추천해 '숙제화'(썸원 사례)를 피합니다.",
+  "잠금화면 알림에 '배란일', '가임기' 같은 민감한 문구를 노출하지 않는 옵션(예: '오늘 저녁 데이트 어때요?')이 필요합니다. 부부 각자 알림 문구와 빈도를 따로 설정하게 해 한쪽이 압박을 느끼지 않도록 합니다.",
+  "시장을 보면 비트윈·썸원은 기록과 대화 중심이고, 데이트팝류는 제휴점 광고(팝딜) 기반 큐레이션입니다. '가임기 캘린더와 근거 기반 데이트 제안'의 결합은 이번 조사 범위에서 발견되지 않아 차별화 여지가 있습니다. 반대로 광고형 추천은 신뢰(리뷰 객관성 우려 40.6%)를 해칠 수 있으니 수익화는 제휴 쿠폰보다 구독이나 육아일기 전환에 무게를 두는 편이 낫습니다.",
+  "앱 안의 의학 문구는 '의료 조언이 아님' 고지와 함께 출처(NICE, BMJ 등)를 달아 신뢰를 확보합니다. 이번 조사는 공식 사이트 접근이 차단되어 GitHub 사본과 2차 자료에 의존했으므로, 개발 착수 전에 developers.kakao.com, data.go.kr(15101578), NAVER API HUB 문서, NICE NG257을 직접 재확인해야 합니다."
+ ]
+}

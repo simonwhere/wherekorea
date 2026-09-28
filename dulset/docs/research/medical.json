@@ -1,0 +1,307 @@
+{
+ "summary": "의학적 근거로 보면 이 앱의 핵심 로직은 설계를 조정해야 합니다. 가임기는 '배란일로 끝나는 6일'로 정의됩니다(Wilcox 1995 NEJM, ASRM 2022). 임신 확률은 배란 5일 전 약 10%에서 배란일 무렵 약 33%까지 오르고, 배란 뒤에는 거의 0으로 떨어집니다. 가장 높은 날은 배란 1~2일 전입니다. 그런데 '다음 생리 예정일 − 14일' 같은 달력식 예측은 부정확합니다. 가임기가 교과서적 구간(10~17일) 안에 완전히 들어오는 여성은 약 30%뿐이고(Wilcox 2000 BMJ), 앱 61만 주기 분석에서 난포기 길이가 10~30일로 크게 흔들렸습니다(Bull 2019). 달력 기반 앱의 배란일 적중률은 21% 이하였고, 앱·웹사이트 53개 중 가임기를 정확히 맞힌 곳은 4개였습니다(Johnson 2018, Setton 2016). 반면 소변 LH 배란테스트로 관계 시기를 맞추면 출생률이 유의하게 높아졌습니다(Cochrane 2023, RR 1.36). 그래서 앱은 LH 테스트 결과를 입력받아 예측을 보정하는 구조가 바람직합니다. 권장 관계 빈도는 가임기에 1~2일마다(ASRM)지만 주 2~3회도 거의 같은 효과를 냅니다. 2026년 3월 개정된 NICE NG257은 주기 전체에 걸쳐 2~3일마다를 권합니다. 따라서 부부 양쪽에 '오늘이 D-day' 식 압박 알림을 보내면 오히려 스트레스와 성기능 저하를 부를 수 있습니다. 병원에 가라고 안내할 기준은 이렇습니다. 여성이 35세 미만이면 12개월, 35세 이상이면 6개월(ASRM), 한국 모자보건법상 난임 정의는 1년, NICE는 36세 이상이면 더 일찍 의뢰하도록 합니다. 영양제 쪽에서 여성은 엽산 400µg을 최소 1개월 전부터 임신 12주까지 먹으면 되고(CDC, USPSTF, WHO, NHS, 한국은 흔히 3개월 전부터), 고용량 비타민 A(레티놀 1만 IU 초과)는 피해야 합니다. 남성의 아연·엽산 보충은 대규모 RCT(FAZST 2020)에서 효과가 없었고, 항산화제 근거도 낮은 확실성에 그쳤습니다. 남성 체크리스트는 금연, 절주, 사우나·온욕 회피 같은 생활습관 중심으로 짜고, 정자 생성 주기(약 74일, 약 3개월)를 기준으로 삼는 편이 근거에 맞습니다. 참고로 이번 조사에서 WebFetch는 프록시에 막혀 원문을 열지 못했고 웹 검색 한도도 다 썼습니다. 그래서 모든 주장은 아래 URL들의 검색 결과 요약·발췌에 근거하며, 원문으로 확인하지 못한 수치는 확신도를 낮추거나 뺐습니다.",
+ "findings": [
+  {
+   "topic": "Fertile window definition (Wilcox 1995)",
+   "claim": "Wilcox et al. 1995 (NEJM 333:1517-21) followed 221 healthy women planning pregnancy and tracked ovulation with urinary estrogen and progesterone metabolites. Conception occurred only when intercourse fell within the 6-day interval ending on the estimated day of ovulation. The probability of conception rose from about 0.10 for intercourse 5 days before ovulation to about 0.33 on the day of ovulation. The intermediate day-by-day values could not be checked against the original table, so they are left out here.",
+   "sources": [
+    "https://www.nejm.org/doi/full/10.1056/NEJM199512073332301",
+    "https://pubmed.ncbi.nlm.nih.gov/7477165/"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Day-specific probabilities (Dunson 1999)",
+   "claim": "Dunson et al. 1999 (Human Reproduction 14(7):1835) reanalysed two cohorts after correcting for error in identifying ovulation: London natural-family-planning couples in the 1950s-60s (ovulation by BBT) and North Carolina couples in the early 1980s (ovulation by urinary hormones). Both datasets gave the same 6-day fertile interval. In both, the pregnancy probability was highest for intercourse on the day before ovulation and fell close to zero after ovulation.",
+   "sources": [
+    "https://pubmed.ncbi.nlm.nih.gov/10402400/",
+    "https://academic.oup.com/humrep/article-abstract/14/7/1835/2913179"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Age and the fertile window (Dunson 2002)",
+   "claim": "Dunson, Colombo and Baird 2002 (Human Reproduction 17(5):1399-1403) studied 782 couples using natural family planning over 5,860 cycles, with ovulation identified by BBT. Nearly all pregnancies occurred within a 6-day fertile window, and the window was not shorter at older ages. Day-specific pregnancy probabilities declined from the late 20s: they were about twice as high for women aged 19-26 as for women aged 35-39. Fertility was also significantly reduced for men over 35.",
+   "sources": [
+    "https://academic.oup.com/humrep/article/17/5/1399/845579",
+    "https://pubmed.ncbi.nlm.nih.gov/11980771/"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Peak fertility timing (ASRM)",
+   "claim": "The ASRM Practice Committee opinion 'Optimizing natural fertility' (2022) defines the fertile window as the 6-day interval ending on the day of ovulation. Peak fecundability was seen for intercourse within the 2 days before ovulation. Intercourse every 1-2 days in the fertile window gives the highest pregnancy rates, but 2-3 times per week is nearly equivalent. For couples who cannot have frequent intercourse, fertility-awareness methods can help time it to the window.",
+   "sources": [
+    "https://www.asrm.org/practice-guidance/practice-committee-documents/optimizing-natural-fertility-a-committee-opinion-2021/",
+    "https://www.fertstert.org/article/S0015-0282(21)02130-0/fulltext"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Calendar prediction is unreliable (Wilcox 2000 BMJ)",
+   "claim": "Wilcox, Dunson and Baird 2000 (BMJ 321:1259) used 696 cycles from 221 women. In only about 30% of women did the fertile window fall entirely within cycle days 10-17, the days clinical guidelines typically name. On every day from day 6 to day 21, at least about 10% of women were in their fertile window. The authors advised telling women that the fertile window can be highly unpredictable even when cycles are usually regular. A secondary summary (AAFP) adds that women with regular cycles had up to about a 6% chance of being fertile on the day their period was due.",
+   "sources": [
+    "https://pubmed.ncbi.nlm.nih.gov/11082086/?dopt=Abstract",
+    "https://www.eurekalert.org/news-releases/1028119",
+    "https://www.aafp.org/pubs/afp/issues/2001/0501/p1829a.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Real-world cycle variability (Bull 2019)",
+   "claim": "Bull et al. 2019 (npj Digital Medicine, Natural Cycles app data with UCL) analysed 612,613 ovulatory cycles from 124,648 users. Mean cycle length was 29.3 days. The mean follicular phase was 16.9 days (95% CI 10-30) and the mean luteal phase 12.4 days (95% CI 7-17). From age 25 to 45, cycle length fell by about 0.18 days per year and follicular length by about 0.19 days per year. The company's own summary says only about 13% of cycles were 28 days long and average ovulation was around day 18; that figure comes from the company, not the paper's abstract.",
+   "sources": [
+    "https://www.nature.com/articles/s41746-019-0152-7",
+    "https://pubmed.ncbi.nlm.nih.gov/31482137/",
+    "https://www.naturalcycles.com/cyclematters/signs-of-ovulation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Luteal phase length variability",
+   "claim": "Lenton et al. 1984 (BJOG) put the normal luteal phase at about 12-17 days (mean 14.13 ± 1.41 days, 327 cycles). Fehring et al. 2006 found a mean of 12.4 ± 2.0 days. The follicular phase varies more than the luteal phase, and both vary within the same woman. So the 'ovulation = next period − 14 days' assumption is off by several days for many cycles.",
+   "sources": [
+    "https://obgyn.onlinelibrary.wiley.com/doi/10.1111/j.1471-0528.1984.tb04831.x",
+    "https://epublications.marquette.edu/context/nursing_fac/article/1010/viewcontent/auto_convert.pdf",
+    "https://academic.oup.com/humrep/article/39/11/2565/7775370"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Accuracy of fertility apps (Setton 2016)",
+   "claim": "Setton, Tierney and Tsai 2016 (Obstetrics & Gynecology) tested 33 popular free apps and 20 websites with a standardized 28-day cycle, taking the true fertile window as cycle days 10-15. Only 4 of the 53 (1 website and 3 apps) predicted the fertile window exactly. Most did name day 15 as ovulation day (80.0% of websites, 86.9% of apps). However, 26 of the 33 apps and 15 of the 20 websites included days after ovulation in the fertile window.",
+   "sources": [
+    "https://journals.lww.com/greenjournal/abstract/10.1097/aog.0000000000001341~the-accuracy-of-web-sites-and-cellular-phone-applications-in?redirectionsource=fulltextview",
+    "https://www.sensiplan.nl/wp-content/uploads/2020/06/2016-Setton.pdf"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Accuracy of calendar/app ovulation-day prediction (Johnson 2018)",
+   "claim": "Johnson, Marriott and Zinaman 2018 (Current Medical Research and Opinion) assigned LH-surge days in one full cycle for each of 949 women. Apps predicted the ovulation day correctly no more than 21% of the time. The most commonly predicted day was day 15 (32 apps, 44%), but ovulation actually happened on day 15 only 19% of the time. Methods that use cycle length alone cannot accurately predict the ovulation day. The authors are affiliated with Clearblue (SPD), which makes LH tests.",
+   "sources": [
+    "https://www.tandfonline.com/doi/full/10.1080/03007995.2018.1475348",
+    "https://uk.clearblue.com/sites/default/files/cb_hcp-0222_ovulationmethods_1pager.pdf"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Urinary LH tests and timed intercourse (Cochrane 2023)",
+   "claim": "The Cochrane review by Gibbons et al. 2023 (CD011345.pub3) pooled 7 RCTs with 2,464 women or couples. Compared with intercourse without ovulation prediction, timing intercourse with urinary ovulation (LH) tests probably increases live birth (RR 1.36, 95% CI 1.02-1.81, moderate-certainty evidence). In absolute terms, a 16% chance becomes about 16-28%. This applied to women under 40 trying for less than 12 months. The review could not tell whether the tests change stress levels (very low-quality evidence).",
+   "sources": [
+    "https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD011345.pub3/full",
+    "https://www.ox.ac.uk/news/2023-09-15-when-it-comes-starting-family-timing-everything",
+    "https://www.cochrane.org/evidence/CD011345_timed-intercourse-couples-trying-conceive"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "LH surge to ovulation interval",
+   "claim": "Ovulation usually follows the start of the LH surge by about 24-36 hours. A rise in blood LH takes about 12 hours to show up in urine, so a first positive home test usually means ovulation within roughly the next 1-1.5 days. The day of the positive test and the day after are therefore high-fertility days, and in practice the 1-2 days before are too. These figures come from secondary clinical and educational sources.",
+   "sources": [
+    "https://rmanetwork.com/blog/lh-surge-when-detect-peak-fertility-opk/",
+    "https://flo.health/getting-pregnant/trying-to-conceive/tracking-ovulation/how-long-after-lh-surge-do-you-ovulate",
+    "https://premom.com/ovulation-surges-and-peaks/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Basal body temperature (BBT)",
+   "claim": "BBT rises by about 0.3-0.6°C (0.5-1.0°F) only after ovulation, roughly 1-2 days after the egg is released. It confirms ovulation after the fact and cannot warn in advance of the fertile days in the current cycle. It is useful for learning a woman's pattern across cycles, or combined with LH tests or cervical mucus.",
+   "sources": [
+    "https://my.clevelandclinic.org/health/articles/21065-basal-body-temperature",
+    "https://acibademinternational.com/health-library/basal-body-temperature-an-evidence-based-guide-for-patients/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Cervical mucus",
+   "claim": "Clear, slippery, stretchy ('egg-white') cervical mucus appears in the days before ovulation. The last day of that slippery sensation is the 'Peak day'. Bigelow et al. 2004 (Human Reproduction) reported that fertile-type mucus on the day of intercourse predicted conception better than calendar timing alone. That claim comes from secondary summaries; the original was not opened.",
+   "sources": [
+    "https://my.clevelandclinic.org/health/body/21957-cervical-mucus",
+    "https://www.calculateovulation.org/blog/cervical-mucus-fertility/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "NICE guidance on intercourse frequency (2026 update)",
+   "claim": "NICE guideline NG257, 'Fertility problems: assessment and treatment', was published on 31 March 2026 and replaces CG156 (2013). It keeps the recommendation that vaginal intercourse every 2-3 days optimises the chance of pregnancy, across the whole cycle rather than only around ovulation. Timing around ovulation is recommended only for artificial insemination. NICE also states that over 80% of couples conceive within 1 year of regular unprotected intercourse, and about half of the rest conceive in year 2 (over 90% cumulatively).",
+   "sources": [
+    "https://www.nice.org.uk/guidance/ng257",
+    "https://www.nice.org.uk/guidance/ng257/chapter/Initial-advice-to-people-concerned-about-delays-in-conception",
+    "https://www.nice.org.uk/guidance/cg156/chapter/Recommendations"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "When to seek evaluation (NICE)",
+   "claim": "NICE recommends offering fertility investigations after 1 year of unprotected intercourse every 2-3 days. It recommends earlier referral if the woman is 36 or older, or if there is a known cause or predisposing factor for infertility, such as irregular or absent periods.",
+   "sources": [
+    "https://www.nice.org.uk/guidance/cg156/resources/fertility-problems-assessment-and-treatment-35109634660549",
+    "https://www.nice.org.uk/guidance/ng257/chapter/Initial-advice-to-people-concerned-about-delays-in-conception"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "When to seek evaluation (ASRM 2023) and Korean legal definition",
+   "claim": "ASRM's 2023 committee opinion 'Definition of infertility' says evaluation should start after 12 months of regular unprotected intercourse if the female partner is under 35, and after 6 months if she is 35 or older. Korea's Mother and Child Health Act (모자보건법, Article 2) defines 난임 as no pregnancy after 1 year of normal sexual life without contraception. The widely cited ASRM practice of immediate evaluation for women over 40 or with known risk factors was not checked in this session.",
+   "sources": [
+    "https://www.asrm.org/practice-guidance/practice-committee-documents/definition-of-infertility/",
+    "https://www.law.go.kr/%EB%B2%95%EB%A0%B9/%EB%AA%A8%EC%9E%90%EB%B3%B4%EA%B1%B4%EB%B2%95",
+    "https://casenote.kr/%EB%B2%95%EB%A0%B9/%EB%AA%A8%EC%9E%90%EB%B3%B4%EA%B1%B4%EB%B2%95/%EC%A0%9C2%EC%A1%B0"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Stress of timed intercourse",
+   "claim": "Coordinating intercourse through ovulation tracking has been linked to more emotional distress. Sexual function (desire, arousal, lubrication, orgasm, satisfaction) declined over time in couples trying to conceive, more in women than in men, and men can feel acute stress or sexual dysfunction during the partner's fertile days. Other studies found that education on conception strategies did not raise stress, and the Cochrane evidence on stress is very low quality. The evidence is mixed overall.",
+   "sources": [
+    "https://academic.oup.com/humrep/article/38/11/2277/7240114?login=false",
+    "https://www.contemporaryobgyn.net/view/trying-conceive-can-stress-men-out",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC10515671/",
+    "https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD011345.pub3/full"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Folic acid (US and WHO)",
+   "claim": "The USPSTF (reaffirmed 1 August 2023, grade A) recommends that everyone planning or able to become pregnant take 0.4-0.8 mg (400-800 µg) of folic acid daily. It should start at least 1 month before conception and continue through the first 2-3 months of pregnancy. The CDC recommends 400 µg daily before and during early pregnancy, and 4,000 µg daily after a previous pregnancy affected by a neural tube defect, starting at least 1 month before conception. WHO recommends 400 µg per day periconceptionally, started as early as possible and ideally before conception.",
+   "sources": [
+    "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/folic-acid-for-the-prevention-of-neural-tube-defects-preventive-medication",
+    "https://www.cdc.gov/folic-acid/about/intake-and-sources.html",
+    "https://www.cdc.gov/folic-acid/hcp/clinical-overview/index.html",
+    "https://www.who.int/tools/elena/review-summaries/folate-periconceptional--effects-and-safety-of-periconceptional-oral-folate-supplementation-for-preventing-birth-defects"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Folic acid, vitamin D and vitamin A (NHS)",
+   "claim": "The NHS advises women trying to conceive to take 400 µg of folic acid daily, ideally from 3 months before conception, until 12 weeks of pregnancy. It advises 10 µg of vitamin D daily, especially from October to March. It warns that vitamin A (retinol) supplements may be harmful in pregnancy. Other vitamins are not routinely advised.",
+   "sources": [
+    "https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/",
+    "https://www.nhs.uk/best-start-in-life/pregnancy/vitamins-and-supplements-in-pregnancy/"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Folic acid in Korea and public support",
+   "claim": "Korean public-health messaging, citing 질병관리청 (KDCA), recommends starting 400 µg of folic acid about 3 months before pregnancy and continuing to 12 weeks. Local public health centres (보건소) provide 3 months' supply of folic acid to women preparing for pregnancy or registered as pregnant. Some local governments (e.g. Gwangyang, January 2026) also give folic acid to men. The national 임신 사전건강관리 지원사업 covers men and women aged 20-49: AMH and gynecologic ultrasound for women, and semen analysis (up to about ₩50,000) for men. These details come from 보건소 and news pages and should be checked on the official portals.",
+   "sources": [
+    "https://www.medicalworldnews.co.kr/m/view.php?idx=1395904568",
+    "https://www.gov.kr/portal/service/serviceInfo/SD0000016094",
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097",
+    "https://www.geumcheon.go.kr/health/contents.do?key=4559",
+    "https://news.nate.com/view/20260105n25665"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "High-dose vitamin A",
+   "claim": "Preformed vitamin A (retinol and retinyl esters) up to 10,000 IU per day has not been associated with birth defects. Intakes above 10,000 IU per day are not recommended in pregnancy. Rothman et al. 1995 (NEJM) estimated about 1 in 57 exposed pregnancies affected above that level, though other studies did not confirm this. β-carotene does not carry the same toxicity.",
+   "sources": [
+    "https://www.nejm.org/doi/full/10.1056/NEJM199511233332101",
+    "https://journals.sagepub.com/doi/10.1177/156482650102200304",
+    "https://www.birthdefectsresearch.org/pubs/Recommendations%20For%20Vitamin%20A%20Use%20During%20Pregnancy-1987_Teratology.pdf"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Male supplements: zinc and folate (FAZST)",
+   "claim": "The FAZST trial (Schisterman et al., JAMA, January 2020) randomized 2,370 men from couples seeking infertility treatment to 5 mg folic acid plus 30 mg elemental zinc daily, or placebo, for 6 months. The supplements did not improve semen quality or live birth. They increased sperm DNA fragmentation and gastrointestinal symptoms.",
+   "sources": [
+    "https://jamanetwork.com/journals/jama/fullarticle/2758450",
+    "https://pubmed.ncbi.nlm.nih.gov/31910279/",
+    "https://www.nichd.nih.gov/about/org/dir/dph/officebranch/eb/folic-acid-zinc"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Male supplements: antioxidants and CoQ10 (Cochrane 2022)",
+   "claim": "The Cochrane review by de Ligny et al. 2022 (CD007411.pub5) covered 90 RCTs of 18 antioxidants, including CoQ10, in 10,303 subfertile men. Antioxidants may be associated with higher live birth and clinical pregnancy rates, but the evidence is low to very low certainty and comes mostly from small or medium trials. The baseline was about 16 live births per 100 couples without antioxidants. The authors call for large, well-designed placebo-controlled trials.",
+   "sources": [
+    "https://www.cochranelibrary.com/cdsr/doi/10.1002/14651858.CD007411.pub5/full",
+    "https://www.cochrane.org/evidence/CD007411_antioxidants-male-subfertility"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Spermatogenesis timeline",
+   "claim": "Human spermatogenesis takes about 74 days, and about 3 months including transport and maturation in the epididymis. Some newer estimates range from about 42 to 76 days. Male lifestyle changes therefore need roughly one full cycle, about 3 months, to show in semen quality.",
+   "sources": [
+    "https://onlinelibrary.wiley.com/doi/full/10.2164/jandrol.107.004655",
+    "https://en.wikipedia.org/wiki/Spermatogenesis"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Heat exposure (sauna, hot tubs)",
+   "claim": "Garolla et al. 2013 (Human Reproduction) found that Finnish sauna for 15 minutes twice a week for 3 months significantly impaired sperm count, motility, mitochondrial function and DNA packaging in men with normal semen. The effects reversed: values were still low 3 months after stopping and back to normal at 6 months. Sperm production needs the testes about 2-6°C cooler than core body temperature. Wet heat (hot tubs, hot baths) is described as a reversible cause of low semen quality.",
+   "sources": [
+    "https://academic.oup.com/humrep/article-abstract/28/4/877/653255",
+    "https://pubmed.ncbi.nlm.nih.gov/23411620/",
+    "http://www.scielo.br/j/ibju/a/DZ7qfNnKzYGk6vdMC8HWjRB/?lang=en"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Smoking",
+   "claim": "ASRM committee opinions (2018, replaced by a 2024 opinion on tobacco or marijuana use) report that male smokers have dose-dependent reductions in semen parameters, including about 22% lower sperm concentration on average. Values often stay within the normal range, and a direct effect on male fertility is not conclusively shown. For women, a meta-analysis of 10,928 smokers and 19,128 non-smokers found smokers significantly more likely to be infertile, and smokers reach menopause 1-4 years earlier. NICE 2026 tells male smokers that smoking is associated with reduced semen quality.",
+   "sources": [
+    "https://www.asrm.org/practice-guidance/practice-committee-documents/tobacco-or-marijuana-use/",
+    "https://www.fertstert.org/article/S0015-0282(18)30492-8/pdf",
+    "https://www.nice.org.uk/guidance/NG257/chapter/advice-about-factors-that-can-affect-fertility"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Caffeine",
+   "claim": "ACOG Committee Opinion 462 (2010, reaffirmed) says moderate caffeine (under 200 mg per day) does not appear to be a major factor in miscarriage or preterm birth, while the link to growth restriction is undetermined. Korea's MFDS (식약처) sets daily caffeine limits of 400 mg or less for adults and 300 mg or less for pregnant women. NICE NG257 (2026) states there is no consistent evidence that caffeinated drinks cause fertility problems.",
+   "sources": [
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2010/08/moderate-caffeine-consumption-during-pregnancy",
+    "https://pubmed.ncbi.nlm.nih.gov/20664420/",
+    "https://www.medicaltimes.com/Mobile/News/NewsView.html?ID=44358",
+    "https://www.bokjiro.go.kr/ssis-tbu/cms/pc/news/news/6684120.html",
+    "https://www.nice.org.uk/guidance/ng257/chapter/Initial-advice-to-people-concerned-about-delays-in-conception"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Alcohol when trying to conceive",
+   "claim": "The CDC states there is no known safe amount of alcohol during pregnancy or while trying to get pregnant, and no safe time or type of alcohol. Alcohol can cause fetal alcohol spectrum disorders. NICE NG257's specific alcohol wording for natural conception was not fully visible in the results.",
+   "sources": [
+    "https://www.cdc.gov/maternal-infant-health/pregnancy-substance-abuse/index.html",
+    "https://www.cdc.gov/alcohol-pregnancy/media/pdfs/2025/04/Patient-Article-Lets-Talk-About-Alcohol-and-Pregnancy-508.pdf"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Body weight",
+   "claim": "NICE NG257 (2026) says women with a BMI of 30 or more should be told they are likely to take longer to conceive. If they are not ovulating, losing weight is likely to improve their chance of conception.",
+   "sources": [
+    "https://www.nice.org.uk/guidance/NG257/chapter/advice-about-factors-that-can-affect-fertility"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Due date and gestational age (Naegele's rule)",
+   "claim": "By convention, the estimated due date is 280 days (40 weeks) after the first day of the last menstrual period (Naegele's rule). Gestational age is counted from that date. The rule assumes a 28-day cycle with ovulation on day 14 and ignores cycle and ovulation variability. ACOG Committee Opinion 700 (2017) treats first-trimester ultrasound as the most accurate method: if it differs from the LMP date by more than about 5 days in early first trimester, the ultrasound date should be used.",
+   "sources": [
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2017/05/methods-for-estimating-the-due-date",
+    "https://journals.lww.com/greenjournal/fulltext/10.1097/aog.0000000000002046~committee-opinion-no-700-methods-for-estimating-the-due-date"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "implications": [
+  "Do not rely on a calendar-only 'next period − 14' algorithm. Show the fertile window as a 6-day range with probabilities that peak 1-2 days before ovulation, widen it for irregular or short-history cycles, and state that the prediction is an estimate (Wilcox 2000: only about 30% fall within days 10-17; app accuracy at most 21%).",
+  "Build in LH-test input as the main way to correct predictions: the day of a positive test plus the next day are peak days. Offer BBT and cervical mucus logging to confirm ovulation after the fact and learn the pattern over cycles. Timing with LH tests has moderate-certainty evidence of higher live birth (Cochrane 2023, RR 1.36).",
+  "Make intercourse-frequency guidance deliberately low-pressure. Default to 'every 2-3 days, or every 1-2 days around the window' (NICE 2026 / ASRM). Avoid single-'D-day' alerts to the husband, since timed-intercourse pressure is linked to distress and sexual dysfunction. Give each partner control over whether and how they get fertile-day alerts, and phrase alerts as couple time rather than a task. This fits the date-idea feature well.",
+  "Add automatic 'see a doctor' prompts: 12 months of trying if the woman is under 35 (6 months if 35 or older, ASRM; 1 year under Korea's 모자보건법; NICE says earlier referral at 36+), plus immediate prompts for irregular or absent cycles or known conditions. Link to Korea's 임신 사전건강관리 지원사업 (AMH, ultrasound, semen analysis) and 보건소 folic acid supply.",
+  "Base the women's supplement checklist on folic acid 400 µg daily, started at least 1 month before (Korean norm: 3 months) and continued to 12 weeks, plus optional vitamin D. Warn about retinol vitamin A above 10,000 IU and multivitamin overlap. Record 4 mg as the dose for a previous neural-tube-defect pregnancy only under a doctor's instruction.",
+  "For men, a zinc/folate 'take your vitamins' check is not evidence-based (FAZST found no benefit and some harm), and antioxidant evidence is low certainty. Build the male check around behaviours instead: no smoking, alcohol reduction, avoiding sauna, hot tubs and laptop heat, and a 74-day / 3-month progress timer. Avoid supplement-selling claims that could mislead users or raise regulatory risk.",
+  "Use conservative lifestyle trackers: caffeine at 200 mg a day or less (ACOG; MFDS allows 300 mg for pregnant women), zero alcohol once trying (CDC), and no smoking for either partner.",
+  "For the switch to pregnancy and the baby diary, calculate the due date as LMP + 280 days and gestational weeks from the LMP. Let the user overwrite it with the ultrasound due date from the first-trimester scan (ACOG CO 700), because the app's cycle data will often be off by several days.",
+  "Add age-aware copy for women 35 and over: per-cycle chances are about half those of women aged 19-26 (Dunson 2002), and evaluation should come at 6 months. Keep the tone supportive, not alarming.",
+  "Source caveat: WebFetch was blocked in this session and the search budget ran out, so the numbers come from search-result abstracts and summaries of the cited URLs. Check the original papers and guideline texts (especially NICE NG257, ASRM definitions, and the Korean 보건소 support details) before putting them in the app."
+ ]
+}

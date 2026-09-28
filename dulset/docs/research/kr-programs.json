@@ -1,0 +1,268 @@
+{
+ "summary": "한국 정부는 임신 준비부터 영유아기까지 이 앱의 모든 단계에 걸쳐 제도를 운영하고 있습니다. 2025년 1월부터 가임력 검사비 지원(임신 사전건강관리 지원사업)은 결혼 여부와 자녀 수에 상관없이 20~49세 남녀 모두가 대상입니다. 여성은 AMH와 부인과 초음파로 최대 13만 원, 남성은 정액검사로 최대 5만 원을 받고, 나이 주기별로 1회씩 최대 3회까지 지원됩니다. 절차는 e보건소 신청, 검사의뢰서 발급, 3개월 이내 검사, 검사 후 1개월 이내 비용 청구 순이라 알림을 붙이기 좋습니다. 난임 시술비는 2024년에 소득기준이 없어졌고, 지원 횟수도 평생 25회에서 출산당 25회로 바뀌었습니다. 45세 미만의 건강보험 본인부담률도 30%로 낮아졌습니다. 2026년에는 지원결정통지서 유효기간이 3개월에서 6개월로 늘어납니다. 출산 이후 지원은 임신·출산 진료비 바우처(태아당 100만 원), 첫만남이용권(첫째 200만 원, 둘째 이상 300만 원), 부모급여(0세 월 100만 원, 1세 월 50만 원)가 있습니다. 아동수당은 2026년부터 만 9세 미만까지로 넓어졌고, 비수도권과 인구감소지역에는 금액이 더 붙습니다. 이미 정부24의 '맘편한 임신'과 '행복출산' 원스톱 서비스, 질병관리청 예방접종도우미와 국민비서 알림, 아이사랑 앱, 서울시 임신·출산 정보센터가 신청과 정보 제공, 예방접종 알림을 맡고 있습니다. 그래서 새 앱이 차별화할 수 있는 지점은 신청 대행이 아니라 부부가 함께 보는 일정표와 마감일 알림입니다. 다만 금액과 대상 조건이 해마다 바뀌고 지역마다 달라서 콘텐츠를 서버에서 관리하고 시행일을 표시해야 합니다. 참고로 이번 조사에서는 .go.kr 페이지에 직접 접속하는 것이 네트워크 프록시에 막혀서, 모든 내용을 검색 결과에 나온 정부 페이지 요약으로 확인했습니다.",
+ "findings": [
+  {
+   "topic": "임신 사전건강관리(가임력 검사) - 대상 확대",
+   "claim": "보건복지부는 2025년 1월 1일부터 가임력 검사비 지원을 결혼 여부와 자녀 수에 상관없이 20~49세 모든 남녀로 넓혔습니다. 나이 주기별(29세 이하 / 30~34세 / 35~49세)로 1회씩, 생애 최대 3회까지 지원합니다.",
+   "sources": [
+    "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&list_no=1484145&act=view",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148938913",
+    "https://mediahub.seoul.go.kr/archives/2016755"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "임신 사전건강관리(가임력 검사) - 2024년 도입 당시 조건",
+   "claim": "이 사업은 2024년 4월에 시작됐습니다. 당시에는 임신을 준비하는 부부(사실혼과 예비부부 포함)만 대상이었고, 생애 1회만 지원됐습니다.",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148927695",
+    "https://www.mohw.go.kr/board.es?act=view&bid=0027&list_no=1480886&mid=a10503010100"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "임신 사전건강관리(가임력 검사) - 검사 항목과 금액",
+   "claim": "여성은 난소기능검사(AMH)와 부인과 초음파로 최대 13만 원, 남성은 정액검사(정자정밀형태검사)로 최대 5만 원을 지원받습니다. 병원 검사비가 여성 13~14만 원, 남성 5~5.5만 원 선이라 차액은 본인이 냅니다.",
+   "sources": [
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097",
+    "https://seoul-agi.seoul.go.kr/pragnant-previous-support",
+    "https://www.sejong.go.kr/health/sub03_04_18.do"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "임신 사전건강관리(가임력 검사) - 신청과 환급 절차",
+   "claim": "절차는 다음과 같습니다. (1) 검사 전에 e보건소에서 온라인으로 신청하거나 주소지 보건소를 방문해 신청합니다. (2) 보건소가 지원을 결정하면 검사의뢰서(출력물이나 모바일 화면)를 받습니다. (3) 신청일로부터 3개월 안에 사업에 참여하는 의료기관에서 검사합니다. (4) 검사일로부터 1개월 안에 청구서, 영수증, 세부내역서, 통장사본을 내고 청구합니다. (5) 청구일로부터 3개월 안에 돈이 들어옵니다.",
+   "sources": [
+    "https://www.sejong.go.kr/health/sub03_04_18.do",
+    "https://www.anyang.go.kr/health/contents.do?key=4822",
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "임신 사전건강관리(가임력 검사) - 이용 규모",
+   "claim": "확대 첫해인 2025년 1~2월에만 약 9만 명이 신청했습니다. 정부는 2026년 지원 인원을 20.1만 명(2025년 12월 기준)에서 35.9만 명으로 늘릴 계획입니다.",
+   "sources": [
+    "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1484901&mid=a10503000000",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148956615"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "보건소 엽산제·철분제",
+   "claim": "시·군·구 보건소는 임신을 준비하는 여성에게 엽산제를 임신 전후 합쳐 최대 3개월분 줍니다. 임신부에게는 임신 12주까지 엽산제, 16주 이후에는 철분제(보통 최대 5개월분, 지역에 따라 6개월분)를 줍니다. 의약품은 보건소 방문 수령이 원칙이고, 세부 기준은 보건소마다 조금씩 다릅니다.",
+   "sources": [
+    "https://www.hanam.go.kr/health/contents.do?key=952",
+    "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=2&cciNo=1&cnpClsNo=2",
+    "https://ansan.go.kr/iloveyou/sub/contents.do?c1=2&c3=9"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "맘편한 임신 원스톱 서비스(정부24)",
+   "claim": "임산부는 정부24나 주민센터·보건소에서 여러 임신 지원을 한 번에 신청할 수 있습니다. 대상은 임신·출산 진료비(국민행복카드), 엽산제·철분제, 표준모자보건수첩, KTX 특실 업그레이드, SRT 할인 등입니다. 엽산제는 임신 전후 3개월, 철분제는 임신 16주 이후에 신청할 수 있습니다.",
+   "sources": [
+    "https://www.gov.kr/portal/onestopSvc/fertility",
+    "https://www.gov.kr/portal/service/serviceInfo/174100000015",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148933394"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "난임부부 시술비 지원 - 2024년 제도 변경",
+   "claim": "세 가지가 바뀌었습니다. 소득기준(기존 기준중위소득 180% 이하)이 2024년 1월에 없어졌습니다. 지원 횟수는 2024년 11월부터 평생 25회에서 아이 1명당 25회로 바뀌었습니다. 같은 때 45세 미만 여성의 건강보험 본인부담률도 50%에서 30%로 낮아졌습니다.",
+   "sources": [
+    "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1490515&mid=a10503010100&nPage=1&tag="
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "난임부부 시술비 지원 - 급여 구조와 성과",
+   "claim": "건강보험은 출산당 총 25회(인공수정 5회, 체외수정 20회)까지 적용됩니다. 지자체는 본인부담금과 비급여 진료비의 90% 수준까지 지원합니다. 2025년에 이 사업으로 태어난 아이는 48,981명으로 전체 출생아의 19.2%이고, 2024년 37,276명보다 31.4% 늘었습니다.",
+   "sources": [
+    "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1490515&mid=a10503010100&nPage=1&tag=",
+    "https://www.gov.kr/portal/service/serviceInfo/SME000000100"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "난임부부 시술비 지원 - 회당 상한과 사실혼 인정",
+   "claim": "민간 안내 기준으로 회당 지원 상한은 신선배아 체외수정 최대 110만 원, 동결배아 50만 원, 인공수정 30만 원입니다. 신청일 기준으로 1년 이상 사실혼 관계가 확인되면 법률혼과 같은 조건으로 신청할 수 있다고 안내됩니다. 다만 둘 다 정부 1차 문서로는 확인하지 못했습니다.",
+   "sources": [
+    "https://glasswallet.com/blog/infertility-treatment-subsidy-guide/",
+    "https://sivfclinic.com/infertility-support-2026/",
+    "https://www.banksalad.com/articles/%EB%B3%B4%ED%97%98-%EC%8B%9C%ED%97%98%EA%B4%80%EC%8B%9C%EC%88%A0-%EB%B9%84%EC%9A%A9-%EC%A0%95%EB%B6%80%EC%A7%80%EC%9B%90%EA%B8%88"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "2026년 난임·임신 관련 변경사항",
+   "claim": "2026년 보건복지 정책 변경 내용은 다음과 같습니다. 난임부부 시술비 지원결정통지서 유효기간이 3개월에서 6개월로 늘어납니다. 난임·임산부 심리상담센터는 11곳에서 13곳으로 늘어납니다. 국민연금 출산크레딧은 둘째아부터가 아니라 첫째아부터 12개월이 인정되고, 이른둥이 의료비 지원 한도는 1천만 원에서 2천만 원으로 오릅니다.",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148956615"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "난임치료휴가(고용노동부)",
+   "claim": "2025년 2월 23일부터 난임치료휴가가 연 3일에서 6일(유급 2일, 무급 4일)로 늘었고 하루 단위로 쓸 수 있습니다. 중소기업 근로자는 처음 유급 2일에 대해 정부가 통상임금 100%(상한 160,760원)를 지원합니다.",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148944114",
+    "https://www.moel.go.kr/news/cardinfo/view.do?bbs_seq=20250201818",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148939477"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "임신·출산 진료비 바우처(국민행복카드)",
+   "claim": "임신한 건강보험 가입자나 피부양자는 100만 원을 지원받습니다. 다태아는 2024년 1월부터 태아당 100만 원이라 쌍둥이 200만 원, 세쌍둥이 300만 원입니다(이전에는 일괄 140만 원). 사용기한은 분만예정일(출산 후 신청하면 출산일)로부터 2년입니다.",
+   "sources": [
+    "http://www.voucher.go.kr/voucher/pregnancy.do",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148918237",
+    "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=735&ccfNo=2&cciNo=2&cnpClsNo=1"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "첫만남이용권",
+   "claim": "2024년 1월 1일 이후 태어난 아이부터 첫째는 200만 원, 둘째 이상은 300만 원을 국민행복카드 바우처로 받습니다. 사용기간은 출생일로부터 1년이고, 유흥·사행업종을 뺀 대부분의 업종(온라인 포함)에서 쓸 수 있습니다. 2026년 금액 변경은 확인되지 않았습니다.",
+   "sources": [
+    "http://www.voucher.go.kr/voucher/firstEncounter.do",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148924719",
+    "https://www.gov.kr/portal/service/serviceInfo/135200005015"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "부모급여",
+   "claim": "2024년부터 부모급여는 0세 월 100만 원, 1세 월 50만 원입니다. 어린이집을 이용하면 보육료 바우처(0세반 54만 원, 1세반 47.5만 원)를 뺀 차액만 현금으로 받습니다. 0세는 46만 원, 1세는 2.5만 원입니다.",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148924684",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148926478",
+    "https://www.mohw.go.kr/menu.es?mid=a10711030600"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "아동수당 2026년 확대",
+   "claim": "아동수당법 개정으로 2026년 지급 대상이 만 8세 미만에서 만 9세 미만으로 넓어졌습니다. 이후 매년 1세씩 올려 2030년에는 13세 미만까지 지급할 계획입니다. 기본 월 10만 원에 비수도권·인구감소지역 아동은 월 5천~2만 원을 더 받습니다(정책브리핑은 '월 최대 13만 원'으로 안내). 확대분은 2026년 4월부터 지급했고 1월분부터 소급했습니다.",
+   "sources": [
+    "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1490257&tag=&nPage=1",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148961693",
+    "https://www.korea.kr/news/customizedNewsView.do?newsId=148963801"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "행복출산 원스톱 서비스",
+   "claim": "출생신고 때 정부24나 주민센터에서 여러 출산 지원을 한 번에 신청할 수 있습니다. 대상은 첫만남이용권, 부모급여, 아동수당, 양육수당, 출산가구 전기료 경감, 다자녀 할인, 지자체 출산지원금 등입니다. 부모급여, 아동수당, 양육수당은 출생 후 60일 안에 신청해야 출생월까지 소급됩니다.",
+   "sources": [
+    "https://www.gov.kr/portal/onestopSvc/happyBirth",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148933586",
+    "https://www.gov.kr/portal/service/serviceInfo/174000000029"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "영유아 건강검진(국민건강보험)",
+   "claim": "영유아 건강검진은 생후 14~35일, 4~6개월, 9~12개월, 18~24개월, 30~36개월, 42~48개월, 54~60개월, 66~71개월에 받습니다. 구강검진은 18~29개월, 30~41개월, 42~53개월, 54~65개월입니다. 본인부담금은 없습니다.",
+   "sources": [
+    "https://www.nhis.or.kr/magazin/mobile/201703/c04.html",
+    "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=362391&tag=&nPage=268",
+    "https://health.gangnam.go.kr/web/business/moja/infant/sub03.do"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "어린이 국가예방접종",
+   "claim": "어린이 국가예방접종사업은 국가 지원 백신 18종을 위탁의료기관에서 무료로 맞게 해 줍니다. 주요 일정은 BCG 생후 4주 이내, B형간염 0·1·6개월, MMR 12~15개월입니다. 접종이 늦어지면 횟수와 일정이 바뀔 수 있어 예진의사와 상담해야 합니다. 질병관리청은 '2026년 국가예방접종 지침'을 펴냈습니다.",
+   "sources": [
+    "https://nip.kdca.go.kr/irhp/infm/goImgPopup.do?num=1",
+    "https://www.kdca.go.kr/kdca/3342/subview.do",
+    "https://www.kdca.go.kr/bbs/kdca/55/304519/download.do"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "예방접종도우미(질병관리청)와 국민비서 알림",
+   "claim": "질병관리청 예방접종도우미(nip.kdca.go.kr)는 자녀 접종 내역 조회, 출생일 기준 일정 보기, 다음 접종 시기 알림을 제공합니다. 보호자가 국민비서(카카오톡·네이버 등)에서 '필수예방접종 알림'을 신청하면 그 채널로 알림을 받습니다. 접종기관에 예약했다면 예약일 2일 전에 문자도 옵니다. 정부가 이미 무료 접종 알림을 제공하고 있다는 뜻입니다.",
+   "sources": [
+    "https://nip.kdca.go.kr/",
+    "https://nip.kdca.go.kr/irhp/mngm/goVcntMngm.do?menuLv=3&menuCd=313",
+    "https://nip.kdca.go.kr/irgd/index.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "비공식 예방접종 앱",
+   "claim": "앱스토어와 구글플레이에는 '예방접종도우미 알리미', '예방접종도우미 모바일 활용가이드'처럼 공식 서비스와 이름이 비슷한 제3자 앱이 여럿 있습니다. 적어도 하나는 개인 개발자가 만든 앱으로 보여, 공식 앱인지 사용자가 헷갈릴 수 있습니다.",
+   "sources": [
+    "https://apps.apple.com/kr/app/%EC%98%88%EB%B0%A9%EC%A0%91%EC%A2%85%EB%8F%84%EC%9A%B0%EB%AF%B8-%EC%95%8C%EB%A6%AC%EB%AF%B8/id6479388958",
+    "https://play.google.com/store/apps/details?id=com.tngl.tnincomeginsua&hl=en_US",
+    "https://apps.apple.com/kr/app/id6636471016"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "아이사랑(임신육아종합포털) 공식 앱",
+   "claim": "아이사랑 모바일 앱(App Store id490070696, 스토어 설명상 교육부 앱)은 임신·출산·육아 전문가 상담과 예약, 어린이집 찾기와 입소대기 신청, 아이행복카드 보육료 결제, 시간제보육 신청을 제공합니다. 웹 포털 childcare.go.kr에는 임산부 신고 메뉴도 있습니다. 배란일 계산이나 부부 연동 기능은 확인되지 않았습니다.",
+   "sources": [
+    "https://apps.apple.com/kr/app/%EC%95%84%EC%9D%B4%EC%82%AC%EB%9E%91-%EB%AA%A8%EB%B0%94%EC%9D%BC/id490070696",
+    "https://www.childcare.go.kr/index.html?menuno=515",
+    "https://www.childcare.go.kr/?menuno=124"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "서울시 임신·출산 정보센터와 몽땅정보통",
+   "claim": "서울시 임신·출산 정보센터(seoul-agi.seoul.go.kr, 웹·모바일)는 임신 준비부터 난임, 출산, 육아까지 정보를 모아 둔 플랫폼입니다. 모자보건 서비스 7종 온라인 신청, 임신 전 자가 설문평가, 의료기관·수유실 지도를 제공합니다. 서울시의 기존 '남녀 임신준비 지원사업'은 2025년 1월 1일부터 국가 가임력 검사 사업으로 바뀌었습니다. 결혼·임신·출산 지원 신청은 '탄생육아 몽땅정보통'(umppa.seoul.go.kr)에서 합니다.",
+   "sources": [
+    "https://seoul-agi.seoul.go.kr/index",
+    "https://news.seoul.go.kr/welfare/archives/507392",
+    "https://umppa.seoul.go.kr/hmpg/bich/subf/supr/bzmgPageDetail.do?biz_mng_no=ABB2008D3B524A908A9202AFBA28CB00",
+    "https://seoul-agi.seoul.go.kr/pregnancy-preparation-survey"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "서울시 난자동결 시술비 지원(지자체 추가사업 예시)",
+   "claim": "서울시는 20~49세 여성에게 난자 채취 전 검사비와 시술비의 50%를 최대 200만 원까지 생애 1회 지원합니다. 신청 조건은 서울 거주, AMH 1.5ng/ml 이하, 중위소득 180% 이하입니다. 2026년 사업은 2월 2일에 시작했고 몽땅정보 만능키에서 온라인으로만 신청합니다. 이렇게 지자체마다 국가사업 위에 추가 지원이 붙습니다.",
+   "sources": [
+    "https://seoul-agi.seoul.go.kr/sofp-csp",
+    "https://mediahub.seoul.go.kr/archives/2008881",
+    "https://umppa.seoul.go.kr/hmpg/sprt/subf/bzin/bzmgPageDetail.do?biz_mng_no=DEC40D648D8647CABC7A5D7279EFCFB6"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "2024년 임신·출산·양육 지원 대폭 확대",
+   "claim": "보건복지부는 2024년 1월부터 첫만남이용권 둘째 이상 300만 원, 부모급여 인상, 다태아 진료비 태아당 100만 원 등을 한꺼번에 시행했습니다. 현재 금액 대부분의 기준 시점이 이때입니다.",
+   "sources": [
+    "https://www.mohw.go.kr/board.es?mid=a10503010200&bid=0027&act=view&list_no=1479667",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148924447"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "백일·돌 문화",
+   "claim": "한국 전통 일생의례에서 돌(첫 생일)에는 형편이나 지역에 상관없이 돌잔치를 엽니다. 돌상에는 백설기, 수수팥떡, 국수 등 장수와 무병을 비는 음식을 올립니다. 쌀, 돈, 책, 실 등을 놓고 아기가 고르게 해서 장래를 점치는 '돌잡이'를 합니다. 백일과 돌에는 떡을 이웃에 돌려 아이가 건강하게 자라고 있음을 알렸습니다.",
+   "sources": [
+    "https://folkency.nfm.go.kr/topic/detail/147",
+    "https://folkency.nfm.go.kr/topic/%EB%8F%8C%EC%9E%A1%EC%9D%B4",
+    "https://encykorea.aks.ac.kr/Article/E0016110"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "implications": [
+  "남편 쪽 기능을 넣을 공식 근거가 있습니다. 정부가 남성 정액검사를 따로 지원하고(최대 5만 원), 가임력 검사를 부부 각각 나이 주기별로 최대 3회 지원합니다. 그래서 '둘 다 가임력 검사 받기', '신청 후 3개월 안에 검사', '검사 후 1개월 안에 청구' 같은 마감일을 부부 공동 체크리스트와 알림으로 만들 수 있습니다.",
+  "2025년부터 미혼 남녀도 가임력 검사 지원을 받고, 난임 시술 지원에서는 사실혼도 인정됩니다. 그래서 커플 연동을 법률혼 부부 전용으로 설계하지 말고, 예비부부·사실혼 커플도 쓸 수 있게 하는 편이 맞습니다.",
+  "'임신 준비 엽산 3개월' 알림은 복약 체크 기능과 바로 이어집니다. 보건소 엽산제가 임신 전후 최대 3개월분이고 철분제는 16주부터라, 복용 체크에 '보건소에서 무료로 받는 법' 안내를 붙이면 실제로 쓸모가 있습니다.",
+  "신청 자체는 정부24 원스톱 서비스(맘편한 임신, 행복출산), e보건소, 예방접종도우미와 국민비서 알림이 이미 하고 있습니다. 앱은 신청을 대신하기보다 부부가 함께 보는 타임라인과 마감 알림을 주고 공식 페이지로 바로 보내는 역할에 집중하는 편이 안전하고 차별화도 됩니다. 예를 들어 출생 후 60일 안 신청 소급, 난임 결정통지서 유효기간 6개월 같은 마감입니다.",
+  "지원 금액과 조건은 거의 해마다 바뀝니다. 2024년 소득기준 폐지와 출산당 25회, 2025년 미혼 확대와 난임휴가 6일, 2026년 아동수당 9세 미만과 통지서 6개월이 그 예입니다. 금액을 앱에 고정하지 말고 서버에서 관리하고, 항목마다 '시행일'과 '출처 링크'를 달아야 합니다. 서울 난자동결 같은 지자체 추가사업 때문에 거주지별 정보 층도 필요합니다.",
+  "육아일기 단계는 영유아 건강검진 8회와 구강검진 4회 시기, 국가예방접종 일정, 백일·돌에 맞춰 성장 기록을 남기게 하면 자연스럽게 이어집니다. 다만 예방접종 알림은 정부가 이미 무료로 주므로 핵심 차별점이 되기는 어렵고, 부부 공유 기록을 보조하는 기능으로 두는 것이 맞습니다.",
+  "공식 아이사랑 앱과 서울시 임신·출산 정보센터에는 배란일 계산, 부부 계정 연동, 데이트 제안 기능이 확인되지 않았습니다. 이 공백이 차별화 지점일 수 있습니다. 다만 정부 서비스와 비슷한 이름을 쓰면 비공식 앱으로 오해받을 수 있으니 브랜딩에 주의해야 합니다.",
+  "검사 결과(AMH, 정액검사)나 난임 시술 여부는 민감한 건강정보입니다. 부부 간에 공유할 때 항목별 동의와 공개 범위를 조절할 수 있게 해야 합니다(설계상 판단이며, 이번 조사에서 법 조항을 직접 확인하지는 않았습니다)."
+ ]
+}

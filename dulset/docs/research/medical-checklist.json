@@ -1,0 +1,448 @@
+{
+ "summary": "임신 준비부터 출산 직후까지 부부가 챙길 병원·검사·접종·지원제도 35개 항목을 검증했습니다. 빼야 할 만큼 틀린 항목은 없었고, 숫자나 표현이 부정확한 7개 항목을 고쳤습니다. 이번 세션에서 검색으로 직접 다시 확인한 것은 4개 항목입니다. 첫째, 임신 사전건강관리 지원은 2026년에도 20~49세 남녀가 결혼 여부와 상관없이 받을 수 있습니다. 주기별로 1회씩 최대 3회이고, 여성 13만원·남성 5만원이며, 반드시 검사 전에 신청해야 합니다(소급 불가). 둘째, 국민행복카드는 단태아 100만원, 다태아는 태아 1명당 100만원입니다. 분만취약지 거주자는 20만원을 더 받고, 사용기한은 2년입니다. 셋째, 2026-27절기 임신부 독감 무료접종은 2026.9.21~2027.4.30입니다. 넷째, 아브리스보는 2026.8.13 국내 허가를 받았고 접종 시기는 임신 28~36주입니다. 나머지 항목은 질병관리청 예방접종 일정, ACOG·CDC 지침 같은 잘 알려진 기준에 맞는지 확인하는 방식으로 검토했습니다. 고친 내용은 임신확인서 발급 조건, 매독 치료 시기 숫자, 초음파 급여 횟수, NIPT 설명, 임신성 당뇨 기준치, 선천성 기형 빈도, 선천성대사이상검사 설명입니다. 앱에서는 LMP·EDD·출생일을 기준으로 항목을 자동 배치하고, 담당자(아내/남편/함께)를 지정해 공유 캘린더와 알림으로 관리하면 됩니다.",
+ "items": [
+  {
+   "phase": "preconception",
+   "who": "both",
+   "title": "임신 사전건강관리(가임력 검사) 지원 신청",
+   "when": "임신 계획 3~6개월 전",
+   "detail": "2026년 기준 20~49세 남녀는 결혼·자녀 여부와 상관없이 지원받습니다. 29세 이하·30~34세·35~49세 주기마다 1회씩, 최대 3회입니다. 여성은 난소기능검사(AMH)와 부인과 초음파에 최대 13만원, 남성은 정액검사(정자정밀형태검사)에 최대 5만원이 나옵니다. 반드시 검사 전에 e보건소나 보건소에서 신청해 검사의뢰서를 받아야 하며, 먼저 검사하고 나중에 청구하는 소급 지원은 되지 않습니다.",
+   "sources": [
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097",
+    "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=1&cciNo=1&cnpClsNo=2",
+    "https://www.guro.go.kr/health/contents.do?key=1320",
+    "https://www.mohw.go.kr/board.es?mid=a10503000000&bid=0027&list_no=1480886&act=view"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "preconception",
+   "who": "wife",
+   "title": "여성 임신 전 기본검사(혈액·소변·자궁경부암)",
+   "when": "임신 계획 3개월 전",
+   "detail": "빈혈(CBC), 혈액형(ABO/Rh), 풍진 항체, B형간염 항원·항체, 매독, HIV, 갑상선(TSH), 공복혈당, 소변검사를 받아 두고, 항체가 없는 감염병은 임신 전에 접종합니다. 자궁경부암 검진은 국가암검진으로 20세 이상 여성이 2년마다 받을 수 있으니, 대상 연도라면 임신 전에 받아 두세요.",
+   "sources": [
+    "https://www.childcare.go.kr/?menuno=251",
+    "https://www.snubh.org/service/info/com/view.do?BNO=464&Board_ID=B004&RNUM=1",
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2019/01/prepregnancy-counseling"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "husband",
+   "title": "남편 임신 전 검사(정액·감염병)",
+   "when": "임신 계획 3개월 전",
+   "detail": "정액검사는 보건소 임신 사전건강관리로 최대 5만원까지 지원받을 수 있습니다(검사 전에 신청). 혈액·소변검사, 매독·HIV, B·C형 간염과 간기능, 흉부 X선(결핵)을 함께 받는 것이 권장됩니다.",
+   "sources": [
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097",
+    "https://yaleobgy.co.kr/board/board_view?code=media&no=11"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "husband",
+   "title": "남편 생활습관 개선(금연·금주) 3개월 전부터",
+   "when": "임신 시도 최소 3개월 전",
+   "detail": "정자가 만들어지는 데 약 64~74일이 걸리고, 부고환을 지나며 성숙하는 데 1~2주가 더 걸려 모두 약 3개월이 필요합니다. 그래서 금연·금주 같은 생활습관 개선은 최소 3개월 전에 시작해야 합니다. 사우나나 장시간 사이클링처럼 고환 온도를 높이는 환경도 피합니다.",
+   "sources": [
+    "https://v.daum.net/v/20210825030757857",
+    "https://www.ikunkang.com/news/articleView.html?idxno=22588"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "wife",
+   "title": "엽산 복용 시작(보건소 무료 지원)",
+   "when": "임신 2~3개월 전부터 임신 12주까지",
+   "detail": "신경관결손 예방을 위해 임신 전부터 임신 12주까지 하루 400μg(0.4mg) 이상 엽산을 먹는 것이 표준 권고입니다. 보건소에서는 임신 준비 여성과 초기 임신부에게 최대 3개월분의 엽산제를 무료로 줍니다.",
+   "sources": [
+    "https://synapse.koreamed.org/upload/synapsedata/pdfdata/0119jkma/jkma-54-799.pdf",
+    "https://www.gov.kr/portal/service/serviceInfo/SD0000016094"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "preconception",
+   "who": "wife",
+   "title": "풍진(MMR) 항체 없으면 접종 후 4주 피임",
+   "when": "임신 시도 최소 1~2개월 전",
+   "detail": "임신 중 풍진에 감염되면 선천성 풍진증후군(난청·백내장·심장기형)이 생길 수 있습니다. 항체가 없으면 임신 전에 MMR을 맞습니다. 생백신이라 임신 중에는 맞을 수 없고, 접종 후 4주(28일) 동안 임신을 피해야 합니다(질병관리청·CDC).",
+   "sources": [
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1122",
+    "https://www.cdc.gov/vaccines-pregnancy/hcp/vaccination-guidelines/index.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "preconception",
+   "who": "wife",
+   "title": "수두 면역 확인·접종 후 1개월 피임",
+   "when": "임신 시도 2~3개월 전(4~8주 간격 2회 접종 시간 확보)",
+   "detail": "수두를 앓은 적이 없거나 항체가 없으면 임신 전에 4~8주 간격으로 2회 맞습니다. 생백신이라 임신 중에는 맞을 수 없고, CDC 기준으로 접종할 때마다 1개월 동안 임신을 피합니다. 국내 일부 자료는 더 긴 기간을 권하므로 담당의와 확인하세요.",
+   "sources": [
+    "https://www.cdc.gov/vaccines-pregnancy/hcp/vaccination-guidelines/index.html",
+    "https://www.immunize.org/ask-experts/topic/varicella/vaccine-recommendations-varicella/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "both",
+   "title": "B형간염 항체 음성이면 접종 시작",
+   "when": "임신 계획 6개월 전이 이상적",
+   "detail": "B형간염 항원·항체가 모두 음성이면 0·1·6개월 일정으로 3회 맞습니다. 불활성화 백신이라 도중에 임신해도 이어서 접종할 수 있습니다.",
+   "sources": [
+    "https://www.snubh.org/service/info/com/view.do?BNO=464&Board_ID=B004&RNUM=1",
+    "https://www.cdc.gov/vaccines-pregnancy/hcp/vaccination-guidelines/index.html"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "both",
+   "title": "치과 검진·스케일링·충치 치료",
+   "when": "임신 계획 3~6개월 전(임신 중이라면 중기 16~28주)",
+   "detail": "임신하면 호르몬 변화로 잇몸염증이 늘고, 입덧 때문에 구강 관리도 어려워집니다. 그래서 치료는 임신 전에 끝내 두는 것이 좋습니다. 임신 중에 치료가 필요하면 비교적 안전한 중기에 받습니다.",
+   "sources": [
+    "http://www.sjpost.co.kr/news/articleView.html?idxno=30207",
+    "https://dentalpedia.kr/dentalpedia/?bmode=view&idx=30226602"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "preconception",
+   "who": "husband",
+   "title": "남편 예방접종 점검(MMR·수두·A·B형간염·독감)",
+   "when": "임신 계획 단계",
+   "detail": "가족이 감염돼 임신부에게 옮기는 것을 막기 위해 남편도 접종력과 항체를 확인하고, 빠진 접종이 있으면 맞아 둡니다. 독감은 매년 가을에 맞고, 신생아 보호용 Tdap은 출산 전에 따로 챙깁니다(아래 Tdap 항목 참고).",
+   "sources": [
+    "https://yaleobgy.co.kr/board/board_view?code=media&no=11",
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2017/09/update-on-immunization-and-pregnancy-tetanus-diphtheria-and-pertussis-vaccination"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "both",
+   "title": "첫 산부인과 방문·임신확인서 발급",
+   "when": "마지막 생리 시작일 기준 임신 5~6주 이후",
+   "detail": "임신 5~6주쯤이면 질 초음파로 아기집이 보이고, 심장박동은 보통 6~7주에 확인됩니다. 임신확인서는 의사가 임신을 확인하면 발급되는데, 병원마다 아기집이나 심장박동을 확인한 뒤 발급하는 경우가 많습니다. 국민행복카드 신청과 보건소 등록에 필요합니다.",
+   "sources": [
+    "https://www.childcare.go.kr/?menuno=358",
+    "https://ibabynews.com/news/articleView.html?idxno=4241"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "wife",
+   "title": "국민행복카드 임신·출산 진료비 바우처 신청",
+   "when": "임신확인서 발급 직후",
+   "detail": "단태아는 100만원이고, 다태아는 2024.1부터 태아 1명당 100만원입니다(쌍둥이 200만원). 분만취약지에 살면 20만원을 더 받습니다. 사용기한은 출산 전에 신청하면 분만예정일부터 2년, 출산 후에 신청하면 출산일부터 2년입니다. 임산부 진료비와 2세 미만 영유아의 진료비·약값 본인부담금에 쓸 수 있습니다.",
+   "sources": [
+    "http://www.voucher.go.kr/voucher/pregnancy.do",
+    "https://www.mohw.go.kr/board.es?mid=a10503010200&bid=0027&act=view&list_no=1479667",
+    "http://www.bosa.co.kr/news/articleView.html?idxno=2206114",
+    "https://www.mohw.go.kr/menu.es?mid=a10705020100"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "wife",
+   "title": "보건소 임산부 등록(산모수첩·엽산·철분제)",
+   "when": "임신 확인 직후",
+   "detail": "임신확인서와 신분증을 가지고 보건소에 등록하면 산모수첩, 임산부 배지, 엽산제를 받을 수 있습니다. 철분제는 임신 16주 이후 분만 전까지 최대 5개월분이 지원됩니다. 산전검사 무료 여부 같은 추가 혜택은 보건소마다 다릅니다.",
+   "sources": [
+    "https://www.gov.kr/portal/service/serviceInfo/SD0000016094",
+    "https://www.guro.go.kr/health/contents.do?key=1310",
+    "https://www.hanam.go.kr/health/contents.do?key=953"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "wife",
+   "title": "임신부 외래진료비 본인부담 경감 적용 확인",
+   "when": "임신 확인 후 모든 외래 진료",
+   "detail": "2017.1.1부터 임신부의 외래 본인부담률은 의원 10%, 병원 20%, 종합병원 30%, 상급종합병원 40%로, 일반보다 20%p 낮습니다. 접수할 때 임신 사실을 알리고 적용되었는지 확인하세요.",
+   "sources": [
+    "https://www.hira.or.kr/bbsDummy.do?pgmid=HIRAA020002000100&brdScnBltNo=4&brdBltNo=9866&pageIndex=1",
+    "https://www.nhis.or.kr/static/html/wbma/c/wbmac0212.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "both",
+   "title": "분만 병원 결정(분만 가능·24시간·NICU)",
+   "when": "임신 초기~중기 초",
+   "detail": "다니는 산부인과에서 실제로 분만을 하는지, 24시간 분만과 무통분만(마취과) 체계가 있는지, 신생아집중치료실(NICU)이나 전원 체계가 있는지 확인하세요. 야간에 병원까지 걸리는 시간도 봐 둡니다. 분만하는 산부인과가 줄고 있어 일찍 정하는 것이 안전합니다.",
+   "sources": [
+    "https://www.monews.co.kr/news/articleView.html?idxno=403383",
+    "https://med.bundangcheil.com/bundang-natural-vs-cesarean/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "wife",
+   "title": "임신 초기 산전검사(혈액·소변)",
+   "when": "첫 진료~임신 12주 전후",
+   "detail": "일반혈액검사(빈혈), 혈액형, B형간염, HIV, 매독, 풍진 항체, 소변검사를 받고, 병원에 따라 갑상선·간기능·C형간염 검사가 추가됩니다. 매독 같은 감염은 초기에 찾아 치료할수록 태아 감염 위험이 크게 줄어 초기 검사가 중요합니다.",
+   "sources": [
+    "https://www.childcare.go.kr/?menuno=361",
+    "https://www.amc.seoul.kr/asan/mobile/healthinfo/management/managementDetail.do?managementId=58"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "both",
+   "title": "정기 산전검진 주기·초음파 급여 횟수",
+   "when": "임신 기간 전체",
+   "detail": "정기검진은 임신 28주까지 4주마다, 36주까지 2주마다, 그 뒤로는 매주 받으며, 고위험 임신이면 더 자주 갑니다. 산전 초음파는 임신 주수 구간별로 정해진 횟수만 건강보험이 적용되며, 정밀초음파 1회(16주 이후)를 포함해 총 7회 정도로 알려져 있습니다. 앱에서 부부 공유 일정으로 자동 생성하기 좋은 항목입니다.",
+   "sources": [
+    "https://www.amc.seoul.kr/asan/mobile/healthinfo/management/managementDetail.do?managementId=58",
+    "https://www.hira.or.kr/cms/inform/02/1351154_27116.html",
+    "https://dailypharm.com/user/news/109903"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-1st",
+   "who": "wife",
+   "title": "NT(목덜미 투명대)·1차 기형아 선별검사",
+   "when": "임신 11주~13주 6일",
+   "detail": "초음파로 태아 목덜미 두께를 재고, 산모 혈액으로 PAPP-A와 hCG를 검사해 염색체 이상 위험을 평가합니다. 검사할 수 있는 기간이 짧아 11주 전후 진료 때 미리 예약해야 합니다.",
+   "sources": [
+    "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=5516",
+    "https://www.amc.seoul.kr/asan/mobile/healthinfo/management/managementDetail.do?managementId=53"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-2nd",
+   "who": "wife",
+   "title": "2차 기형아 선별(쿼드/통합)·NIPT 선택",
+   "when": "쿼드 임신 15~20주, NIPT는 임신 10주 이후",
+   "detail": "쿼드검사는 산모 혈액으로 다운증후군·에드워드증후군·신경관결손 위험을 봅니다. 보통 1차 검사와 묶은 통합·순차 선별검사로 합니다. NIPT(태아 DNA 선별검사)는 쿼드보다 검출률이 높고 위양성이 낮지만 역시 선별검사라서, 결과가 양성이면 융모막·양수검사로 확진해야 합니다.",
+   "sources": [
+    "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=5515",
+    "https://www.amc.seoul.kr/asan/mobile/healthinfo/management/managementDetail.do?managementId=53"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-2nd",
+   "who": "both",
+   "title": "정밀초음파(태아 구조 검사)",
+   "when": "임신 20~24주",
+   "detail": "주요 선천성 기형(신생아의 약 2~3%)을 일찍 찾기 위해 태아 장기 구조를 자세히 보는 검사입니다. 건강보험은 16주 이후 1회 적용됩니다. 예약이 차는 경우가 많아 미리 잡고, 부부가 함께 가는 일정으로 등록하기 좋습니다.",
+   "sources": [
+    "https://www.ksog.org/public/index.php?sub=1&third=2",
+    "https://www.hira.or.kr/cms/inform/02/1351154_27116.html"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-2nd",
+   "who": "wife",
+   "title": "임신성 당뇨 선별검사",
+   "when": "임신 24~28주",
+   "detail": "모든 임신부가 받는 검사입니다. 50g 포도당을 마시고 1시간 뒤 혈당이 140mg/dL 이상이면(병원에 따라 130 또는 135 기준) 100g 경구당부하검사로 확진합니다. 75g 검사로 한 번에 진단하는 병원도 있습니다.",
+   "sources": [
+    "https://diabetes.or.kr/general/info/info_05.php",
+    "https://www.amc.seoul.kr/asan/mobile/healthinfo/management/managementDetail.do?managementId=61"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "anytime",
+   "who": "wife",
+   "title": "임신부 독감 무료 접종(2026-27절기)",
+   "when": "2026.9.21 ~ 2027.4.30(임신 주수 무관)",
+   "detail": "2026-27절기 국가예방접종에서 임신부는 임신 주수와 상관없이 2026.9.21부터 2027.4.30까지 무료로 맞을 수 있습니다. 주소지와 상관없이 전국 위탁의료기관과 보건소에서 맞을 수 있으니 산모수첩이나 임신확인서를 가져가세요.",
+   "sources": [
+    "https://www.kdca.go.kr/kdca/2848/subview.do?enc=Zm5jdDF8QEB8JTJGYmJzJTJGa2RjYSUyRjQyJTJGMzEyMzA4JTJGYXJ0Y2xWaWV3LmRvJTNG",
+    "https://walking.kha.or.kr/kha_home/notice_list.do?mode=view&articleNo=47404",
+    "https://nip.kdca.go.kr/irhp/mngm/goVcntMngm.do?menuLv=3&menuCd=333"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "wife",
+   "title": "임신부 Tdap(백일해) 접종",
+   "when": "임신 27~36주, 매 임신마다",
+   "detail": "임신 중에 맞으면 항체가 태아에게 전달돼, 아기가 첫 접종을 받는 생후 2개월까지 백일해를 막아 줍니다. 예전에 맞았더라도 임신할 때마다 1회 맞습니다(질병관리청·ACOG). 국가 무료접종 대상인지는 확인하지 못했습니다.",
+   "sources": [
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1120",
+    "https://www.acog.org/womens-health/faqs/the-tdap-vaccine-and-pregnancy"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "husband",
+   "title": "남편·조부모·돌봄자 Tdap(코쿠닝)",
+   "when": "신생아와 접촉하기 최소 2주 전",
+   "detail": "Tdap을 맞은 적이 없는 아빠, 조부모, 산후도우미 같은 밀접 접촉자는 아기를 만나기 최소 2주 전까지 1회 맞습니다. 아기가 예정일보다 일찍 태어날 수 있으니 임신 후기 초반에 맞아 두는 것이 안전합니다.",
+   "sources": [
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2017/09/update-on-immunization-and-pregnancy-tetanus-diphtheria-and-pertussis-vaccination",
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1120"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "wife",
+   "title": "RSV 모체 백신(아브리스보) 상담",
+   "when": "임신 28~36주(국내 허가 기준)",
+   "detail": "화이자의 아브리스보는 2026.8.13 식약처 허가를 받았습니다. 임신 28~36주에 1회 맞으면 생후 6개월까지 영아의 RSV 하기도 질환을 예방합니다. 보도된 임상 결과로는 중증 질환이 생후 3개월 이내 82.4%, 6개월 이내 70.0% 줄었습니다. 미국 FDA 기준 접종 시기는 32~36주이고, 국가접종 포함 여부와 비용은 확인되지 않았습니다.",
+   "sources": [
+    "https://www.mt.co.kr/thebio/2026/08/14/2026081414431145987",
+    "https://www.etnews.com/20260814000268",
+    "https://m.medigatenews.com/news/3017586282",
+    "https://www.mdon.co.kr/news/article.html?no=35446"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "wife",
+   "title": "GBS(B군 연쇄상구균) 검사",
+   "when": "임신 35~37주(ACOG 2020 기준 36주 0일~37주 6일)",
+   "detail": "질·항문 배양검사로 GBS 보균 여부를 확인하고, 양성이면 분만 중 항생제를 맞아 신생아 감염을 막습니다. 국내에서는 모든 임신부에게 하는 검사가 아니라 병원마다 방침이 달라, 시행 여부를 담당의에게 물어보도록 안내하는 것이 좋습니다.",
+   "sources": [
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2020/02/prevention-of-group-b-streptococcal-early-onset-disease-in-newborns",
+    "https://e-kjp.org/pdf/10.14734/PN.2024.35.3.85"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "both",
+   "title": "즉시 병원에 가야 할 위험 신호 공유",
+   "when": "임신 기간 전체(특히 28주 이후)",
+   "detail": "출혈(특히 복통 동반), 양수가 새는 느낌, 규칙적인 진통(초산부는 보통 5~10분 간격, 경산부는 더 일찍), 28주 이후 태동이 뚜렷이 줄어든 경우에는 바로 병원에 연락합니다. 심한 두통, 시야장애, 상복부 통증도 전자간증 신호일 수 있습니다. 남편도 알아야 하는 정보라 앱 첫 화면의 긴급 카드로 두면 좋습니다.",
+   "sources": [
+    "https://www.childcare.go.kr/?menuno=267",
+    "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=3329"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "pregnancy-3rd",
+   "who": "both",
+   "title": "출산 입원 가방·서류 준비",
+   "when": "임신 30주 시작, 34~36주 완성",
+   "detail": "37주부터 만삭이고 그 전에도 진통이 올 수 있어, 34~36주에는 가방을 완성해 둡니다. 신분증, 국민행복카드, 산모수첩을 따로 챙기고, 병원까지 가는 야간 이동 경로도 부부가 미리 정해 둡니다.",
+   "sources": [
+    "https://www.k-health.com/news/articleView.html?idxno=86703",
+    "https://www.yugacrew.com/crewletter/birth-bag"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "anytime",
+   "who": "wife",
+   "title": "고위험 임산부 의료비 지원 신청",
+   "when": "고위험 질환으로 입원 치료 후, 분만일로부터 6개월 이내",
+   "detail": "조기진통, 중증 임신중독증, 전치태반, 다태임신 등 19대 고위험 임신질환으로 입원 치료를 받았다면 소득과 상관없이 신청할 수 있습니다. 전액본인부담금과 비급여 진료비의 90%를 1인당 300만원 한도로 돌려받으며, 신청은 주소지 보건소에 합니다.",
+   "sources": [
+    "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=2&cciNo=2&cnpClsNo=4",
+    "https://seoul-agi.seoul.go.kr/highrisk-pregnancy-support"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "birth",
+   "who": "both",
+   "title": "신생아 B형간염 1차 접종(산모 양성 시 12시간 내 HBIG)",
+   "when": "출생 직후(분만 병원)",
+   "detail": "B형간염 접종은 출생 시, 생후 1개월, 6개월에 모두 3회 합니다. 산모가 HBsAg 양성이면 출생 후 12시간 안에 면역글로불린(HBIG)과 백신을 다른 부위에 동시에 맞히며, 주산기감염 예방사업으로 비용이 지원됩니다.",
+   "sources": [
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1102",
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=133"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "birth",
+   "who": "both",
+   "title": "BCG(결핵) 접종 예약",
+   "when": "생후 4주 이내",
+   "detail": "피내용 BCG는 지정의료기관과 보건소에서 무료로 맞습니다. 접종 기관과 일정이 한정되어 있어, 퇴원 전에 예방접종도우미에서 지정 기관을 찾아 예약해 두는 것이 좋습니다.",
+   "sources": [
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1101"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "birth",
+   "who": "both",
+   "title": "신생아 선천성대사이상 선별검사",
+   "when": "생후 48시간~7일 이내(수유 후 약 2시간 뒤 채혈)",
+   "detail": "갑상선기능저하증·페닐케톤뇨증 등 기본 6종 검사와 텐덤매스 검사를 합쳐 약 50종을 한 번의 채혈로 검사합니다. 분만 병원 입원 중에 받으면 본인부담이 없고, 재검·확진검사는 한도(7만원) 안에서 지원됩니다.",
+   "sources": [
+    "https://seoul-agi.seoul.go.kr/metabolic-screening",
+    "https://www.snuh.org/health/nMedInfo/nView.do?category=TEST&medid=BA000078"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "phase": "birth",
+   "who": "both",
+   "title": "신생아 청각선별검사(1-3-6 원칙)",
+   "when": "생후 1개월 이내 선별, 재검 시 3개월 이내 확진",
+   "detail": "모든 신생아는 생후 1개월 이내에 청각선별검사를 받고, 재검(refer)이 나오면 3개월 이내에 확진검사를 받습니다. 난청으로 확진되면 6개월 이내에 재활을 시작해야 합니다. 선별검사는 건강보험이 적용되고, 확진검사비는 7만원 안팎까지 지원됩니다(지역별 확인).",
+   "sources": [
+    "https://www.hearingscreening.or.kr/",
+    "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=3&cciNo=4&cnpClsNo=2"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "postpartum",
+   "who": "both",
+   "title": "영유아 건강검진 1차",
+   "when": "생후 14~35일",
+   "detail": "2021.1.1부터 생후 14~35일 초기 검진이 새로 생겨 영유아 건강검진은 모두 8차가 되었습니다. 앱에서 출생일을 입력하면 자동으로 일정에 넣기 좋은 항목입니다.",
+   "sources": [
+    "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=362391&tag=&nPage=268",
+    "https://www.doctorsnews.co.kr/news/articleView.html?idxno=137486"
+   ],
+   "confidence": "high"
+  },
+  {
+   "phase": "postpartum",
+   "who": "both",
+   "title": "산모 산후검진·산후우울 체크",
+   "when": "분만 후 3주 이내 연락, 4~6주에 산후검진(최대 12주 이내)",
+   "detail": "국내에서는 보통 분만 후 4~6주에 산후검진을 받습니다. ACOG는 3주 이내 첫 연락, 12주 이내 종합 산후검진을 권고합니다. 우울감이나 불안이 2주 넘게 이어지면 전문가와 상담하도록 남편이 함께 체크하는 항목으로 두면 좋습니다.",
+   "sources": [
+    "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2018/05/optimizing-postpartum-care",
+    "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=3&cciNo=5&cnpClsNo=2"
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "notes": [
+  "검증 범위의 한계: WebSearch 호출 한도(세션 200회)가 검색 5회 만에 다 찼습니다. WebFetch와 curl은 모든 대상 도메인(go.kr, kdca, cdc.gov, acog.org 등)이 egress 프록시에서 403으로 막혔습니다. 그래서 1차 출처로 직접 다시 확인한 항목은 4개뿐입니다. (1) 임신 사전건강관리 2026 조건: 20~49세, 주기별 1회 최대 3회, 여성 13만원·남성 5만원, 소급 불가. (2) 국민행복카드: 단태아 100만원, 다태아 2024.1부터 태아당 100만원, 분만취약지 +20만원, 사용기한 2년. (3) 2026-27절기 임신부 독감 접종: 2026.9.21~2027.4.30. (4) 아브리스보: 2026.8.13 허가, 임신 28~36주. 나머지 항목은 질병관리청 표준 예방접종 일정, ACOG·CDC 지침 같은 확립된 기준에 비춰 검토했습니다. 출시 전에 원문 페이지로 한 번 더 확인하길 권합니다.",
+  "수정 1 (첫 산부인과 방문): 임신확인서가 '태아 심박동 확인 뒤에만 발급된다'는 규정은 없습니다. 의사가 임신을 확인하면 발급되고, 심박 확인 후에 발급하는 것은 병원 관행이라 '병원마다 다름'으로 고쳤습니다.",
+  "수정 2 (임신 초기 산전검사): '매독은 14주 이내 치료하면 태아 감염 예방'의 14주는 근거를 확인할 수 없었습니다. 흔히 인용되는 값은 16주입니다. 특정 주수를 빼고 '초기에 치료할수록 위험 감소'로 고쳤습니다.",
+  "수정 3 (정기 산전검진·초음파 급여): '산전 초음파 7회 + 정밀초음파 1회'로 따로 세는 것처럼 읽히는 문장을 '정밀초음파 1회 포함 총 7회 정도'로 고치고 신뢰도를 medium으로 낮췄습니다. 주수 구간별 급여 횟수는 심평원 원문으로 확인해야 합니다.",
+  "수정 4 (2차 기형아 선별·NIPT): NIPT를 '진단율이 높은 검사'로 쓴 부분은 틀렸습니다. NIPT도 선별검사이므로 '검출률이 높고, 양성이면 융모막·양수검사로 확진'으로 고치고, 시기(10주 이후)도 추가했습니다.",
+  "수정 5 (임신성 당뇨): '고위험군은 130 기준'은 부정확합니다. 130·135·140은 위험군에 따라 나뉘는 값이 아니라 병원마다 고르는 기준치입니다. '140 이상(병원에 따라 130 또는 135)'으로 고쳤습니다.",
+  "수정 6 (정밀초음파): 선천성 기형 빈도 '약 1~2%'를 일반적으로 인용되는 '주요 선천성 기형 약 2~3%'로 고쳤습니다(CDC 33명 중 1명 참고).",
+  "수정 7 (선천성대사이상 검사): '정부 지원 6종을 포함해 텐덤매스로 약 50종'은 갑상선기능저하증까지 텐덤매스로 검사하는 것처럼 읽힙니다. '기본 6종 검사 + 텐덤매스 검사 합쳐 약 50종'으로 고치고 신뢰도를 medium으로 낮췄습니다. 남편 생활습관 항목의 정자 형성 기간도 '약 74일'에서 '약 64~74일'로 넓혔습니다.",
+  "빠진 항목은 없습니다. 틀려서 뺄 만한 항목은 찾지 못했습니다.",
+  "확인하지 못한 항목: 임신부·남편 Tdap이 국가 무료접종인지, 아브리스보의 국가접종 포함 여부와 가격, 2026-27절기 코로나19 접종에서 임신부가 무료 대상인지(이전 조사 스니펫상 대상 아님)를 확인하지 못했습니다. 앱에는 비용을 표시하지 말고 '보건소·병원에 확인'으로 안내하길 권합니다. 아브리스보의 효능 수치(82.4%, 70.0%)는 국내 보도 기준이며, NEJM 1차 분석값은 81.8%·69.4%입니다.",
+  "보건소 사업(철분제·엽산 지급 조건, 산전검사 무료, 청각 확진비 등)은 지자체마다 다릅니다. 앱에서는 사용자 주소지 보건소 링크를 함께 보여주는 방식이 안전합니다.",
+  "위 내용은 일반적인 공공·학회 정보를 정리한 것이며 의료 조언이 아닙니다. 앱 안에 '개인 상황은 담당 산부인과 전문의와 상의'라는 문구를 반드시 표시하길 권합니다."
+ ]
+}

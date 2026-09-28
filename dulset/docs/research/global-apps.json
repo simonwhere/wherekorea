@@ -1,0 +1,314 @@
+{
+ "summary": "해외 주요 임신준비 앱을 조사한 결과, 제안한 4가지 기능을 한 앱에서 모두 제공하는 사례는 찾지 못했습니다. 조사한 기능은 (1) 부부가 서로 영양제 복용 체크, (2) 계정 연동 후 가임기 알림을 두 사람 모두에게 발송, (3) 가임기 데이트 제안, (4) 출산 후 육아일기로 이어가기입니다. 이 중 (2)번 파트너 연동과 가임기 알림은 이미 흔한 기능입니다. Flo for Partners(2023.10 출시, 무료), Clue Connect(유료 Clue Plus), Natural Cycles Partner View, Premom Predad, Ovia, Glow, Mira, Stardust 등이 모두 제공합니다. 대부분 여성이 공유 범위를 정하고 파트너는 읽기 전용으로 보는 방식입니다. (1)번 부부 상호 영양제 체크에 가장 가까운 앱은 2026년 6월 미국에 정식 출시된 Soonr입니다. 부부가 각자 폰에서 영양제와 생활습관을 기록하고, 상대의 기록과 연속 기록을 보며, 상대가 루틴을 마치면 알림을 받습니다. 다만 Soonr에서 데이트 제안이나 육아일기 기능은 확인되지 않았습니다. Glow는 앱 3개(Glow→Nurture→Glow Baby)와 공용 프리미엄으로 가임기부터 육아까지 이어지는 흐름에 가장 가깝습니다. 남성 기록, 가임기 공동 알림, 임신 중 배우자에게 산전 비타민 챙기기 알림, 아기 마일스톤·사진 기록까지 있습니다. 하지만 데이트 제안이 없고 상호 영양제 체크 구조도 아닙니다. (3)번 가임기와 연결한 데이트 장소 제안은 어떤 임신준비 앱에서도 확인되지 않아 빈 공간으로 보입니다. 반면 파트너 기능에는 사생활 사고 이력이 있습니다. Glow는 2016년 계정 연동 결함이 드러났고 2020년 캘리포니아 주 검찰총장과 25만 달러에 합의했습니다. 연구에서도 앱을 쓰면 성관계가 '기능적'이 되어 압박을 준다는 점, 남성 참여가 쉽게 늘지 않는다는 점이 보고되었습니다. 참고로 이번 조사에서는 네트워크 차단으로 WebFetch(웹페이지 직접 열기)가 모든 도메인(앱스토어, 회사 사이트, PubMed 등)에서 막혔습니다. 그래서 모든 근거는 WebSearch 결과에 나온 해당 URL의 요약을 바탕으로 했고, 신뢰도도 그에 맞춰 표시했습니다.",
+ "findings": [
+  {
+   "topic": "Flo – Flo for Partners",
+   "claim": "Flo launched 'Flo for Partners' in October 2023. The partner gets a read-only view of the cycle phase and the predicted period and ovulation (fertile) windows, and receives push notifications when a phase changes. Free-text notes, logged symptoms, moods and Secret Chats are not shared.",
+   "sources": [
+    "https://en.wikipedia.org/wiki/Flo_(app)",
+    "https://help.flo.health/hc/en-us/articles/19872048333972-What-data-will-be-shared-with-my-partner",
+    "https://yuniapp.co.uk/blog/flo-for-partners-explained/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Flo – pricing and scope of partner feature",
+   "claim": "Flo's help centre has an article 'Do I need to have a subscription to access Flo for Partners?', and search summaries say basic partner access (cycle and pregnancy) works without Premium. Healthline describes sharing as part of the paid version, so the sources conflict. Flo Premium is cited at about $39.99/year.",
+   "sources": [
+    "https://help.flo.health/hc/en-us/articles/20524949465876-Do-I-need-to-have-a-subscription-to-access-Flo-for-Partners",
+    "https://yuniapp.co.uk/blog/is-flo-for-partners-free/",
+    "https://www.healthline.com/health/flo-period-tracker"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Flo – medication reminders and baby continuity",
+   "claim": "Flo's reminders sit under 'Reminders > Medication and contraception' and focus on the user's own birth-control pill. No partner-visible supplement check was found. Pregnancy mode ends with a 'My baby was born!' option, a postpartum mode was described only as planned, and no baby diary was found.",
+   "sources": [
+    "https://help.flo.health/hc/en-us/sections/4405649927956-Contraception-Reminders",
+    "https://www.hardreset.info/devices/apps/apps-flo-ovulation-and-period-tracker/enable-contraception-reminder/",
+    "https://help.flo.health/hc/en-us/articles/360054523711-What-is-Pregnancy-mode-and-how-do-I-activate-it",
+    "https://flo.health/newsroom/ready-for-pregnancy-flo-is-here-to-help"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Clue – Clue Connect",
+   "claim": "Clue Connect shares only current and predicted dates for period, PMS and fertile window. Other tracked data (mood, energy, pain) stays private. It requires the paid Clue Plus subscription, allows sharing with one person at a time, and is not available in Clue Pregnancy mode.",
+   "sources": [
+    "https://support.helloclue.com/hc/en-us/articles/14582034397597-How-can-I-share-my-cycle-with-someone-using-Clue-Connect",
+    "https://medium.com/clued-in/revolutionize-your-relationship-with-clue-connect-812d6a638f1b",
+    "https://helloclue.com/clue-plus"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Clue – partner notifications",
+   "claim": "A third-party review says the connected partner gets notifications (period, PMS, fertile window) only after turning them on in their own settings, and that they are off by default.",
+   "sources": [
+    "https://thevibecheck.app/blog/relationship-advice/clue-connect-partner-feature-free-paid"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "Natural Cycles – NC° Partner View",
+   "claim": "The partner gets a view-only version of Natural Cycles on their own phone. The user chooses what to share (fertility status plus optional mood and symptoms) and how far back. The partner can turn on notifications for the first Green Day, the first Red Day, approaching period or PMS, and when it is time for an ovulation test. NC markets this as a way to 'take the pressure off timing'.",
+   "sources": [
+    "https://help.naturalcycles.com/hc/en-us/articles/5693163931293-How-to-use-the-Natural-Cycles-Partner-View",
+    "https://www.naturalcycles.com/cyclematters/have-you-tried-partner-view",
+    "https://www.naturalcycles.com/plan-pregnancy"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Ovia – partner alerts and app consolidation",
+   "claim": "Adding a partner's email to Ovia sends that partner an email alert when the user approaches her fertile window. 'Ovia for Partners' is described as sharing real-time updates from fertile-window alerts to pregnancy milestones. Ovia merged Ovia and Ovia Pregnancy into one app, and the standalone pregnancy app was retired.",
+   "sources": [
+    "https://ovuline.helpshift.com/hc/en/3-ovia-fertility/faq/898-how-do-i-add-or-change-my-partner-s-email/?l=en",
+    "https://apps.apple.com/us/app/ovia-cycle-pregnancy-tracker/id570244389",
+    "https://www.messa.org/ovias-new-experience/",
+    "https://ovuline.helpshift.com/hc/en/4-ovia-pregnancy/faq/1568-i-m-an-ovia-pregnancy-user-and-would-prefer-to-use-the-ovia-pregnancy-app-instead-of-ovia-will-i-be-able-to-do-so/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Ovia Parenting – baby diary continuation",
+   "claim": "Ovia Parenting is a separate app. It tracks bottles, diapers and sleep, records milestones with photos, shares photos securely with family, and supports children up to age 10. Moving from cycle/pregnancy tracking into it means installing another app.",
+   "sources": [
+    "https://www.oviahealth.com/parenting-app/",
+    "https://play.google.com/store/apps/details?id=com.ovuline.parenting&hl=en_US",
+    "https://www.oviahealth.com/guide/109436/track-everything-baby-in-ovia-parenting/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Premom – Predad partner feature",
+   "claim": "Predad links accounts with a pairing code. The primary user picks what to share (fertile window, period, pregnancy). The partner receives the predicted ovulation day and fertile window plus phase-based education and notifications; with pregnancy sharing, the partner gets pregnancy-stage updates. The partner cannot edit or download the data.",
+   "sources": [
+    "https://premom.com/predad/",
+    "https://premom.com/privacy-policy/"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Premom – medication reminders",
+   "claim": "Premom lets the user set medication reminders (Profile > Reminders > Medication, with repeat, time and start/end settings). No source shows these reminders being shared with or confirmed by the partner.",
+   "sources": [
+    "https://support.premom.com/hc/en-us/articles/4403300659219-How-to-setup-reminders-for-taking-medication"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Premom – privacy enforcement",
+   "claim": "In May 2023 the FTC settled with Easy Healthcare (maker of Premom) over sharing health data through third-party SDKs (AppsFlyer, Google, and two China-based firms) without consent. Terms: a $100,000 civil penalty, $100,000 to CT, OR and DC, and a ban on sharing health data for advertising.",
+   "sources": [
+    "https://techcrunch.com/2023/05/18/ftc-premom-fertility-tracking-shared-data-google/",
+    "https://www.washingtonpost.com/technology/2023/05/17/premom-settlement-fertility-tracker-data-sharing/",
+    "https://thehill.com/policy/healthcare/4011172-fertility-app-premom-to-pay-200k-after-sharing-sensitive-user-data/"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Glow – two-way partner connect",
+   "claim": "Glow has a separate male-partner sign-up. Both partners keep daily health logs, and men log lifestyle factors (sleep, fitness, heat exposure) and get fertility insights. Connected couples get shared alerts on ovulation day, period start/end and the fertile window, plus shared pregnancy-chance and calendar. Health data, including daily, treatment and medical logs, is shared in both directions.",
+   "sources": [
+    "https://support.glowing.com/help/en-us/11-partner-experience/10",
+    "https://support.glowing.com/hc/en-us/articles/115000247447-What-are-the-benefits-of-connecting-to-your-partner-on-Glow",
+    "https://support.glowing.com/help/en-us/11-partner-experience/12",
+    "https://techcrunch.com/2015/04/23/the-glow-app-now-tracks-male-fertility"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Glow family – continuity from conception to baby",
+   "claim": "Glow runs three separate apps under one Premium subscription: Glow (ovulation/TTC), Glow Nurture (pregnancy) and Glow Baby. In Nurture, a linked partner gets their own tips and notifications, such as reminding her to take prenatal vitamins, but cannot log for her. Glow Baby records milestones with dates and photos and lets you invite a partner or family by email; syncing multiple caregivers requires Premium.",
+   "sources": [
+    "https://en.wikipedia.org/wiki/Glow_(app)",
+    "https://www.mobihealthnews.com/news/fertility-app-maker-glow-launches-app-pregnant-women",
+    "https://support.glowing.com/help/en-us/21-partner-questions/89",
+    "https://glowing.com/glow-baby-app",
+    "https://play.google.com/store/apps/details?id=com.glow.android.baby&hl=en_US"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Glow – partner-link security incidents",
+   "claim": "In 2016 Consumer Reports found that someone could link their Glow account to another user's account without that person knowing and see their intimate data. In September 2020 the California Attorney General settled with Glow for $250,000, partly because its 'partner connect' feature auto-granted linking requests without the data owner's confirmation.",
+   "sources": [
+    "https://techcrunch.com/2016/07/30/serious-privacy-flaws-discovered-in-glow-fertility-tracker-app/",
+    "https://oag.ca.gov/news/press-releases/attorney-general-becerra-announces-landmark-settlement-against-glow-inc-%E2%80%93",
+    "https://www.wilmerhale.com/en/insights/blogs/wilmerhale-privacy-and-cybersecurity-law/20200929-california-settles-with-glow-app-over-alleged-privacy-and-security-violations"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Mira / Inito / Kindara (hormone-monitor apps)",
+   "claim": "Mira has a read-only Partner Mode: one person, invited by email, sees cycle and hormone data and fertile days but cannot edit. Inito has no built-in partner sharing; users have asked for it and a developer reply from October 2024 said the suggestion was noted. Kindara lets users share charts with a partner or practitioner; its Wink thermometer is no longer produced.",
+   "sources": [
+    "https://help.miracare.com/en-US/articles/general-app-information-198378",
+    "https://shop.miracare.com/blogs/resources/mira-cycle-tracking-features",
+    "https://apps.apple.com/us/app/inito-fertility-monitor/id1183799668?see-all=reviews",
+    "https://app.kindara.com/app",
+    "https://www.sheranked.com/app-reviews/kindara-app-review"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Stardust / Fertility Friend",
+   "claim": "Stardust has a Partner Mode where each partner adds the other and both accept, plus friend syncing. An AOL article reports that about one third of its 1M+ users invited a partner after the feature arrived in August 2023. Fertility Friend offers optional chart sharing and companion access, aimed at the TTC community rather than couple notifications.",
+   "sources": [
+    "https://stardust.app/faq",
+    "https://www.aol.com/let-partners-track-periods-everything-162700733.html",
+    "https://www.fertilityfriend.com/courses/lessons/1/Trying-To-Conceive-Journey.html",
+    "https://play.google.com/store/apps/details?id=com.tamtris.fertilityfriend&hl=en-US"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "Soonr – couples-first TTC app (closest to features 1+2)",
+   "claim": "Vespexx launched Soonr Health in the US on June 4, 2026, after early access in February 2026. Both partners use it on their own phones: she tracks supplements and prenatal vitamins, he tracks male-fertility supplements, exercise, nutrition and smoking/alcohol. Each sees the other's daily logs and streaks and the fertile window, and gets notified when the partner completes a routine. It integrates the Surearly SMART hormone tester. No date suggestions or baby diary were found in its listing.",
+   "sources": [
+    "https://www.prnewswire.com/news-releases/soonr-health-officially-launches-in-the-us-with-connected-at-home-fertility-tracking-for-couples-302791083.html",
+    "https://apps.apple.com/us/app/soonr-fertility-for-couples/id6756647515",
+    "https://play.google.com/store/apps/details?id=com.health.soonr&hl=en_US",
+    "https://soonr.health/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Greenlight – male-partner TTC app",
+   "claim": "Greenlight Men's Cycle Tracker is pitched as a fertility tracker for the male partner of a TTC couple. It pairs partners by QR code and sends discreet peak-fertility alerts that can use playful code words, to keep things 'romantic and low-pressure'. It supports optional LH test logging.",
+   "sources": [
+    "https://apps.apple.com/mx/app/cycle-tracker-greenlight/id6751544752",
+    "https://apps.apple.com/jm/app/cycle-tracker-greenlight/id6751544752"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "HiDaddy / HiMommy – dad app from TTC through age 3",
+   "claim": "HiDaddy lets men track their partner's cycle and ovulation while trying to conceive, follow the pregnancy, and after birth track the baby's development with tips up to age 3. It syncs with the partner's HiMommy app by QR code or mommyId, with mood and craving notifications and notes to each other. No supplement cross-check or date-spot feature was found.",
+   "sources": [
+    "https://play.google.com/store/apps/details?id=com.hifamily.hidaddy&hl=en",
+    "https://apps.apple.com/us/app/hidaddy-pregnancy-for-dads/id1328264789",
+    "https://himommy.app/en/pages/daddy-pregnancy-app/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Labour – couples app from TTC to postpartum",
+   "claim": "Labour ('Pregnancy for Couples') is one app covering TTC, pregnancy and postpartum. It offers cycle and fertile-window tracking, partner account connection, shared checklists and weekly discussion questions to split the mental load. One subscription, after a 2-week trial, covers both partners. No supplement cross-check, date suggestions or photo baby diary were found.",
+   "sources": [
+    "https://apps.apple.com/us/app/labour-pregnancy-for-couples/id6464667468",
+    "https://www.labourtheapp.com/",
+    "https://www.labourtheapp.com/faqs"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Male-fertility testing apps (Legacy, YO)",
+   "claim": "The male-focused products are testing services, not couple-coordination apps. Legacy is a US digital male-fertility clinic (mail-in semen analysis, sperm freezing) and launched 'Sperm Insights' in March 2026. YO is an FDA-cleared smartphone home sperm test that reports motile sperm concentration.",
+   "sources": [
+    "https://www.givelegacy.com/",
+    "http://www.prnewswire.com/news-releases/legacy-launches-sperm-insights-a-first-of-its-kind-data-platform-to-contextualize-male-fertility-and-long-term-health-302719919.html",
+    "https://yospermtest.com/",
+    "https://consultqd.clevelandclinic.org/yo-home-sperm-test-found-to-be-a-user-friendly-accurate-way-to-screen-samples-at-home"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Date/romance features",
+   "claim": "None of the fertility or TTC apps checked (Flo, Clue, NC, Ovia, Premom, Glow, Mira, Soonr, Labour) offers date-spot or date-idea suggestions tied to the fertile window. The nearest things are Greenlight's code-word alerts and Flo's partner support tips. Date-idea generators exist only in general couples apps (Connected, Lovewick), and TTC date ideas appear as blog content from fertility clinics.",
+   "sources": [
+    "https://www.connectedcouples.app/features/date-night",
+    "https://lovewick.com/date-night-planner-app/",
+    "https://www.genesisfertility.com/blog/the-best-date-night-ideas-for-couples-ttc/",
+    "https://apps.apple.com/mx/app/cycle-tracker-greenlight/id6751544752"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Partner-oriented period apps (DuoSync etc.)",
+   "claim": "A group of 'period tracker for men' apps (DuoSync, GF Tracker) send the boyfriend or husband ovulation, PMS and phase alerts plus 'daily partner suggestions' and anniversary/birthday reminders. They target relationship support, not conception, supplements or baby continuity.",
+   "sources": [
+    "https://apps.apple.com/us/app/duosync-period-tracker-for-men/id6758741853",
+    "https://duosync.io/duosync-period-tracker-for-partners/",
+    "https://apps.apple.com/us/app/gf-tracker-period-for-men/id6755391133"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Baby diary incumbents (Tinybeans, Qeepsake, Huckleberry)",
+   "claim": "Tinybeans is an invite-only private family journal: the free plan allows 20 uploads a month with 5GB, and Tinybeans+ is unlimited; it also makes photo books. Qeepsake texts journaling prompts starting in pregnancy (IVF, adoption and other paths included) and lets a spouse contribute. Huckleberry syncs baby tracking across caregivers' devices. None of them covers pre-conception.",
+   "sources": [
+    "https://tinybeans.com/",
+    "https://apps.apple.com/us/app/tinybeans-private-family-album/id521633042",
+    "https://qeepsake.com/features/",
+    "https://huckleberry.zendesk.com/hc/en-us/articles/360062801213-How-do-I-share-my-account-with-my-husband-wife-partner-or-another-caregiver"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Pregnancy/parenting media apps (What to Expect, BabyCenter, Peanut)",
+   "claim": "BabyCenter's app includes an ovulation calculator, getting-pregnant tips and prenatal vitamin guidance before moving to pregnancy and baby tracking; no couple-linking was confirmed. What to Expect reportedly can send a to-do list to a partner. Peanut has a women-only TTC community with groups for loss and fertility treatment. None combines couple supplement checks with shared fertile alerts.",
+   "sources": [
+    "https://apps.apple.com/us/app/babycenter-pregnancy-tracker/id386022579",
+    "https://www.today.com/parents/pregnancy/best-pregnancy-apps-rcna30762",
+    "https://www.thebump.com/news/peanut-app-launches-ttc",
+    "https://sifted.eu/articles/peanut-app-trying-to-conceive-for-mums"
+   ],
+   "confidence": "low"
+  },
+  {
+   "topic": "Answer: does any global app combine all four features?",
+   "claim": "No single app found offers all four: (1) a two-way supplement check between spouses, (2) linked accounts with fertile-day alerts to both, (3) date suggestions, and (4) continuation into a baby diary. Soonr covers (1) and (2); Glow's three apps cover (2), part of (1) and (4); HiDaddy/HiMommy and Labour cover (2) and couple continuity into pregnancy and postpartum; Greenlight covers (2) with a light romance touch. Feature (3) was not found in any fertility app. This conclusion comes from search summaries only, because direct page access was blocked.",
+   "sources": [
+    "https://apps.apple.com/us/app/soonr-fertility-for-couples/id6756647515",
+    "https://support.glowing.com/help/en-us/11-partner-experience/10",
+    "https://glowing.com/glow-baby-app",
+    "https://play.google.com/store/apps/details?id=com.hifamily.hidaddy&hl=en",
+    "https://www.labourtheapp.com/"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "topic": "Research – pressure from fertility-app use in couples",
+   "claim": "A qualitative study of Natural Cycles users trying to conceive (Sociology of Health & Illness, 2021) found the app could add shared fun and excitement. For others it strained relationships, made sex more 'functional' and less 'romantic', heightened anxiety and reinforced women's responsibility for fertility.",
+   "sources": [
+    "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7894554/",
+    "https://pubmed.ncbi.nlm.nih.gov/33147647/",
+    "https://onlinelibrary.wiley.com/doi/10.1111/1467-9566.13199"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Research – partner-sharing features do not automatically engage men",
+   "claim": "'A fertility app for two?' (Culture, Health & Sexuality, vol. 24 no. 12) interviewed UK women and found that partner-sharing features did not simply shift conception work to men. Assumptions about 'natural conception' and men's stated preference for spontaneity helped men disengage.",
+   "sources": [
+    "https://www.tandfonline.com/doi/full/10.1080/13691058.2021.2002414",
+    "https://www.researchgate.net/publication/356239293_A_fertility_app_for_two_Women's_perspectives_on_sharing_conceptive_fertility_work_with_male_partners"
+   ],
+   "confidence": "high"
+  },
+  {
+   "topic": "Privacy – sector-wide concerns",
+   "claim": "In August 2022 Mozilla's *Privacy Not Included gave warning labels to 18 of 25 reproductive-health apps and devices, including Flo, Clue, Glow, Eve by Glow and Ovia Fertility; Natural Cycles and Euki were not flagged. In August 2025 a US federal jury found Meta violated California's privacy law (CIPA) by collecting Flo users' data through an SDK; Flo settled before the verdict.",
+   "sources": [
+    "https://www.mozillafoundation.org/en/privacynotincluded/articles/in-post-roe-v-wade-era-mozilla-labels-18-of-25-popular-period-and-pregnancy-tracking-tech-with-privacy-not-included-warning/",
+    "https://www.theregister.com/2022/08/17/mozilla_pregnancy_app/",
+    "https://www.cnbc.com/2025/08/07/jury-rules-meta-violated-law-in-period-tracking-app-data-case.html",
+    "https://therecord.media/jury-verdict-meta-flo-app-data-privacy-case"
+   ],
+   "confidence": "high"
+  }
+ ],
+ "implications": [
+  "파트너 연동과 가임기 알림(기능 2)은 이미 흔한 기능입니다(Flo 무료, Clue 유료, NC, Premom, Ovia, Glow, Mira). 그래서 차별점은 개별 기능이 아니라 4가지를 부부 중심으로 한 흐름에 엮는 것과 한국 현지화에서 나와야 합니다.",
+  "부부 상호 영양제 체크(기능 1)는 Soonr가 2026년 미국에서 막 검증을 시작한 영역입니다. 서로의 연속 기록을 보고 상대가 완료하면 알림을 받는 방식이 참고가 됩니다. 연구상 남성은 참여 동기가 약하므로, 남편에게 엽산·아연 등 구체적인 매일 할 일을 주는 것이 핵심 설계 요소가 됩니다.",
+  "가임기 데이트 제안(기능 3)은 확인된 빈 공간이지만, 연구에서 지적한 '기능적인 성관계' 압박을 키울 수 있습니다. 문구는 관계와 휴식 중심으로 쓰고, '오늘이 배란일' 같은 직접 표현은 피하는 편이 좋습니다. Greenlight처럼 둘만 아는 암호 문구, 잠금화면에 가임 정보 숨기기, 알림 끄기 선택을 넣는 것을 권합니다.",
+  "출산 후 육아일기(기능 4)는 Tinybeans, Qeepsake, Huckleberry, Glow Baby 같은 강자가 있습니다. 다만 임신 준비부터 육아까지 한 계정으로 데이터가 이어지는 부부 앱은 드뭅니다. Glow는 앱 3개에 공용 프리미엄, Ovia는 앱 통합 후 육아 앱만 분리되어 있습니다. 앱 하나에서 단계만 전환하는 설계가 유지율에서 유리할 수 있습니다.",
+  "파트너 연동은 반드시 양쪽 동의를 거쳐야 합니다. Glow는 동의 없이 자동으로 연결되는 결함 때문에 2016년 보도되었고 2020년 캘리포니아 주 검찰총장과 25만 달러에 합의했습니다. 여성을 데이터 소유자로 두고 항목별 공유 범위(Premom·NC 방식), 파트너 읽기 전용, 언제든 연결 해제를 기본으로 하는 것이 좋습니다.",
+  "생식건강 데이터는 광고·분석 SDK로 흘러가면 소송과 제재 위험이 큽니다(Premom FTC 합의 2023, Flo–Meta 배심 평결 2025, Mozilla 2022년 18/25 경고). 광고 SDK 없이 기기 내 저장이나 최소 수집을 신뢰 포인트로 내세울 수 있습니다.",
+  "난임이 길어지거나 유산을 겪는 경우를 위해 설계해야 합니다. 이때 가임기 알림과 데이트 제안을 쉽게 끄고, 모드를 조용히 전환할 수 있어야 합니다. Peanut이 유산·난임 치료 커뮤니티를 따로 둔 사례가 참고가 됩니다.",
+  "수익 모델은 부부 1구독이 자연스럽습니다(Labour는 구독 하나로 두 사람 이용, Flo 파트너 기능은 무료). Clue처럼 파트너 공유를 유료로 막으면 핵심 가치인 부부 연동이 약해질 수 있습니다."
+ ]
+}
