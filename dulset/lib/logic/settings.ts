@@ -21,11 +21,14 @@ import {
   type ISODate,
   type Member,
   type MemberId,
+  type PersonalPrefs,
   type Role,
   type Settings,
   type Stage,
 } from '../types'
 import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, otherMember } from '../initial'
+import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
+import { cleanCover } from './cover'
 import type { CycleStats } from './cycle'
 import { SOFT_FERTILE_TITLE, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
@@ -403,6 +406,12 @@ export function sanitizeBackup(input: AppState): AppState | null {
   if (!isStr(couple.linkedAt)) delete couple.linkedAt
   if (!isISODate(couple.metDate)) delete couple.metDate
   if (!isISODate(couple.marriedDate)) delete couple.marriedDate
+  // Cover photo: an id only (the image never travels in a backup). A built-in
+  // id this version doesn't have would never resolve, so it goes too.
+  const cover = cleanCover(couple.cover)
+  const knownBuiltin = (id: string) => !id.startsWith('builtin:') || (BUILTIN_PHOTO_IDS as readonly string[]).includes(id)
+  if (cover && knownBuiltin(cover.photoId)) couple.cover = cover
+  else delete couple.cover
 
   const c: Loose = isObj(input.cycle) ? input.cycle : {}
   const cycle: CycleSettings = {
@@ -432,9 +441,10 @@ export function sanitizeBackup(input: AppState): AppState | null {
     for (const id of MEMBER_IDS) {
       const p = (st.personal as Loose)[id]
       if (!isObj(p)) continue
-      const out: { lowPressure?: boolean; discreet?: boolean } = {}
+      const out: PersonalPrefs = {}
       if (typeof p.lowPressure === 'boolean') out.lowPressure = p.lowPressure
       if (typeof p.discreet === 'boolean') out.discreet = p.discreet
+      if (typeof p.hideCover === 'boolean') out.hideCover = p.hideCover
       personal[id] = out
     }
     settings.personal = personal

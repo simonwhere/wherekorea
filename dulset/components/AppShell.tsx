@@ -15,6 +15,7 @@ import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
 import UsTab from '@/components/tabs/UsTab'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
+import { Icon, isIconName, type IconName } from '@/components/ui/icons'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
 import { useApp, useStore } from '@/lib/store'
@@ -25,30 +26,31 @@ export type TabKey = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'plan' | 'date' 
 interface TabDef {
   key: TabKey
   label: string
-  icon: string
+  /** A line icon, or an emoji for the stage tabs that have no line icon yet. */
+  icon: IconName | '🤰' | '👶'
 }
 
-// Settings lives behind the header ⚙️. Preparing is the core stage: its bar has
-// a center "+ 기록" action (not a tab). 데이트 moved into the 우리의 주간 card
+// Settings lives behind the header gear. Preparing is the core stage: its bar
+// has a center "+ 기록" action (not a tab). 데이트 moved into the 우리의 주간 card
 // and stays reachable at #date. 'diary' is the 우리 tab (key kept for old links).
 const TAB_SETS: Record<Stage, TabDef[]> = {
   preparing: [
-    { key: 'today', label: '오늘', icon: '☀️' },
-    { key: 'cycle', label: '주기', icon: '📅' },
-    { key: 'plan', label: '챙길 것', icon: '✅' },
-    { key: 'diary', label: '우리', icon: '💑' },
+    { key: 'today', label: '오늘', icon: 'home' },
+    { key: 'cycle', label: '주기', icon: 'cycle' },
+    { key: 'plan', label: '챙길 것', icon: 'list' },
+    { key: 'diary', label: '우리', icon: 'heart' },
   ],
   pregnant: [
-    { key: 'today', label: '오늘', icon: '☀️' },
+    { key: 'today', label: '오늘', icon: 'home' },
     { key: 'pregnancy', label: '임신', icon: '🤰' },
-    { key: 'plan', label: '챙길 것', icon: '✅' },
-    { key: 'diary', label: '우리', icon: '💑' },
+    { key: 'plan', label: '챙길 것', icon: 'list' },
+    { key: 'diary', label: '우리', icon: 'heart' },
   ],
   parenting: [
-    { key: 'today', label: '오늘', icon: '☀️' },
+    { key: 'today', label: '오늘', icon: 'home' },
     { key: 'baby', label: '아기', icon: '👶' },
-    { key: 'diary', label: '우리', icon: '💑' },
-    { key: 'plan', label: '챙길 것', icon: '✅' },
+    { key: 'diary', label: '우리', icon: 'heart' },
+    { key: 'plan', label: '챙길 것', icon: 'list' },
   ],
 }
 
@@ -107,6 +109,15 @@ function MainApp() {
   }, [])
   const logAfter = LOG_BUTTON_AFTER[state.stage]
   const navCount = tabs.length + (logAfter === undefined ? 0 : 1)
+
+  // The header hairline only shows once the page has scrolled.
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useNotificationEngine()
 
@@ -170,21 +181,31 @@ function MainApp() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col">
-      <header className="pt-safe sticky top-0 z-30 border-b border-line/70 bg-bg/90 backdrop-blur">
-        <div className="flex h-14 items-center gap-2 px-4">
+      <header
+        className={cx(
+          'pt-safe sticky top-0 z-30 border-b bg-bg/[.92] backdrop-blur transition-colors duration-150',
+          scrolled ? 'border-line/70' : 'border-transparent',
+        )}
+      >
+        <div className="flex h-14 items-center gap-1 pl-4 pr-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-lg font-extrabold tracking-tight text-brand">둘셋</span>
-              <span className="truncate text-[11px] font-medium text-ink-3">{STAGE_LABEL[state.stage]}</span>
+              <span className="text-[20px] font-extrabold tracking-tight text-ink">둘셋</span>
+              {/* The home's cover already says whose day it is; other tabs name the stage. */}
+              {tab === 'today' ? null : (
+                <span className="truncate text-[11px] font-medium text-ink-3">{STAGE_LABEL[state.stage]}</span>
+              )}
             </div>
           </div>
           <button
             type="button"
             onClick={() => setViewer(partner.id)}
-            className="relative flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 text-xs font-medium text-ink-2 before:absolute before:-inset-y-[6px] before:inset-x-0 before:content-[''] hover:bg-surface-2"
+            className="relative mr-0.5 flex h-9 items-center gap-1.5 rounded-full bg-surface-2 pl-1 pr-3 text-[13px] font-semibold text-ink-2 before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             title="프로토타입: 한 기기에서 두 사람의 화면을 바꿔 볼 수 있어요"
           >
-            <Avatar member={me} size="sm" />
+            <span className="flex [&>span]:h-7 [&>span]:w-7 [&>span]:text-[15px]">
+              <Avatar member={me} size="sm" />
+            </span>
             <span className="max-w-[5.5rem] truncate">{me.name}</span>
             <span aria-hidden className="text-ink-3">⇄</span>
             <span className="sr-only">{partner.name}의 화면으로 전환</span>
@@ -195,9 +216,9 @@ function MainApp() {
             className="relative flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface-2"
             aria-label={unread ? `알림 ${unread}개` : '알림'}
           >
-            <span aria-hidden className="text-lg">🔔</span>
+            <Icon name="bell" className="h-[22px] w-[22px] text-ink-2" />
             {unread > 0 ? (
-              <span className="absolute right-1 top-1 min-w-[18px] rounded-full bg-brand px-1 text-center text-[10px] font-bold leading-[18px] text-white">
+              <span className="absolute right-1.5 top-1.5 h-[17px] min-w-[17px] rounded-full bg-brand px-1 text-center text-[10px] font-extrabold leading-[17px] text-white ring-2 ring-bg">
                 {unread > 9 ? '9+' : unread}
               </span>
             ) : null}
@@ -212,7 +233,7 @@ function MainApp() {
             )}
             aria-label="설정"
           >
-            <span aria-hidden className="text-lg">⚙️</span>
+            <Icon name="gear" className="h-[22px] w-[22px] text-ink-2" />
           </button>
         </div>
       </header>
@@ -235,13 +256,19 @@ function MainApp() {
                     onClick={() => go(t.key)}
                     aria-current={active ? 'page' : undefined}
                     className={cx(
-                      'flex h-14 w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium',
-                      active ? 'text-brand' : 'text-ink-3',
+                      'relative flex h-14 w-full flex-col items-center justify-center gap-[3px] pb-1 text-[11px] leading-[14px]',
+                      active
+                        ? 'font-extrabold text-ink after:absolute after:bottom-1 after:h-1 after:w-1 after:rounded-full after:bg-glow'
+                        : 'font-semibold text-ink-3',
                     )}
                   >
-                    <span aria-hidden className={cx('text-lg transition-transform', active && 'scale-110')}>
-                      {t.icon}
-                    </span>
+                    {isIconName(t.icon) ? (
+                      <Icon name={t.icon} className="h-6 w-6" strokeWidth={active ? 2 : 1.7} />
+                    ) : (
+                      <span aria-hidden className="flex h-6 items-center text-[20px] leading-none">
+                        {t.icon}
+                      </span>
+                    )}
                     {t.label}
                   </button>
                 </li>
@@ -265,9 +292,9 @@ function LogButton() {
         type="button"
         onClick={() => openLog()}
         aria-label="기록하기"
-        className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-2xl font-bold text-white shadow-lg ring-4 ring-bg hover:bg-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-[0_8px_18px_-6px_rgb(var(--brand)/.5)] ring-[5px] ring-bg hover:bg-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:shadow-none"
       >
-        <span aria-hidden>＋</span>
+        <Icon name="plus" className="h-[26px] w-[26px]" strokeWidth={2.2} />
       </button>
     </li>
   )

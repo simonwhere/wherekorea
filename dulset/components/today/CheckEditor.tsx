@@ -301,7 +301,7 @@ function SuggestionRow({ s, onAdd }: { s: Suggestion; onAdd?: () => void }) {
           aria-label={`${s.label} 근거 ${open ? '접기' : '보기'}`}
           className={cx(
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base',
-            open ? 'text-brand' : 'text-ink-3 hover:text-ink-2',
+            open ? 'text-brand-ink' : 'text-ink-3 hover:text-ink-2',
           )}
         >
           ⓘ

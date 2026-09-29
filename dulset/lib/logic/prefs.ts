@@ -1,5 +1,6 @@
 // Per-person preferences. `lowPressure` and `discreet` used to be couple-wide;
 // each partner now decides for their own phone. Everything reads them here.
+// (`hideCover` — the cover photo on my phone — is read and set in ./cover.ts.)
 
 import type { AppState, MemberId, Settings } from '../types'
 

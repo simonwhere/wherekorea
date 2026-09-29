@@ -7,7 +7,8 @@
 import type { TabKey } from '@/components/AppShell'
 import InstallBackupCard from '@/components/system/InstallBackupCard'
 import SignalsCard from '@/components/signals/SignalsCard'
-import { Card, Toggle, useToast } from '@/components/ui'
+import { Card, Toggle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { doctorAdvice, stampOn } from '@/lib/logic/today'
@@ -21,20 +22,26 @@ import { PlanFocusCard, UpcomingCard } from './PlanCards'
 
 type Nav = (tab: TabKey) => void
 
-export default function MoreSection({ moment, onNavigate }: { moment: Moment | null; onNavigate: Nav }) {
+export default function MoreSection({
+  moment,
+  onNavigate,
+  className,
+}: {
+  moment: Moment | null
+  onNavigate: Nav
+  className?: string
+}) {
   const { state, today, me } = useApp()
   const owner = canLogCycle(state, me.id)
   const support = recentlyEnded(state, today) && moment?.kind !== 'after-loss'
   const prompt = homeDiaryPrompt(state, today)
 
   return (
-    <details className="group">
+    <details className={cx('group', className)}>
       <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-ink-2 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
         <span className="group-open:hidden">더 보기</span>
         <span className="hidden group-open:inline">접기</span>
-        <span aria-hidden className="transition-transform group-open:rotate-180">
-          ⌄
-        </span>
+        <Icon name="chev" className="h-4 w-4 transition-transform group-open:rotate-180" />
       </summary>
 
       <div className="mt-2 space-y-3">

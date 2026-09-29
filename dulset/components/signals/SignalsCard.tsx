@@ -8,6 +8,7 @@ import {
   pendingSignal,
   repliesFor,
   sendSignal,
+  signalById,
   signalIdOf,
   signalsFor,
   signalsSentToday,
@@ -26,30 +27,63 @@ function useSend() {
   return { send, left }
 }
 
+/** '오후 6:12' from a local ISO time ('2026-09-29T18:12:…'); '' when it has none. */
+function timeKo(iso: string): string {
+  const m = /T(\d{2}):(\d{2})/.exec(iso)
+  if (!m) return ''
+  const h = Number(m[1])
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${m[2]}`
+}
+
 /**
  * The signal the viewer received today and hasn't answered, with one-tap
  * replies that fit it (repliesFor: '위로가 필요해요' gets '옆에 있을게요', never
- * '다음에 해요') — or nothing. Used on its own in the home's "우리 한 줄".
+ * '다음에 해요') — or nothing. Used on its own in the home's "우리 한 줄": who
+ * sent it and when, the message as a chat bubble in the sender's colour, and
+ * the replies (`data-reply`, so the cover's "답하기" can focus the first one).
  */
 export function PendingSignal({ className }: { className?: string }) {
   const { state, today, me } = useApp()
   const { send, left } = useSend()
   const pending = pendingSignal(state, me.id, today)
   if (!pending) return null
-  const replies = repliesFor(signalIdOf(pending))
+  const id = signalIdOf(pending)
+  const signal = id ? signalById(id) : undefined
+  const sender = state.couple.members.find((m) => m.id === pending.from)
+  const replies = repliesFor(id)
+  const at = timeKo(pending.createdAt)
   return (
-    <div className={cx('rounded-xl bg-brand-soft p-3', className)}>
-      <p className="text-sm font-semibold text-brand-ink">{pending.title}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+    <div className={className}>
+      <p className="text-xs font-semibold text-ink-3">
+        {sender ? `${sender.name}님이 보냈어요` : '받은 신호'}
+        {at ? ` · ${at}` : ''}
+      </p>
+      <p
+        className={cx(
+          'mt-1.5 inline-block rounded-[18px_18px_18px_6px] px-3.5 py-2.5 text-[15.5px] font-bold tracking-[-0.02em] text-ink',
+          sender?.tracksCycle ? 'bg-her-soft' : 'bg-him-soft',
+        )}
+      >
+        {signal ? (
+          <>
+            <span aria-hidden>{signal.emoji} </span>
+            {signal.text}
+          </>
+        ) : (
+          pending.title
+        )}
+      </p>
+      <div className="mt-2.5 flex flex-wrap gap-2">
         {replies.map((r) => (
           <button
             key={r.id}
             type="button"
+            data-reply
             onClick={() => send(r.id, r.text)}
             disabled={left <= 0}
-            className="relative h-9 rounded-full bg-surface px-3 text-xs font-medium text-ink shadow-sm before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-surface-2 disabled:opacity-40"
+            className="relative inline-flex h-10 items-center gap-[5px] rounded-full border-[1.5px] border-line bg-surface px-3.5 text-[13.5px] font-bold text-ink transition-colors before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
           >
-            {r.emoji} {r.text}
+            <span aria-hidden>{r.emoji}</span> {r.text}
           </button>
         ))}
       </div>
@@ -72,7 +106,7 @@ export default function SignalsCard({ showPending = true, title = true }: { show
     <>
       {title ? <SectionTitle sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</SectionTitle> : null}
       <Card>
-        {showPending ? <PendingSignal className="mb-3" /> : null}
+        {showPending ? <PendingSignal className="mb-3 border-b border-line/75 pb-3" /> : null}
         <div className="grid grid-cols-2 gap-2">
           {signals.map((s) => (
             <button

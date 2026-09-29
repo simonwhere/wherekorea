@@ -1,6 +1,7 @@
 // Versioned localStorage persistence. Everything stays on the device in the
 // prototype — no server ever sees cycle or health data.
 
+import { cleanCover } from './logic/cover'
 import { BACKUP_MAX_BYTES, extraStorageKeys, sanitizeBackup } from './logic/settings'
 import { clearAllPhotos } from './photos'
 import type { AppState, MemberId } from './types'
@@ -49,8 +50,24 @@ export function normalize(state: AppState): AppState {
   const s = state as Partial<AppState> & AppState
   const cycle: Partial<AppState['cycle']> = s.cycle ?? {}
   const settings: Partial<AppState['settings']> = s.settings ?? {}
+  // The cover photo id (no image) — kept only when it is usable; a bad caption is dropped alone.
+  const couple = { ...s.couple }
+  const cover = cleanCover(couple.cover)
+  if (cover) couple.cover = cover
+  else delete couple.cover
+  // Per-person prefs: hideCover is a yes/no or unset (automatic).
+  const personal = settings.personal
+    ? Object.fromEntries(
+        Object.entries(settings.personal).map(([id, p]) => {
+          if (!p || typeof p !== 'object' || !('hideCover' in p) || typeof p.hideCover === 'boolean') return [id, p]
+          const { hideCover: _bad, ...rest } = p
+          return [id, rest]
+        }),
+      )
+    : undefined
   return {
     ...s,
+    couple,
     lhTests: s.lhTests ?? [],
     datePlans: s.datePlans ?? [],
     growth: s.growth ?? [],
@@ -71,7 +88,7 @@ export function normalize(state: AppState): AppState {
         b: settings.alertStyle?.b ?? (s.couple.members[1]?.tracksCycle ? 'explicit' : 'soft'),
       },
       ttcStart: settings.ttcStart,
-      ...(settings.personal ? { personal: settings.personal } : {}),
+      ...(personal ? { personal } : {}),
       // Privacy by default, same as a new couple and sanitizeBackup: until the
       // cycle owner opts in (설정 › 공유 범위), the partner sees only 우리의 주간.
       // Data saved before this setting existed never recorded that consent.

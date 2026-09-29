@@ -22,15 +22,17 @@ export function Card({
   tone?: 'default' | 'brand' | 'fert' | 'ok' | 'warn' | 'muted'
   as?: 'section' | 'div' | 'article' | 'li'
 }) {
+  // Default cards lift off the paper background with a warm shadow and no
+  // border; in dark mode (where shadows vanish) they get a hairline instead.
   const tones = {
-    default: 'bg-surface border-line',
-    brand: 'bg-brand-soft border-brand/20',
-    fert: 'bg-fert-soft border-fert/20',
-    ok: 'bg-ok-soft border-ok/20',
-    warn: 'bg-warn-soft border-warn/25',
-    muted: 'bg-surface-2 border-transparent',
+    default: 'bg-surface border-transparent shadow-warm dark:border-line/70 dark:shadow-none forced-colors:border-line',
+    brand: 'bg-brand-soft border-brand/20 shadow-card',
+    fert: 'bg-fert-soft border-fert/20 shadow-card',
+    ok: 'bg-ok-soft border-ok/20 shadow-card',
+    warn: 'bg-warn-soft border-warn/25 shadow-card',
+    muted: 'bg-surface-2 border-transparent shadow-card',
   } as const
-  return <Tag className={cx('rounded-xl2 border p-4 shadow-card', tones[tone], className)}>{children}</Tag>
+  return <Tag className={cx('rounded-xl2 border p-4', tones[tone], className)}>{children}</Tag>
 }
 
 export function SectionTitle({
@@ -165,15 +167,19 @@ export function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cx(
-          'relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors',
-          // Off track: the --control token (≥3:1 vs the card and vs the white knob).
-          checked ? 'bg-brand' : 'bg-control',
+          // 48×30 with an invisible 44px-tall hit area (::before).
+          "relative mt-0.5 h-[30px] w-12 shrink-0 rounded-full border-2 transition-colors before:absolute before:-inset-x-1 before:-inset-y-[9px] before:content-['']",
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+          // Off: an outlined track with a --control knob (≥3:1 vs surface and
+          // surface-2). On: a brand fill with a knob in the page colour, so it
+          // reads in both themes (espresso/white in light, cream/dark in dark).
+          checked ? 'border-brand bg-brand' : 'border-control bg-surface',
         )}
       >
         <span
           className={cx(
-            'absolute left-0 top-0.5 h-6 w-6 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform',
-            checked ? 'translate-x-[22px]' : 'translate-x-0.5',
+            'absolute left-[3px] top-[3px] h-5 w-5 rounded-full transition-transform forced-colors:border-2 forced-colors:border-[CanvasText]',
+            checked ? 'translate-x-[18px] bg-bg' : 'translate-x-0 bg-control',
           )}
         />
       </button>
@@ -314,18 +320,18 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-bg p-5 text-ink shadow-2xl outline-none sm:rounded-3xl"
+        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-bg px-5 pt-2.5 text-ink shadow-2xl outline-none sm:rounded-3xl sm:pt-5"
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line sm:hidden" />
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 id={titleId} className="text-lg font-bold">
+        <div className="mx-auto mb-2 h-[5px] w-10 rounded-full bg-line sm:hidden" />
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id={titleId} className="text-[19px] font-extrabold tracking-[-0.03em]">
             {title}
           </h2>
           <button
             type="button"
             onClick={() => onCloseRef.current()}
             aria-label="닫기"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2"
+            className="-mr-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
           >
             ✕
           </button>

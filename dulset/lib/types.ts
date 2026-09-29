@@ -241,6 +241,28 @@ export interface Settings {
 export interface PersonalPrefs {
   lowPressure?: boolean
   discreet?: boolean
+  /**
+   * The cover photo on this person's own phone: undefined = automatic (the
+   * app may show the default art for a while, e.g. a photo set during an
+   * ended pregnancy), true = always the default art, false = always the photo.
+   */
+  hideCover?: boolean
+}
+
+/**
+ * "표지 사진" — the photo at the top of both people's 오늘 screen. The state
+ * holds the id only: the image stays in this phone's IndexedDB (lib/photos.ts)
+ * or is a built-in demo picture ('builtin:…', lib/content/demoPhotos.ts), so
+ * backups never carry it. Read through lib/logic/cover.ts.
+ */
+export interface CoverPhoto {
+  photoId: string
+  /** Vertical focus in percent (0 = top, 100 = bottom) — the img object-position. */
+  focusY: number
+  /** Short line under the photo (≤ 16 characters, no health or clinic words). */
+  caption?: string
+  setBy: MemberId
+  setAt: ISODate
 }
 
 export interface Couple {
@@ -252,6 +274,11 @@ export interface Couple {
   metDate?: ISODate
   /** 결혼한 날. */
   marriedDate?: ISODate
+  /**
+   * The couple's cover photo (오늘 맨 위). Shared by both people; each can
+   * still show the default art on their own phone (PersonalPrefs.hideCover).
+   */
+  cover?: CoverPhoto
 }
 
 // ── Our days / appointments / roadmap ───────────────────────

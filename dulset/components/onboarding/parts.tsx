@@ -127,7 +127,7 @@ export function NoticePreview({ title, body, muted }: { title: string; body: str
   return (
     <div className={cx('rounded-xl border border-line bg-surface-2 px-3 py-2.5', muted && 'opacity-60')}>
       <div className="flex items-center gap-1.5 text-[11px] text-ink-3">
-        <span className="font-bold text-brand">둘셋</span>
+        <span className="font-bold text-ink">둘셋</span>
         <span aria-hidden>·</span>
         <span>미리보기</span>
       </div>

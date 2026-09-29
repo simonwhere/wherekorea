@@ -1,6 +1,8 @@
 'use client'
 
-// "주기 띠" — this cycle at a glance (day 1 … length), today marked, the
+// "주기 띠" — the earlier linear strip (the home now draws CycleRing /
+// WeekRow; this stays for any other screen that wants a straight strip).
+// This cycle at a glance (day 1 … length), today marked, the
 // estimated window as a gradient with the 2–3 peak days darker, logged period
 // days and LH marks. A partner without shared details sees two calendar weeks
 // with only the shared "우리의 주간" band (lib/logic/ttcFlow.cycleStrip).
@@ -9,7 +11,8 @@
 // wording — and LH only in explicit wording.
 
 import { cx } from '@/components/ui'
-import { formatKo, weekdayKo } from '@/lib/dates'
+import { weekdayKo } from '@/lib/dates'
+import { describeStrip } from '@/lib/logic/cycleRing'
 import type { CycleStrip as Strip, StripDay } from '@/lib/logic/ttcFlow'
 
 /** Literal class names (Tailwind only compiles what it can see). */
@@ -36,21 +39,9 @@ function labelPos(index: number, count: number): React.CSSProperties {
   return { left: `${pct}%`, transform: 'translateX(-50%)' }
 }
 
-function describe(strip: Strip): string {
-  const parts: string[] = []
-  if (strip.mode === 'cycle' && strip.cycleDay) parts.push(`주기 ${strip.cycleDay}일째, ${strip.length}일 기준`)
-  else parts.push('이번 주와 다음 주')
-  const band = strip.days.filter((d) => d.tone === 'fertile' || d.tone === 'peak')
-  if (band.length && strip.windowLabel) {
-    parts.push(`${strip.windowLabel} ${formatKo(band[0]!.date, { weekday: false })}부터 ${formatKo(band[band.length - 1]!.date, { weekday: false })}까지`)
-  }
-  const peak = strip.days.filter((d) => d.tone === 'peak')
-  if (peak.length && strip.peakLabel) {
-    parts.push(`${strip.peakLabel} ${formatKo(peak[0]!.date, { weekday: false })}부터 ${formatKo(peak[peak.length - 1]!.date, { weekday: false })}까지`)
-  }
-  const period = strip.days.filter((d) => d.tone === 'period')
-  if (period.length) parts.push(`생리 기록 ${period.length}일`)
-  return parts.join('. ')
+/** The strip / ring / week row as a sentence (their role="img" label). */
+export function describe(strip: Strip, opts: { quietWindow?: boolean } = {}): string {
+  return describeStrip(strip, { quietWindow: !!opts.quietWindow })
 }
 
 export default function CycleStrip({ strip }: { strip: Strip }) {

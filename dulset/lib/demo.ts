@@ -16,7 +16,7 @@
 // nine days ago, so 민수's 이번 달 할 일 is the next step of that chain: his
 // 정액검사, due within 3 months of applying (partnerTrack.monthlyTask).
 
-import { addDays, addMonths, diffDays, isISODate, parts, range, weekdayIndex } from './dates'
+import { addDays, addMonths, diffDays, formatShort, isISODate, parts, range, weekdayIndex } from './dates'
 import { uid } from './id'
 import { ROLE_LABEL, createInitialState, type OnboardingInput } from './initial'
 import { DATE_IDEAS } from './content/dateIdeas'
@@ -26,6 +26,7 @@ import { addAppointment, setAppointmentDone, type AppointmentInput } from './log
 import { addGrowth, setMilestone } from './logic/baby'
 import { checkupKey, milestoneKey } from './logic/babyView'
 import { activeItems, archiveCheckItem, isDone, isWeekly, itemsFor, mondayOf, toggleCheck, weeklyDone } from './logic/checks'
+import { setCover } from './logic/cover'
 import { addPeriod, upcomingWindows, type CycleWindow } from './logic/cycle'
 import { addEntry } from './logic/diary'
 import { addLHTest, addPregnancyTest } from './logic/logs'
@@ -43,6 +44,7 @@ import {
 import { recordBirth, startPregnancy } from './logic/pregnancy'
 import { prenatalKey } from './logic/pregnancyView'
 import { addCustomTask, setTemplateDone } from './logic/roadmap'
+import { sendSignal } from './logic/signals'
 import { setReaction } from './logic/usView'
 import type {
   AlertStyle,
@@ -612,9 +614,20 @@ function diary(
   stage: Stage,
   text: string,
   mood?: string,
+  photoId?: DemoPhotoId,
 ): AppState {
-  return addEntry(state, { date, author, text, mood, stage }, stamp(date, 22, 10))
+  return addEntry(state, { date, author, text, mood, stage, ...(photoId ? { photoId } : {}) }, stamp(date, 22, 10))
 }
+
+/**
+ * The demo's pictures are built-in drawings (lib/content/demoPhotos.ts), so
+ * the album and the cover work without IndexedDB. Diary photos go on
+ * preparing-stage entries only — never on a pregnancy entry.
+ */
+type DemoPhotoId = 'builtin:cafe' | 'builtin:sea' | 'builtin:window'
+
+/** Days before `today` of the 한강 walk on the demo cover, and when 지은 hung it. */
+export const DEMO_COVER = { walkDaysAgo: 9, setDaysAgo: 30, focusY: 68 } as const
 
 /** Add a date plan; `ideaId` is kept only if that idea exists in the catalogue. */
 function plan(state: AppState, p: Omit<DatePlan, 'id'>): AppState {
@@ -685,13 +698,14 @@ function ourStory(state: AppState, prepStart: ISODate): AppState {
   let s = setCoupleDates(state, { metDate: d.met, marriedDate: d.married })
   s = addAnniversary(s, { title: '첫 여행', date: d.firstTrip, yearly: true, emoji: '✈️' })
   s = addAnniversary(s, { title: '프러포즈', date: d.proposal, yearly: true, emoji: '💍' })
-  const memory = (date: ISODate, author: MemberId, text: string, minute: number) =>
-    addEntry(s, { date, author, text, mood: '🥰', stage: 'preparing' }, stamp(prepStart, 21, minute))
+  const memory = (date: ISODate, author: MemberId, text: string, minute: number, photoId?: DemoPhotoId) =>
+    addEntry(s, { date, author, text, mood: '🥰', stage: 'preparing', ...(photoId ? { photoId } : {}) }, stamp(prepStart, 21, minute))
   s = memory(
     d.firstTrip,
     'b',
     '첫 여행으로 강릉에 갔어요. 비 오는 바다 앞에서 우산 하나로 한참 걸었어요. 이 사람이랑 오래 함께하고 싶다고 생각한 날.',
     20,
+    'builtin:sea',
   )
   s = reactLast(s, '❤️')
   s = memory(
@@ -781,6 +795,7 @@ function preparingHistory(state: AppState, ttcStart: ISODate, full: boolean): Ap
     'preparing',
     '오늘부터 우리 둘이 함께 준비하기로 했어요. 엽산부터 시작! 서두르지 말고 재밌게 가 보자고 약속했어요.',
     '🥰',
+    'builtin:window',
   )
   if (!full) return s
   s = plan(s, {
@@ -872,6 +887,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     'preparing',
     '서울숲 산책하고 브런치. 오랜만에 휴대폰 안 보고 둘이 수다만 떨었어요.',
     '😌',
+    'builtin:cafe',
   )
   s = diary(
     s,
@@ -971,6 +987,9 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   const walk = activeItems(s, 'a').find((i) => i.label.includes(WALK) && !isDone(s, 'a', today, i.id))?.label
   s = sendNudge(s, 'b', 'a', today, earlierToday(today, now, 95), walk)
   s = sendCheer(s, 'a', 'b', earlierToday(today, now, 40), '이번 주 벌써 사흘째 둘 다 체크했어요! 오늘 저녁엔 같이 걸어요 🌙')
+  // …and a moment ago a "🙏 오늘 고마웠어요" signal that 지은 hasn't answered yet:
+  // her cover line says "민수님이 신호를 보냈어요" and 우리 한 줄 holds the reply chips.
+  s = sendSignal(s, 'a', 'b', 'thanks', today, earlierToday(today, now, 20))
   return settleInbox(s, today)
 }
 
@@ -1261,9 +1280,23 @@ function demoParenting(today: ISODate, now: Date): AppState {
   return settleInbox(s, today)
 }
 
+/**
+ * 지은 hung their 한강 evening walk as the cover (a built-in drawing, so it
+ * shows without IndexedDB) — the same in every stage: the cover never follows
+ * the stage or the cycle.
+ */
+function withDemoCover(state: AppState, today: ISODate): AppState {
+  const back = (days: number) => addDays(today, -days)
+  return setCover(
+    state,
+    { photoId: 'builtin:hangang', focusY: DEMO_COVER.focusY, caption: `${formatShort(back(DEMO_COVER.walkDaysAgo))} · 한강 산책` },
+    'b',
+    back(DEMO_COVER.setDaysAgo),
+  )
+}
+
 /** A realistic couple space for "예시로 둘러보기". */
 export function createDemoState(today: ISODate, now: Date, stage: Stage = 'preparing'): AppState {
-  if (stage === 'pregnant') return demoPregnant(today, now)
-  if (stage === 'parenting') return demoParenting(today, now)
-  return demoPreparing(today, now)
+  const s = stage === 'pregnant' ? demoPregnant(today, now) : stage === 'parenting' ? demoParenting(today, now) : demoPreparing(today, now)
+  return withDemoCover(s, today)
 }

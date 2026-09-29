@@ -4,29 +4,38 @@
 
 /* Theme tokens (RGB triplets so Tailwind can apply alpha). */
 :root {
-  /* Values chosen so text-{color} on bg/surface/{color}-soft and white text on
-     bg-{color} both reach WCAG AA 4.5:1 — in both themes (re-check the pairs
-     when changing one). --control is for component boundaries (input borders,
-     an off switch's track): at least 3:1 against bg/surface/surface-2. */
-  --bg: 250 247 244;
-  --surface: 255 255 255;
-  --surface-2: 245 240 236;
-  --line: 232 225 219;
-  --control: 140 130 124;
-  --ink: 38 32 30;
-  --ink-2: 92 82 77;
-  --ink-3: 112 103 98;
-  /* Brand = deep teal, kept apart from --period (red: period days only) and
-     --fert (violet: the fertile window only), so a primary button never reads
-     as a period warning. Hue 186° sits between --ok (153°) and --him (216°).
-     WCAG contrast, light (checked with the WCAG 2.x formula):
-       brand      on bg 6.07 · surface 6.47 · surface-2 5.72 · brand-soft 5.48
-       brand-ink  on bg 8.29 · surface 8.84 · surface-2 7.82 · brand-soft 7.48
-       white on bg-brand 6.47 · white on bg-brand-ink 8.84
-       ink / ink-2 / ink-3 on brand-soft 13.59 / 6.42 / 4.67 */
-  --brand: 15 104 114;
-  --brand-soft: 223 239 242;
-  --brand-ink: 10 82 92;
+  /* Warm paper palette. Text pairs reach WCAG AA 4.5:1 in both themes (checked
+     with the WCAG 2.x formula; re-check the pairs when changing one). --control
+     is for component boundaries (input borders, an off switch's track): at
+     least 3:1 against bg/surface/surface-2.
+     Light, measured:
+       ink on bg 14.58 · ink-2 on bg 7.05 · ink-3 on bg 5.43
+       ink-3 on surface-2 4.99 · brand-soft 4.90 · fert-soft 4.89 · ok-soft 5.00
+       brand-ink on bg 8.71 · surface-2 8.00 · brand-soft 7.85
+       white on bg-brand 13.28
+       fert on bg 5.19 · fert on fert-soft 4.67 · period on bg 5.45 · ok on ok-soft 4.69
+       control on bg 3.54 · surface 3.72 · surface-2 3.25 */
+  --bg: 251 247 241;
+  --surface: 255 253 249;
+  --surface-2: 244 237 227;
+  --line: 233 223 210;
+  --control: 142 129 119;
+  --ink: 43 34 29;
+  --ink-2: 95 82 74;
+  --ink-3: 112 99 90;
+  /* Brand = a warm, low-chroma FILL (espresso here, cream in dark) for the
+     primary pill, the FAB, badges and bg-brand chips — never text. Links,
+     eyebrows and numbers use --brand-ink (cocoa caramel), which sits ΔE00 19
+     from --ink. Brand stays apart from --period (red: period days only) and
+     --fert (violet: the fertile window only) by hue AND luminance:
+     L* brand 19.7 · period 42.8 · fert 44.2; ΔE00 brand vs period 28.1
+     (deuteranopia 23.5 · protanopia 12.6), brand vs fert 38.4. */
+  --brand: 61 44 34;
+  --brand-soft: 251 233 216;
+  --brand-ink: 108 58 28;
+  /* Glow = apricot decoration only (tape, the ♥ between names, the active-tab
+     dot, the welcome mark). Never text, never a status. */
+  --glow: 226 146 92;
   --him: 52 100 170;
   --him-soft: 228 238 250;
   --her: 180 60 104;
@@ -44,21 +53,24 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: 22 19 18;
-    --surface: 33 29 28;
-    --surface-2: 44 39 37;
-    --line: 60 54 51;
-    --control: 130 120 114;
-    --ink: 242 236 232;
-    --ink-2: 200 190 184;
-    /* ≥4.8:1 on every *-soft tone and 5.3:1 on surface-2 (150 140 134 fell to 4.0). */
-    --ink-3: 164 154 148;
-    /* Dark teal brand: brand on bg 8.96 · surface 8.10 · surface-2 7.15 ·
-       brand-soft 6.88; brand-ink 12.40 / 11.20 / 9.89 / 9.52; the bg color on
-       bg-brand (text-white flips, below) 8.96; ink-3 on brand-soft 5.16. */
-    --brand: 104 194 204;
-    --brand-soft: 24 46 52;
-    --brand-ink: 160 222 230;
+    /* Dark, measured: ink on bg 16.17 · ink-2 10.99 · ink-3 6.87 (5.03 on
+       brand-soft) · brand-ink on bg 10.62 · the bg color on bg-brand (text-white
+       flips, below) 12.67 · fert on bg 7.06 · period 6.71 · control on
+       bg / surface / surface-2 4.33 / 4.01 / 3.56. ΔE00 brand vs period 31.0
+       (deut 13.4 · prot 22.1). Known close pair: brand-ink vs warn ΔE00 9.5
+       (deut 6.9); warn only appears on labelled 💉 cards. */
+    --bg: 22 17 14;
+    --surface: 32 25 21;
+    --surface-2: 43 35 30;
+    --line: 59 49 42;
+    --control: 133 119 108;
+    --ink: 245 237 228;
+    --ink-2: 210 196 183;
+    --ink-3: 169 154 141;
+    --brand: 240 207 168;
+    --brand-soft: 58 42 31;
+    --brand-ink: 240 184 134;
+    --glow: 227 154 94;
     --him: 128 170 232;
     --him-soft: 32 44 62;
     --her: 238 132 168;
@@ -81,6 +93,96 @@
   .text-white:is(.bg-brand, .bg-him, .bg-her, .bg-ok, .bg-fert, .bg-period, .bg-warn) {
     color: rgb(var(--bg));
   }
+}
+
+/* Cover illustration tokens (components/cover/CoverArt.tsx) — illustration
+   fills only, never text. The evening set is the default; data-tod on the
+   SVG picks the time of day, and dark mode always uses the night set.
+   data-quiet (the weeks after a loss) mutes everything to a soft paper tone. */
+:root {
+  --il-sky-1: 246 196 170;
+  --il-sky-2: 249 218 196;
+  --il-sky-3: 252 236 220;
+  --il-sun: 255 246 232;
+  --il-hill-far: 234 190 160;
+  --il-hill-near: 216 158 128;
+  --il-tree: 150 168 124;
+  --il-trunk: 138 106 85;
+  --il-bird: 176 124 104;
+}
+[data-tod='morning'] {
+  --il-sky-1: 206 224 236;
+  --il-sky-2: 244 230 216;
+  --il-sky-3: 255 243 228;
+  --il-sun: 255 250 238;
+  --il-hill-far: 204 214 180;
+  --il-hill-near: 174 192 150;
+  --il-tree: 128 156 116;
+  --il-bird: 150 150 160;
+}
+[data-tod='day'] {
+  --il-sky-1: 196 218 236;
+  --il-sky-2: 232 238 238;
+  --il-sky-3: 248 242 230;
+  --il-sun: 255 251 239;
+  --il-hill-far: 208 220 186;
+  --il-hill-near: 180 198 152;
+  --il-tree: 128 156 116;
+  --il-bird: 150 150 160;
+}
+[data-tod='night'] {
+  --il-sky-1: 30 33 52;
+  --il-sky-2: 46 44 62;
+  --il-sky-3: 78 60 62;
+  --il-sun: 244 230 200;
+  --il-hill-far: 62 48 46;
+  --il-hill-near: 44 35 33;
+  --il-tree: 92 106 82;
+  --il-trunk: 104 88 76;
+}
+[data-tod][data-quiet] {
+  --il-sky-1: 236 228 220;
+  --il-sky-2: 241 234 227;
+  --il-sky-3: 246 241 235;
+  --il-sun: 250 246 240;
+  --il-hill-far: 226 214 203;
+  --il-hill-near: 214 199 186;
+}
+@media (prefers-color-scheme: dark) {
+  [data-tod] {
+    --il-sky-1: 30 33 52;
+    --il-sky-2: 46 44 62;
+    --il-sky-3: 78 60 62;
+    --il-sun: 244 230 200;
+    --il-hill-far: 62 48 46;
+    --il-hill-near: 44 35 33;
+    --il-tree: 92 106 82;
+    --il-trunk: 104 88 76;
+  }
+  [data-tod][data-quiet] {
+    --il-sky-1: 40 36 38;
+    --il-sky-2: 48 42 42;
+    --il-sky-3: 58 50 48;
+    --il-sun: 120 108 100;
+    --il-hill-far: 52 44 40;
+    --il-hill-near: 42 35 32;
+  }
+}
+
+/* Cover photo box (components/cover/Polaroid.tsx). It shrinks on short
+   screens so the day's card and its button stay above the tab bar; the first
+   height is the fallback for browsers without svh/clamp. */
+.cover-photo-h {
+  height: 204px;
+  height: clamp(112px, calc(100svh - 640px), 204px);
+}
+.cover-photo-h-quiet {
+  height: 150px;
+  height: clamp(104px, calc(100svh - 700px), 150px);
+}
+/* Torn edges for the tape on the cover photo. */
+.polaroid-tape {
+  clip-path: polygon(3% 0, 97% 4%, 100% 30%, 97% 55%, 100% 100%, 2% 96%, 0 70%, 3% 40%, 0 12%);
 }
 
 /* Keyboard focus scrolls clear of the sticky header (h-14) and the fixed
@@ -127,4 +229,11 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* The welcome screen's cover preview: a 196px photo on a normal phone,
+   shorter on small screens so 시작하기 stays on the first screen. */
+.welcome-cover .cover-photo-h {
+  height: 196px;
+  height: clamp(116px, calc(100svh - 648px), 196px);
 }

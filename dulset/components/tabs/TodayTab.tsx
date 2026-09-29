@@ -2,13 +2,17 @@
 
 // 오늘 — the home screen both partners open every day.
 //
-// Preparing (the core stage): three blocks and a folded "더 보기"
-//   1. 주기 띠 + today's moment (one title, one sentence, one action)
+// Preparing (the core stage) opens with the couple's photo, then three blocks
+// and a folded "더 보기":
+//   0. 우리 표지 — date · 함께한 지 D+N, one line, the cover photo (never the cycle)
+//   1. today's moment — ring / week row, one title, one sentence, one action
 //   2. 오늘 할 일 — my checks, a weekly check-in when due, today's/tomorrow's appointment
 //   3. 우리 한 줄 — the partner's month task, the other's progress, a signal to answer
-// The partner's "이번 달 할 일" goes first on the page when it's urgent (`top`:
-// a live 검사·청구 deadline, or the owner is 35+), else inside the moment card
-// when that has nothing else to say, else in 우리 한 줄.
+// The partner's "이번 달 할 일" goes right under the cover when it's urgent
+// (`top`: a live 검사·청구 deadline, or the owner is 35+), else inside the
+// moment card when that has nothing else to say, else in 우리 한 줄.
+// The moment's title and action stay above the tab bar on a 375×667 phone
+// (useFoldFit trims the photo a little when a moment runs long).
 // Pregnant / parenting keep their existing home (+ 기록 지키기 at the bottom).
 
 import { useMemo } from 'react'
@@ -21,6 +25,7 @@ import { useApp } from '@/lib/store'
 import InstallBackupCard from '@/components/system/InstallBackupCard'
 import AnniversaryBanner from '@/components/today/AnniversaryBanner'
 import { CoupleStreak, MyChecks, PartnerChecks } from '@/components/today/CheckCards'
+import CoverHero from '@/components/today/CoverHero'
 import CycleBlock from '@/components/today/CycleBlock'
 import { DateCard, DiaryPromptCard } from '@/components/today/ExtraCards'
 import Greeting from '@/components/today/Greeting'
@@ -30,6 +35,7 @@ import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
 import TodayTasks from '@/components/today/TodayTasks'
 import UsLine from '@/components/today/UsLine'
+import { useFoldFit } from '@/components/today/useFoldFit'
 import SignalsCard from '@/components/signals/SignalsCard'
 
 type Nav = (tab: TabKey) => void
@@ -47,22 +53,36 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
   const showTask = !canLogCycle(state, me.id) && moment?.kind !== 'after-loss'
   const task = useMemo(() => (showTask ? monthlyTask(state, today, me.id) : undefined), [showTask, state, today, me.id])
   const { done, toast } = useMonthlyTaskDone()
-  // Urgent: the partner's first line. Otherwise featured inside the moment card
-  // when that card has nothing else to say, else in 우리 한 줄.
-  const where = !task ? null : task.top ? 'top' : moment?.monthlyTask ? 'card' : 'us'
+  // Urgent: the partner's first line — unless today's moment has an action of
+  // its own (병원 일정 보기), which keeps the first screen; then right after it.
+  // Otherwise featured inside the moment card when that card has nothing else
+  // to say, else in 우리 한 줄.
+  const where = !task ? null : task.top ? (moment?.primary ? 'after' : 'top') : moment?.monthlyTask ? 'card' : 'us'
+  // The photo gives way (a little) when a long moment would push its action under the tab bar.
+  const foldKey = moment ? `${moment.copy}|${moment.title}|${moment.body}|${moment.note}|${moment.todayLH}|${!!moment.askTell}|${where}` : `none|${where}`
+  const fitRef = useFoldFit(foldKey)
 
   return (
-    <div>
-      <Greeting onNavigate={onNavigate} showTogether={false} />
-      <div className="mt-3 space-y-4">
-        {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} onNavigate={onNavigate} /> : null}
-        {moment ? (
-          <CycleBlock moment={moment} task={where === 'card' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} />
-        ) : null}
-        <TodayTasks onNavigate={onNavigate} />
-        <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} />
-        <MoreSection moment={moment} onNavigate={onNavigate} />
-      </div>
+    <div
+      ref={fitRef}
+      className="[&_.cover-photo-h-quiet]:max-h-[var(--cover-fit,none)] [&_.cover-photo-h]:max-h-[var(--cover-fit,none)]"
+    >
+      <CoverHero onNavigate={onNavigate} />
+      {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} className="mt-[18px]" /> : null}
+      {moment ? (
+        <CycleBlock
+          moment={moment}
+          task={where === 'card' ? task : undefined}
+          onTaskDone={done}
+          onNavigate={onNavigate}
+          className="mt-[18px] [@media(max-height:700px)]:mt-3.5"
+        />
+      ) : null}
+      {task && where === 'after' ? <MonthlyTaskCard task={task} onDone={done} className="mt-3.5" /> : null}
+      <TodayTasks onNavigate={onNavigate} className="mt-7" />
+      <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
+      <MoreSection moment={moment} onNavigate={onNavigate} className="mt-[18px]" />
+      <p className="mt-1 text-center text-[11.5px] text-ink-3">사진과 기록은 이 폰에만 저장돼요</p>
       {toast}
     </div>
   )

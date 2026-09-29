@@ -2,6 +2,12 @@
 
 // Diary photos live in IndexedDB (localStorage is too small for images).
 // Everything stays on this device in the prototype.
+//
+// Ids starting with 'builtin:' are the demo couple's drawn pictures
+// (lib/content/demoPhotos.ts): they resolve from memory, so they work without
+// IndexedDB (the single-file demo, private windows), and are never deleted.
+
+import { BUILTIN_PHOTOS, builtinKey } from './content/demoPhotos'
 
 const DB_NAME = 'dulset-photos'
 const STORE = 'photos'
@@ -64,6 +70,9 @@ export async function downscaleImage(file: Blob, maxSide = 1280, quality = 0.82)
   }
 }
 
+/** A built-in (demo) picture id — read-only, never stored in IndexedDB. */
+export const isBuiltinPhoto = (id: string) => id.startsWith('builtin:')
+
 export async function savePhoto(blob: Blob): Promise<string> {
   const id = newId()
   await tx('readwrite', (s) => s.put(blob, id))
@@ -71,6 +80,10 @@ export async function savePhoto(blob: Blob): Promise<string> {
 }
 
 export async function getPhotoBlob(id: string): Promise<Blob | null> {
+  if (isBuiltinPhoto(id)) {
+    const key = builtinKey(id)
+    return key ? new Blob([BUILTIN_PHOTOS[key]], { type: 'image/svg+xml' }) : null
+  }
   try {
     const v = await tx<unknown>('readonly', (s) => s.get(id))
     return v instanceof Blob ? v : null
@@ -98,6 +111,7 @@ export async function getPhotoDataURL(id: string): Promise<string | null> {
 }
 
 export async function deletePhoto(id: string): Promise<void> {
+  if (isBuiltinPhoto(id)) return
   try {
     await tx('readwrite', (s) => s.delete(id))
   } catch {

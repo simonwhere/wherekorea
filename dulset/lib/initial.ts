@@ -126,6 +126,8 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     version: 1,
     createdAt: now.toISOString(),
     onboarded: true,
+    // No cover photo yet (couple.cover): the home shows the default art until
+    // one of them hangs a photo (components/cover/CoverSheet).
     couple: { members, inviteCode: inviteCode() },
     stage: 'preparing',
     checkItems: defaultCheckItems(members, today, input.habits),

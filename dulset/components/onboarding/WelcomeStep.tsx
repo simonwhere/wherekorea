@@ -1,24 +1,19 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
+import Polaroid from '@/components/cover/Polaroid'
 import RestoreBackup from '@/components/RestoreBackup'
 import { Button } from '@/components/ui'
 import type { Stage } from '@/lib/types'
 
 // Preparing comes first (founder direction); pregnancy / baby / 기록장 follow later.
+// One-line bodies so the start button stays on the first screen.
 const VALUE_PROPS = [
-  { emoji: '✅', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 매일 1~2개만. 참는 습관은 주 1회만 체크해요.' },
-  { emoji: '💞', title: '가임기 예상을 두 사람에게', body: '각자 편한 말투로 받아요. ‘우리의 주간’처럼 은근하게, 또는 알림 없이도요.' },
-  {
-    emoji: '🏥',
-    title: '검사·신청 기한까지 함께',
-    body: '가임력 검사 신청부터 검사·청구 기한까지, 병원 일정과 함께 둘이 봐요.',
-  },
-  {
-    emoji: '🔒',
-    title: '자세한 기록은 허용할 때만',
-    body: '생리일·테스트 결과를 보여 줄지는 주기를 기록하는 사람이 정해요.',
-  },
+  { emoji: '✅', tile: 'bg-ok-soft', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 하루 1~2개만, 서로 응원해요' },
+  { emoji: '💞', tile: 'bg-fert-soft', title: '가임기 예상을 두 사람에게', body: '‘우리의 주간’처럼 각자 편한 말투로 받아요' },
+  { emoji: '🏥', tile: 'bg-brand-soft', title: '검사·신청 기한까지 함께', body: '가임력 검사 신청부터 청구까지 둘이 봐요' },
+  { emoji: '🔒', tile: 'bg-him-soft', title: '자세한 기록은 허용할 때만', body: '생리일·테스트 결과는 기록하는 사람이 정해요' },
 ] as const
 
 const DEMOS: Array<{ stage: Stage; emoji: string; label: string }> = [
@@ -27,14 +22,14 @@ const DEMOS: Array<{ stage: Stage; emoji: string; label: string }> = [
   { stage: 'parenting', emoji: '👶', label: '육아 중' },
 ]
 
-/** Two circles and a smaller third one — "둘이 셋이 되기까지". */
+/** Two overlapping circles and a small glow dot — "둘이 셋이 되기까지". The app's only 둘→셋 symbol. */
 function Mark() {
   return (
-    <div aria-hidden className="relative mx-auto h-16 w-24">
-      <span className="absolute left-1 top-2 h-12 w-12 rounded-full bg-him/80" />
-      <span className="absolute left-8 top-2 h-12 w-12 rounded-full bg-her/75" />
-      <span className="absolute right-0 top-0 h-6 w-6 rounded-full bg-brand ring-4 ring-bg" />
-    </div>
+    <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden="true" focusable="false" className="shrink-0">
+      <circle cx="12" cy="17" r="11" fill="rgb(var(--him))" opacity=".78" />
+      <circle cx="25" cy="17" r="11" fill="rgb(var(--her))" opacity=".72" />
+      <circle cx="38" cy="6" r="5" fill="rgb(var(--glow))" />
+    </svg>
   )
 }
 
@@ -56,48 +51,76 @@ export default function WelcomeStep({
     if (focusTitle) titleRef.current?.focus({ preventScroll: true })
   }, [focusTitle])
 
+  // The clock hour only picks the illustration's palette.
+  const [hour] = useState(() => new Date().getHours())
+
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-safe pt-safe">
-      <div className="flex flex-1 flex-col justify-center py-10">
-        <Mark />
-        <h1
-          ref={titleRef}
-          tabIndex={-1}
-          className="mt-5 text-center text-4xl font-extrabold tracking-tight text-brand outline-none"
-        >
-          둘셋
-        </h1>
-        <p className="mt-2 text-center text-base font-medium text-ink-2">둘이 셋이 되기까지, 함께</p>
+      <div className="pb-10 pt-7">
+        {/* A preview of the home's cover: the couple's own photo will hang here. */}
+        <div className="welcome-cover mt-2.5 px-3">
+          <Polaroid
+            caption={
+              <>
+                <span className="text-[13px] font-semibold text-ink-2">여기에 우리 사진을 걸 수 있어요</span>
+                <span aria-hidden className="text-[12.5px]">
+                  📷
+                </span>
+              </>
+            }
+          >
+            <CoverArt tod={timeOfDay(hour)} />
+          </Polaroid>
+        </div>
 
-        <ul className="mt-9 space-y-3">
+        <div className="mt-7 flex items-center gap-2.5">
+          <Mark />
+          <h1
+            ref={titleRef}
+            tabIndex={-1}
+            className="text-[38px] font-extrabold leading-none tracking-[-0.05em] text-ink outline-none"
+          >
+            둘셋
+          </h1>
+        </div>
+        <p className="mt-2 text-[18px] font-bold tracking-[-0.03em] text-ink-2">둘이 셋이 되기까지, 함께</p>
+
+        <ul className="mt-[22px]">
           {VALUE_PROPS.map((v) => (
-            <li key={v.title} className="flex items-start gap-3 rounded-xl2 border border-line bg-surface p-3.5 shadow-card">
-              <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xl">
+            <li key={v.title} className="flex items-center gap-3 py-[9px]">
+              <span
+                aria-hidden
+                className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] text-[19px] ${v.tile}`}
+              >
                 {v.emoji}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-ink">{v.title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{v.body}</p>
+                <p className="text-[15px] font-bold leading-[1.35] tracking-[-0.025em] text-ink">{v.title}</p>
+                <p className="mt-0.5 text-[12.5px] leading-[1.45] text-ink-3">{v.body}</p>
               </div>
             </li>
           ))}
         </ul>
-      </div>
 
-      <div className="space-y-5 pb-4">
-        <div className="grid gap-2">
-          <Button size="lg" full onClick={onStart}>
-            시작하기
-          </Button>
-          {/* Restoring shouldn't need a demo or a whole new onboarding first. */}
+        <Button
+          size="lg"
+          full
+          onClick={onStart}
+          // ! because Button's own radius/type classes can sort later in the CSS.
+          className="mt-[18px] h-[54px] !rounded-full !text-[17px] !font-extrabold tracking-[-0.02em]"
+        >
+          시작하기
+        </Button>
+        {/* Restoring shouldn't need a demo or a whole new onboarding first. */}
+        <div className="mt-1 [&>button]:h-12 [&>button]:rounded-full [&>button]:text-[14.5px] [&>button]:font-bold">
           <RestoreBackup label="백업 파일로 복원하기" variant="ghost" onRestored={onRestored} />
         </div>
 
-        <section aria-labelledby="demo-title" className="rounded-xl2 bg-surface-2 p-3.5">
-          <h2 id="demo-title" className="text-sm font-bold text-ink">
+        <section aria-labelledby="demo-title" className="mt-[18px] rounded-[22px] bg-surface-2 p-4">
+          <h2 id="demo-title" className="text-[14.5px] font-extrabold text-ink">
             예시로 둘러보기
           </h2>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
+          <p className="mt-1 text-[12.5px] leading-normal text-ink-3">
             가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요. 주기를 기록하는 지은님 화면에서 시작하고, 위쪽 ⇄로 민수님
             화면도 볼 수 있어요. 둘러본 뒤 설정에서 지우고 새로 시작하면 돼요.
           </p>
@@ -107,7 +130,7 @@ export default function WelcomeStep({
                 key={d.stage}
                 type="button"
                 onClick={() => onDemo(d.stage)}
-                className="flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-line bg-surface px-2 text-sm font-semibold text-ink-2 hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="flex h-[46px] items-center justify-center gap-1 rounded-[14px] bg-surface px-2 text-sm font-bold text-ink-2 hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand forced-colors:border forced-colors:border-line"
               >
                 <span aria-hidden>{d.emoji}</span>
                 {d.label}

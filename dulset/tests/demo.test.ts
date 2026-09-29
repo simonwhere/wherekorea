@@ -13,6 +13,7 @@ import { ROADMAP } from '@/lib/content/roadmap'
 import { addDays, addMonths, diffDays, isISODate, weekdayIndex } from '@/lib/dates'
 import {
   DEMO_COUPLE_DAYS,
+  DEMO_COVER,
   DEMO_START_VIEWER,
   PREP_APPLIED_DAYS_AGO,
   PREP_APPOINTMENTS,
@@ -58,6 +59,9 @@ import { sanitizeBackup } from '@/lib/logic/settings'
 import { chapterContext, entryChapter, receivedReactions } from '@/lib/logic/usView'
 import { isAppState, parseState } from '@/lib/storage'
 import type { AppState, CheckItem, LHResult, Stage } from '@/lib/types'
+import { BUILTIN_PHOTO_IDS } from '@/lib/content/demoPhotos'
+import { cleanCover, coverCaptionProblem, coverView, heroLine } from '@/lib/logic/cover'
+import { deletePhoto, getPhotoBlob, isBuiltinPhoto } from '@/lib/photos'
 
 const STAGES: Stage[] = ['preparing', 'pregnant', 'parenting']
 const TODAYS = ['2026-09-26', '2026-01-31', '2026-02-28', '2028-02-29', '2026-03-01', '2026-12-31', '2027-01-01', '2026-04-30']
@@ -996,5 +1000,71 @@ describe('onboarding: 우리의 날', () => {
     const bad = stateFromOnboarding({ ...c, metDate: '2027-01-01', marriedDate: 'nope' }, today, NOW)
     expect(bad.couple.metDate).toBeUndefined()
     expect(bad.couple.marriedDate).toBeUndefined()
+  })
+})
+
+describe('demo cover photo (built-in pictures)', () => {
+  const today = '2026-09-29'
+  const NOW_29 = new Date(2026, 8, 29, 19, 30)
+
+  for (const stage of STAGES) {
+    it(`${stage}: 지은 hung the 한강 walk — a valid cover that survives a backup`, () => {
+      const s = createDemoState(today, NOW_29, stage)
+      expect(s.couple.cover).toEqual({
+        photoId: 'builtin:hangang',
+        focusY: DEMO_COVER.focusY,
+        caption: '9.20 · 한강 산책',
+        setBy: 'b',
+        setAt: addDays(today, -DEMO_COVER.setDaysAgo),
+      })
+      expect(cleanCover(s.couple.cover)).toEqual(s.couple.cover)
+      expect(coverCaptionProblem(s.couple.cover!.caption!)).toBeNull()
+      expect(BUILTIN_PHOTO_IDS).toContain(s.couple.cover!.photoId)
+      expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.couple.cover).toEqual(s.couple.cover)
+      // Both phones see it (no quiet days in the demo).
+      expect(coverView(s, 'a', today).mode).toBe('photo')
+      expect(coverView(s, 'b', today)).toMatchObject({ mode: 'photo', decorate: true, together: expect.any(Number) })
+    })
+
+    it(`${stage}: diary pictures are built-in, and never on a pregnancy entry`, () => {
+      const s = createDemoState(today, NOW_29, stage)
+      const withPhoto = s.diary.filter((e) => e.photoId)
+      expect(withPhoto.length).toBeGreaterThanOrEqual(stage === 'preparing' ? 3 : 2)
+      for (const e of withPhoto) {
+        expect(BUILTIN_PHOTO_IDS).toContain(e.photoId)
+        expect(e.stage).toBe('preparing')
+      }
+      expect(s.diary.filter((e) => e.stage === 'pregnant').every((e) => !e.photoId)).toBe(true)
+    })
+  }
+
+  it('the preparing home opens on 민수’s unanswered signal for 지은, and the coming 첫 여행 day for 민수', () => {
+    const s = createDemoState(today, NOW_29, 'preparing')
+    expect(heroLine(s, today, 'b', 19)).toEqual({ kind: 'signal', text: '민수님이 신호를 보냈어요', avatar: 'a', target: 'us' })
+    // 첫 여행 was 2021-10-03 → 5주년 in 4 days.
+    expect(heroLine(s, today, 'a', 19)).toEqual({ kind: 'anniversary', text: '💍 첫 여행 5주년까지 D-4', target: 'diary' })
+    expect(heroLine(s, '2026-09-20', 'a', 19)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+  })
+
+  it('the preparing demo has all three diary pictures (album and cover sheet)', () => {
+    const s = createDemoState(today, NOW_29, 'preparing')
+    expect(new Set(s.diary.map((e) => e.photoId).filter(Boolean))).toEqual(
+      new Set(['builtin:cafe', 'builtin:sea', 'builtin:window']),
+    )
+  })
+
+  it('built-in ids resolve without IndexedDB and are never deleted', async () => {
+    expect(typeof indexedDB).toBe('undefined') // node: like the single-file demo
+    for (const id of BUILTIN_PHOTO_IDS) {
+      expect(isBuiltinPhoto(id)).toBe(true)
+      const blob = await getPhotoBlob(id)
+      expect(blob?.type).toBe('image/svg+xml')
+      const text = await blob!.text()
+      expect(text.startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="')).toBe(true)
+    }
+    expect(await getPhotoBlob('builtin:moon')).toBeNull()
+    await expect(deletePhoto('builtin:hangang')).resolves.toBeUndefined()
+    expect(await getPhotoBlob('builtin:hangang')).not.toBeNull()
+    expect(isBuiltinPhoto('3f2a-uuid')).toBe(false)
   })
 })

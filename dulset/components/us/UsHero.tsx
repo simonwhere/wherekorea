@@ -1,5 +1,7 @@
 'use client'
 
+import { useCallback, useState } from 'react'
+import CoverSheet from '@/components/cover/CoverSheet'
 import { Avatar, Button, Card, cx } from '@/components/ui'
 import { dLabel, formatKo, isISODate } from '@/lib/dates'
 import { daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
@@ -18,6 +20,8 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
   const married = isISODate(marriedDate) ? marriedDate : undefined
   const next = nextAnniversaries(state.couple, state.anniversaries, today, 1)[0]
   const chain = ourDaysChain(state, today, me.id)
+  const [coverOpen, setCoverOpen] = useState(false)
+  const closeCover = useCallback(() => setCoverOpen(false), [])
 
   return (
     <Card tone="brand">
@@ -30,16 +34,28 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
         <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
           {me.name} <span className="font-normal text-ink-3">·</span> {partner.name}
         </p>
+        {/* The photo at the top of 오늘 — also reachable from here. */}
+        <button
+          type="button"
+          onClick={() => setCoverOpen(true)}
+          className={cx(
+            'flex h-11 shrink-0 items-center rounded-xl px-2.5 text-xs font-semibold text-ink-2 hover:bg-surface/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand',
+            !met && '-mr-2',
+          )}
+        >
+          표지 사진<span className="sr-only"> 바꾸기</span>
+        </button>
         {met ? (
           <button
             type="button"
             onClick={onEditDates}
-            className="-mr-2 flex h-11 shrink-0 items-center rounded-xl px-2.5 text-xs font-semibold text-ink-2 hover:bg-surface/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            className="-ml-1 -mr-2 flex h-11 shrink-0 items-center rounded-xl px-2.5 text-xs font-semibold text-ink-2 hover:bg-surface/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
           >
             날짜 고치기<span className="sr-only"> (처음 만난 날·결혼한 날)</span>
           </button>
         ) : null}
       </div>
+      <CoverSheet open={coverOpen} onClose={closeCover} />
 
       {met ? (
         <div className="mt-3">

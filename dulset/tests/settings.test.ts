@@ -38,6 +38,7 @@ import {
 } from '@/lib/logic/settings'
 import { FERTILITY_CLAIM_ID, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
 import { canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import { setCover, setHideCover } from '@/lib/logic/cover'
 import { normalize } from '@/lib/storage'
 import { parseState } from '@/lib/storage'
 import type { AppState } from '@/lib/types'
@@ -467,6 +468,77 @@ describe('sanitizeBackup', () => {
     const s = clone(fresh())
     s.pregnancy = { lmp: '2026-08-20', dueDateOverride: '2027-02-30', confirmedAt: 'x' }
     expect(sanitizeBackup(s)!.pregnancy).toEqual({ lmp: '2026-08-20', confirmedAt: '2026-08-20' })
+  })
+})
+
+describe('sanitizeBackup: cover photo', () => {
+  const clone = (s: AppState) => JSON.parse(JSON.stringify(s)) as AppState
+  const withCover = (cover: unknown, personal?: unknown): AppState => {
+    const s = clone(fresh())
+    ;(s.couple as { cover?: unknown }).cover = cover
+    if (personal !== undefined) (s.settings as { personal?: unknown }).personal = personal
+    return s
+  }
+  const good = { photoId: 'photo-1', focusY: 64, caption: '9.20 · 한강 산책', setBy: 'b', setAt: '2026-09-01' }
+
+  it('keeps a valid cover (an IndexedDB id or a known built-in picture)', () => {
+    expect(sanitizeBackup(withCover(good))!.couple.cover).toEqual(good)
+    expect(sanitizeBackup(withCover({ ...good, photoId: 'builtin:hangang' }))!.couple.cover!.photoId).toBe('builtin:hangang')
+    // A real backup round-trips unchanged.
+    const s = setCover(fresh(), { photoId: 'builtin:sea', focusY: 40, caption: '강릉' }, 'a', TODAY)
+    expect(parseState(JSON.stringify(s))).toEqual(JSON.parse(JSON.stringify(s)))
+  })
+
+  it('drops a built-in id this version does not have', () => {
+    expect(sanitizeBackup(withCover({ ...good, photoId: 'builtin:moon' }))!.couple.cover).toBeUndefined()
+    expect('cover' in sanitizeBackup(withCover({ ...good, photoId: 'builtin:' }))!.couple).toBe(false)
+  })
+
+  it('drops an unusable cover and clamps the focus', () => {
+    for (const bad of [
+      { ...good, focusY: 'top' },
+      { ...good, focusY: null },
+      { ...good, photoId: '' },
+      { ...good, photoId: 'x'.repeat(201) },
+      { ...good, setBy: 'z' },
+      { ...good, setAt: 'yesterday' },
+      'photo-1',
+      [good],
+    ]) {
+      expect(sanitizeBackup(withCover(bad))!.couple.cover).toBeUndefined()
+    }
+    expect(sanitizeBackup(withCover({ ...good, focusY: -20 }))!.couple.cover!.focusY).toBe(0)
+    expect(sanitizeBackup(withCover({ ...good, focusY: 250.7 }))!.couple.cover!.focusY).toBe(100)
+    expect(sanitizeBackup(withCover({ ...good, focusY: 33.6 }))!.couple.cover!.focusY).toBe(34)
+  })
+
+  it('drops only a caption that is too long, not text, or has health words', () => {
+    const { caption: _c, ...noCaption } = good
+    for (const caption of ['가'.repeat(17), 12, '배란 테스트 날', '병원 가는 길', '   ']) {
+      expect(sanitizeBackup(withCover({ ...good, caption }))!.couple.cover).toEqual(noCaption)
+    }
+    expect(sanitizeBackup(withCover({ ...good, caption: `  ${'가'.repeat(16)}  ` }))!.couple.cover!.caption).toBe('가'.repeat(16))
+  })
+
+  it('keeps hideCover only as a yes/no, per person', () => {
+    const out = sanitizeBackup(withCover(good, { a: { hideCover: true, lowPressure: true }, b: { hideCover: 'yes' } }))!
+    expect(out.settings.personal).toEqual({ a: { hideCover: true, lowPressure: true }, b: {} })
+    const off = sanitizeBackup(withCover(good, { b: { hideCover: false } }))!
+    expect(off.settings.personal).toEqual({ b: { hideCover: false } })
+    // normalize (before sanitizeBackup) keeps the same rule.
+    expect(normalize(withCover(good, { a: { hideCover: 1, discreet: true } })).settings.personal).toEqual({ a: { discreet: true } })
+    expect(parseState(JSON.stringify(setHideCover(fresh(), 'a', true)))!.settings.personal).toEqual({ a: { hideCover: true } })
+  })
+
+  it('normalize applies the same cover check', () => {
+    expect(normalize(withCover({ ...good, focusY: 'x' })).couple.cover).toBeUndefined()
+    expect(normalize(withCover({ ...good, caption: '임테기' })).couple.cover).toEqual({
+      photoId: 'photo-1',
+      focusY: 64,
+      setBy: 'b',
+      setAt: '2026-09-01',
+    })
+    expect('cover' in normalize(clone(fresh())).couple).toBe(false)
   })
 })
 
