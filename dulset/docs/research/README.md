@@ -16,4 +16,19 @@
 | `early-pregnancy-bleeding.json` | 양성 뒤 출혈 안내 근거 (ACOG·NHS: 초기 출혈 빈도, 병원 연락, 응급 신호, 꼭 끝나는 건 아님, 발열) — 홈의 '출혈이 시작됐어요' 카드 문장은 `inUI: true` 항목의 `ui`에서만 나와요(`lib/logic/positiveBleeding.ts` BLEEDING_LINES, 테스트로 고정). 검색 요약 기반·원문 미열람(프록시 차단), 확인일 2026-10-02 |
 | `after-loss.json` | 임신이 끝난 뒤 안내 근거 (ACOG·WHO 2005 vs Kangatharan 2017·Schliep 2016·Tommy's: 첫 생리 4~6주, 2주 뒤 배란 가능, 의학적 대기 불필요, 마음 준비, 병원 연락 신호, 반복 유산 검사, 유산·사산휴가) — 홈의 after-loss 카드 한 줄은 `inUI: true` 항목의 `ui`에서만 나와요(`lib/logic/ttcFlow.ts` AFTER_LOSS_LINES; 'ovulation-2-weeks'는 일부러 안 써요). `kr-leave`는 요약끼리 어긋나 `inUI: false`. 검색 요약 기반·원문 미열람, 확인일 2026-10-02 |
 
+## 앱 콘텐츠와의 연결 (2026-10-02)
+
+화면에 나오는 콘텐츠는 `lib/content/data/*.json`(roadmap · programs · supplements · dateIdeas · fertility · pregnancy · baby)에 있고, `lib/content/*.ts`는 그 JSON을 읽는 로더예요. 항목마다 네 가지를 붙여요.
+
+| 필드 | 뜻 |
+|---|---|
+| `effectiveFrom` | 그 규칙·안내가 시행된 날(`YYYY-MM-DD`). 시행일이 없는 일반 안내는 글을 쓴 날 |
+| `checkedAt` | 숫자·링크를 출처와 마지막으로 맞춰 본 날 |
+| `sources` | 출처(파일 안 `sources` 표의 키, 또는 `{ name, url }`). 사실을 말하는 항목(로드맵·지원 제도·영양제·가이드)은 1개 이상 |
+| `verified` | `true` = 이 폴더의 조사 항목 중 `confidence: "high"`와 맞고 열린 질문이 없음. `false` = **미확인**: 조사 항목이 medium/low이거나, 원문을 못 열었거나(프록시 차단), N18처럼 사람이 확인할 일이 남음. 이때는 `checkNote`에 무엇을 확인해야 하는지 적어요 |
+
+- `npm test`가 먼저 `scripts/validate-content.mjs`를 돌려요(날짜 형식, URL, 출처 키, 금지어, `verified:false`의 `checkNote`, id 중복). `npm run validate:content`는 파일별 미확인 개수도 보여 줘요.
+- 로더는 `*_AUDIT` 맵(`ROADMAP_AUDIT`, `PROGRAM_AUDIT` …)으로 이 필드를 따로 내보내요. 화면에 '미확인' 표시를 붙일 때 그걸 읽으면 돼요. 화면이 받는 모양(`RoadmapTemplate`, `Program` …)은 그대로예요.
+- 콘텐츠를 고칠 때는 JSON만 고치고, 근거는 이 폴더에 먼저 더해요. `verified`를 `true`로 바꾸는 건 공식 원문을 직접 본 사람만 해요.
+
 **주의:** 조사할 때 웹페이지 원문을 직접 열 수 없어서, 대부분 **검색 결과 요약**을 근거로 했어요. 각 파일의 `confidence`와 `notes`(수정 사항)를 확인하고, **출시 전에는 공식 원문으로 다시 확인**해야 해요. 특히 금액, 대상, 기한은 해마다 바뀌어요.

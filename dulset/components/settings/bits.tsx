@@ -64,7 +64,11 @@ export function SettingsSection({
               className="-ml-1 flex min-h-[44px] w-full items-center gap-1.5 rounded-lg px-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
               <span className="min-w-0 flex-1">{title}</span>
-              <Icon name="chev" className={cx('h-[18px] w-[18px] shrink-0 text-ink-3 transition-transform', open && 'rotate-180')} strokeWidth={2} />
+              <Icon
+                name="chev"
+                className={cx('h-[18px] w-[18px] shrink-0 text-ink-3 transition-transform', open && 'rotate-180')}
+                strokeWidth={2}
+              />
             </button>
           </h2>
           {sub ? <p className={cx('text-xs text-ink-3', open ? '-mt-1' : '-mt-1.5 pb-1.5')}>{sub}</p> : null}
@@ -221,13 +225,7 @@ export function ExternalLinkButton({
 }
 
 /** Tiny status pill. */
-export function Pill({
-  children,
-  tone = 'muted',
-}: {
-  children: React.ReactNode
-  tone?: 'muted' | 'ok' | 'warn' | 'brand' | 'period'
-}) {
+export function Pill({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'ok' | 'warn' | 'brand' | 'period' }) {
   const tones = {
     muted: 'bg-surface-2 text-ink-2',
     ok: 'bg-ok-soft text-ok',

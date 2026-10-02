@@ -160,10 +160,16 @@ export function planLHTest(day: readonly LHTest[], input: LHInput): LHPlan {
   }
   const same = day.find((t) => lhKey(t) === lhKey(test)) ?? (slot ? day.find((t) => lhSlotOf(t) === slot) : undefined)
   if (same) {
+    // A replacement keeps the record's sync id (lib/sync/model.ts: the same strip, re-read).
+    const keep = same.id ? { id: same.id } : {}
     // A slot in place of a timed test keeps that clock time: '08:10 희미' becomes '08:10 양성'.
     if (slot && same.time)
-      return { action: 'replace', test: { date: test.date, result: test.result, time: same.time, ...(test.by ? { by: test.by } : {}) }, target: same }
-    return { action: 'replace', test, target: same }
+      return {
+        action: 'replace',
+        test: { ...keep, date: test.date, result: test.result, time: same.time, ...(test.by ? { by: test.by } : {}) },
+        target: same,
+      }
+    return { action: 'replace', test: { ...keep, ...test }, target: same }
   }
   if (day.length < MAX_LH_PER_DAY) return { action: 'add', test }
   const sorted = [...day].sort(byTime)
@@ -186,12 +192,7 @@ export function planLHTest(day: readonly LHTest[], input: LHInput): LHPlan {
  * date after `today` is ignored (the sheet never offers one, but a re-applied
  * change or a pinned date must not log the future either).
  */
-export function addLHTest<S extends Pick<AppState, 'lhTests'>>(
-  state: S,
-  input: LHInput,
-  today?: ISODate,
-  opts?: { replace?: boolean },
-): S {
+export function addLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, input: LHInput, today?: ISODate, opts?: { replace?: boolean }): S {
   if (today && input.date > today) return state
   const day = lhTestsOn(state.lhTests, input.date)
   const plan = planLHTest(day, input)
@@ -284,11 +285,7 @@ function settledByPeriod(state: Pick<AppState, 'periods'>, date: ISODate): boole
  * a period was logged on or after its date. A date after `today` is ignored
  * (`test` is then undefined and the state comes back as it was).
  */
-export function addPregnancyTest(
-  state: AppState,
-  input: PregnancyTestInput,
-  today?: ISODate,
-): { state: AppState; test?: PregnancyTest } {
+export function addPregnancyTest(state: AppState, input: PregnancyTestInput, today?: ISODate): { state: AppState; test?: PregnancyTest } {
   if (today && input.date > today) return { state }
   const test: PregnancyTest = {
     id: input.id ?? uid(),
@@ -389,11 +386,7 @@ export function removePeriodLog(state: AppState, start: ISODate): AppState {
 export const NOTE_MAX_LENGTH = 200
 
 /** A one-line note, saved as a diary entry for that day. */
-export function addNote(
-  state: AppState,
-  note: { date: ISODate; author: MemberId; text: string; id?: string },
-  nowISO: string,
-): AppState {
+export function addNote(state: AppState, note: { date: ISODate; author: MemberId; text: string; id?: string }, nowISO: string): AppState {
   // Re-applied with the same id (two-tab sync rebase): addEntry keeps the first.
   const text = note.text.trim().slice(0, NOTE_MAX_LENGTH)
   return addEntry(state, { id: note.id, date: note.date, author: note.author, text }, nowISO)
@@ -426,11 +419,7 @@ export type LogUndo =
   | { kind: 'ptest'; id: string; before?: PregnancyTest; positivePending?: PositivePending }
   | { kind: 'note'; id: string }
 
-export type LogTarget =
-  | { kind: 'lh'; date: ISODate }
-  | { kind: 'period' }
-  | { kind: 'ptest'; id: string }
-  | { kind: 'note'; id: string }
+export type LogTarget = { kind: 'lh'; date: ISODate } | { kind: 'period' } | { kind: 'ptest'; id: string } | { kind: 'note'; id: string }
 
 /** What an action on `target` may change, read from the state it is about to run on. */
 export function logUndo(before: AppState, target: LogTarget): LogUndo {

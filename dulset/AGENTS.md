@@ -57,7 +57,7 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - "오늘"은 항상 `useApp().today`를 써요. 날짜 로직에 `new Date()`를 쓰지 않아요. 시각이 필요하면 `stampOn(today)`(`lib/logic/today.ts`)을 써요.
 - 날짜는 `'YYYY-MM-DD'` 문자열이고, 계산은 `lib/dates.ts`(`addDays`, `diffDays`, `addMonths`, `formatKo`, `dLabel` …)로 해요.
 - 한국식 날짜 세기: 시작일이 1일이에요. 백일·100일은 시작일 + 99일이고, "생후 60일 안에"는 출생일을 1일째로 세요.
-- 새 상태 필드를 추가할 때는 다섯 곳을 모두 고쳐요: `lib/types.ts` → `lib/initial.ts` → `lib/storage.ts`의 `normalize` → `lib/logic/settings.ts`의 `sanitizeBackup`(검증) → `lib/demo.ts`(예시 데이터). 테스트도 함께 추가해요.
+- 새 상태 필드를 추가할 때는 다섯 곳을 모두 고쳐요: `lib/types.ts` → `lib/initial.ts` → `lib/storage.ts`의 `normalize` → `lib/logic/settings.ts`의 `sanitizeBackup`(검증) → `lib/demo.ts`(예시 데이터). 테스트도 함께 추가해요. 저장된 모양 자체가 바뀌면(필드 이동·이름 변경·stub → 필드) `lib/sync/migrations.ts`에 `SCHEMA_VERSION`을 올리고 단계를 하나 더해요(순수·멱등, `tests/syncModel.test.ts`).
 - 단계 전환은 가드를 통과해야 해요: `canStartPregnancy` / `canRecordBirth` / `backToPreparing`. 다른 폰에 열려 있던 시트가 기록을 덮어쓰면 안 돼요.
 - `window.confirm`/`alert`를 쓰지 않아요. 확인은 화면 안의 버튼으로 받아요.
 - `Sheet`는 포털로 뜨고 뒤 배경을 `inert`로 막아요. `onClose`는 `useCallback`으로 고정된 함수를 넘겨요.

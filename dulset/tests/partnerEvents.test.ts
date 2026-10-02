@@ -1,0 +1,434 @@
+import { describe, expect, it } from 'vitest'
+import { addDays } from '@/lib/dates'
+import { createInitialState } from '@/lib/initial'
+import { addAppointment } from '@/lib/logic/appointments'
+import {
+  activeDailyItems,
+  activeItems,
+  addCheckItem,
+  archiveCheckItem,
+  isDone,
+  toggleCheck,
+  weeklyCheckDays,
+  weeklyDone,
+} from '@/lib/logic/checks'
+import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
+import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
+import { NUDGES_PER_DAY, inbox, sendCheer } from '@/lib/logic/notifications'
+import {
+  CHECK_BACK_DAYS,
+  CHEERS_PER_DAY,
+  EVENT_ID_MAX,
+  PARTNER_EVENT_KINDS,
+  appliedEventIds,
+  appliedEventKey,
+  applyPartnerEvent,
+  applyPartnerEvents,
+  cleanPartnerEvent,
+  earliestCheckDate,
+  hasAppliedEvent,
+  partnerEventProblem,
+  type PartnerEvent,
+} from '@/lib/logic/partnerEvents'
+import { FERTILITY_CLAIM_ID, FERTILITY_TEST_ID, chainKey, fertilityChain, monthlyTask, setFertilityApplied } from '@/lib/logic/partnerTrack'
+import { setFeel, setPrivateNote } from '@/lib/logic/personalLog'
+import { setPersonalPref } from '@/lib/logic/prefs'
+import { SIGNALS_PER_DAY, pendingSignal, sendSignal, signalIdOf, signalsSentToday } from '@/lib/logic/signals'
+import { startRestCycle } from '@/lib/logic/ttc'
+import type { AppState, ISODate, MemberId } from '@/lib/types'
+
+// 'a' = 민수 (partner), 'b' = 지은 (cycle owner).
+const OWNER = 'b' as const
+const PARTNER = 'a' as const
+const TODAY: ISODate = '2026-09-10' // a Thursday
+const NOW = '2026-09-10T09:00:00+09:00'
+const REGULAR = [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }]
+const stamp = (day: ISODate, hour = 9) => `${day}T${String(hour).padStart(2, '0')}:00:00+09:00`
+
+function fresh(): AppState {
+  let s = createInitialState(
+    {
+      me: { name: '민수', role: 'husband', birthYear: 1992 },
+      partner: { name: '지은', role: 'wife', birthYear: 1993 },
+      cycleOwner: 'b',
+      lastPeriodStart: '2026-09-01',
+      ttcStart: '2026-06-01',
+    },
+    new Date(2026, 8, 1, 9, 0),
+  )
+  s = { ...s, periods: REGULAR }
+  // His items: two daily, one weekly. Her own daily item.
+  s = addCheckItem(s, PARTNER, '30분 걷기', 'habit', '2026-08-01')
+  s = addCheckItem(s, PARTNER, '7시간 자기', 'habit', '2026-08-01')
+  s = addCheckItem(s, PARTNER, '금주', 'habit', '2026-08-01', '주 1회', 'weekly')
+  s = addCheckItem(s, OWNER, '엽산', 'supplement', '2026-08-01', '400µg')
+  // Her owner-only records.
+  s = setFeel(s, OWNER, '2026-09-08', 'tired')
+  s = setPrivateNote(s, OWNER, '2026-09-08', '나만 보는 줄')
+  s = giveIntimacyConsent(s, OWNER, '2026-09-01')
+  s = toggleIntimacyDay(s, OWNER, '2026-09-08')
+  s = addLHTest(s, { date: '2026-09-09', result: 'faint', time: '07:00', by: OWNER }, TODAY)
+  // His chain: applied 08-24 → the test is this month's task.
+  s = setFertilityApplied(s, PARTNER, true, '2026-08-24')
+  return s
+}
+
+const item = (s: AppState, label: string) => activeItems(s, PARTNER).find((i) => i.label === label)!
+const ownerItem = (s: AppState) => activeItems(s, OWNER)[0]!
+const check = (id: string, itemId: string, done = true, date: ISODate = TODAY): PartnerEvent => ({ id, kind: 'check', itemId, date, done })
+
+/** The fields the partner may never touch, by reference. */
+const CYCLE_FIELDS = [
+  'periods',
+  'lhTests',
+  'pregnancyTests',
+  'positivePending',
+  'restCycle',
+  'cycleNotes',
+  'intimacy',
+  'personalLog',
+  'treatments',
+  'leaveDays',
+  'settings',
+  'couple',
+  'diary',
+  'pregnancy',
+  'cycle',
+  'stage',
+] as const
+
+function sameCycleData(before: AppState, after: AppState, tag = '') {
+  for (const k of CYCLE_FIELDS) expect(after[k], `${tag} ${k}`).toBe(before[k])
+}
+
+describe('check events', () => {
+  it('ticks his daily item for today, remembers the event, and the same event changes nothing twice', () => {
+    const s = fresh()
+    const walk = item(s, '30분 걷기')
+    const ev = check('e1', walk.id)
+    expect(partnerEventProblem(s, ev, TODAY)).toBeNull()
+    const next = applyPartnerEvent(s, ev, TODAY, NOW)
+    expect(isDone(next, PARTNER, TODAY, walk.id)).toBe(true)
+    expect(hasAppliedEvent(next, 'e1')).toBe(true)
+    expect(partnerEventProblem(next, ev, TODAY)).toBe('applied')
+    expect(applyPartnerEvent(next, ev, TODAY, NOW)).toBe(next)
+    // The mark is a decision (lib/sync/model.ts), dated by `today`: never in an inbox, never a count.
+    expect(next.decisions[appliedEventKey('e1')]).toBe(TODAY)
+    expect(next.notifications.some((n) => n.key === appliedEventKey('e1'))).toBe(false)
+    expect(inbox(next, OWNER).some((n) => n.key === appliedEventKey('e1'))).toBe(false)
+    sameCycleData(s, next)
+  })
+
+  it('is a "set", not a toggle: the same answer under a new id is a no-op, the opposite answer undoes', () => {
+    const s = fresh()
+    const walk = item(s, '30분 걷기')
+    const done = applyPartnerEvent(s, check('e1', walk.id), TODAY, NOW)
+    expect(applyPartnerEvent(done, check('e2', walk.id, true), TODAY, NOW)).toBe(done)
+    const undone = applyPartnerEvent(done, check('e3', walk.id, false), TODAY, NOW)
+    expect(isDone(undone, PARTNER, TODAY, walk.id)).toBe(false)
+    expect(hasAppliedEvent(undone, 'e3')).toBe(true)
+  })
+
+  it('tells her once when the last daily item is done, like the app’s own row', () => {
+    let s = fresh()
+    // The starter items plus his two: every daily row but the last leaves the day open.
+    const daily = activeDailyItems(s, PARTNER)
+    expect(daily.length).toBeGreaterThanOrEqual(2)
+    const key = `complete:${PARTNER}:${TODAY}`
+    daily.slice(0, -1).forEach((d, i) => {
+      s = applyPartnerEvent(s, check(`e${i}`, d.id), TODAY, NOW)
+      expect(s.notifications.some((n) => n.key === key)).toBe(false)
+    })
+    const both = applyPartnerEvent(s, check('last', daily[daily.length - 1]!.id), TODAY, NOW)
+    const told = both.notifications.find((n) => n.key === key)!
+    expect(told).toMatchObject({ to: OWNER, from: PARTNER, kind: 'cheer' })
+    expect(told.title).toContain('민수')
+  })
+
+  it('checks a weekly item in for the week and clears the week when undone', () => {
+    const s = fresh()
+    const weekly = item(s, '금주')
+    const done = applyPartnerEvent(s, check('e1', weekly.id, true, '2026-09-08'), TODAY, NOW)
+    expect(weeklyDone(done, PARTNER, weekly.id, TODAY)).toBe(true)
+    expect(weeklyCheckDays(done, PARTNER, weekly.id, TODAY)).toEqual(['2026-09-08'])
+    // Already done this week: the same answer is a no-op even on another day.
+    expect(applyPartnerEvent(done, check('e2', weekly.id, true), TODAY, NOW)).toBe(done)
+    const undone = applyPartnerEvent(done, check('e3', weekly.id, false), TODAY, NOW)
+    expect(weeklyDone(undone, PARTNER, weekly.id, TODAY)).toBe(false)
+  })
+
+  it('rejects her items, archived and unknown items, and dates out of range', () => {
+    const s = fresh()
+    const walk = item(s, '30분 걷기')
+    expect(partnerEventProblem(s, check('e1', ownerItem(s).id), TODAY)).toBe('item')
+    expect(partnerEventProblem(archiveCheckItem(s, walk.id, TODAY), check('e1', walk.id), TODAY)).toBe('item')
+    expect(partnerEventProblem(s, check('e1', 'nope'), TODAY)).toBe('item')
+    expect(partnerEventProblem(s, check('e1', walk.id, true, addDays(TODAY, 1)), TODAY)).toBe('date')
+    expect(partnerEventProblem(s, check('e1', walk.id, true, addDays(TODAY, -CHECK_BACK_DAYS)), TODAY)).toBeNull()
+    expect(partnerEventProblem(s, check('e1', walk.id, true, addDays(TODAY, -CHECK_BACK_DAYS - 1)), TODAY)).toBe('date')
+    expect(earliestCheckDate(TODAY)).toBe(addDays(TODAY, -CHECK_BACK_DAYS))
+    // Before the item existed.
+    const late = addCheckItem(s, PARTNER, '새 항목', 'habit', TODAY)
+    expect(partnerEventProblem(late, check('e1', item(late, '새 항목').id, true, addDays(TODAY, -1)), TODAY)).toBe('date')
+    for (const ev of [check('e1', ownerItem(s).id), check('e1', walk.id, true, addDays(TODAY, 1))]) {
+      expect(applyPartnerEvent(s, ev, TODAY, NOW)).toBe(s)
+    }
+  })
+
+  it('never acts for the cycle owner: a `from` that is not the partner is dropped', () => {
+    const s = fresh()
+    const walk = item(s, '30분 걷기')
+    expect(partnerEventProblem(s, { ...check('e1', walk.id), from: OWNER }, TODAY)).toBe('actor')
+    expect(applyPartnerEvent(s, { ...check('e1', walk.id), from: OWNER }, TODAY, NOW)).toBe(s)
+    expect(partnerEventProblem(s, { ...check('e1', walk.id), from: PARTNER }, TODAY)).toBeNull()
+  })
+})
+
+describe('signal events', () => {
+  const withSignal = () => sendSignal(fresh(), OWNER, PARTNER, 'comfort', TODAY, stamp(TODAY, 8))
+
+  it('answers her signal with a reply that fits it, once', () => {
+    const s = withSignal()
+    expect(signalIdOf(pendingSignal(s, PARTNER, TODAY)!)).toBe('comfort')
+    const ev: PartnerEvent = { id: 'r1', kind: 'reply', signalId: 'comfort', replyId: 'here' }
+    const next = applyPartnerEvent(s, ev, TODAY, NOW)
+    expect(pendingSignal(next, PARTNER, TODAY)).toBeUndefined()
+    const sent = inbox(next, OWNER)[0]!
+    expect(sent).toMatchObject({ from: PARTNER, kind: 'cheer' })
+    expect(sent.title).toBe('🫂 민수님: 옆에 있을게요')
+    expect(applyPartnerEvent(next, ev, TODAY, NOW)).toBe(next)
+    sameCycleData(s, next)
+  })
+
+  it('rejects a reply that does not fit, a reply to nothing, and a reply to another signal', () => {
+    const s = withSignal()
+    expect(partnerEventProblem(s, { id: 'r1', kind: 'reply', signalId: 'comfort', replyId: 'yes' }, TODAY)).toBe('reply')
+    expect(partnerEventProblem(s, { id: 'r1', kind: 'reply', signalId: 'clinic', replyId: 'yes' }, TODAY)).toBe('signal')
+    expect(partnerEventProblem(fresh(), { id: 'r1', kind: 'reply', signalId: 'comfort', replyId: 'here' }, TODAY)).toBe('signal')
+    expect(partnerEventProblem(s, { id: 'r1', kind: 'reply', signalId: 'comfort', replyId: 'nope' }, TODAY)).toBe('reply')
+  })
+
+  it('sends a signal of his own from his list only — never hers, never a demoted one', () => {
+    const s = fresh()
+    const next = applyPartnerEvent(s, { id: 's1', kind: 'signal', signalId: 'clinic' }, TODAY, NOW)
+    expect(inbox(next, OWNER)[0]!.title).toBe('🏥 민수님: 병원 같이 가 줄래요?')
+    expect(signalIdOf(pendingSignal(next, OWNER, TODAY)!)).toBe('clinic')
+    for (const id of ['not-this-month', 'dinner', 'date', 'miss', 'yes', 'nope']) {
+      expect(partnerEventProblem(s, { id: 's1', kind: 'signal', signalId: id }, TODAY), id).toBe('signal')
+    }
+  })
+
+  it('keeps the day’s limit: replies and signals together, five a day', () => {
+    let s = withSignal()
+    for (let i = 0; i < SIGNALS_PER_DAY; i++)
+      s = applyPartnerEvent(s, { id: `s${i}`, kind: 'signal', signalId: 'thanks' }, TODAY, stamp(TODAY, 10 + i))
+    expect(signalsSentToday(s, PARTNER, TODAY)).toBe(SIGNALS_PER_DAY)
+    expect(partnerEventProblem(s, { id: 'more', kind: 'signal', signalId: 'rest' }, TODAY)).toBe('limit')
+    expect(partnerEventProblem(s, { id: 'reply', kind: 'reply', signalId: 'comfort', replyId: 'here' }, TODAY)).toBe('limit')
+    expect(applyPartnerEvent(s, { id: 'more', kind: 'signal', signalId: 'rest' }, TODAY, NOW)).toBe(s)
+    // Tomorrow is a new day.
+    expect(partnerEventProblem(s, { id: 'more', kind: 'signal', signalId: 'rest' }, addDays(TODAY, 1))).toBeNull()
+  })
+})
+
+describe('콕 and 응원', () => {
+  it('nudges her about her first unchecked item — the label comes from her phone, not the page', () => {
+    const s = fresh()
+    const next = applyPartnerEvent(s, { id: 'n1', kind: 'nudge' }, TODAY, NOW)
+    const n = inbox(next, OWNER)[0]!
+    expect(n).toMatchObject({ kind: 'nudge', from: PARTNER })
+    expect(n.body).toContain('엽산')
+    expect(applyPartnerEvent(next, { id: 'n1', kind: 'nudge' }, TODAY, NOW)).toBe(next)
+  })
+
+  it('respects 콕 받기, the day’s three, and needs something left to point at', () => {
+    const s = fresh()
+    expect(partnerEventProblem(setPersonalPref(s, OWNER, 'acceptNudges', false), { id: 'n1', kind: 'nudge' }, TODAY)).toBe('nudge')
+    let allDone = s
+    for (const i of activeDailyItems(s, OWNER)) allDone = toggleCheck(allDone, OWNER, TODAY, i.id)
+    expect(partnerEventProblem(allDone, { id: 'n1', kind: 'nudge' }, TODAY)).toBe('nudge')
+    let used = s
+    for (let i = 0; i < NUDGES_PER_DAY; i++) used = applyPartnerEvent(used, { id: `n${i}`, kind: 'nudge' }, TODAY, stamp(TODAY, 10 + i))
+    expect(inbox(used, OWNER).filter((n) => n.kind === 'nudge')).toHaveLength(NUDGES_PER_DAY)
+    expect(partnerEventProblem(used, { id: 'n9', kind: 'nudge' }, TODAY)).toBe('nudge')
+    expect(applyPartnerEvent(used, { id: 'n9', kind: 'nudge' }, TODAY, NOW)).toBe(used)
+  })
+
+  it('sends the app’s own cheer line, with the link’s cap per day', () => {
+    let s = fresh()
+    const next = applyPartnerEvent(s, { id: 'c1', kind: 'cheer' }, TODAY, NOW)
+    expect(inbox(next, OWNER)[0]).toMatchObject({
+      kind: 'cheer',
+      from: PARTNER,
+      title: '👏 민수님이 응원을 보냈어요',
+      body: '오늘도 고마워요. 우리 잘하고 있어요!',
+    })
+    expect(applyPartnerEvent(next, { id: 'c1', kind: 'cheer' }, TODAY, NOW)).toBe(next)
+    for (let i = 0; i < CHEERS_PER_DAY; i++) s = applyPartnerEvent(s, { id: `c${i}`, kind: 'cheer' }, TODAY, stamp(TODAY, 10 + i))
+    expect(partnerEventProblem(s, { id: 'c9', kind: 'cheer' }, TODAY)).toBe('limit')
+    // Her cheers and the 'complete' notice (kind cheer, keyed) don't count against him.
+    const hers = sendCheer(fresh(), OWNER, PARTNER, NOW)
+    expect(partnerEventProblem(hers, { id: 'c1', kind: 'cheer' }, TODAY)).toBeNull()
+  })
+})
+
+describe('task-done events', () => {
+  it('completes his current month task on the day it happened, and the chain moves on', () => {
+    const s = fresh()
+    const task = monthlyTask(s, TODAY, PARTNER)!
+    expect(task).toMatchObject({ id: FERTILITY_TEST_ID, step: 'test', minDoneAt: '2026-08-24' })
+    const ev: PartnerEvent = { id: 't1', kind: 'task-done', taskId: task.id, date: '2026-09-08' }
+    const next = applyPartnerEvent(s, ev, TODAY, NOW)
+    expect(next.planDone[FERTILITY_TEST_ID]).toEqual({ at: '2026-09-08', by: PARTNER })
+    expect(fertilityChain(next, TODAY).step).toBe('claim')
+    expect(applyPartnerEvent(next, ev, TODAY, NOW)).toBe(next)
+    // The old task id is no longer his task.
+    expect(partnerEventProblem(next, { ...ev, id: 't2' }, TODAY)).toBe('task')
+    // The claim, later.
+    const claim = monthlyTask(next, '2026-09-20', PARTNER)!
+    expect(claim.id).toBe(FERTILITY_CLAIM_ID)
+    const claimed = applyPartnerEvent(
+      next,
+      { id: 't3', kind: 'task-done', taskId: claim.id, date: '2026-09-18' },
+      '2026-09-20',
+      stamp('2026-09-20'),
+    )
+    expect(claimed.planDone[chainKey(FERTILITY_CLAIM_ID, PARTNER)]).toEqual({ at: '2026-09-18', by: PARTNER })
+    sameCycleData(s, claimed)
+  })
+
+  it('marks the booked test as 다녀왔어요 with it', () => {
+    let s = fresh()
+    s = addAppointment(
+      s,
+      { date: '2026-09-08', time: '10:00', title: '정액검사', who: PARTNER, kind: 'test', taskId: FERTILITY_TEST_ID },
+      PARTNER,
+    )
+    const task = monthlyTask(s, TODAY, PARTNER)!
+    expect(task.stage).toBe('visited')
+    const next = applyPartnerEvent(s, { id: 't1', kind: 'task-done', taskId: task.id, date: '2026-09-08' }, TODAY, NOW)
+    expect(next.appointments[0]!.done).toBe(true)
+  })
+
+  it('rejects a wrong task, a future day and a day before the application', () => {
+    const s = fresh()
+    const task = monthlyTask(s, TODAY, PARTNER)!
+    expect(partnerEventProblem(s, { id: 't1', kind: 'task-done', taskId: 'pre-folic', date: TODAY }, TODAY)).toBe('task')
+    expect(partnerEventProblem(s, { id: 't1', kind: 'task-done', taskId: task.id, date: addDays(TODAY, 1) }, TODAY)).toBe('date')
+    expect(partnerEventProblem(s, { id: 't1', kind: 'task-done', taskId: task.id, date: '2026-08-20' }, TODAY)).toBe('date')
+    expect(partnerEventProblem(s, { id: 't1', kind: 'task-done', taskId: task.id, date: '2026-08-24' }, TODAY)).toBeNull()
+  })
+})
+
+describe('what the partner can never do', () => {
+  it('has no event for a period, an LH strip, a test, a rest cycle or a share switch — forged ones are dropped unread', () => {
+    const s = fresh()
+    expect(PARTNER_EVENT_KINDS).toEqual(['check', 'reply', 'signal', 'nudge', 'cheer', 'task-done'])
+    const forged = [
+      { id: 'f1', kind: 'period', date: '2026-09-10' },
+      { id: 'f2', kind: 'lh', date: '2026-09-10', result: 'positive' },
+      { id: 'f3', kind: 'ptest', date: '2026-09-10', result: 'positive' },
+      { id: 'f4', kind: 'rest', since: '2026-09-10' },
+      { id: 'f5', kind: 'share', value: true },
+      { id: 'f6', kind: 'intimacy', date: '2026-09-10' },
+    ]
+    for (const raw of forged) {
+      expect(cleanPartnerEvent(raw), raw.kind).toBeUndefined()
+      const ev = raw as unknown as PartnerEvent
+      expect(partnerEventProblem(s, ev, TODAY), raw.kind).toBe('kind')
+      expect(applyPartnerEvent(s, ev, TODAY, NOW), raw.kind).toBe(s)
+    }
+  })
+
+  it('cleanPartnerEvent keeps only the fields a kind has — no free text rides along', () => {
+    const raw = { id: 'e1', kind: 'check', itemId: 'i1', date: TODAY, done: true, message: '자유 텍스트', from: 'a', extra: { x: 1 } }
+    expect(cleanPartnerEvent(raw)).toEqual({ id: 'e1', from: 'a', kind: 'check', itemId: 'i1', date: TODAY, done: true })
+    expect(cleanPartnerEvent({ id: 'e1', kind: 'cheer', message: '<script>' })).toEqual({ id: 'e1', kind: 'cheer' })
+    expect(cleanPartnerEvent({ id: 'e1', kind: 'reply', signalId: 'comfort', replyId: 'here', text: 'x' })).toEqual({
+      id: 'e1',
+      kind: 'reply',
+      signalId: 'comfort',
+      replyId: 'here',
+    })
+    expect(cleanPartnerEvent({ id: 'e1', kind: 'task-done', taskId: 't', date: TODAY })).toEqual({
+      id: 'e1',
+      kind: 'task-done',
+      taskId: 't',
+      date: TODAY,
+    })
+    expect(cleanPartnerEvent({ id: 'e1', kind: 'nudge', from: 'c' })).toEqual({ id: 'e1', kind: 'nudge' })
+    // Bad shapes.
+    for (const bad of [
+      null,
+      'check',
+      [],
+      { kind: 'cheer' },
+      { id: '', kind: 'cheer' },
+      { id: 'a'.repeat(EVENT_ID_MAX + 1), kind: 'cheer' },
+      { id: 'has space', kind: 'cheer' },
+      { id: 'e1', kind: 'check', itemId: 'i', date: '2026/09/10', done: true },
+      { id: 'e1', kind: 'check', itemId: 'i', date: TODAY, done: 'yes' },
+      { id: 'e1', kind: 'check', itemId: '', date: TODAY, done: true },
+      { id: 'e1', kind: 'reply', signalId: 'comfort' },
+      { id: 'e1', kind: 'signal' },
+      { id: 'e1', kind: 'task-done', taskId: 't' },
+      { id: 'e1' },
+    ]) {
+      expect(cleanPartnerEvent(bad), JSON.stringify(bad)).toBeUndefined()
+    }
+  })
+
+  it('leaves every cycle, personal and settings field untouched under any sequence of events', () => {
+    const base = addPregnancyTest(fresh(), { id: 'pt', date: '2026-09-09', result: 'negative', by: OWNER }, TODAY).state
+    const s = startRestCycle(base, '2026-09-05')
+    const withSignal = sendSignal(s, OWNER, PARTNER, 'clinic', TODAY, stamp(TODAY, 8))
+    const walk = item(s, '30분 걷기')
+    const task = monthlyTask(s, TODAY, PARTNER)!
+    const events: PartnerEvent[] = [
+      check('a1', walk.id),
+      { id: 'a2', kind: 'reply', signalId: 'clinic', replyId: 'yes' },
+      { id: 'a3', kind: 'signal', signalId: 'rest' },
+      { id: 'a4', kind: 'nudge' },
+      { id: 'a5', kind: 'cheer' },
+      { id: 'a6', kind: 'task-done', taskId: task.id, date: '2026-09-09' },
+      check('a7', walk.id, false),
+      { id: 'a1', kind: 'check', itemId: walk.id, date: TODAY, done: true },
+      { id: 'a8', kind: 'period', date: TODAY } as unknown as PartnerEvent,
+    ]
+    const next = applyPartnerEvents(withSignal, events, TODAY, NOW)
+    sameCycleData(withSignal, next)
+    expect(
+      Object.keys(next.decisions)
+        .filter((k) => k.startsWith('partner-event:'))
+        .sort(),
+    ).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7'].map(appliedEventKey))
+    expect(next.notifications.some((n) => n.key?.startsWith('partner-event:'))).toBe(false)
+    expect(appliedEventIds(next, events)).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a1'])
+    expect(isDone(next, PARTNER, TODAY, walk.id)).toBe(false)
+    expect(next.planDone[FERTILITY_TEST_ID]?.at).toBe('2026-09-09')
+  })
+
+  it('applies a batch in order, a duplicate once, and ignores an empty batch', () => {
+    const s = fresh()
+    const walk = item(s, '30분 걷기')
+    expect(applyPartnerEvents(s, [], TODAY, NOW)).toBe(s)
+    const next = applyPartnerEvents(
+      s,
+      [check('e1', walk.id), check('e1', walk.id), { id: 'c1', kind: 'cheer' }, { id: 'c1', kind: 'cheer' }],
+      TODAY,
+      NOW,
+    )
+    expect(isDone(next, PARTNER, TODAY, walk.id)).toBe(true)
+    expect(inbox(next, OWNER).filter((n) => n.kind === 'cheer' && !n.key)).toHaveLength(1)
+    expect(appliedEventIds(next, [{ id: 'e1' }, { id: 'c1' }, { id: 'zz' }])).toEqual(['e1', 'c1'])
+  })
+
+  it('stamps what it creates with the owner’s clock on `today` when no time is given', () => {
+    const s = fresh()
+    const next = applyPartnerEvent(s, { id: 'c1', kind: 'cheer' }, TODAY)
+    expect(inbox(next, OWNER)[0]!.createdAt.startsWith(TODAY)).toBe(true)
+    const partner: MemberId = PARTNER
+    expect(next.decisions[appliedEventKey('c1')]).toBe(TODAY)
+    expect(partner).toBe('a')
+  })
+})

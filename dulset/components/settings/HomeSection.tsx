@@ -37,7 +37,9 @@ export default function HomeSection() {
                 표지 사진
               </h3>
               <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
-                {view.photo ? '두 사람의 오늘 화면 맨 위에 걸려 있어요. 사진은 이 폰에만 저장돼요.' : '아직 기본 그림이에요. 사진은 이 폰에만 저장돼요.'}
+                {view.photo
+                  ? '두 사람의 오늘 화면 맨 위에 걸려 있어요. 사진은 이 폰에만 저장돼요.'
+                  : '아직 기본 그림이에요. 사진은 이 폰에만 저장돼요.'}
               </p>
             </div>
             <button
@@ -112,7 +114,9 @@ export default function HomeSection() {
           </Card>
         ) : null}
         {preparing && !canLogCycle(state, viewer) ? (
-          <p className="px-1 text-[11px] leading-relaxed text-ink-3">주기 기록의 횟수 표시는 {cycleOwner.name}님이 정해요. {me.name}님 알림과 잠금화면 숨김은 ‘내 알림’에 있어요.</p>
+          <p className="px-1 text-[11px] leading-relaxed text-ink-3">
+            주기 기록의 횟수 표시는 {cycleOwner.name}님이 정해요. {me.name}님 알림과 잠금화면 숨김은 ‘내 알림’에 있어요.
+          </p>
         ) : null}
       </div>
     </SettingsSection>

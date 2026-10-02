@@ -5,14 +5,7 @@ import { Card, Field, NumberStepper, Toggle, cx, inputClass, useToast } from '@/
 import { formatKo, isISODate } from '@/lib/dates'
 import { cycleLengthRange } from '@/lib/initial'
 import { cycleStats } from '@/lib/logic/cycle'
-import {
-  PERIOD_LENGTH_RANGE,
-  cycleSourceNote,
-  setCycle,
-  setTtcStart,
-  ttcBounds,
-  validateTtcStart,
-} from '@/lib/logic/settings'
+import { PERIOD_LENGTH_RANGE, cycleSourceNote, setCycle, setTtcStart, ttcBounds, validateTtcStart } from '@/lib/logic/settings'
 import { canLogCycle, canSeeCycleDetails } from '@/lib/logic/prefs'
 import { useApp } from '@/lib/store'
 import { SettingsSection } from './bits'
@@ -197,17 +190,7 @@ function TtcStartField() {
   )
 }
 
-function StepperRow({
-  label,
-  hint,
-  muted,
-  children,
-}: {
-  label: string
-  hint: string
-  muted?: boolean
-  children: React.ReactNode
-}) {
+function StepperRow({ label, hint, muted, children }: { label: string; hint: string; muted?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
       <div className="min-w-0 flex-1">

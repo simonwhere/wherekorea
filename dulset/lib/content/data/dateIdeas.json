@@ -1,0 +1,1067 @@
+{
+  "_meta": {
+    "file": "dateIdeas",
+    "what": "둘만의 시간 제안 (lib/content/dateIdeas.ts가 읽어요). 건강 팁이 붙은 항목만 출처가 있어요",
+    "research": [
+      "dates-data.json",
+      "medical.json"
+    ],
+    "audited": [
+      "items"
+    ],
+    "itemFields": {
+      "sources": "아래 tipSources의 키 (건강 팁이 있을 때만)",
+      "verified": "건강 팁의 근거가 high인지 — 제안 자체는 사실이 아니라 항상 true"
+    }
+  },
+  "checkedAt": "2026-09-26",
+  "tipSources": {
+    "cdcAlcohol": {
+      "label": "CDC · 임신·임신 준비 중 음주",
+      "url": "https://www.cdc.gov/maternal-infant-health/pregnancy-substance-abuse/index.html"
+    },
+    "garolla2013": {
+      "label": "Garolla 2013 · 사우나와 정자",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/23411620/"
+    },
+    "milunsky1992": {
+      "label": "Milunsky 1992 · 임신 초기 열 노출",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/1640616/"
+    }
+  },
+  "tipSourcesByStage": {
+    "preparing": [
+      "cdcAlcohol",
+      "garolla2013"
+    ],
+    "pregnant": [
+      "cdcAlcohol",
+      "milunsky1992"
+    ],
+    "parenting": []
+  },
+  "items": [
+    {
+      "id": "home-cooking",
+      "title": "집에서 같이 요리",
+      "emoji": "🍳",
+      "category": "home",
+      "description": "장 보기부터 같이 해요. 새 레시피 하나에 도전해 보기.",
+      "why": "같이 손을 움직이다 보면 대화가 저절로 늘어요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "동네 시장",
+      "tip": "와인 대신 탄산수에 과일을 띄워 분위기를 내 봐요.",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "no-alcohol",
+        "low-energy"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "home-cinema",
+      "title": "홈시네마 나이트",
+      "emoji": "🎬",
+      "category": "home",
+      "description": "불 끄고 이불 덮고, 서로 좋아하는 영화 한 편씩.",
+      "why": "나갈 기운이 없는 날에도 둘만의 시간을 만들 수 있어요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "빔프로젝터 대여",
+      "stageTips": {
+        "parenting": "아기 재운 뒤 짧은 영화나 드라마 한두 편이면 충분해요."
+      },
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "board-game",
+      "title": "보드게임 한 판",
+      "emoji": "🎲",
+      "category": "home",
+      "description": "집에서, 혹은 보드게임카페에서 가볍게 한 판.",
+      "why": "웃다 보면 쌓인 긴장이 풀려요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "보드게임카페",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "letters",
+      "title": "서로에게 편지 쓰기",
+      "emoji": "💌",
+      "category": "home",
+      "description": "편지지 한 장씩 골라 요즘 고마웠던 걸 적어 봐요.",
+      "why": "말로 하기 쑥스러운 마음을 전할 수 있어요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "문구 소품샵",
+      "tip": "다 쓴 편지는 우리 탭 이야기에 사진으로 남겨 둬요.",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "after-bedtime",
+      "title": "아기 재운 뒤 야식 데이트",
+      "emoji": "🌙",
+      "category": "home",
+      "description": "좋아하는 디저트나 야식을 포장해 와서 둘이 조용히.",
+      "why": "30분이어도 둘만 이야기하는 시간이 큰 힘이 돼요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "디저트 포장",
+      "tip": "오늘 제일 웃겼던 순간 하나씩 이야기해 봐요.",
+      "stages": [
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "photo-memories",
+      "title": "사진 보며 추억 이야기",
+      "emoji": "📒",
+      "category": "home",
+      "description": "휴대폰 속 사진을 골라 인화하고 앨범을 채워요.",
+      "why": "힘든 날도 사진으로 보면 다 예뻐 보여요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "사진 인화",
+      "stages": [
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy",
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "picnic",
+      "title": "한강·공원 피크닉",
+      "emoji": "🧺",
+      "category": "walk",
+      "description": "돗자리와 김밥, 따뜻한 음료만 챙겨서 공원으로.",
+      "why": "햇볕 아래 걷고 쉬는 것만으로 기분이 가벼워져요.",
+      "budget": 1,
+      "duration": "반나절",
+      "mapQuery": "한강공원 피크닉",
+      "tip": "맥주 대신 과일 에이드를 챙겨 가요.",
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "no-alcohol",
+        "baby-friendly"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "night-walk",
+      "title": "야경 산책",
+      "emoji": "🌃",
+      "category": "walk",
+      "description": "저녁 먹고 야경이 예쁜 산책로를 천천히 걸어요.",
+      "why": "걷는 동안엔 마주 보지 않아도 돼서 속 얘기가 편해져요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "야경 산책로",
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "arboretum",
+      "title": "수목원 산책",
+      "emoji": "🌳",
+      "category": "walk",
+      "description": "평평한 길이 많은 수목원에서 느긋하게 숲 공기 마시기.",
+      "why": "무리 없이 걸을 수 있어 몸이 무거운 날에도 좋아요.",
+      "budget": 1,
+      "duration": "반나절",
+      "mapQuery": "수목원",
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy",
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "palace-walk",
+      "title": "고궁 산책",
+      "emoji": "🏯",
+      "category": "walk",
+      "description": "단풍이나 첫눈이 내린 고궁 돌담길을 천천히.",
+      "why": "도심 한가운데서 조용히 걸을 수 있는 곳이에요.",
+      "budget": 1,
+      "duration": "반나절",
+      "mapQuery": "고궁 산책",
+      "seasons": [
+        "fall",
+        "winter"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "light-festival",
+      "title": "겨울 빛 축제",
+      "emoji": "✨",
+      "category": "walk",
+      "description": "따뜻하게 챙겨 입고 반짝이는 조명 길 걷기.",
+      "why": "추운 계절에도 설레는 산책을 할 수 있어요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "빛축제",
+      "tip": "따뜻한 음료는 뱅쇼 대신 유자차로.",
+      "seasons": [
+        "winter"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "no-alcohol"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "stroller-walk",
+      "title": "유모차 산책 데이트",
+      "emoji": "👶",
+      "category": "walk",
+      "description": "아기와 함께 동네 공원 한 바퀴, 커피 한 잔 테이크아웃.",
+      "why": "셋이 함께여도 나란히 걷는 시간은 둘만의 대화가 돼요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "유모차 산책로",
+      "stages": [
+        "parenting"
+      ],
+      "flags": [
+        "baby-friendly",
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "bakery-tour",
+      "title": "동네 빵집 투어",
+      "emoji": "🥐",
+      "category": "food",
+      "description": "걸어서 갈 수 있는 빵집 세 곳, 하나씩 사서 나눠 먹기.",
+      "why": "멀리 가지 않아도 새로운 동네 구석을 발견해요.",
+      "budget": 1,
+      "duration": "반나절",
+      "mapQuery": "동네 빵집",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "mocktail-bar",
+      "title": "무알콜 칵테일 바",
+      "emoji": "🍹",
+      "category": "food",
+      "description": "분위기 좋은 바에서 목테일(무알콜 칵테일) 한 잔씩.",
+      "why": "술 없이도 설레는 저녁을 보낼 수 있어요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "무알콜 칵테일 바",
+      "stageTips": {
+        "preparing": "술은 잠시 쉬어 가요. 임신을 준비하는 동안 안전하다고 알려진 음주량은 없어요 (CDC).",
+        "pregnant": "분위기는 그대로, 음료만 무알콜로 골라요."
+      },
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "flags": [
+        "no-alcohol"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "rooftop",
+      "title": "루프탑 레스토랑",
+      "emoji": "🌇",
+      "category": "food",
+      "description": "노을 지는 시간에 맞춰 예약하고 천천히 저녁 먹기.",
+      "why": "기념일이 아니어도 특별한 날을 만들 수 있어요.",
+      "budget": 3,
+      "duration": "1~2시간",
+      "mapQuery": "루프탑 레스토랑",
+      "tip": "와인 페어링 대신 논알콜 페어링이 있는지 물어봐요.",
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "no-alcohol"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "market-food",
+      "title": "전통시장 먹거리 산책",
+      "emoji": "🏮",
+      "category": "food",
+      "description": "시장 골목을 돌며 하나씩 나눠 먹는 주전부리 코스.",
+      "why": "가벼운 예산으로 배도 마음도 든든해져요.",
+      "budget": 1,
+      "duration": "반나절",
+      "mapQuery": "전통시장 먹거리",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "night-market",
+      "title": "여름밤 야시장",
+      "emoji": "🍢",
+      "category": "food",
+      "description": "선선해진 밤, 야시장에서 이것저것 맛보기.",
+      "why": "더운 낮을 피해 저녁에 가볍게 나가기 좋아요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "야시장",
+      "tip": "맥주 대신 시원한 식혜나 에이드로.",
+      "seasons": [
+        "summer"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "flags": [
+        "no-alcohol"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "brunch",
+      "title": "브런치 데이트",
+      "emoji": "🥞",
+      "category": "food",
+      "description": "느긋한 주말 오전, 브런치 카페에서 천천히.",
+      "why": "아침 시간은 둘 다 기운이 있어 대화가 잘 돼요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "브런치 카페",
+      "stageTips": {
+        "parenting": "가족에게 두 시간만 아기를 부탁해 봐요. 짧아도 충분해요."
+      },
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "exhibition",
+      "title": "전시 보러 가기",
+      "emoji": "🖼️",
+      "category": "culture",
+      "description": "서로 끌리는 작품 하나씩 골라 이유를 말해 줘요.",
+      "why": "같은 걸 보고 다르게 느끼는 서로를 알게 돼요.",
+      "budget": 2,
+      "duration": "반나절",
+      "mapQuery": "전시회",
+      "tip": "평일 저녁이나 오픈 직후가 한적해요.",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "performance",
+      "title": "공연·연극 보기",
+      "emoji": "🎭",
+      "category": "culture",
+      "description": "소극장 연극이나 작은 콘서트 한 편.",
+      "why": "끝나고 나누는 감상평이 또 하나의 데이트예요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "소극장 공연",
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "prenatal-concert",
+      "title": "태교 음악회",
+      "emoji": "🎻",
+      "category": "culture",
+      "description": "편안한 클래식 공연을 둘이 나란히 앉아 들어요.",
+      "why": "셋이 함께 듣는 첫 음악회가 돼요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "태교 음악회",
+      "stages": [
+        "pregnant"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "pottery",
+      "title": "도자기 공방 원데이클래스",
+      "emoji": "🏺",
+      "category": "culture",
+      "description": "서로의 컵을 만들어 주기. 서툴러도 그게 매력이에요.",
+      "why": "완성된 컵을 쓸 때마다 오늘이 떠올라요.",
+      "budget": 2,
+      "duration": "반나절",
+      "mapQuery": "도자기 공방 원데이클래스",
+      "tip": "굽는 데 시간이 걸려 완성품은 나중에 받는 곳이 많아요.",
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "perfume",
+      "title": "향수 공방",
+      "emoji": "🌸",
+      "category": "culture",
+      "description": "서로를 떠올리며 향을 골라 나만의 향수 만들기.",
+      "why": "그 향을 맡을 때마다 서로가 생각나요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "향수 공방 원데이클래스",
+      "stages": [
+        "preparing"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "ring",
+      "title": "반지 공방",
+      "emoji": "💍",
+      "category": "culture",
+      "description": "직접 두드려 만드는 우리만의 반지.",
+      "why": "앞으로 함께할 약속을 손에 남겨요.",
+      "budget": 3,
+      "duration": "반나절",
+      "mapQuery": "반지 공방 커플링 만들기",
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "flower-class",
+      "title": "플라워 원데이클래스",
+      "emoji": "💐",
+      "category": "culture",
+      "description": "제철 꽃으로 작은 꽃다발을 만들어 서로에게 선물해요.",
+      "why": "집에 두면 며칠 동안 오늘의 기분이 이어져요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "플라워 원데이클래스",
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "bookstore",
+      "title": "서점·북카페 데이트",
+      "emoji": "📚",
+      "category": "culture",
+      "description": "서로에게 책 한 권씩 골라 주기.",
+      "why": "조용히 같은 공간에 있는 것도 좋은 데이트예요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "독립서점",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "photo-booth",
+      "title": "셀프 사진관",
+      "emoji": "📸",
+      "category": "culture",
+      "description": "소품 하나씩 골라 오늘의 우리를 사진으로 남겨요.",
+      "why": "달마다 찍어 두면 우리만의 기록이 돼요.",
+      "budget": 1,
+      "duration": "1~2시간",
+      "mapQuery": "셀프 사진관",
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "low-energy",
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "escape-room",
+      "title": "방탈출 카페",
+      "emoji": "🔐",
+      "category": "culture",
+      "description": "둘이 머리를 맞대고 한 시간 안에 탈출하기.",
+      "why": "한 팀이 되어 문제를 푸는 경험이 쌓여요.",
+      "budget": 2,
+      "duration": "1~2시간",
+      "mapQuery": "방탈출 카페",
+      "stages": [
+        "preparing"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "drive-yangpyeong",
+      "title": "양평 두물머리 드라이브",
+      "emoji": "🚗",
+      "category": "drive",
+      "description": "강이 만나는 두물머리에서 산책하고 근처 카페에서 쉬어 가기.",
+      "why": "서울에서 가까워 당일로 부담 없이 다녀와요.",
+      "budget": 2,
+      "duration": "반나절",
+      "mapQuery": "양평 두물머리",
+      "tip": "주말엔 오전 일찍 출발하면 길이 덜 막혀요.",
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "baby-friendly"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "drive-gapyeong",
+      "title": "가평 호숫길 드라이브",
+      "emoji": "🌲",
+      "category": "drive",
+      "description": "북한강 따라 달리다 호숫가 카페에서 멍하니 쉬기.",
+      "why": "창밖 풍경을 보며 나누는 대화가 편안해요.",
+      "budget": 2,
+      "duration": "하루",
+      "mapQuery": "가평 드라이브",
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-gangneung",
+      "title": "강릉 바다와 커피",
+      "emoji": "🌊",
+      "category": "trip",
+      "description": "KTX로 약 1시간 반. 안목해변 커피거리와 맑은 동해 바다.",
+      "why": "차 없이도 금요일 저녁에 떠날 수 있는 가까운 바다예요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "강릉 안목해변 커피거리",
+      "seasons": [
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-gyeongju",
+      "title": "경주 해 질 녘 산책",
+      "emoji": "🏛️",
+      "category": "trip",
+      "description": "노을 지는 대릉원과 첨성대, 자전거로 도는 신라의 도시.",
+      "why": "볼거리가 가까이 모여 있어 느긋하게 다니기 좋아요.",
+      "budget": 2,
+      "duration": "1박",
+      "mapQuery": "경주 대릉원",
+      "tip": "해 질 무렵이 가장 예쁘고 사람도 줄어요.",
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-yeosu",
+      "title": "여수 밤바다",
+      "emoji": "🎡",
+      "category": "trip",
+      "description": "해상케이블카와 밤바다, 항구 따라 걷는 저녁.",
+      "why": "낮과 밤 풍경이 달라 하루가 길게 느껴져요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "여수 해상케이블카",
+      "tip": "해 질 녘에 케이블카를 타면 낮 풍경과 야경을 모두 볼 수 있어요.",
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-chuncheon",
+      "title": "춘천 호수 여행",
+      "emoji": "🚲",
+      "category": "trip",
+      "description": "용산에서 ITX로 1시간 남짓. 남이섬 나무길과 호숫가 자전거길.",
+      "why": "가까워서 당일로도, 하룻밤으로도 좋아요.",
+      "budget": 2,
+      "duration": "하루",
+      "mapQuery": "춘천 남이섬",
+      "tip": "남이섬은 첫 배 시간에 들어가면 한적해요.",
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-namhae",
+      "title": "남해 해안도로",
+      "emoji": "🏝️",
+      "category": "trip",
+      "description": "계단식 밭과 조용한 바다, 느긋하게 달리는 남쪽 해안도로.",
+      "why": "붐비지 않는 곳에서 둘이 천천히 쉬어 가요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "남해 보리암",
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-tongyeong",
+      "title": "통영 항구와 섬",
+      "emoji": "⛴️",
+      "category": "trip",
+      "description": "케이블카에서 내려다보는 한려수도, 배 타고 가는 섬 여행.",
+      "why": "느린 남해안 리듬에 맞춰 쉬기 좋아요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "통영 케이블카",
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-jeju",
+      "title": "제주 해안도로 여행",
+      "emoji": "🍊",
+      "category": "trip",
+      "description": "렌터카로 달리는 바닷길과 오름. 여유 있게 2박 이상이면 더 좋아요.",
+      "why": "일상에서 가장 멀리 떨어져 둘만 보는 시간이 생겨요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "제주 해안도로",
+      "stageTips": {
+        "pregnant": "비행 일정은 미리 담당 의사와 상의해요."
+      },
+      "seasons": [
+        "spring",
+        "summer",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "trip-damyang-boseong",
+      "title": "담양·보성 초록 여행",
+      "emoji": "🎋",
+      "category": "trip",
+      "description": "죽녹원 대숲과 보성 녹차밭, 초록 속을 천천히 걷는 여행.",
+      "why": "조용한 풍경 속에서 마음이 느긋해져요.",
+      "budget": 2,
+      "duration": "1박",
+      "mapQuery": "담양 죽녹원",
+      "tip": "녹차밭과 대숲은 문 여는 시간에 가면 한적해요.",
+      "seasons": [
+        "spring",
+        "summer"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "sources": [],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "hocance",
+      "title": "호캉스",
+      "emoji": "🏨",
+      "category": "stay",
+      "description": "멀리 가지 않고 가까운 호텔에서 푹 쉬는 하룻밤.",
+      "why": "이동 부담 없이 일상에서 잠깐 벗어날 수 있어요.",
+      "budget": 3,
+      "duration": "1박",
+      "mapQuery": "호캉스 호텔",
+      "stageTips": {
+        "preparing": "뜨거운 탕·사우나 대신 수영장·산책 (남성은 고환 온도가 오르면 정자 질이 떨어져요 — Garolla 2013)",
+        "pregnant": "임신 중엔 뜨거운 탕·사우나 대신 가벼운 산책과 휴식으로 채워요.",
+        "parenting": "아기와 함께라면 아기침대를 빌릴 수 있는지 미리 물어봐요."
+      },
+      "stages": [
+        "preparing",
+        "pregnant",
+        "parenting"
+      ],
+      "flags": [
+        "no-heat",
+        "no-alcohol"
+      ],
+      "sources": [
+        "cdcAlcohol",
+        "garolla2013",
+        "milunsky1992"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": false,
+      "checkNote": "사우나·열 노출 근거(Garolla 2013·Milunsky 1992)는 docs/research/medical.json 'Heat exposure' medium"
+    },
+    {
+      "id": "templestay",
+      "title": "템플스테이",
+      "emoji": "🪷",
+      "category": "stay",
+      "description": "휴대폰은 잠시 내려두고 산사에서 조용히 하룻밤.",
+      "why": "스트레스를 내려놓는 시간이에요. 마음이 편해야 둘의 시간도 편해져요.",
+      "budget": 2,
+      "duration": "1박",
+      "mapQuery": "템플스테이",
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "flags": [
+        "no-alcohol",
+        "low-energy"
+      ],
+      "sources": [
+        "cdcAlcohol"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": true
+    },
+    {
+      "id": "glamping",
+      "title": "글램핑",
+      "emoji": "⛺",
+      "category": "stay",
+      "description": "장비 걱정 없이 불멍하며 별 보는 밤.",
+      "why": "도시 소음에서 벗어나 둘만 이야기하기 좋아요.",
+      "budget": 2,
+      "duration": "1박",
+      "mapQuery": "글램핑",
+      "tip": "불멍엔 무알콜 맥주나 따뜻한 차를. 개별 스파·자쿠지는 이번엔 쉬어 가요.",
+      "seasons": [
+        "spring",
+        "fall"
+      ],
+      "stages": [
+        "preparing",
+        "pregnant"
+      ],
+      "flags": [
+        "no-alcohol",
+        "no-heat"
+      ],
+      "sources": [
+        "cdcAlcohol",
+        "garolla2013",
+        "milunsky1992"
+      ],
+      "effectiveFrom": "2026-09-26",
+      "checkedAt": "2026-09-26",
+      "verified": false,
+      "checkNote": "사우나·열 노출 근거(Garolla 2013·Milunsky 1992)는 docs/research/medical.json 'Heat exposure' medium"
+    }
+  ]
+}

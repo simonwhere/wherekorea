@@ -5,6 +5,13 @@
 // numbers beyond what lib/content/programs.ts and the research notes support.
 // Sizes are rough comparisons (always shown with "대략"). Schedules differ by
 // hospital, so the UI always defers to the care team.
+//
+// The data lives in ./data/pregnancy.json; the weeks, the prenatal checks and
+// the one-stop services carry audit fields (lib/content/meta.ts). This module
+// is the typed loader plus the label maps the screens use.
+
+import data from './data/pregnancy.json'
+import { auditOf, checkAudited, type ContentAudit, type ContentSource } from './meta'
 
 export type Trimester = 1 | 2 | 3
 
@@ -16,11 +23,6 @@ export const TRIMESTER_LABEL: Record<Trimester, string> = {
 
 /** Week the trimester starts (completed weeks), matching gestationalAge(). */
 export const TRIMESTER_START: Record<Trimester, number> = { 1: 0, 2: 14, 3: 28 }
-
-export const WEEK_INFO_NOTE = '주수별 정보는 일반적인 내용이에요. 병원 안내가 우선이에요.'
-
-export const DUE_DATE_NOTE =
-  '병원 초음파(특히 임신 초기)로 정한 예정일이 가장 정확해요 (ACOG 위원회 의견 700). 마지막 생리 시작일 기준은 Naegele 법칙으로 280일을 더한 예상일이에요.'
 
 // ── Week by week ────────────────────────────────────────────
 
@@ -39,243 +41,6 @@ export interface WeekInfo {
   partner: string
 }
 
-export const WEEKS: WeekInfo[] = [
-  {
-    from: 4,
-    to: 4,
-    size: '좁쌀 한 알',
-    sizeEmoji: '🌱',
-    highlights: ['수정란이 자궁에 자리를 잡는 시기예요.', '임신 테스트기에 반응이 나타나기 시작할 수 있어요.'],
-    mom: '엽산은 계속 챙겨요. 보통 임신 12주까지 먹기를 권해요.',
-    partner: '둘이 처음 소식을 알게 된 날을 태교일기 첫 장에 남겨 보세요.',
-  },
-  {
-    from: 5,
-    to: 5,
-    size: '참깨 한 알',
-    sizeEmoji: '🌱',
-    highlights: ['뇌와 척수가 될 신경관이 만들어지는 시기예요.'],
-    mom: '임신 중 술은 안전한 양이 없어요. 먹고 있는 약이 있다면 진료 때 꼭 알려 주세요.',
-    partner: '금주를 같이 해 보세요. 혼자보다 둘이 훨씬 쉬워요.',
-  },
-  {
-    from: 6,
-    to: 6,
-    size: '팥 한 알',
-    sizeEmoji: '🫘',
-    highlights: ['작은 심장이 뛰기 시작하는 시기예요.', '초음파로 심장 박동이 보이는 건 보통 6~7주 무렵이에요.'],
-    mom: '많이 피곤하고 졸린 게 자연스러운 시기예요. 쉴 수 있을 때 쉬어요.',
-    partner: '첫 초음파 진료에 같이 가요. 심장 박동을 함께 볼 수 있을지도 몰라요.',
-  },
-  {
-    from: 7,
-    to: 7,
-    size: '블루베리',
-    sizeEmoji: '🫐',
-    highlights: ['팔다리가 될 작은 싹이 자라요.'],
-    mom: '입덧이 시작될 수 있어요. 조금씩 자주 먹는 게 편할 수 있어요.',
-    partner: '냄새가 강한 음식은 잠시 쉬어요. 요리·설거지를 더 맡아 주세요.',
-  },
-  {
-    from: 8,
-    to: 8,
-    size: '강낭콩',
-    sizeEmoji: '🫘',
-    highlights: ['손가락·발가락이 생기기 시작해요.'],
-    mom: '임신이 확인되면 국민행복카드로 진료비 지원을 신청할 수 있어요.',
-    partner: '국민행복카드·보건소 등록을 같이 챙겨요. 정부24 “맘편한 임신”으로 한 번에 신청할 수 있어요.',
-  },
-  {
-    from: 9,
-    to: 9,
-    size: '청포도 한 알',
-    sizeEmoji: '🍇',
-    highlights: ['주요 기관들이 하나씩 자리를 잡아 가요.'],
-    mom: '카페인은 하루 200mg 이하가 좋아요 (ACOG). 식약처 임신부 상한은 300mg이에요.',
-    partner: '커피 대신 둘이 같이 마실 차를 골라 봐요.',
-  },
-  {
-    from: 10,
-    to: 10,
-    size: '방울토마토',
-    sizeEmoji: '🍅',
-    highlights: ['이 무렵부터 배아 대신 ‘태아’라고 불러요.', '주요 장기의 기본 틀이 대부분 만들어졌어요.'],
-    mom: '보건소에 임신부로 등록하면 엽산제·철분제 같은 도움을 받을 수 있어요.',
-    partner: '태명을 같이 지어 봐요. 태명으로 불러 주며 이야기하기 좋아요.',
-  },
-  {
-    from: 11,
-    to: 11,
-    size: '밤 한 톨',
-    sizeEmoji: '🌰',
-    highlights: ['손발을 조금씩 움직이기 시작해요. 아직 느껴지지는 않아요.'],
-    mom: '11~13주에 목덜미투명대(NT) 초음파가 있어요. 병원 일정을 확인해요.',
-    partner: 'NT 초음파 날짜를 둘의 캘린더에 같이 넣어 두세요.',
-  },
-  {
-    from: 12,
-    to: 12,
-    size: '라임',
-    sizeEmoji: '🍋',
-    highlights: ['얼굴 모양이 조금씩 갖춰져 가요.'],
-    mom: '엽산은 12주까지 권해요. 이후 영양제는 진료 때 상의해요.',
-    partner: '주변에 소식을 언제, 누구에게 알릴지 둘이 먼저 이야기해 보세요.',
-  },
-  {
-    from: 13,
-    to: 13,
-    size: '레몬',
-    sizeEmoji: '🍋',
-    highlights: ['몸이 빠르게 자라는 시기로 들어서요.'],
-    mom: '입덧이 조금씩 나아지는 경우가 많아요. 아니어도 괜찮아요, 사람마다 달라요.',
-    partner: '산후조리원·산후도우미를 알아보기 시작해요. 지역에 따라 일찍 마감되기도 해요.',
-  },
-  {
-    from: 14,
-    to: 14,
-    size: '복숭아',
-    sizeEmoji: '🍑',
-    highlights: ['임신 중기가 시작됐어요.', '몸이 조금 편해졌다고 느끼는 경우가 많아요.'],
-    mom: '무리 없는 가벼운 걷기로 몸을 풀어 보세요. 운동은 진료 때 한 번 확인해요.',
-    partner: '주말에 짧은 산책 데이트 어때요?',
-  },
-  {
-    from: 15,
-    to: 15,
-    size: '사과',
-    sizeEmoji: '🍎',
-    highlights: ['뼈가 조금씩 단단해져요.'],
-    mom: '15~20주에 2차 기형아 선별검사(쿼드)가 있어요.',
-    partner: '태교 동화를 하나 골라 읽어 주기 시작해 보세요.',
-  },
-  {
-    from: 16,
-    to: 16,
-    size: '아보카도',
-    sizeEmoji: '🥑',
-    highlights: ['빠르면 이 무렵부터 태동을 느끼기도 해요. 보통 16~25주 사이에 처음 느껴요.'],
-    mom: '보건소 철분제는 임신 16주부터 받을 수 있어요.',
-    partner: '산후조리원 예약 상담을 같이 다녀와요.',
-  },
-  {
-    from: 17,
-    to: 18,
-    size: '파프리카',
-    sizeEmoji: '🫑',
-    highlights: ['소리를 듣는 귀의 구조가 자리를 잡아 가요.'],
-    mom: '배가 나오기 시작해요. 편한 옷과 신발로 바꿔 보세요.',
-    partner: '배에 대고 태명을 불러 주세요. 목소리를 들려주는 것도 좋은 태교예요.',
-  },
-  {
-    from: 19,
-    to: 19,
-    size: '망고',
-    sizeEmoji: '🥭',
-    highlights: ['피부를 보호하는 하얀 태지가 생기기 시작해요.'],
-    mom: '20~24주 정밀 초음파 일정을 미리 잡아 두세요.',
-    partner: '정밀 초음파는 같이 가 보세요. 아기 얼굴을 볼 수 있을지도 몰라요.',
-  },
-  {
-    from: 20,
-    to: 20,
-    size: '바나나',
-    sizeEmoji: '🍌',
-    highlights: ['임신 기간의 절반을 지났어요!'],
-    mom: '태동이 느껴지기 시작하면 그 느낌을 태교일기에 남겨 보세요.',
-    partner: '절반 기념으로 둘만의 데이트를 계획해 봐요.',
-  },
-  {
-    from: 21,
-    to: 22,
-    size: '당근',
-    sizeEmoji: '🥕',
-    highlights: ['태동이 점점 또렷해져요.'],
-    mom: '허리가 뻐근하다면 쿠션을 활용해 편한 자세를 찾아요.',
-    partner: '배에 손을 대고 태동을 같이 느껴 보세요.',
-  },
-  {
-    from: 23,
-    to: 24,
-    size: '옥수수',
-    sizeEmoji: '🌽',
-    highlights: ['폐가 숨 쉴 준비를 시작해요.'],
-    mom: '24~28주에 임신성 당뇨 검사가 있어요. 금식이 필요한지 병원 안내를 확인해요.',
-    partner: '검사 날 같이 가서, 끝나고 먹을 간식을 챙겨 주세요.',
-  },
-  {
-    from: 25,
-    to: 26,
-    size: '양상추 한 통',
-    sizeEmoji: '🥬',
-    highlights: ['몸무게가 빠르게 늘기 시작해요.'],
-    mom: '다리가 붓거나 쥐가 날 수 있어요. 불편하면 진료 때 이야기해요.',
-    partner: '저녁에 다리를 가볍게 주물러 주세요.',
-  },
-  {
-    from: 27,
-    to: 28,
-    size: '가지',
-    sizeEmoji: '🍆',
-    highlights: ['임신 후기가 가까워요.', '눈을 떴다 감았다 할 수 있게 돼요.'],
-    mom: '28주 전후에 빈혈 검사가 있어요.',
-    partner: '보건소·병원의 출산 교실을 같이 신청해 봐요.',
-  },
-  {
-    from: 29,
-    to: 30,
-    size: '단호박',
-    sizeEmoji: '🎃',
-    highlights: ['뇌가 빠르게 자라고 몸에 지방이 붙기 시작해요.'],
-    mom: '진료 간격이 조금씩 짧아지는 시기예요. 병원마다 달라요.',
-    partner: '회사의 배우자 출산휴가·육아휴직 제도를 미리 확인해 두세요.',
-  },
-  {
-    from: 31,
-    to: 32,
-    size: '코코넛',
-    sizeEmoji: '🥥',
-    highlights: ['머리를 아래로 향하는 경우가 많아지는 시기예요.'],
-    mom: '출산 가방을 조금씩 싸기 시작해요.',
-    partner: '출산 가방을 같이 싸요. 무엇이 어디 있는지 둘 다 알아 두면 든든해요.',
-  },
-  {
-    from: 33,
-    to: 34,
-    size: '파인애플',
-    sizeEmoji: '🍍',
-    highlights: ['폐를 비롯한 몸 곳곳이 계속 성숙해요.'],
-    mom: '언제 병원에 연락해야 하는지 담당 의료진께 미리 물어 두세요.',
-    partner: '병원 가는 길, 주차, 야간 출입구를 미리 확인해 둬요.',
-  },
-  {
-    from: 35,
-    to: 36,
-    size: '멜론',
-    sizeEmoji: '🍈',
-    highlights: ['세상에 나올 준비를 하며 마무리 성장 중이에요.'],
-    mom: '35~37주에 GBS 검사가 있고, 36주부터는 보통 매주 진료해요.',
-    partner: '퇴원할 때 쓸 카시트를 차에 미리 설치해 두세요.',
-  },
-  {
-    from: 37,
-    to: 38,
-    size: '배추 한 포기',
-    sizeEmoji: '🥬',
-    highlights: ['출산을 앞두고 마지막 준비를 하는 시기예요.'],
-    mom: '출산 가방은 현관 가까이 두고, 산모수첩도 챙겨 두세요.',
-    partner: '회사에 출산 예정 시기를 미리 공유해 두세요.',
-  },
-  {
-    from: 39,
-    to: 40,
-    size: '수박',
-    sizeEmoji: '🍉',
-    highlights: ['예정일은 기준일일 뿐, 앞뒤로 태어나는 경우도 흔해요.'],
-    mom: '조급해하지 않아도 괜찮아요. 병원 안내에 따라 편하게 지내요.',
-    partner: '기다림이 길게 느껴질 수 있어요. 둘만의 조용한 시간을 보내요.',
-  },
-]
-
 // ── Prenatal check schedule ─────────────────────────────────
 
 export interface PrenatalCheck {
@@ -290,92 +55,6 @@ export interface PrenatalCheck {
   /** Related support program (lib/content/programs.ts). */
   programId?: string
 }
-
-/** Typical Korean schedule. Hospitals differ — the UI always says so. */
-export const PRENATAL_CHECKS: PrenatalCheck[] = [
-  {
-    id: 'first-visit',
-    from: 6,
-    to: 8,
-    weekLabel: '6~8주',
-    title: '임신 확인 · 첫 초음파',
-    why: '아기집과 심장 박동을 확인해요.',
-  },
-  {
-    id: 'voucher',
-    from: 6,
-    to: 12,
-    weekLabel: '확인 후',
-    title: '국민행복카드 신청',
-    why: '임신·출산 진료비를 지원받아요.',
-    programId: 'pregnancy-voucher',
-  },
-  {
-    id: 'health-center',
-    from: 6,
-    to: 12,
-    weekLabel: '확인 후',
-    title: '보건소 임신부 등록 · 엽산/철분제',
-    why: '엽산제와 16주부터 철분제를 받을 수 있어요.',
-    programId: 'folic-acid',
-  },
-  {
-    id: 'nt',
-    from: 11,
-    to: 13,
-    weekLabel: '11~13주',
-    title: '목덜미투명대(NT) 초음파 · 1차 기형아 선별검사',
-    why: '초음파와 피검사로 하는 선별검사예요.',
-  },
-  {
-    id: 'quad',
-    from: 15,
-    to: 20,
-    weekLabel: '15~20주',
-    title: '2차 기형아 선별검사 (쿼드)',
-    why: '피검사로 하는 선별검사예요.',
-  },
-  {
-    id: 'anatomy',
-    from: 20,
-    to: 24,
-    weekLabel: '20~24주',
-    title: '정밀 초음파',
-    why: '아기 몸의 구조를 자세히 살펴봐요.',
-  },
-  {
-    id: 'gdm',
-    from: 24,
-    to: 28,
-    weekLabel: '24~28주',
-    title: '임신성 당뇨 검사',
-    why: '임신 중 혈당이 잘 조절되는지 확인해요.',
-  },
-  {
-    id: 'anemia',
-    from: 27,
-    to: 30,
-    weekLabel: '28주 전후',
-    title: '빈혈 검사',
-    why: '후기를 앞두고 철분 상태를 확인해요.',
-  },
-  {
-    id: 'gbs',
-    from: 35,
-    to: 37,
-    weekLabel: '35~37주',
-    title: 'GBS(B군 연쇄상구균) 검사',
-    why: '출산 때 아기에게 옮지 않도록 미리 확인해요.',
-  },
-  {
-    id: 'weekly',
-    from: 36,
-    to: 42,
-    weekLabel: '36주~',
-    title: '매주 진료',
-    why: '출산이 가까워 매주 상태를 확인해요.',
-  },
-]
 
 // ── Hospital bag ────────────────────────────────────────────
 
@@ -395,28 +74,6 @@ export interface BagItem {
   note?: string
 }
 
-export const BAG_ITEMS: BagItem[] = [
-  { id: 'mom-book', label: '산모수첩', group: 'docs' },
-  { id: 'id-card', label: '신분증', group: 'docs' },
-  { id: 'happy-card', label: '국민행복카드', group: 'docs' },
-  { id: 'nursing-bra', label: '수유 브라', group: 'mom' },
-  { id: 'maternity-pad', label: '산모 패드', group: 'mom' },
-  { id: 'wrist-guard', label: '손목 보호대', group: 'mom' },
-  { id: 'slippers', label: '슬리퍼 · 수면 양말', group: 'mom' },
-  { id: 'cardigan', label: '편한 겉옷 · 퇴원복', group: 'mom' },
-  { id: 'toiletries', label: '세면도구 · 기초 화장품', group: 'mom' },
-  { id: 'straw-cup', label: '빨대 컵 · 텀블러', group: 'mom' },
-  { id: 'baby-clothes', label: '배냇저고리 · 속싸개', group: 'baby' },
-  { id: 'swaddle', label: '겉싸개 (퇴원용)', group: 'baby' },
-  { id: 'car-seat', label: '카시트 (퇴원용)', group: 'baby', note: '차에 미리 설치해 두세요' },
-  { id: 'charger', label: '휴대폰 충전기 · 긴 케이블', group: 'partner' },
-  { id: 'partner-clothes', label: '파트너 갈아입을 옷 · 세면도구', group: 'partner' },
-  { id: 'snacks', label: '간단한 간식 · 물', group: 'partner' },
-]
-
-/** From this week the bag list opens by default and moves up the page. */
-export const BAG_PROMINENT_WEEK = 32
-
 // ── Partner corner ──────────────────────────────────────────
 
 export interface PartnerIdea {
@@ -428,94 +85,80 @@ export interface PartnerIdea {
   link?: { kind: 'tab'; tab: 'date' | 'diary'; label: string } | { kind: 'url'; url: string; label: string }
 }
 
-export const PARTNER_IDEAS: Record<Trimester, PartnerIdea[]> = {
-  1: [
-    {
-      id: 'care',
-      icon: '🫖',
-      title: '피로·입덧 배려하기',
-      body: '냄새 강한 음식은 잠시 쉬고, 집안일을 조금 더 맡아요.',
-    },
-    {
-      id: 'no-alcohol',
-      icon: '🥤',
-      title: '금주 같이 하기',
-      body: '술자리는 둘 다 쉬어 가요. 함께하면 훨씬 쉬워요.',
-    },
-    {
-      id: 'first-visit',
-      icon: '🏥',
-      title: '첫 진료 같이 가기',
-      body: '심장 박동을 처음 보는 순간을 함께해요.',
-    },
-  ],
-  2: [
-    {
-      id: 'kicks',
-      icon: '👋',
-      title: '태동 같이 느끼기',
-      body: '배에 손을 대고 태명을 불러 주세요.',
-    },
-    {
-      id: 'trip',
-      icon: '🧳',
-      title: '태교 여행 · 둘만의 데이트',
-      body: '몸이 비교적 편한 시기에 가까운 곳으로 다녀와요. 먼 여행은 진료 때 먼저 상의해요.',
-      link: { kind: 'tab', tab: 'date', label: '데이트 아이디어 보기' },
-    },
-    {
-      id: 'story',
-      icon: '📖',
-      title: '태교 동화 읽어 주기',
-      body: '하루 한 쪽이면 충분해요. 목소리를 들려주는 시간이에요.',
-    },
-    {
-      id: 'postpartum',
-      icon: '🏠',
-      title: '산후조리원 상담 같이 가기',
-      body: '비용·위치·면회 규칙을 둘이 같이 비교해요.',
-    },
-  ],
-  3: [
-    {
-      id: 'class',
-      icon: '🎓',
-      title: '출산 교실 같이 듣기',
-      body: '보건소나 병원 교실에서 호흡법·신생아 돌보기를 배워요.',
-    },
-    {
-      id: 'bag',
-      icon: '🎒',
-      title: '출산 가방 같이 싸기',
-      body: '무엇이 어디 있는지 둘 다 알아 두면 든든해요.',
-    },
-    {
-      id: 'leave',
-      icon: '💼',
-      title: '배우자 출산휴가 확인하기',
-      body: '회사 제도와 신청 시기를 미리 확인해 두세요.',
-      link: { kind: 'url', url: 'https://www.moel.go.kr', label: '고용노동부' },
-    },
-    {
-      id: 'route',
-      icon: '🚗',
-      title: '병원 가는 길 · 카시트 준비',
-      body: '야간 출입구와 주차 위치도 미리 봐 둬요.',
-    },
-  ],
+export interface OneStop {
+  title: string
+  body: string
+  url: string
 }
+
+interface PregnancyJson {
+  checkedAt: string
+  sources: Record<string, ContentSource>
+  weekInfoNote: string
+  dueDateNote: string
+  weeks: Array<WeekInfo & ContentAudit & { sources: string[] }>
+  prenatalChecks: Array<PrenatalCheck & ContentAudit & { sources: string[] }>
+  bagItems: BagItem[]
+  bagProminentWeek: number
+  partnerIdeas: Record<Trimester, PartnerIdea[]>
+  oneStop: Record<'pregnancy' | 'birth', OneStop & ContentAudit & { sources: ContentSource[] }>
+}
+
+const raw = data as unknown as PregnancyJson
+checkAudited(raw.weeks, 'pregnancy.weeks')
+checkAudited(raw.prenatalChecks, 'pregnancy.prenatalChecks')
+checkAudited([raw.oneStop.pregnancy, raw.oneStop.birth], 'pregnancy.oneStop')
+
+export const PREGNANCY_CHECKED_AT: string = raw.checkedAt
+
+export const WEEK_INFO_NOTE: string = raw.weekInfoNote
+
+export const DUE_DATE_NOTE: string = raw.dueDateNote
+
+export const WEEKS: WeekInfo[] = raw.weeks.map(({ from, to, size, sizeEmoji, highlights, mom, partner }) => ({
+  from,
+  to,
+  size,
+  sizeEmoji,
+  highlights,
+  mom,
+  partner,
+}))
+
+/** Typical Korean schedule. Hospitals differ — the UI always says so. */
+export const PRENATAL_CHECKS: PrenatalCheck[] = raw.prenatalChecks.map(({ id, from, to, weekLabel, title, why, programId }) => ({
+  id,
+  from,
+  to,
+  weekLabel,
+  title,
+  why,
+  ...(programId ? { programId } : {}),
+}))
+
+/**
+ * The audit of the pregnancy content: weeks by 'week:<from>-<to>', prenatal
+ * checks by 'check:<id>', one-stop services by 'one-stop:<key>'.
+ */
+export const PREGNANCY_AUDIT: Readonly<Record<string, ContentAudit>> = Object.fromEntries([
+  ...raw.weeks.map((w) => [`week:${w.from}-${w.to}`, auditOf(w)] as const),
+  ...raw.prenatalChecks.map((c) => [`check:${c.id}`, auditOf(c)] as const),
+  ['one-stop:pregnancy', auditOf(raw.oneStop.pregnancy)] as const,
+  ['one-stop:birth', auditOf(raw.oneStop.birth)] as const,
+])
+
+export const BAG_ITEMS: BagItem[] = raw.bagItems
+
+/** From this week the bag list opens by default and moves up the page. */
+export const BAG_PROMINENT_WEEK: number = raw.bagProminentWeek
+
+export const PARTNER_IDEAS: Record<Trimester, PartnerIdea[]> = raw.partnerIdeas
 
 // ── One-stop services ───────────────────────────────────────
 
-export const ONE_STOP = {
-  pregnancy: {
-    title: '정부24 “맘편한 임신”',
-    body: '국민행복카드, 엽산제·철분제, 모자보건수첩 등을 한 번에 신청할 수 있어요.',
-    url: 'https://www.gov.kr/portal/onestopSvc/fertility',
-  },
-  birth: {
-    title: '정부24 “행복출산”',
-    body: '출생신고 때 첫만남이용권·부모급여·아동수당 등을 한 번에 신청해요. 출생 후 60일 안에 신청해야 출생월부터 받아요.',
-    url: 'https://www.gov.kr/portal/onestopSvc/happyBirth',
-  },
-} as const
+const oneStop = (o: OneStop): OneStop => ({ title: o.title, body: o.body, url: o.url })
+
+export const ONE_STOP: Readonly<Record<'pregnancy' | 'birth', OneStop>> = {
+  pregnancy: oneStop(raw.oneStop.pregnancy),
+  birth: oneStop(raw.oneStop.birth),
+}

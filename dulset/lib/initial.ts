@@ -1,6 +1,7 @@
 import { todayISO } from './dates'
 import { inviteCode, uid } from './id'
 import { localNowISO } from './logic/notifications'
+import { SCHEMA_VERSION } from './sync/migrations'
 import type { AppState, CheckItem, ISODate, Member, MemberId, PersonalPrefs, Role, Settings } from './types'
 
 export const DEFAULT_CYCLE_LENGTH = 28
@@ -159,11 +160,14 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       emoji: ROLE_EMOJI[input.partner.role],
     },
   ]
+  const createdAt = localNowISO(now)
   return {
     version: 1,
+    // Shape version (lib/sync/migrations.ts): a new space is born current.
+    schemaVersion: SCHEMA_VERSION,
     // Local-date-prefixed like every other timestamp, so createdAt.slice(0, 10)
     // is the day the couple started (a UTC string reads as yesterday before 9am in Korea).
-    createdAt: localNowISO(now),
+    createdAt,
     onboarded: true,
     // No cover photo yet (couple.cover): the home shows the default art until
     // one of them hangs a photo (components/cover/CoverSheet).
@@ -171,6 +175,9 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     stage: 'preparing',
     checkItems: defaultCheckItems(members, today, input.habits),
     checkLog: {},
+    // Records carry no sync marks until a writer stamps them (lib/sync/model.ts
+    // touch; a reader derives a missing id with periodIdOf), so the shape a
+    // screen or test sees stays the plain one.
     periods: input.lastPeriodStart ? [{ start: input.lastPeriodStart }] : [],
     lhTests: [],
     cycle: {
@@ -188,6 +195,8 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     planDone: {},
     customTasks: [],
     pregnancyTests: [],
+    // Answers that are not records (알렸어요 / 괜찮아요 …) — lib/sync/model.ts decide.
+    decisions: {},
     settings: {
       discreet: false,
       browserNotifications: false,
@@ -196,9 +205,11 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       ttcStart: input.ttcStart ?? today,
       // Privacy by default: the partner sees the shared 우리의 주간, not the details.
       shareCycleDetails: false,
-      // memories / anniversaryAlerts / showTryCount stay unset (SETTINGS_DEFAULTS);
+      // memories / anniversaryAlerts / showTryCount stay unset (SETTINGS_DEFAULTS),
+      // and so does coverOnLink (off until the owner says yes — prefs.setCoverOnLink);
       // so do treatments, leaveDays and intimacy at the root — nothing until the
-      // couple adds one (lib/logic/treatments.ts, lib/logic/intimacy.ts).
+      // couple adds one (lib/logic/treatments.ts, lib/logic/intimacy.ts) — and
+      // couple.link, set once a link is made (lib/logic/partnerLink.ts).
     },
   }
 }

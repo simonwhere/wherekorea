@@ -8,15 +8,7 @@ import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
 import { PREGNANCY_DAYS, dueDate, recordBirth } from '@/lib/logic/pregnancy'
 import { endPregnancy } from '@/lib/logic/today'
-import {
-  defaultLmp,
-  dueDateBounds,
-  lmpBounds,
-  toBaby,
-  validateBirth,
-  validateDueDate,
-  validateLmp,
-} from '@/lib/logic/pregnancyView'
+import { defaultLmp, dueDateBounds, lmpBounds, toBaby, validateBirth, validateDueDate, validateLmp } from '@/lib/logic/pregnancyView'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { STAGE_INFO, markPregnant } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
@@ -152,8 +144,7 @@ export function PregnantForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <p className="text-sm leading-relaxed text-ink-2">
-        이제 둘셋이 임신 주수와 검사 일정을 함께 챙길게요. {partner.name}님에게도 소식이 전해져요. 지금까지의 기록은 그대로
-        남아요.
+        이제 둘셋이 임신 주수와 검사 일정을 함께 챙길게요. {partner.name}님에게도 소식이 전해져요. 지금까지의 기록은 그대로 남아요.
       </p>
       <Field
         label="마지막 생리 시작일"

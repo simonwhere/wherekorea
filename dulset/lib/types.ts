@@ -4,6 +4,27 @@
 export type ISODate = string // 'YYYY-MM-DD'
 export type ISODateTime = string // new Date().toISOString()
 
+// ── Sync bookkeeping (Next A ③ prep) ─────────────────────────
+//
+// Records that will travel between the two phones carry an `id` and the
+// marks below. Every field is optional on the type so a saved state from
+// before they existed still type-checks: undefined means "legacy" and
+// lib/sync/migrations.ts fills ids (deterministic, from the record's own
+// key) and a lower-bound updatedAt. Readers never need to look at them;
+// writers stamp them through lib/sync/model.ts (touch / tombstone).
+
+export interface SyncMarks {
+  /** Local-date-prefixed stamp of the last change (lib/logic/today.ts stampOn). */
+  updatedAt?: ISODateTime
+  /**
+   * Tombstone: the record was deleted at this moment and is kept only so the
+   * delete reaches the other phone. Nothing writes this yet — today a delete
+   * removes the record; once sync is on, writers keep the tombstone and
+   * screens read through lib/sync/model.ts liveOnly().
+   */
+  deletedAt?: ISODateTime
+}
+
 /** The two members of a couple. 'a' is whoever created the space. */
 export type MemberId = 'a' | 'b'
 export const MEMBER_IDS: readonly MemberId[] = ['a', 'b'] as const
@@ -52,7 +73,9 @@ export type CheckLog = Record<ISODate, Partial<Record<MemberId, string[]>>>
 
 // ── Cycle ───────────────────────────────────────────────────
 
-export interface PeriodLog {
+export interface PeriodLog extends SyncMarks {
+  /** Sync id (lib/sync/model.ts periodId for legacy records; uid() for new ones). */
+  id?: string
   start: ISODate
   /** Last bleeding day, inclusive. Optional. */
   end?: ISODate
@@ -71,7 +94,9 @@ export type LHResult = 'negative' | 'faint' | 'positive' | 'peak'
 export type LHSlot = 'morning' | 'evening'
 export const LH_SLOTS: readonly LHSlot[] = ['morning', 'evening'] as const
 
-export interface LHTest {
+export interface LHTest extends SyncMarks {
+  /** Sync id (lib/sync/model.ts lhId for legacy records; uid() for new ones). */
+  id?: string
   date: ISODate
   result: LHResult
   /** 'HH:MM' — up to two tests a day are kept (morning / evening). */
@@ -85,7 +110,7 @@ export interface LHTest {
 /** Home pregnancy test (임테기). */
 export type PregnancyTestResult = 'negative' | 'faint' | 'positive'
 
-export interface PregnancyTest {
+export interface PregnancyTest extends SyncMarks {
   id: string
   date: ISODate
   time?: string
@@ -172,7 +197,7 @@ export const TREATMENT_KINDS: readonly TreatmentKind[] = ['ovulation-induction',
 export type TreatmentOutcome = 'negative' | 'positive' | 'cancelled' | 'ongoing'
 export const TREATMENT_OUTCOMES: readonly TreatmentOutcome[] = ['negative', 'positive', 'cancelled', 'ongoing'] as const
 
-export interface Treatment {
+export interface Treatment extends SyncMarks {
   id: string
   kind: TreatmentKind
   /** The day the attempt started (약 시작·채취·이식 중 the couple's choice). */
@@ -279,7 +304,7 @@ export interface DatePlan {
 
 // ── Diary / pregnancy / baby ────────────────────────────────
 
-export interface DiaryEntry {
+export interface DiaryEntry extends SyncMarks {
   id: string
   date: ISODate
   author: MemberId
@@ -384,6 +409,13 @@ export interface Settings {
    * neutral wording is the default (showTryCountOn).
    */
   showTryCount?: boolean
+  /**
+   * '링크에 표지 사진' (Next A ①): the cycle owner lets the no-install partner
+   * link carry the cover photo's id (lib/logic/partnerSnapshot.ts). Unset =
+   * off; only `true` is ever stored (lib/logic/prefs.ts coverOnLink /
+   * setCoverOnLink — the owner's choice, like shareCycleDetails).
+   */
+  coverOnLink?: boolean
 }
 
 export interface PersonalPrefs {
@@ -440,6 +472,24 @@ export interface Couple {
    * still show the default art on their own phone (PersonalPrefs.hideCover).
    */
   cover?: CoverPhoto
+  /**
+   * The partner link (Next A ①) as the couple's data: the transport's couple
+   * id and the share token's SHA-256 — never the token itself, which stays in
+   * the owner phone's localStorage (lib/useLinkSync LINK_KEY) so a backup
+   * never carries the secret. Read and set through lib/logic/partnerLink.ts.
+   */
+  link?: CoupleLink
+}
+
+/** See Couple.link. A restored backup may hold one while this phone has no token for it. */
+export interface CoupleLink {
+  /** The transport's couple id (a uuid made once; kept across token rotations). */
+  coupleId: string
+  /** Hex SHA-256 of the share token (lib/logic/partnerLink.ts sha256Hex). */
+  tokenHash: string
+  createdAt: ISODateTime
+  expiresAt: ISODateTime
+  revokedAt?: ISODateTime
 }
 
 // ── Our days / appointments / roadmap ───────────────────────
@@ -468,7 +518,7 @@ export const APPOINTMENT_KINDS: readonly AppointmentKind[] = [
   'medication',
 ] as const
 
-export interface Appointment {
+export interface Appointment extends SyncMarks {
   id: string
   date: ISODate
   /** 'HH:MM' (24h), optional. */
@@ -487,7 +537,7 @@ export interface Appointment {
 
 export type RoadmapPhase = 'preconception' | 'pregnancy-1st' | 'pregnancy-2nd' | 'pregnancy-3rd' | 'birth' | 'postpartum'
 
-export interface CustomTask {
+export interface CustomTask extends SyncMarks {
   id: string
   title: string
   phase: RoadmapPhase
@@ -505,7 +555,14 @@ export interface CustomTask {
 }
 
 export interface AppState {
+  /** Storage blob marker (lib/storage.ts isAppState); never bumped. */
   version: 1
+  /**
+   * Shape version of this state (lib/sync/migrations.ts SCHEMA_VERSION, now
+   * 3). parseState runs the ordered migrations from the saved number up to
+   * the current one before sanitizeBackup; a state without the field is 1.
+   */
+  schemaVersion: number
   createdAt: ISODateTime
   onboarded: boolean
   couple: Couple
@@ -558,8 +615,15 @@ export interface AppState {
   intimacy?: Intimacy
   settings: Settings
   /**
-   * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser
-   * tab, the sequence number of its last update this state includes.
+   * Answers that are not records: the cycle owner's 'period-told:<start>'
+   * (알렸어요), 'period-told:<start>:skip' (괜찮아요), 'positive-told:<since>',
+   * 'bleeding-told:<since>', 'rest-suggest:<itemId>:<at>' (생백신 제안 닫음),
+   * and the partner link's 'partner-event:<id>' (an event applied once,
+   * lib/logic/partnerEvents.ts) → the day it was decided. Read and written
+   * through lib/sync/model.ts decided / decide (until schema 2 these lived as
+   * dismissed notification stubs; the v1 → v2 migration copies them here and
+   * v2 → v3 drops the stubs). The two-tab rebase marks live outside the state
+   * (lib/storage.ts SYNC_KEY), so a backup holds records only.
    */
-  sync?: Record<string, number>
+  decisions: Record<string, ISODate>
 }

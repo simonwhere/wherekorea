@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
+import { ROADMAP_AUDIT } from '@/lib/content/roadmap'
 import { formatShort, isISODate } from '@/lib/dates'
 import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
@@ -95,6 +96,8 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
   const cd = countdown(item, today)
   const appt = linkedAppointment(state.appointments, item.id, today)
   const t = item.template
+  // lib/content/data audit: false until a person has checked the item against its official original ('미확인').
+  const unverified = !!t && ROADMAP_AUDIT[t.id]?.verified === false
   const doneByName = item.doneBy ? members.find((m) => m.id === item.doneBy)?.name : undefined
   const when = item.start ? dateText(item, today) : item.custom ? '날짜 없음' : item.when
   const perPerson = item.id === FERTILITY_APPLY_ID && !item.custom && state.stage === 'preparing'
@@ -231,7 +234,10 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
                 ) : null}
                 {t?.sources.length ? (
                   <div className="mt-1 border-t border-line/70 pt-1.5">
-                    <p className="text-[11px] font-semibold text-ink-3">출처</p>
+                    <p className="text-[11px] font-semibold text-ink-3">
+                      출처
+                      {unverified ? <span className="font-medium"> · 원문 확인 중 — 공식 안내에서 한 번 더 확인해 주세요</span> : null}
+                    </p>
                     <ul className="-mb-1">
                       {t.sources.map((s) => (
                         <li key={s.url}>

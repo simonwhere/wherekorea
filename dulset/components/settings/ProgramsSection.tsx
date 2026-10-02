@@ -50,8 +50,8 @@ export default function ProgramsSection() {
         ))}
       </ul>
       <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">
-        금액·조건은 해마다 바뀌어요. 신청 전 공식 페이지에서 확인하세요 (확인일 {formatDot(PROGRAMS_CHECKED_AT)}). 지역마다 추가
-        지원이 있을 수 있어요.
+        금액·조건은 해마다 바뀌어요. 신청 전 공식 페이지에서 확인하세요 (확인일 {formatDot(PROGRAMS_CHECKED_AT)}). 지역마다 추가 지원이 있을
+        수 있어요.
       </p>
     </SettingsSection>
   )

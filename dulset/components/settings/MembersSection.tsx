@@ -6,15 +6,7 @@ import { rememberDeviceViewer } from '@/components/onboarding/deviceViewer'
 import { Avatar, Button, Card, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { ROLE_LABEL } from '@/lib/initial'
-import {
-  NAME_MAX,
-  ROLES,
-  birthYearBounds,
-  emojiChoices,
-  isValidBirthYear,
-  membersViewerFirst,
-  updateMember,
-} from '@/lib/logic/settings'
+import { NAME_MAX, ROLES, birthYearBounds, emojiChoices, isValidBirthYear, membersViewerFirst, updateMember } from '@/lib/logic/settings'
 import { canHandOverCycle, handOverCycle } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Member, MemberId, Role } from '@/lib/types'
@@ -165,12 +157,7 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
         />
       </Field>
 
-      <Segmented
-        legend="역할"
-        options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
-        value={role}
-        onChange={setRole}
-      />
+      <Segmented legend="역할" options={ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))} value={role} onChange={setRole} />
 
       <fieldset>
         <legend className="mb-1.5 text-xs font-semibold text-ink-2">프로필 이모지</legend>
@@ -197,10 +184,7 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
         </div>
       </fieldset>
 
-      <Field
-        label="출생 연도 (선택)"
-        hint={yearError ?? '나이에 맞춰 전문의 상담 시기를 안내할 때만 써요. 비워 둬도 괜찮아요.'}
-      >
+      <Field label="출생 연도 (선택)" hint={yearError ?? '나이에 맞춰 전문의 상담 시기를 안내할 때만 써요. 비워 둬도 괜찮아요.'}>
         <input
           className={inputClass}
           type="number"
@@ -237,8 +221,8 @@ export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () =>
         {member.name}님의 주기를 기록하도록 바꿀까요? 주기 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
       </p>
       <p className="mt-2 text-xs leading-relaxed text-ink-3">
-        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 주기 탭에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지
-        않아요. 공유 범위는 ‘우리의 주간만’으로 돌아가고, {member.name}님이 다시 정해요.
+        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 주기 탭에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지 않아요.
+        공유 범위는 ‘우리의 주간만’으로 돌아가고, {member.name}님이 다시 정해요.
       </p>
       <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
     </div>

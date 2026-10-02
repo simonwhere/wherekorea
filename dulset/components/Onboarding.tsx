@@ -19,7 +19,15 @@ import type { ShareChoice } from '@/components/onboarding/consentCopy'
 import { ProgressDots } from '@/components/onboarding/parts'
 import { requestCoverAsk } from '@/components/cover/coverAskFlag'
 import { Button } from '@/components/ui'
-import { draftNames, draftToChoices, initialDraft, stateFromOnboarding, stepProblem, type OnboardingDraft } from '@/lib/onboardingDraft'
+import {
+  draftNames,
+  draftOwner,
+  draftToChoices,
+  initialDraft,
+  stateFromOnboarding,
+  stepProblem,
+  type OnboardingDraft,
+} from '@/lib/onboardingDraft'
 import { inviteCode } from '@/lib/id'
 import { applyOnboardingExtras } from '@/lib/initial'
 import { applyOnboardingCycle, applyPartnerDefaults } from '@/lib/logic/onboarding'
@@ -104,8 +112,7 @@ export default function Onboarding() {
   const last = key === 'done'
   const meta = stepMeta(key, names)
   const problem =
-    stepProblem(DRAFT_STEP[key], draft, today) ??
-    (key === 'consent' && !sensitive ? '민감정보 수집·이용에도 따로 동의해 주세요.' : null)
+    stepProblem(DRAFT_STEP[key], draft, today) ?? (key === 'consent' && !sensitive ? '민감정보 수집·이용에도 따로 동의해 주세요.' : null)
 
   const next = () => {
     if (problem) return
@@ -149,18 +156,10 @@ export default function Onboarding() {
           />
         )
       case 'consent':
-        return (
-          <ConsentStep
-            draft={draft}
-            patch={patch}
-            sensitive={sensitive}
-            onSensitive={setSensitive}
-            share={share}
-            onShare={setShare}
-          />
-        )
+        return <ConsentStep draft={draft} patch={patch} sensitive={sensitive} onSensitive={setSensitive} share={share} onShare={setShare} />
       default:
-        return <DoneStep code={code} partner={names.b} />
+        // The link is made on the cycle owner's phone (lib/useLinkSync publishes there only).
+        return <DoneStep code={code} partner={names.b} ownerIsMe={draftOwner(draft) === 'a'} />
     }
   })()
 

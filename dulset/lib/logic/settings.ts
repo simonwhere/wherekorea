@@ -35,6 +35,7 @@ import {
   type Role,
   type Settings,
   type Stage,
+  type Treatment,
 } from '../types'
 import {
   CYCLE_RANGE_DEFAULT,
@@ -50,6 +51,7 @@ import {
 import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
 import { cleanCover } from './cover'
 import { cleanIntimacy } from './intimacy'
+import { cleanCoupleLink } from './partnerLink'
 import { cleanPersonalLog } from './personalLog'
 import { discreetFor } from './prefs'
 import { cleanLeaveDays, cleanTreatments } from './treatments'
@@ -57,6 +59,8 @@ import { maxCycleLength, type CycleStats } from './cycle'
 import { SOFT_FERTILE_TITLE, localNowISO, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
 import { canStartPregnancy, updatePregnancy } from './pregnancy'
+import { SCHEMA_VERSION, migrate, schemaVersionOf } from '../sync/migrations'
+import { cleanDecisions, isStamp } from '../sync/model'
 
 // ── Members ─────────────────────────────────────────────────
 
@@ -163,7 +167,6 @@ export function setAlertStyle(state: AppState, id: MemberId, style: AlertStyle):
     settings: { ...state.settings, alertStyle: { ...state.settings.alertStyle, [id]: style } },
   }
 }
-
 
 export function setSetting<K extends keyof Settings>(state: AppState, key: K, value: Settings[K]): AppState {
   return { ...state, settings: { ...state.settings, [key]: value } }
@@ -294,8 +297,7 @@ export function setTtcStart(state: AppState, date: string | undefined, today: IS
 
 /** The line under "주기 설정" explaining which numbers predictions use right now (the accepted gap follows 긴 주기: 15~90일). */
 export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: number, cycle?: Pick<CycleSettings, 'longCycles'>): string {
-  if (stats.source === 'logs')
-    return '생리 기록이 쌓여서 지금은 기록 평균으로 예상해요. 아래 주기 길이는 기록이 부족할 때만 쓰여요.'
+  if (stats.source === 'logs') return '생리 기록이 쌓여서 지금은 기록 평균으로 예상해요. 아래 주기 길이는 기록이 부족할 때만 쓰여요.'
   if (periodCount >= 2)
     return `기록 사이 간격이 15~${maxCycleLength(cycle)}일일 때만 평균에 넣어요. 그런 기록이 생기기 전까지는 아래 값으로 예상해요.`
   return '생리 시작일을 두 번 이상 기록하면 기록으로 평균을 계산해요. 그 전까지는 아래 값으로 예상해요.'
@@ -490,7 +492,11 @@ function cleanMember(raw: Loose, id: MemberId): Member {
  * doesn't look like a 둘셋 couple at all (unknown stage, members other than
  * 'a' and 'b', no invite code). Unknown extra fields are kept.
  */
-export function sanitizeBackup(input: AppState): AppState | null {
+export function sanitizeBackup(raw: AppState): AppState | null {
+  // A state from before the current shape (a backup made by an older app, a
+  // caller that skipped parseState) is brought up to date first — the same
+  // ordered migrations lib/storage.ts runs; a current one is untouched.
+  const input = schemaVersionOf(raw) < SCHEMA_VERSION ? migrate(raw) : raw
   if (!STAGES.includes(input.stage)) return null
   if (!isObj(input.couple) || !isStr(input.couple.inviteCode)) return null
   const byId = new Map<MemberId, Member>()
@@ -520,6 +526,11 @@ export function sanitizeBackup(input: AppState): AppState | null {
   const knownBuiltin = (id: string) => !id.startsWith('builtin:') || (BUILTIN_PHOTO_IDS as readonly string[]).includes(id)
   if (cover && knownBuiltin(cover.photoId)) couple.cover = cover
   else delete couple.cover
+  // The partner link's facts (Next A ①): a couple id and the token's hash —
+  // never the token. Well-formed or gone.
+  const link = cleanCoupleLink(couple.link)
+  if (link) couple.link = link
+  else delete couple.link
 
   const c: Loose = isObj(input.cycle) ? input.cycle : {}
   // "45일 이상·들쭉날쭉" widens the accepted length to 90 (lib/initial.ts CYCLE_RANGE_LONG).
@@ -551,6 +562,9 @@ export function sanitizeBackup(input: AppState): AppState | null {
   for (const k of ['memories', 'anniversaryAlerts', 'showTryCount'] as const) {
     if (typeof st[k] !== 'boolean') delete settings[k]
   }
+  // '링크에 표지 사진' (Next A ①): the owner's explicit yes, or unset = off.
+  if (st.coverOnLink === true) settings.coverOnLink = true
+  else delete settings.coverOnLink
   // Per-person prefs: only booleans for a/b, plus an 'HH:MM' LH test time.
   if (isObj(st.personal)) {
     const personal: NonNullable<Settings['personal']> = {}
@@ -572,12 +586,20 @@ export function sanitizeBackup(input: AppState): AppState | null {
   // explicit opt-in by the cycle owner shares the details.
   settings.shareCycleDetails = st.shareCycleDetails === true
 
-  const list = <T>(v: unknown, ok: (x: Loose) => boolean): T[] =>
-    Array.isArray(v) ? (v.filter((x) => isObj(x) && ok(x)) as T[]) : []
+  const list = <T>(v: unknown, ok: (x: Loose) => boolean): T[] => (Array.isArray(v) ? (v.filter((x) => isObj(x) && ok(x)) as T[]) : [])
+  /** Sync marks (lib/types.ts SyncMarks): a real stamp or nothing — a record is never dropped for them. */
+  const marks = (o: Loose) => {
+    for (const k of ['updatedAt', 'deletedAt']) if (o[k] !== undefined && !isStamp(o[k])) delete o[k]
+  }
 
-  const periods = list<AppState['periods'][number]>(input.periods, (p) => isISODate(p.start)).map((p) =>
-    p.end === undefined || (isISODate(p.end) && p.end >= p.start) ? p : { start: p.start },
-  )
+  const periods = list<Loose>(input.periods, (p) => isISODate(p.start)).map((raw) => {
+    const p: Loose = { ...raw }
+    if (!(isISODate(raw.end) && raw.end >= (raw.start as string))) delete p.end
+    if (!isMemberId(raw.by)) delete p.by
+    if (!isStr(raw.id)) delete p.id
+    marks(p)
+    return p as unknown as AppState['periods'][number]
+  })
 
   // checkLog[date][member] must be a list of item ids — screens call .includes() on it.
   const checkLog: AppState['checkLog'] = {}
@@ -599,19 +621,17 @@ export function sanitizeBackup(input: AppState): AppState | null {
     for (const k of keys) if (o[k] !== undefined && !isStr(o[k])) delete o[k]
   }
 
-  const checkItems = list<Loose>(input.checkItems, (i) => isStr(i.id) && isMemberId(i.owner) && isStr(i.label)).map(
-    (raw) => {
-      const i: Loose = { ...raw }
-      i.kind = CHECK_KINDS.includes(raw.kind as CheckKind) ? raw.kind : 'habit'
-      i.active = raw.active !== false
-      i.createdAt = isISODate(raw.createdAt) ? raw.createdAt : fallbackDay
-      if (!isISODate(raw.archivedAt)) delete i.archivedAt
-      if (!i.active && !i.archivedAt) i.archivedAt = i.createdAt
-      optStr(i, 'note')
-      if (raw.cadence !== 'daily' && raw.cadence !== 'weekly') delete i.cadence
-      return i as unknown as CheckItem
-    },
-  )
+  const checkItems = list<Loose>(input.checkItems, (i) => isStr(i.id) && isMemberId(i.owner) && isStr(i.label)).map((raw) => {
+    const i: Loose = { ...raw }
+    i.kind = CHECK_KINDS.includes(raw.kind as CheckKind) ? raw.kind : 'habit'
+    i.active = raw.active !== false
+    i.createdAt = isISODate(raw.createdAt) ? raw.createdAt : fallbackDay
+    if (!isISODate(raw.archivedAt)) delete i.archivedAt
+    if (!i.active && !i.archivedAt) i.archivedAt = i.createdAt
+    optStr(i, 'note')
+    if (raw.cadence !== 'daily' && raw.cadence !== 'weekly') delete i.cadence
+    return i as unknown as CheckItem
+  })
 
   const notifications = list<Loose>(
     input.notifications,
@@ -639,10 +659,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
     return d as unknown as DatePlan
   })
 
-  const diary = list<Loose>(
-    input.diary,
-    (d) => isStr(d.id) && isISODate(d.date) && isStr(d.text) && isMemberId(d.author),
-  ).map((raw) => {
+  const diary = list<Loose>(input.diary, (d) => isStr(d.id) && isISODate(d.date) && isStr(d.text) && isMemberId(d.author)).map((raw) => {
     const d: Loose = { ...raw }
     d.stage = STAGES.includes(raw.stage as Stage) ? raw.stage : input.stage
     d.createdAt = isStr(raw.createdAt) ? raw.createdAt : `${raw.date as string}T00:00:00`
@@ -659,6 +676,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (Object.keys(r).length) d.reactions = r
       else delete d.reactions
     } else delete d.reactions
+    marks(d)
     return d as unknown as DiaryEntry
   })
 
@@ -683,6 +701,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (!(isStr(t.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.time))) delete out.time
       if (!LH_SLOTS.includes(t.slot as LHSlot)) delete out.slot
       if (!isMemberId(t.by)) delete out.by
+      if (!isStr(t.id)) delete out.id
+      marks(out as unknown as Loose)
       return out
     }),
     pregnancyTests: list<AppState['pregnancyTests'][number]>(
@@ -692,6 +712,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       const out = { ...t }
       if (!(isStr(t.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.time))) delete out.time
       if (!isMemberId(t.by)) delete out.by
+      marks(out as unknown as Loose)
       return out
     }),
     checkItems,
@@ -731,13 +752,12 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (raw.time !== undefined) a.time = raw.time
       if (raw.done === true) a.done = true
       for (const k of ['place', 'note', 'taskId']) if (isStr(raw[k])) a[k] = raw[k]
+      for (const k of ['updatedAt', 'deletedAt']) if (isStamp(raw[k])) a[k] = raw[k]
       return a as unknown as Appointment
     }),
     planDone: isObj(input.planDone)
       ? Object.fromEntries(
-          Object.entries(input.planDone).filter(
-            ([, v]) => isObj(v) && isISODate(v.at) && (v.by === undefined || isMemberId(v.by)),
-          ),
+          Object.entries(input.planDone).filter(([, v]) => isObj(v) && isISODate(v.at) && (v.by === undefined || isMemberId(v.by))),
         )
       : {},
     customTasks: list<Loose>(
@@ -754,6 +774,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (!isMemberId(raw.doneBy)) delete c.doneBy
       if (!isMemberId(raw.createdBy)) c.createdBy = ownerId
       if (typeof raw.deadlineAlerts !== 'boolean') delete c.deadlineAlerts
+      marks(c)
       return c as unknown as CustomTask
     }),
   }
@@ -765,9 +786,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
     if (!Number.isNaN(d.getTime())) next.createdAt = localNowISO(d)
   }
 
-  if (isObj(input.sync)) {
-    next.sync = Object.fromEntries(Object.entries(input.sync).filter(([, v]) => isNum(v)))
-  } else delete next.sync
+  // The two-tab rebase marks left the state at schema 3 (lib/storage.ts SYNC_KEY).
+  delete (next as unknown as Loose).sync
 
   const p: unknown = input.pregnancy
   if (isObj(p) && isISODate(p.lmp)) {
@@ -812,8 +832,20 @@ export function sanitizeBackup(input: AppState): AppState | null {
   // 관계일 record — strict shapes (lib/logic/treatments.ts, intimacy.ts); an
   // empty or broken one is dropped, never kept as an empty container.
   const treatments = cleanTreatments(input.treatments)
-  if (treatments) next.treatments = treatments
-  else delete next.treatments
+  if (treatments) {
+    // cleanTreatment rebuilds the attempt field by field; the sync marks ride
+    // back in from the first raw record with that id (a stamp or nothing).
+    const rawById = new Map<string, Loose>()
+    for (const t of Array.isArray(input.treatments) ? input.treatments : []) {
+      if (isObj(t) && isStr(t.id) && !rawById.has(t.id)) rawById.set(t.id, t)
+    }
+    next.treatments = treatments.map((t) => {
+      const r = rawById.get(t.id)
+      const out: Loose = { ...t }
+      for (const k of ['updatedAt', 'deletedAt']) if (r && isStamp(r[k])) out[k] = r[k]
+      return out as unknown as Treatment
+    })
+  } else delete next.treatments
   const leaveDays = cleanLeaveDays(input.leaveDays)
   if (leaveDays) next.leaveDays = leaveDays
   else delete next.leaveDays
@@ -828,6 +860,15 @@ export function sanitizeBackup(input: AppState): AppState | null {
   const cycleNotes = cleanCycleNotes(input.cycleNotes)
   if (cycleNotes) next.cycleNotes = cycleNotes
   else delete next.cycleNotes
+
+  // Shape version: current, or a newer app's number kept as it is (nothing
+  // here knows how to go back). Answers that are not records: strict map.
+  // Record ids are not filled in here: the v1 → v2 migration gives legacy
+  // records theirs, writers give new ones uid(), and a reader that meets a
+  // record without one derives it (lib/sync/model.ts periodIdOf / lhIdOf) —
+  // so a state the app built stays byte-identical through parseState.
+  next.schemaVersion = Math.max(schemaVersionOf(input), SCHEMA_VERSION)
+  next.decisions = cleanDecisions(input.decisions)
 
   return next
 }

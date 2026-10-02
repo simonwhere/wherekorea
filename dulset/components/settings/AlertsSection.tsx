@@ -352,8 +352,8 @@ function LowPressureToggle() {
         <div className="pb-2 text-xs leading-relaxed text-ink-2">
           <p>
             영국 NICE 지침(NG257, 2026)은 {explicitWords ? '배란일을' : '날짜를'} 맞추기보다{' '}
-            <strong className="font-semibold text-ink">주기 내내 2~3일에 한 번</strong>{' '}
-            함께하는 방식을 권해요. 날짜에 맞춘 알림이 부담으로 느껴진다면 이 모드가 잘 맞을 수 있어요.
+            <strong className="font-semibold text-ink">주기 내내 2~3일에 한 번</strong> 함께하는 방식을 권해요. 날짜에 맞춘 알림이 부담으로
+            느껴진다면 이 모드가 잘 맞을 수 있어요.
           </p>
           <p className="mt-1.5">
             켜 두면 내 폰에서는 {dateAlerts}과 카운트다운이 사라지고, 둘만의 시간으로만 안내해요.{' '}
@@ -492,8 +492,8 @@ function BrowserNotifications() {
       ) : null}
       {perm === 'unsupported' ? (
         <p className="mt-2 rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
-          이 브라우저에서는 웹 알림을 쓸 수 없어요. iPhone은 Safari에서 ‘홈 화면에 추가’한 뒤 열면 알림을 받을 수 있어요. 알림
-          없이도 앱 안의 알림함에는 그대로 쌓여요.
+          이 브라우저에서는 웹 알림을 쓸 수 없어요. iPhone은 Safari에서 ‘홈 화면에 추가’한 뒤 열면 알림을 받을 수 있어요. 알림 없이도 앱
+          안의 알림함에는 그대로 쌓여요.
         </p>
       ) : null}
       {checked ? (

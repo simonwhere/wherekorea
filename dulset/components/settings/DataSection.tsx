@@ -11,6 +11,7 @@ import { buildFullBackup, deliverFile, fullBackupFilename, markBackedUp, photoId
 import { exportPhotos } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 import { clearDeviceData } from '@/lib/storage'
+import { TRANSPORT_LABEL, transportKind } from '@/lib/sync/transport'
 import { ConfirmActions, SettingsSection } from './bits'
 
 const noop = () => {}
@@ -64,6 +65,8 @@ export default function DataSection() {
   }, [wipeStep])
 
   const photoCount = photoIdsInState(state).length
+  // Fixed per build (NEXT_PUBLIC_SUPABASE_* at build time): what the link's page travels through (docs/next-a-setup.md §5).
+  const transport = transportKind()
 
   /** 전체 백업: the record plus every photo this device still has, as one .zip. */
   const exportFull = async () => {
@@ -140,15 +143,24 @@ export default function DataSection() {
             <div className="min-w-0">
               <h3 className="text-sm font-bold text-ink">이 기기에만 저장돼요</h3>
               <p className="mt-1 text-xs leading-relaxed text-ink-2">
-                지금은 모든 기록이 이 브라우저 안에만 있어요. 서버로 보내지 않아요. 대신 브라우저 데이터를 지우면 함께 사라지니,
-                일주일에 한 번 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.
+                {transport === 'supabase'
+                  ? '모든 기록은 이 브라우저 안에 있어요. 서버를 거치는 건 설정 › 연결의 링크로 보내는 화면 한 장뿐이에요. 브라우저 데이터를 지우면 기록이 함께 사라지니, 일주일에 한 번 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.'
+                  : '지금은 모든 기록이 이 브라우저 안에만 있어요. 서버로 보내지 않아요. 대신 브라우저 데이터를 지우면 함께 사라지니, 일주일에 한 번 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.'}
+              </p>
+              <p className="mt-1.5 text-[11px] font-medium text-ink-3" data-transport={transport}>
+                {TRANSPORT_LABEL[transport]}
+                {transport === 'mock' ? ' · 링크 화면도 이 브라우저의 다른 탭에서만 열려요' : ' · 링크 화면만 서버를 거쳐요'}
               </p>
             </div>
           </div>
 
           <div className="mt-3 grid gap-2">
             <Button full variant="secondary" onClick={() => void exportFull()} disabled={packing}>
-              {packing ? '백업 파일 만드는 중…' : photoCount > 0 ? `전체 백업 받기 (기록 + 사진 ${photoCount}장, .zip)` : '전체 백업 받기 (.zip)'}
+              {packing
+                ? '백업 파일 만드는 중…'
+                : photoCount > 0
+                  ? `전체 백업 받기 (기록 + 사진 ${photoCount}장, .zip)`
+                  : '전체 백업 받기 (.zip)'}
             </Button>
             <RestoreFullBackup label="백업 파일 불러오기 (.zip · .json)" onMessage={toast.show} />
             <Button full variant="ghost" onClick={() => void exportJson()}>
@@ -156,8 +168,8 @@ export default function DataSection() {
             </Button>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            전체 백업에는 두 사람의 체크와 주기 기록, 일기 글과 사진, 만난 날·기념일, 병원 일정, 챙길 것 진행 상황이 모두 들어가요.
-            불러오면 사진도 함께 되살아나요. .json에는 사진이 빠져요.
+            전체 백업에는 두 사람의 체크와 주기 기록, 일기 글과 사진, 만난 날·기념일, 병원 일정, 챙길 것 진행 상황이 모두 들어가요. 불러오면
+            사진도 함께 되살아나요. .json에는 사진이 빠져요.
           </p>
 
           <div className="mt-3 border-t border-line pt-3">
@@ -188,8 +200,8 @@ export default function DataSection() {
         {wipeStep === 1 ? (
           <div>
             <p className="text-sm leading-relaxed text-ink">
-              두 사람의 체크, 생리 기록, 일기와 사진, 기념일·병원 일정·챙길 것, 알림이 이 기기에서 모두 지워져요. 지운 뒤에는 되돌릴
-              수 없어요.
+              두 사람의 체크, 생리 기록, 일기와 사진, 기념일·병원 일정·챙길 것, 알림이 이 기기에서 모두 지워져요. 지운 뒤에는 되돌릴 수
+              없어요.
             </p>
             <p className="mt-2 text-xs leading-relaxed text-ink-3">남겨 두고 싶은 기록이 있다면 먼저 전체 백업을 받아 두세요.</p>
             <div className="mt-5 grid gap-2">

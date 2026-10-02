@@ -479,9 +479,7 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   if (nextLogged && diffDays(loggedStart, date) >= L) return null
   // The couple's own variability widens the band for not-yet-finished cycles.
   const spread: Spread =
-    stats.min !== undefined && stats.max !== undefined
-      ? { early: Math.max(0, L - stats.min), late: Math.max(0, stats.max - L) }
-      : noSpread
+    stats.min !== undefined && stats.max !== undefined ? { early: Math.max(0, L - stats.min), late: Math.max(0, stats.max - L) } : noSpread
   const lhOv = lhOvulationFor(loggedStart, L, input.lhTests)
   // With a surge, the next period is expected from the range's first day, not start + average.
   const nextPeriod = lhOv ? dueFor(stats, loggedStart, input.lhTests).from : undefined
@@ -552,7 +550,9 @@ export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayI
   const starts = sortedStarts(input.periods)
   // The open cycle's expected range (a finished cycle shows only what was logged).
   const open = w.startLogged && !starts.some((s) => s > w.start)
-  const due = open ? dueFor(cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy), w.start, input.lhTests) : undefined
+  const due = open
+    ? dueFor(cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy), w.start, input.lhTests)
+    : undefined
   const inRange = !!due && date >= due.from && date <= due.to
   // A projected cycle's first days: its period, plus the tail of the range before it.
   const head = Math.max(input.cycle.periodLength, DUE_CLIP_DAYS + 1)
@@ -687,10 +687,7 @@ export function ourWeekSoon(status: FertilityStatus): boolean {
     case 'before-fertile':
       return status.daysUntil <= OUR_WEEK_LEAD_DAYS
     case 'period':
-      return (
-        status.fertileEnd !== undefined ||
-        (status.daysUntilFertile !== undefined && status.daysUntilFertile <= OUR_WEEK_LEAD_DAYS)
-      )
+      return status.fertileEnd !== undefined || (status.daysUntilFertile !== undefined && status.daysUntilFertile <= OUR_WEEK_LEAD_DAYS)
     default:
       return false
   }
@@ -733,7 +730,9 @@ export function addPeriod<S extends CycleInput>(state: S, start: ISODate, end?: 
   const prev = state.periods.find((p) => p.start === start)
   const who = by ?? prev?.by
   const periods = state.periods.filter((p) => p.start !== start)
-  periods.push({ start, ...(end && end >= start ? { end } : {}), ...(who ? { by: who } : {}) })
+  // A re-log of the same day keeps the record's sync id (lib/sync/model.ts); a
+  // new record gets one from the store when it is saved (stampChanges).
+  periods.push({ ...(prev?.id ? { id: prev.id } : {}), start, ...(end && end >= start ? { end } : {}), ...(who ? { by: who } : {}) })
   periods.sort((a, b) => (a.start < b.start ? -1 : 1))
   return { ...state, periods }
 }

@@ -1,6 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createInitialState } from '@/lib/initial'
-import { CORRUPT_KEY, STORAGE_KEY, VIEWER_KEY, loadState, loadViewer, normalize, saveState, saveViewer } from '@/lib/storage'
+import { SCHEMA_VERSION } from '@/lib/sync/migrations'
+import {
+  CORRUPT_KEY,
+  STORAGE_KEY,
+  SYNC_KEY,
+  VIEWER_KEY,
+  loadState,
+  loadViewer,
+  normalize,
+  parseState,
+  parseSyncMarks,
+  readSyncMarks,
+  saveState,
+  saveViewer,
+  writeSyncMarks,
+} from '@/lib/storage'
 
 /** A localStorage stand-in; `failing` makes every write throw like a full quota does. */
 function fakeStorage(failing = false) {
@@ -23,7 +38,10 @@ function fakeStorage(failing = false) {
 }
 
 const fresh = () =>
-  createInitialState({ me: { name: '민수', role: 'husband' }, partner: { name: '지은', role: 'wife' }, cycleOwner: 'b' }, new Date(2026, 8, 1, 9))
+  createInitialState(
+    { me: { name: '민수', role: 'husband' }, partner: { name: '지은', role: 'wife' }, cycleOwner: 'b' },
+    new Date(2026, 8, 1, 9),
+  )
 
 describe('storage: the one corrupt copy', () => {
   let ls: ReturnType<typeof fakeStorage>
@@ -107,10 +125,24 @@ describe('normalize: fields added for Now 2 ride along', () => {
     const saved = {
       ...s,
       cycle: { ...s.cycle, longCycles: true },
-      settings: { ...s.settings, usesLH: 'later' as const, personal: { a: { hideCover: true, lhTestTime: '21:00' }, b: { lhTestTime: '8pm', discreet: true } } },
+      settings: {
+        ...s.settings,
+        usesLH: 'later' as const,
+        personal: { a: { hideCover: true, lhTestTime: '21:00' }, b: { lhTestTime: '8pm', discreet: true } },
+      },
       personalLog: { b: { '2026-09-01': { feel: 'tired' as const } } },
       cycleNotes: { '2026-08-20': { stillWaiting: '2026-09-01' } },
-      diary: [{ id: 'e1', date: '2026-09-01', author: 'b' as const, stage: 'preparing' as const, text: '나만', createdAt: '2026-09-01T20:00:00+09:00', privateTo: 'b' as const }],
+      diary: [
+        {
+          id: 'e1',
+          date: '2026-09-01',
+          author: 'b' as const,
+          stage: 'preparing' as const,
+          text: '나만',
+          createdAt: '2026-09-01T20:00:00+09:00',
+          privateTo: 'b' as const,
+        },
+      ],
     }
     const out = normalize(JSON.parse(JSON.stringify(saved)))
     expect(out.cycle).toEqual({ cycleLength: 28, periodLength: 5, longCycles: true })
@@ -171,5 +203,67 @@ describe('normalize: Next B fields (switches · 콕 받기 · 홈 카드 숨김 
     expect(out).toEqual(JSON.parse(JSON.stringify(s)))
     for (const k of ['memories', 'anniversaryAlerts', 'showTryCount']) expect(k in out.settings).toBe(false)
     for (const k of ['treatments', 'leaveDays', 'intimacy']) expect(k in out).toBe(false)
+  })
+})
+
+describe('parseState runs the schema migrations (Next A ③ prep)', () => {
+  it('a save from before schemaVersion comes up as the current shape with ids, stamps and decisions; a current one is untouched', () => {
+    const s = fresh()
+    const { schemaVersion: _v, decisions: _d, ...legacy } = s
+    const raw = JSON.stringify({
+      ...legacy,
+      periods: [{ start: '2026-08-20' }],
+      notifications: [
+        {
+          id: 'n1',
+          to: 'b',
+          kind: 'system',
+          title: '',
+          body: '',
+          createdAt: '2026-08-21T09:00:00+09:00',
+          key: 'period-told:2026-08-20:skip',
+          read: true,
+          dismissed: true,
+        },
+      ],
+    })
+    const out = parseState(raw)!
+    expect(out.schemaVersion).toBe(SCHEMA_VERSION)
+    expect(out.periods[0]).toEqual({ id: 'period:2026-08-20', start: '2026-08-20', updatedAt: s.createdAt })
+    expect(out.decisions).toEqual({ 'period-told:2026-08-20:skip': '2026-08-21' })
+    // The stub that only remembered the answer is gone at schema 3 (lib/sync/migrations.ts v2to3).
+    expect(out.notifications).toHaveLength(0)
+    // The second pass is the identity, byte for byte.
+    expect(JSON.stringify(parseState(JSON.stringify(out)))).toBe(JSON.stringify(out))
+    // A current save is the identity on the first pass.
+    expect(parseState(JSON.stringify(s))).toEqual(JSON.parse(JSON.stringify(s)))
+    // normalize alone fills decisions but never the version (the migration must still run).
+    const n = normalize(JSON.parse(raw))
+    expect(n.decisions).toEqual({})
+    expect('schemaVersion' in n).toBe(false)
+  })
+})
+
+describe('two-tab rebase marks: the sidecar key the store can move AppState.sync to', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('parses only finite numbers, reads {} for junk or nothing, and writes before the state so the other tab sees both', () => {
+    expect(parseSyncMarks(null)).toEqual({})
+    expect(parseSyncMarks('nope')).toEqual({})
+    expect(parseSyncMarks('[1,2]')).toEqual({})
+    expect(parseSyncMarks('{"t1":3,"t2":"x","t3":null,"t4":1e400}')).toEqual({ t1: 3 })
+    const ls = fakeStorage()
+    vi.stubGlobal('window', { localStorage: ls })
+    expect(readSyncMarks()).toEqual({})
+    expect(writeSyncMarks({ t1: 3 })).toBe(true)
+    expect(saveState(fresh())).toBe(true)
+    expect(ls.keys()).toEqual([SYNC_KEY, STORAGE_KEY])
+    expect(readSyncMarks()).toEqual({ t1: 3 })
+    expect(SYNC_KEY.startsWith('dulset:')).toBe(true)
+    vi.stubGlobal('window', { localStorage: fakeStorage(true) })
+    expect(writeSyncMarks({ t1: 4 })).toBe(false)
+    vi.stubGlobal('window', undefined)
+    expect(writeSyncMarks({ t1: 4 })).toBe(false)
+    expect(readSyncMarks()).toEqual({})
   })
 })

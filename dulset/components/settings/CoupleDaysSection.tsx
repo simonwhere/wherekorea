@@ -86,8 +86,8 @@ export default function CoupleDaysSection() {
           </Button>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-          첫날을 1일로 세어요. 두 사람 화면에 똑같이 보이고, 기념일 7일 전과 당일에 둘 다에게 알려 드려요. 첫 여행 같은 우리만의
-          날은 우리 탭의 ‘기념일’에서 더하고 고칠 수 있어요.
+          첫날을 1일로 세어요. 두 사람 화면에 똑같이 보이고, 기념일 7일 전과 당일에 둘 다에게 알려 드려요. 첫 여행 같은 우리만의 날은 우리
+          탭의 ‘기념일’에서 더하고 고칠 수 있어요.
         </p>
       </Card>
       <CoupleDatesSheet open={open} onClose={close} />

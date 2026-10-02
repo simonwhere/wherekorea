@@ -2,14 +2,24 @@
 // prototype — no server ever sees cycle or health data.
 
 import { cleanCover } from './logic/cover'
+import { cleanCoupleLink } from './logic/partnerLink'
 import { BACKUP_MAX_BYTES, extraStorageKeys, sanitizeBackup } from './logic/settings'
 import { clearAllPhotos } from './photos'
+import { migrate } from './sync/migrations'
 import type { AppState, MemberId } from './types'
 
 export const STORAGE_KEY = 'dulset:state:v1'
 export const VIEWER_KEY = 'dulset:viewer'
 /** Where an unreadable saved state is kept (one copy, the first one — never overwritten). */
 export const CORRUPT_KEY = `${STORAGE_KEY}:corrupt`
+/**
+ * Sidecar for the two-tab rebase bookkeeping: tab id → last update sequence
+ * number. lib/store.tsx keeps its marks here (writeSyncMarks before
+ * saveState, readSyncMarks in the storage handler) so the saved state and
+ * backups hold records only (the v2 → v3 migration dropped the old
+ * AppState.sync). Starts with 'dulset:' so 모든 기록 지우기 clears it too.
+ */
+export const SYNC_KEY = 'dulset:sync:v1'
 
 function safeLocal(): Storage | null {
   try {
@@ -57,6 +67,10 @@ export function normalize(state: AppState): AppState {
   const cover = cleanCover(couple.cover)
   if (cover) couple.cover = cover
   else delete couple.cover
+  // The partner link's facts (no token): kept only when well-formed.
+  const link = cleanCoupleLink(couple.link)
+  if (link) couple.link = link
+  else delete couple.link
   // Per-person prefs: hideCover / acceptNudges / homeDiscreet are a yes/no or
   // unset (automatic / default); lhTestTime is 'HH:MM' or unset.
   const personal = settings.personal
@@ -82,21 +96,31 @@ export function normalize(state: AppState): AppState {
   // (lib/initial.ts SETTINGS_DEFAULTS) — never written in, so an older save
   // keeps its exact shape.
   const flag = (v: unknown) => (typeof v === 'boolean' ? v : undefined)
+  // A list field that is not a list (a damaged save) reads as empty rather than
+  // tripping the migrations; sanitizeBackup then checks each record.
+  const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
   const memories = flag(settings.memories)
   const anniversaryAlerts = flag(settings.anniversaryAlerts)
   const showTryCount = flag(settings.showTryCount)
+  // '링크에 표지 사진' (Next A ①): only an explicit yes is ever stored.
+  const coverOnLink = settings.coverOnLink === true ? true : undefined
   return {
     ...s,
     couple,
-    lhTests: s.lhTests ?? [],
-    datePlans: s.datePlans ?? [],
-    growth: s.growth ?? [],
-    milestones: s.milestones ?? [],
-    anniversaries: s.anniversaries ?? [],
-    appointments: s.appointments ?? [],
+    lhTests: arr(s.lhTests),
+    datePlans: arr(s.datePlans),
+    growth: arr(s.growth),
+    milestones: arr(s.milestones),
+    anniversaries: arr(s.anniversaries),
+    appointments: arr(s.appointments),
     planDone: s.planDone ?? {},
-    customTasks: s.customTasks ?? [],
-    pregnancyTests: s.pregnancyTests ?? [],
+    customTasks: arr(s.customTasks),
+    pregnancyTests: arr(s.pregnancyTests),
+    ...(s.treatments !== undefined ? { treatments: arr(s.treatments) } : {}),
+    // Answers that are not records (lib/sync/model.ts decide). schemaVersion is
+    // NOT filled here: lib/sync/migrations.ts migrate stamps it, after running
+    // the v1 → v2 step that converts the old notification stubs into these.
+    decisions: s.decisions ?? {},
     cycle: {
       cycleLength: cycle.cycleLength ?? 28,
       periodLength: cycle.periodLength ?? 5,
@@ -122,10 +146,12 @@ export function normalize(state: AppState): AppState {
       ...(memories !== undefined ? { memories } : {}),
       ...(anniversaryAlerts !== undefined ? { anniversaryAlerts } : {}),
       ...(showTryCount !== undefined ? { showTryCount } : {}),
+      ...(coverOnLink ? { coverOnLink } : {}),
     },
     // personalLog, cycleNotes, restCycle (+ until), positivePending
     // (+ bleedingSince), treatments, leaveDays, intimacy, diary[].privateTo,
-    // lhTests[].slot and customTasks[].deadlineAlerts ride along in `...s`;
+    // lhTests[].slot, customTasks[].deadlineAlerts and the sync marks
+    // (records' id / updatedAt / deletedAt) ride along in `...s`;
     // sanitizeBackup checks them (parseState always runs both).
   }
 }
@@ -136,9 +162,11 @@ export function parseState(raw: string | null): AppState | null {
   if (!raw) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    // Outline check, fill newer fields, then deep repair/reject (unknown stage,
-    // broken members, malformed lists) so bad data can never crash the screens.
-    return isAppState(parsed) ? sanitizeBackup(normalize(parsed)) : null
+    // Outline check, fill newer fields, bring the shape up to date
+    // (lib/sync/migrations.ts — ids, stamps, decisions), then deep
+    // repair/reject (unknown stage, broken members, malformed lists) so bad
+    // data can never crash the screens.
+    return isAppState(parsed) ? sanitizeBackup(migrate(normalize(parsed))) : null
   } catch {
     return null
   }
@@ -178,6 +206,49 @@ export function saveState(state: AppState | null): boolean {
     /* ignore */
   }
   return true
+}
+
+// ── Two-tab rebase marks (sidecar, see SYNC_KEY) ─────────────
+
+/** The marks as stored: tab id → sequence number; {} when none or unreadable. */
+export function parseSyncMarks(raw: string | null): Record<string, number> {
+  if (!raw) return {}
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (e): e is [string, number] => typeof e[1] === 'number' && Number.isFinite(e[1]),
+      ),
+    )
+  } catch {
+    return {}
+  }
+}
+
+export function readSyncMarks(): Record<string, number> {
+  try {
+    return parseSyncMarks(safeLocal()?.getItem(SYNC_KEY) ?? null)
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Store the marks. Call it *before* saveState: both writes are synchronous,
+ * and the other tab's 'storage' event for STORAGE_KEY is delivered after
+ * both, so readSyncMarks there already sees the new marks. Only the last
+ * SYNC_TABS tabs are kept (lib/store.tsx).
+ */
+export function writeSyncMarks(marks: Record<string, number>): boolean {
+  const ls = safeLocal()
+  if (!ls) return false
+  try {
+    ls.setItem(SYNC_KEY, JSON.stringify(marks))
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**

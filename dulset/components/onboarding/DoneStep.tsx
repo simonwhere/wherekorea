@@ -1,14 +1,20 @@
 'use client'
 
-// ④ 초대·설치: the partner link that is still to come (카톡으로 링크 보내기 —
-// 준비 중, so the button says so instead of pretending), how the prototype
-// shows the partner's screen meanwhile (⇄), and a one-picture "홈 화면에 추가"
-// with this phone's own steps — Safari drops a tab's storage after 7 days
-// without a visit, a home-screen app keeps it (lib/persist INSTALL_STEPS).
+// ④ 초대·설치: the partner link (Next A ①) — one tap makes the link and hands
+// it to the share sheet (카카오톡 is on it; without a sheet it is copied), how
+// the prototype shows the partner's screen meanwhile (⇄), and a one-picture
+// "홈 화면에 추가" with this phone's own steps — Safari drops a tab's storage
+// after 7 days without a visit, a home-screen app keeps it (lib/persist
+// INSTALL_STEPS). The link's page fills in after 시작하기, when this phone
+// publishes its first snapshot (lib/useLinkSync).
 
 import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/icons'
+import { localNowISO } from '@/lib/logic/notifications'
+import { stampOn } from '@/lib/logic/today'
 import { INSTALL_STEPS, currentInstallPlatform, isStandalone, type InstallPlatform } from '@/lib/persist'
+import { useStore } from '@/lib/store'
+import { LINK_DAYS, linkStatus, readLink, rotateLink, shareLink, shareText, shareURL, type LinkRecord } from '@/lib/useLinkSync'
 
 /** A phone whose share sheet adds 둘셋 to the home screen (decorative; the steps are text). */
 function InstallArt() {
@@ -51,37 +57,107 @@ function InstallArt() {
   )
 }
 
-export default function DoneStep({ code, partner }: { code: string; partner: string }) {
-  // Browser-only facts (display mode, user agent) are read after mount.
+export default function DoneStep({
+  code,
+  partner,
+  ownerIsMe = true,
+}: {
+  code: string
+  partner: string
+  /** The person onboarding tracks the cycle: this phone publishes the link's page. Else the link is made on the partner's phone. */
+  ownerIsMe?: boolean
+}) {
+  const { today } = useStore()
+  // Browser-only facts (display mode, user agent, the link kept on this phone) are read after mount.
   const [platform, setPlatform] = useState<InstallPlatform | null>(null)
   const [installed, setInstalled] = useState(false)
+  const [link, setLink] = useState<LinkRecord | null>(null)
+  const [origin, setOrigin] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
   useEffect(() => {
     setPlatform(currentInstallPlatform())
     setInstalled(isStandalone())
+    setOrigin(window.location.origin)
+    const kept = readLink()
+    if (kept && linkStatus(kept, localNowISO()) === 'active') setLink(kept)
   }, [])
+
+  const url = link && origin ? shareURL(origin, link.token) : ''
+
+  const sendLink = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      // One link for this flow: a second tap shares the same address.
+      const l = link ?? (await rotateLink(stampOn(today)))
+      setLink(l)
+      const r = await shareLink(shareURL(origin || window.location.origin, l.token), shareText(partner))
+      setNote(
+        r === 'shared'
+          ? `보냈어요. ${partner}님 화면은 아래 시작하기를 누르면 준비돼요.`
+          : r === 'copied'
+            ? `링크를 복사했어요. 카톡에 붙여 넣어 주세요. ${partner}님 화면은 아래 시작하기를 누르면 준비돼요.`
+            : '보내지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
       <section aria-label={`${partner}님 초대`} className="rounded-xl2 border border-brand/20 bg-brand-soft p-4 shadow-card">
         <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
           <Icon name="mail" className="h-[18px] w-[18px] text-ink-2" />
-          {partner}님 초대하기
+          {ownerIsMe ? `${partner}님 초대하기` : `${partner}님과 함께 쓰기`}
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-ink-2">
-          실제 연결은 준비 중이에요. 두 폰을 잇는 링크가 생기면 여기서 바로 보낼 수 있어요.
-        </p>
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          className="mt-3 inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-surface text-sm font-semibold text-ink-3 ring-1 ring-line disabled:cursor-not-allowed"
-        >
-          카톡으로 링크 보내기 <span className="text-xs font-medium">(준비 중)</span>
-        </button>
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-          초대 코드 <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄ 버튼으로 {partner}님
-          화면을 볼 수 있어요. 탭을 두 개 열면 두 폰처럼 움직여요.
-        </p>
+        {ownerIsMe ? (
+          <>
+            <p className="mt-1 text-xs leading-relaxed text-ink-2">
+              {partner}님은 앱을 설치하지 않아도 돼요. 링크 하나로 우리의 주간, 이번 달 할 일, 오늘 체크, 신호를 보고 답할 수 있어요. 기록은
+              이 폰에만 있고, 링크로는 화면 한 장만 가요.
+            </p>
+            <button
+              type="button"
+              onClick={sendLink}
+              disabled={busy}
+              className="mt-3 inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-brand text-sm font-semibold text-white transition-colors hover:bg-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-60"
+            >
+              <Icon name="link" className="h-[18px] w-[18px]" strokeWidth={2.2} />
+              {link ? '카톡으로 다시 보내기' : '카톡으로 링크 보내기'}
+            </button>
+            {note ? (
+              <p role="status" className="mt-2 text-xs leading-relaxed text-ink">
+                {note}
+              </p>
+            ) : null}
+            {url ? (
+              <p
+                className="mt-2 break-all rounded-xl border border-line bg-surface px-3 py-2 font-mono text-[11px] leading-relaxed text-ink-2"
+                data-link-url
+              >
+                {url}
+              </p>
+            ) : null}
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+              링크는 {LINK_DAYS}일 동안 열리고 설정 › 연결에서 언제든 바꾸거나 해제할 수 있어요 · 초대 코드{' '}
+              <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄ 버튼으로도 {partner}님 화면을
+              볼 수 있어요.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mt-1 text-xs leading-relaxed text-ink-2">
+              주기는 {partner}님이 기록하니, 설치 없이 보는 링크는 {partner}님이 앱을 쓰는 폰에서 만들어요(설정 › 연결). 링크로는 화면 한
+              장만 가고, 기록은 기록한 폰에만 있어요.
+            </p>
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
+              초대 코드 <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄ 버튼으로 {partner}님
+              화면을 볼 수 있어요.
+            </p>
+          </>
+        )}
       </section>
 
       <section aria-label="홈 화면에 추가" className="rounded-xl2 border border-line bg-surface p-4 shadow-card">

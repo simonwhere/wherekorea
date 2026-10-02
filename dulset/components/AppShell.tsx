@@ -17,6 +17,7 @@ import { useFirstPeriodMarker } from '@/components/system/BackupBanner'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
+import { useLinkSync } from '@/lib/useLinkSync'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
 import { useApp, useStore } from '@/lib/store'
@@ -151,7 +152,8 @@ export default function AppShell() {
 }
 
 function MainApp() {
-  const { state, me, partner, setViewer } = useApp()
+  const app = useApp()
+  const { state, me, partner, setViewer } = app
   const { saveFailed } = useStore()
   const tabs = TAB_SETS[state.stage]
   const [tab, setTab] = useState<TabKey>('today')
@@ -178,6 +180,9 @@ function MainApp() {
   useNotificationEngine()
   // 기록 지키기: remember the day the first period gets logged (BackupBanner shows it once).
   useFirstPeriodMarker()
+  // The partner link (Next A ①): on the cycle owner's phone, publish the
+  // snapshot after each change and pull the partner page's events (lib/useLinkSync).
+  useLinkSync(app)
 
   // The lazily split tabs (DateTab, SettingsTab, the album, the stage tab, the
   // clinic summary) are fetched once the home is idle, so they open offline

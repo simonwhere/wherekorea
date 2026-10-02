@@ -117,8 +117,8 @@ function IntimacyCard() {
       {on ? (
         <>
           <p className="mt-3 text-xs leading-relaxed text-ink-2">
-            ‘+ 기록’의 <b className="font-semibold text-ink">관계</b> 칩에서 날짜를 표시해요. {partner.name}님 화면에는 이 설정도, 칩도 보이지
-            않아요.
+            ‘+ 기록’의 <b className="font-semibold text-ink">관계</b> 칩에서 날짜를 표시해요. {partner.name}님 화면에는 이 설정도, 칩도
+            보이지 않아요.
           </p>
           <div className="mt-3 grid gap-2">
             <Button full variant="secondary" onClick={() => openLog({ kind: 'intimacy' })}>
@@ -158,11 +158,7 @@ function OwnerChoice() {
     setAsking(false)
     if (next === current) return
     update((s) => setShareCycleDetails(s, viewer, next === 'details'))
-    toast.show(
-      next === 'details'
-        ? `${partner.name}님에게 자세한 기록까지 보여요`
-        : `${partner.name}님에게는 ‘우리의 주간’만 보여요`,
-    )
+    toast.show(next === 'details' ? `${partner.name}님에게 자세한 기록까지 보여요` : `${partner.name}님에게는 ‘우리의 주간’만 보여요`)
   }
   const choose = (next: ShareChoice) => {
     if (next === 'details' && current !== 'details') setAsking(true)
@@ -182,10 +178,19 @@ function OwnerChoice() {
         {SHARE_OPTIONS.map((o) => {
           const on = o.value === shown
           return (
-            <RadioCard key={o.value} name={group} checked={on} onSelect={() => choose(o.value)} className="min-h-[52px] gap-3 px-3 py-2 text-left">
+            <RadioCard
+              key={o.value}
+              name={group}
+              checked={on}
+              onSelect={() => choose(o.value)}
+              className="min-h-[52px] gap-3 px-3 py-2 text-left"
+            >
               <span
                 aria-hidden
-                className={cx('flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2', on ? 'border-brand' : 'border-line')}
+                className={cx(
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2',
+                  on ? 'border-brand' : 'border-line',
+                )}
               >
                 {on ? <span className="h-2.5 w-2.5 rounded-full bg-brand" /> : null}
               </span>
@@ -204,11 +209,7 @@ function OwnerChoice() {
           </h4>
           <ShareConsentNotice partner={partner.name} />
           <SharePrototypeNote />
-          <ConfirmActions
-            confirmLabel="동의하고 보여 줄게요"
-            onConfirm={() => apply('details')}
-            onCancel={() => setAsking(false)}
-          />
+          <ConfirmActions confirmLabel="동의하고 보여 줄게요" onConfirm={() => apply('details')} onCancel={() => setAsking(false)} />
         </div>
       ) : (
         <details className="group mt-2">
@@ -229,8 +230,7 @@ function OwnerChoice() {
 function SharePrototypeNote() {
   return (
     <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-      지금은 프로토타입이라 한 기기 안에서만 보여요. 실제 연결 뒤에도 원본은 기록한 사람 기기에 두고, 연결을 끊으면 공유가 바로
-      멈춰요.
+      지금은 프로토타입이라 한 기기 안에서만 보여요. 실제 연결 뒤에도 원본은 기록한 사람 기기에 두고, 연결을 끊으면 공유가 바로 멈춰요.
     </p>
   )
 }

@@ -29,10 +29,9 @@
 
 import { FEEL_CHIPS, waitingWeekLine } from '../content/fertility'
 import { addDays, addMonths, diffDays, formatKo, formatShort, isBetween, isISODate } from '../dates'
-import { uid } from '../id'
 import type { LogKind } from '../logLauncher'
+import { decide, decided } from '../sync/model'
 import type {
-  AppNotification,
   AppState,
   Appointment,
   ISODate,
@@ -202,7 +201,15 @@ export function ttcPhase(state: AppState, today: ISODate): TtcPhase | null {
   const todayLH = strongestLH(state.lhTests.filter((t) => t.date === today).map((t) => t.result))
   const recentSurge = state.lhTests.some((t) => isSurge(t.result) && (t.date === today || t.date === addDays(today, -1)))
   const stats = cycleStats(state.periods, state.cycle, state.lhTests, today, state.pregnancy)
-  const base = { status, cycleStart, cycleDay, todayLH, recentSurge, confidence: stats.confidence, basis: confidenceLabel(stats.confidence, stats.count) }
+  const base = {
+    status,
+    cycleStart,
+    cycleDay,
+    todayLH,
+    recentSurge,
+    confidence: stats.confidence,
+    basis: confidenceLabel(stats.confidence, stats.count),
+  }
 
   const pending = activePositivePending(state)
   if (pending) return { ...base, kind: pending.bleedingSince ? 'positive-bleeding' : 'positive-pending', pending }
@@ -435,8 +442,14 @@ const LOG_FEEL: MomentAction = { type: 'log', kind: 'note', label: '오늘 컨�
  * the previous logged start up to the day before this one. Undefined without
  * a previous logged cycle or without any chip in it.
  */
-export function lastFeelsFor(state: Pick<AppState, 'periods' | 'personalLog'>, owner: MemberId, cycleStart: ISODate): LastFeels | undefined {
-  const prev = sortedStarts(state.periods).filter((d) => d < cycleStart).pop()
+export function lastFeelsFor(
+  state: Pick<AppState, 'periods' | 'personalLog'>,
+  owner: MemberId,
+  cycleStart: ISODate,
+): LastFeels | undefined {
+  const prev = sortedStarts(state.periods)
+    .filter((d) => d < cycleStart)
+    .pop()
   if (!prev) return undefined
   const count = lastCycleFeels(state, owner, prev, addDays(cycleStart, -1)).length
   return count ? { count, cycleStart: prev } : undefined
@@ -545,7 +558,15 @@ export function homeVoice(state: AppState, viewer: MemberId): FertilityVoice {
   return own === 'explicit' && !canSeeCycleDetails(state, viewer) ? 'soft' : own
 }
 
-export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId): Moment | null {
+/**
+ * Where the card is drawn: the app's home ('app', the default) or the
+ * partner's no-install link page ('link' — lib/logic/partnerSnapshot). The
+ * words are the same except where the app's copy points to a screen the page
+ * does not have (설정, the log sheet, a tab).
+ */
+export type MomentSurface = 'app' | 'link'
+
+export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opts: { surface?: MomentSurface } = {}): Moment | null {
   const phase = ttcPhase(state, today)
   if (!phase) return null
   const owner = cycleOwnerId(state)
@@ -561,6 +582,7 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId): Mo
     lowPressure: lowPressureFor(state.settings, viewer),
     ownerName: nameOf(state, owner),
     partnerName: nameOf(state, owner === 'a' ? 'b' : 'a'),
+    surface: opts.surface ?? 'app',
   }
   let m = isOwner ? ownerMoment(ctx) : partnerMoment(ctx)
   // The "우리의 주간" teaser and its date ideas follow the 둘만의 시간 rule too
@@ -608,6 +630,7 @@ interface Ctx {
   lowPressure: boolean
   ownerName: string
   partnerName: string
+  surface: MomentSurface
 }
 
 type MomentBody = Omit<Moment, 'kind' | 'voice' | 'details'>
@@ -674,7 +697,7 @@ function ownerMoment(c: Ctx): MomentBody {
 
     case 'positive-pending': {
       const since = p.pending!.since
-      const told = hasKey(c.state, positiveToldKey(since))
+      const told = decided(c.state, positiveToldKey(since))
       // Where to stand next: the first scan is usually around 5–6 weeks from the
       // last period's first day (docs/research/medical-checklist.json, 첫 산부인과
       // 방문), and folic acid continues (medical.json, Folic acid).
@@ -702,7 +725,7 @@ function ownerMoment(c: Ctx): MomentBody {
       const pending = p.pending!
       const since = pending.bleedingSince!
       const advice = bleedingAdvice(c.state, today)
-      const told = hasKey(c.state, bleedingToldKey(pending.since))
+      const told = decided(c.state, bleedingToldKey(pending.since))
       return {
         role,
         copy: 'owner.positive-bleeding',
@@ -833,7 +856,9 @@ function ownerMoment(c: Ctx): MomentBody {
         tone: 'default',
         eyebrow: `생리 ${d}일째`,
         title: '이번 주기도 수고했어요',
-        body: afterPositive ? '양성 뒤에 시작된 생리라 마음이 복잡할 수 있어요. 오늘은 몸을 따뜻하게 하고 푹 쉬어요.' : '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
+        body: afterPositive
+          ? '양성 뒤에 시작된 생리라 마음이 복잡할 수 있어요. 오늘은 몸을 따뜻하게 하고 푹 쉬어요.'
+          : '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
         note: afterPositive ? '궁금하거나 걱정되는 게 있으면 다니는 병원에 물어봐도 돼요.' : undefined,
         ...(periodTellState(c.state, start) === 'ask' ? { askTell: { start } } : {}),
         ...(lastFeels ? { lastFeels } : {}),
@@ -906,7 +931,9 @@ function ownerMoment(c: Ctx): MomentBody {
             // The eyebrow carries the one "(예상)" (low confidence names the basis instead, and the body's range says it).
             eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
             title: low ? `가임기 무렵까지 D-${n}` : `가임기까지 D-${n}`,
-            body: low ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.` : `${day(start)}부터예요. 달력 기준 예상이에요.`,
+            body: low
+              ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.`
+              : `${day(start)}부터예요. 달력 기준 예상이에요.`,
             ...nearAction,
           }
         }
@@ -1170,7 +1197,8 @@ function partnerMoment(c: Ctx): MomentBody {
             tone: 'default',
             eyebrow: '함께 준비해요',
             title: `${owner}님이 주기를 기록하면 함께 알려 드릴게요`,
-            body: '알림 방식은 설정에서 각자 고를 수 있어요.',
+            // The link page has no 설정: it says what fills it instead (partnerSnapshot passes surface 'link').
+            body: c.surface === 'link' ? `${owner}님의 기록이 시작되면 이 화면도 채워져요.` : '알림 방식은 설정에서 각자 고를 수 있어요.',
             monthlyTask: true,
           }
 
@@ -1191,7 +1219,7 @@ function partnerMoment(c: Ctx): MomentBody {
       // about bleeding only when she tells them that too (never through shared
       // details: it is hers to say). Without either, the ordinary card.
       const since = p.pending!.since
-      if (p.kind === 'positive-bleeding' && hasKey(c.state, bleedingToldKey(since))) {
+      if (p.kind === 'positive-bleeding' && decided(c.state, bleedingToldKey(since))) {
         return {
           role,
           copy: 'partner.bleeding-told',
@@ -1202,7 +1230,7 @@ function partnerMoment(c: Ctx): MomentBody {
           primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
         }
       }
-      return hasKey(c.state, positiveToldKey(since))
+      return decided(c.state, positiveToldKey(since))
         ? {
             role,
             copy: 'partner.positive-told',
@@ -1320,10 +1348,11 @@ function partnerTww(): MomentBody {
 }
 
 // ── Telling the partner (owner's choice) ────────────────────
-
-function hasKey(state: Pick<AppState, 'notifications'>, key: string): boolean {
-  return state.notifications.some((n) => n.key === key)
-}
+//
+// Her answers are not records: they live in `decisions` (lib/sync/model.ts
+// decided / decide — keyed, first answer stands, the day she decided). The
+// calm notice the partner gets is a normal inbox notice on top. `nowISO` is
+// the moment of the tap (stampOn(today)); its day is what is remembered.
 
 /** The gentle notice the partner gets when she tells them the period started. */
 export const periodToldKey = (start: ISODate) => `period-told:${start}`
@@ -1333,22 +1362,17 @@ export const positiveToldKey = (since: ISODate) => `positive-told:${since}`
 export const bleedingToldKey = (since: ISODate) => `bleeding-told:${since}`
 export const vaccineHintKey = (hint: Pick<VaccineRestHint, 'itemId' | 'at'>) => `rest-suggest:${hint.itemId}:${hint.at}`
 
+type Decisions = Pick<AppState, 'decisions' | 'notifications'>
+
 /** 'ask' until she answers "{partner}님에게 알릴까요?" once for this period. */
-export function periodTellState(state: Pick<AppState, 'notifications'>, start: ISODate): 'ask' | 'told' | 'skipped' {
-  if (hasKey(state, periodToldKey(start))) return 'told'
-  if (hasKey(state, periodSkipKey(start))) return 'skipped'
+export function periodTellState(state: Decisions, start: ISODate): 'ask' | 'told' | 'skipped' {
+  if (decided(state, periodToldKey(start))) return 'told'
+  if (decided(state, periodSkipKey(start))) return 'skipped'
   return 'ask'
 }
 
-/**
- * A dismissed, read record that only remembers a decision (it never shows in
- * an inbox) — the same stub pattern the notice engine uses for dedup.
- */
-function withStub(state: AppState, key: string, to: MemberId, nowISO: string): AppState {
-  if (hasKey(state, key)) return state
-  const stub: AppNotification = { id: uid(), to, kind: 'system', title: '', body: '', createdAt: nowISO, key, read: true, dismissed: true }
-  return { ...state, notifications: [stub, ...state.notifications] }
-}
+/** The day of a tap's stamp (a local-date-prefixed timestamp). */
+const dayOf = (nowISO: string): ISODate => nowISO.slice(0, 10)
 
 function otherOf(id: MemberId): MemberId {
   return id === 'a' ? 'b' : 'a'
@@ -1358,7 +1382,7 @@ function otherOf(id: MemberId): MemberId {
 export function tellPartnerPeriod(state: AppState, start: ISODate, nowISO: string): AppState {
   const owner = cycleOwnerId(state)
   if (periodTellState(state, start) !== 'ask') return state
-  return mergeNotices(
+  const told = mergeNotices(
     state,
     [
       {
@@ -1372,20 +1396,21 @@ export function tellPartnerPeriod(state: AppState, start: ISODate, nowISO: strin
     ],
     nowISO,
   ).state
+  return decide(told, periodToldKey(start), dayOf(nowISO))
 }
 
 /** [괜찮아요] — remember the answer, tell nobody. */
 export function skipTellPartnerPeriod(state: AppState, start: ISODate, nowISO: string): AppState {
   if (periodTellState(state, start) !== 'ask') return state
-  return withStub(state, periodSkipKey(start), cycleOwnerId(state), nowISO)
+  return decide(state, periodSkipKey(start), dayOf(nowISO))
 }
 
 /** A calm note to the partner about a positive test — no celebration before the clinic. */
 export function tellPartnerPositive(state: AppState, nowISO: string): AppState {
   const p = state.positivePending
-  if (!p) return state
+  if (!p || decided(state, positiveToldKey(p.since))) return state
   const owner = cycleOwnerId(state)
-  return mergeNotices(
+  const told = mergeNotices(
     state,
     [
       {
@@ -1399,6 +1424,7 @@ export function tellPartnerPositive(state: AppState, nowISO: string): AppState {
     ],
     nowISO,
   ).state
+  return decide(told, positiveToldKey(p.since), dayOf(nowISO))
 }
 
 // ── 양성 뒤 출혈 (Next B) ────────────────────────────────────
@@ -1441,7 +1467,7 @@ export function settleBleedingAsPeriod(state: AppState, today: ISODate): AppStat
  */
 export function tellPartnerBleeding(state: AppState, nowISO: string): AppState {
   const p = activePositivePending(state)
-  if (!p?.bleedingSince) return state
+  if (!p?.bleedingSince || decided(state, bleedingToldKey(p.since))) return state
   const owner = cycleOwnerId(state)
   const told = mergeNotices(
     state,
@@ -1457,7 +1483,7 @@ export function tellPartnerBleeding(state: AppState, nowISO: string): AppState {
     ],
     nowISO,
   ).state
-  return withStub(told, positiveToldKey(p.since), otherOf(owner), nowISO)
+  return decide(decide(told, bleedingToldKey(p.since), dayOf(nowISO)), positiveToldKey(p.since), dayOf(nowISO))
 }
 
 /**
@@ -1529,7 +1555,10 @@ export function lossEndedAt(state: Pick<AppState, 'stage' | 'pregnancy' | 'restC
  * comes; after it, that the heart comes first. Undefined without an ended
  * pregnancy to count from.
  */
-export function afterLossGuidance(state: Pick<AppState, 'stage' | 'pregnancy' | 'restCycle' | 'periods'>, today: ISODate): AfterLossGuidance | undefined {
+export function afterLossGuidance(
+  state: Pick<AppState, 'stage' | 'pregnancy' | 'restCycle' | 'periods'>,
+  today: ISODate,
+): AfterLossGuidance | undefined {
   const endedAt = lossEndedAt(state)
   if (!endedAt || !isISODate(today) || today < endedAt) return undefined
   const periodSince = state.periods.some((x) => x.start > endedAt)
@@ -1575,7 +1604,7 @@ export function vaccineRestHint(state: AppState, today: ISODate, viewer: MemberI
       if (!best || at > best.at) best = { itemId, label: v.label, wait: v.wait, at, until }
     }
   }
-  if (!best || hasKey(state, vaccineHintKey(best))) return null
+  if (!best || decided(state, vaccineHintKey(best))) return null
   return best
 }
 
@@ -1585,7 +1614,7 @@ export function acceptVaccineRest(state: AppState, hint: Pick<VaccineRestHint, '
 }
 
 export function dismissVaccineRest(state: AppState, hint: Pick<VaccineRestHint, 'itemId' | 'at'>, nowISO: string): AppState {
-  return withStub(state, vaccineHintKey(hint), cycleOwnerId(state), nowISO)
+  return decide(state, vaccineHintKey(hint), dayOf(nowISO))
 }
 
 /**

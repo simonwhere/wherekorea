@@ -39,8 +39,21 @@ import { prenatalKey } from './logic/pregnancyView'
 import { addCustomTask, setTemplateDone } from './logic/roadmap'
 import { sendSignal } from './logic/signals'
 import { addLeaveDay, addTreatment } from './logic/treatments'
+import { periodToldKey, tellPartnerPeriod } from './logic/ttcFlow'
 import { setReaction } from './logic/usView'
-import type { AppState, CheckItem, DatePlan, ISODate, LHResult, MemberId, PersonalFeel, PregnancyTestResult, Stage } from './types'
+import { decide, lhId, periodId } from './sync/model'
+import type {
+  AppState,
+  CheckItem,
+  DatePlan,
+  ISODate,
+  LHResult,
+  MemberId,
+  PersonalFeel,
+  PregnancyTestResult,
+  Stage,
+  SyncMarks,
+} from './types'
 
 // The onboarding helpers moved to lib/onboardingDraft.ts; re-exported so
 // `import … from '@/lib/demo'` keeps working while screens switch over.
@@ -382,19 +395,9 @@ function ourStory(state: AppState, prepStart: ISODate): AppState {
     'builtin:sea',
   )
   s = reactLast(s, '❤️')
-  s = memory(
-    d.proposal,
-    'a',
-    '한강에서 프러포즈했어요. 준비한 말은 반도 못 했는데 지은이가 먼저 웃으면서 울었어요. 대답은 “응, 좋아”.',
-    30,
-  )
+  s = memory(d.proposal, 'a', '한강에서 프러포즈했어요. 준비한 말은 반도 못 했는데 지은이가 먼저 웃으면서 울었어요. 대답은 “응, 좋아”.', 30)
   s = reactLast(s, '🥹')
-  s = memory(
-    d.married,
-    'b',
-    '우리 결혼했어요! 정신없이 지나갔지만 입장할 때 민수 표정은 오래 기억날 것 같아요. 앞으로도 잘 부탁해요.',
-    40,
-  )
+  s = memory(d.married, 'b', '우리 결혼했어요! 정신없이 지나갔지만 입장할 때 민수 표정은 오래 기억날 것 같아요. 앞으로도 잘 부탁해요.', 40)
   return reactLast(s, '❤️')
 }
 
@@ -560,14 +563,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   s = fillRecent(s, today)
 
   s = preparingHistory(s, ttcStart, false)
-  s = diary(
-    s,
-    addDays(today, -7),
-    'a',
-    'preparing',
-    '회식에서 술 대신 사이다로 버텼어요. 걷기는 못 했지만 이 정도면 잘한 거죠? 😆',
-    '😊',
-  )
+  s = diary(s, addDays(today, -7), 'a', 'preparing', '회식에서 술 대신 사이다로 버텼어요. 걷기는 못 했지만 이 정도면 잘한 거죠? 😆', '😊')
   s = plan(s, {
     date: addDays(today, -5),
     ideaId: 'brunch',
@@ -676,6 +672,10 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   )
   s = addCustomTask(s, { title: '검사 결과지 한곳에 모아 두기', phase: 'preconception', who: 'both', due: addDays(today, 14) }, 'b')
 
+  // On day 1 of this cycle 지은 told 민수 (the calm notice is long read by now):
+  // the answer lives in `decisions` (lib/sync/model.ts), the notice in his inbox.
+  s = decide(tellPartnerPeriod(s, last, stamp(last, 8, 10)), periodToldKey(last), last)
+
   s = runEngine(s, addDays(today, -10), today, now)
   const yesterday = addDays(today, -1)
   s = notifyCompleted(s, 'b', 'a', yesterday, stamp(yesterday, 20, 5))
@@ -757,14 +757,7 @@ function demoPregnant(today: ISODate, now: Date): AppState {
   s = pregnancyHistory(s, lmp)
   s = fillHistory(s, ttcStart, addDays(today, -11))
   s = fillRecent(s, today)
-  s = diary(
-    s,
-    addDays(today, -1),
-    'a',
-    'pregnant',
-    '콩이야, 오늘은 아빠가 동화책 한 권 읽어 줬어. 곧 엄마랑 병원 가서 너 보러 갈게.',
-    '😌',
-  )
+  s = diary(s, addDays(today, -1), 'a', 'pregnant', '콩이야, 오늘은 아빠가 동화책 한 권 읽어 줬어. 곧 엄마랑 병원 가서 너 보러 갈게.', '😌')
   s = plan(s, {
     date: addDays(today, 4),
     ideaId: 'exhibition',
@@ -839,14 +832,7 @@ function demoParenting(today: ISODate, now: Date): AppState {
   ])
   s = preparingHistory(s, ttcStart, true)
   s = pregnancyHistory(s, lmp)
-  s = diary(
-    s,
-    addDays(birth, -10),
-    'a',
-    'pregnant',
-    '출산 가방 최종 점검 완료. 콩이야, 언제든 나올 준비 됐어. 천천히 와도 괜찮아.',
-    '😌',
-  )
+  s = diary(s, addDays(birth, -10), 'a', 'pregnant', '출산 가방 최종 점검 완료. 콩이야, 언제든 나올 준비 됐어. 천천히 와도 괜찮아.', '😌')
 
   s = ourStory(s, ttcStart)
   s = preparedTicks(s, ttcStart)
@@ -938,31 +924,10 @@ function demoParenting(today: ISODate, now: Date): AppState {
   s = setMilestone(s, milestoneKey('smile'), addDays(birth, 47))
   s = setMilestone(s, milestoneKey('head'), addDays(birth, 88))
 
-  s = diary(
-    s,
-    birth,
-    'a',
-    'parenting',
-    '콩이가 태어났어요. 3.2kg, 50cm. 지은이 정말 고생 많았어요. 우리 셋의 첫날.',
-    '🥰',
-  )
-  s = diary(
-    s,
-    addDays(birth, 47),
-    'b',
-    'parenting',
-    '눈 맞추고 처음으로 방긋 웃었어요! 민수는 출근해서 영상으로만 봤대요.',
-    '😊',
-  )
+  s = diary(s, birth, 'a', 'parenting', '콩이가 태어났어요. 3.2kg, 50cm. 지은이 정말 고생 많았어요. 우리 셋의 첫날.', '🥰')
+  s = diary(s, addDays(birth, 47), 'b', 'parenting', '눈 맞추고 처음으로 방긋 웃었어요! 민수는 출근해서 영상으로만 봤대요.', '😊')
   s = diary(s, addDays(birth, 49), 'a', 'parenting', '50일 사진 찍는 날. 콩이는 내내 잠만 잤어요.', '😌')
-  s = diary(
-    s,
-    addDays(today, -2),
-    'b',
-    'parenting',
-    '새벽 수유를 민수가 바꿔 줘서 네 시간을 푹 잤어요. 고마워요.',
-    '😴',
-  )
+  s = diary(s, addDays(today, -2), 'b', 'parenting', '새벽 수유를 민수가 바꿔 줘서 네 시간을 푹 잤어요. 고마워요.', '😴')
   s = plan(s, {
     date: addDays(today, 5),
     title: '콩이 백일 — 셋이 가족사진',
@@ -991,8 +956,44 @@ function withDemoCover(state: AppState, today: ISODate): AppState {
   )
 }
 
-/** A realistic couple space for "예시로 둘러보기". */
+/**
+ * Sync marks on the example records (lib/types.ts SyncMarks, Next A ③ prep):
+ * the deterministic ids a legacy record gets (lib/sync/model.ts) and an
+ * `updatedAt` on every record that will sync — the evening of its own day for
+ * past records, yesterday evening for ones that point ahead (never a stamp in
+ * the future), an LH strip's own clock time, a diary entry's createdAt. The
+ * demo stays deterministic for a given (today, now) and canonical through
+ * parseState (ids and stamps are kept as they are).
+ */
+function withSyncMarks(state: AppState, today: ISODate): AppState {
+  const evening = (day: ISODate) => stamp(day < today ? day : addDays(today, -1), 21, 0)
+  const mark = <R extends SyncMarks>(r: R, updatedAt: string): R => ({ ...r, updatedAt })
+  const lhStamp = (date: ISODate, time: string | undefined, slot: 'morning' | 'evening' | undefined) => {
+    if (time) return stamp(date, Number(time.slice(0, 2)), Number(time.slice(3, 5)))
+    return stamp(date, slot === 'evening' ? 20 : 8, 0)
+  }
+  return {
+    ...state,
+    periods: state.periods.map((p) => mark({ id: periodId(p.start), ...p }, stamp(p.start, 7, 30))),
+    lhTests: state.lhTests.map((t) => mark({ id: lhId(t), ...t }, lhStamp(t.date, t.time, t.slot))),
+    pregnancyTests: state.pregnancyTests.map((t) =>
+      mark(t, t.time ? stamp(t.date, Number(t.time.slice(0, 2)), Number(t.time.slice(3, 5))) : evening(t.date)),
+    ),
+    appointments: state.appointments.map((a) => mark(a, evening(a.date))),
+    diary: state.diary.map((e) => mark(e, e.createdAt)),
+    customTasks: state.customTasks.map((c) => mark(c, evening(c.doneAt ?? c.due ?? today))),
+    ...(state.treatments ? { treatments: state.treatments.map((t) => mark(t, evening(t.endDate ?? t.startDate))) } : {}),
+  }
+}
+
+/**
+ * A realistic couple space for "예시로 둘러보기". Two Next A ① fields stay
+ * unset on purpose: `settings.coverOnLink` (the link carries no photo until
+ * the owner says yes — the privacy default a demo should show) and
+ * `couple.link` (a link is made per device, with its token outside the
+ * state; tests/integrationNextA.test.ts exercises both).
+ */
 export function createDemoState(today: ISODate, now: Date, stage: Stage = 'preparing'): AppState {
   const s = stage === 'pregnant' ? demoPregnant(today, now) : stage === 'parenting' ? demoParenting(today, now) : demoPreparing(today, now)
-  return withDemoCover(s, today)
+  return withSyncMarks(withDemoCover(s, today), today)
 }

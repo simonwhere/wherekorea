@@ -105,6 +105,30 @@ export function setShareCycleDetails(state: AppState, by: MemberId, share: boole
   return { ...state, settings: { ...state.settings, shareCycleDetails: share } }
 }
 
+// ── 링크에 표지 사진 (Next A ①) ─────────────────────────────
+
+/**
+ * Does the owner let the no-install partner link carry the cover photo's id
+ * (lib/logic/partnerSnapshot.ts)? Off unless she said yes: only `true`
+ * counts (settings.coverOnLink; unset = off, like a new couple).
+ */
+export function coverOnLink(settings: Pick<Settings, 'coverOnLink'>): boolean {
+  return settings.coverOnLink === true
+}
+
+/**
+ * Let the link carry the cover photo, or not (the default). The cycle
+ * owner's choice, like setShareCycleDetails: anyone else's call is a no-op.
+ * Off removes the field, so an older save and a new one stay byte-identical.
+ */
+export function setCoverOnLink(state: AppState, by: MemberId, on: boolean): AppState {
+  if (!canLogCycle(state, by) || coverOnLink(state.settings) === on) return state
+  const settings = { ...state.settings }
+  if (on) settings.coverOnLink = true
+  else delete settings.coverOnLink
+  return { ...state, settings }
+}
+
 /** Settings with lowPressure / discreet resolved for one person (for view helpers). */
 export function settingsFor<S extends Pick<Settings, 'lowPressure' | 'discreet' | 'personal'>>(settings: S, member: MemberId): S {
   return { ...settings, lowPressure: lowPressureFor(settings, member), discreet: discreetFor(settings, member) }
