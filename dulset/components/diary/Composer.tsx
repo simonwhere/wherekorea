@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Avatar, Button, Card, Field, cx, inputClass, textareaClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { PROMPTS, addEntry, promptFor } from '@/lib/logic/diary'
 import {
   DIARY_MAX_TEXT,
@@ -205,7 +206,7 @@ export default function Composer() {
   return (
     <Card>
       <h2 className="mb-2 flex items-center gap-1.5 text-[15px] font-extrabold text-ink">
-        <span aria-hidden>✍️</span>
+        <Icon name="pen" className="h-[18px] w-[18px] text-ink-2" />
         {title}
       </h2>
       <div className="flex items-start justify-between gap-2">
@@ -220,7 +221,7 @@ export default function Composer() {
           onClick={() => setOffset((o) => (o + 1) % prompts.length)}
           className="-mr-2 -mt-1.5 flex h-11 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-semibold text-ink-2 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >
-          <span aria-hidden>↻</span> 다른 질문
+          <Icon name="refresh" className="h-4 w-4" strokeWidth={2} /> 다른 질문
         </button>
       </div>
 
@@ -298,7 +299,7 @@ export default function Composer() {
                 (busy || restoring) && 'cursor-wait opacity-60',
               )}
             >
-              <span aria-hidden>📷</span>
+              <Icon name="cam" className="h-[18px] w-[18px]" />
               {busy || restoring ? '준비 중…' : photo ? '다른 사진' : '사진 추가'}
             </label>
           </div>
@@ -319,8 +320,8 @@ export default function Composer() {
               aria-label="사진 빼기"
               className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
-              <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/70 text-sm text-bg">
-                ✕
+              <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/70 text-bg">
+                <Icon name="x" className="h-4 w-4" strokeWidth={2.4} />
               </span>
             </button>
           </div>

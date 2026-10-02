@@ -1,6 +1,7 @@
 'use client'
 
 import { cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import {
   BUDGET_META,
   CATEGORY_META,
@@ -23,6 +24,10 @@ const SEASON_EMOJI: Record<Season, string> = {
 
 const actionBase =
   'inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
+
+// Text links with a 44px tall hit area (the row itself is 44px; the padding keeps the line thin).
+const mapLink =
+  'inline-flex min-h-[44px] items-center gap-0.5 rounded-md px-0.5 font-semibold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand'
 
 /**
  * A date idea. `featured` (이번 주 추천) also shows why it's good and stacks the
@@ -80,14 +85,20 @@ export default function IdeaCard({
       </div>
 
       <p className="mt-2 text-xs leading-relaxed text-ink-2">{idea.description}</p>
-      {featured ? <p className="mt-1 text-xs leading-relaxed text-ink-3">💞 {idea.why}</p> : null}
+      {featured ? (
+        <p className="mt-1 flex gap-1.5 text-xs leading-relaxed text-ink-3">
+          <Icon name="heart" className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+          <span>{idea.why}</span>
+        </p>
+      ) : null}
 
       {/* The list is already sorted in-season first, so the season badge is for the featured cards only. */}
       {plannedOn || flags.length > 0 || fit === 'out' || (featured && fit === 'in') ? (
         <ul className="mt-2 flex flex-wrap gap-1" aria-label="특징">
           {plannedOn ? (
-            <li className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
-              📅 {formatKo(plannedOn, { weekday: false })} 일정에 있어요
+            <li className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-white">
+              <Icon name="cal" className="h-3 w-3" strokeWidth={2.4} />
+              {formatKo(plannedOn, { weekday: false })} 일정에 있어요
             </li>
           ) : null}
           {featured && fit === 'in' ? (
@@ -115,50 +126,48 @@ export default function IdeaCard({
       ) : null}
 
       {tip ? (
-        <p className="mt-2 rounded-lg bg-surface-2 px-2.5 py-1.5 text-[11px] leading-relaxed text-ink-2">
-          <span aria-hidden>💡 </span>
-          {tip}
+        <p className="mt-2 flex gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 text-[11px] leading-relaxed text-ink-2">
+          <Icon name="bulb" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" strokeWidth={2.2} />
+          <span>{tip}</span>
         </p>
       ) : null}
 
+      {/* One button; the map apps are text links on a single line (review D-16). */}
       <div className={cx(featured ? 'mt-auto pt-3' : 'mt-3')}>
-        <p className="mb-1 truncate text-[11px] text-ink-3">
-          <span aria-hidden>📍 </span>지도에서 찾기 · ‘{idea.mapQuery}’
-        </p>
-        <div className={cx('grid gap-1.5', featured ? 'grid-cols-2' : 'grid-cols-3')}>
+        <p className="mb-1 flex min-h-[44px] flex-wrap items-center gap-x-1 text-[11px] text-ink-3">
+          <Icon name="pin" className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+          <span className="min-w-0 truncate">‘{idea.mapQuery}’</span>
+          <span aria-hidden>·</span>
           <a
             href={links.kakao}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${idea.title}: 카카오맵에서 찾기 (새 창)`}
-            className={cx(actionBase, 'bg-surface-2 text-ink-2 hover:bg-line/60')}
+            className={mapLink}
           >
             카카오맵
-            <span aria-hidden className="text-[10px] text-ink-3">
-              ↗
-            </span>
+            <Icon name="ext" className="h-3 w-3" strokeWidth={2.4} />
           </a>
+          <span aria-hidden>·</span>
           <a
             href={links.naver}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${idea.title}: 네이버지도에서 찾기 (새 창)`}
-            className={cx(actionBase, 'bg-surface-2 text-ink-2 hover:bg-line/60')}
+            className={mapLink}
           >
             네이버지도
-            <span aria-hidden className="text-[10px] text-ink-3">
-              ↗
-            </span>
+            <Icon name="ext" className="h-3 w-3" strokeWidth={2.4} />
           </a>
-          <button
-            type="button"
-            onClick={() => onPlan(idea)}
-            aria-label={`${idea.title} 일정에 담기`}
-            className={cx(actionBase, 'bg-brand text-white hover:bg-brand/90', featured && 'col-span-2')}
-          >
-            일정에 담기
-          </button>
-        </div>
+        </p>
+        <button
+          type="button"
+          onClick={() => onPlan(idea)}
+          aria-label={`${idea.title} 일정에 담기`}
+          className={cx(actionBase, 'w-full bg-brand text-white hover:bg-brand/90')}
+        >
+          일정에 담기
+        </button>
       </div>
     </article>
   )

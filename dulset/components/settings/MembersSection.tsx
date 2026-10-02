@@ -4,6 +4,7 @@ import { useCallback, useId, useState } from 'react'
 import WhosePhoneSheet from '@/components/onboarding/WhosePhoneSheet'
 import { rememberDeviceViewer } from '@/components/onboarding/deviceViewer'
 import { Avatar, Button, Card, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { ROLE_LABEL } from '@/lib/initial'
 import {
   NAME_MAX,
@@ -47,7 +48,7 @@ export default function MembersSection() {
   const canChangeOwner = canHandOverCycle(state, viewer)
 
   return (
-    <SettingsSection title="우리 둘" sub="이름과 역할은 두 사람 화면에 똑같이 보여요">
+    <SettingsSection id="members" title="우리 둘" sub="이름과 역할은 두 사람 화면에 똑같이 보여요">
       <Card>
         <ul className="divide-y divide-line">
           {members.map((m) => (
@@ -70,8 +71,11 @@ export default function MembersSection() {
         </ul>
 
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-3 py-2">
-          <p className="min-w-0 text-xs leading-relaxed text-ink-2">
-            <span aria-hidden>📱 </span>이 폰은 <span className="font-semibold text-ink">{me.name}</span>님 폰이에요
+          <p className="flex min-w-0 items-center gap-1.5 text-xs leading-relaxed text-ink-2">
+            <Icon name="phone" className="h-4 w-4 text-ink-3" />
+            <span>
+              이 폰은 <span className="font-semibold text-ink">{me.name}</span>님 폰이에요
+            </span>
           </p>
           <Button variant="ghost" size="sm" className="min-h-[44px] shrink-0 text-brand-ink" onClick={() => setAskingPhone(true)}>
             바꾸기
@@ -98,7 +102,7 @@ export default function MembersSection() {
                 >
                   <span aria-hidden>{m.emoji}</span>
                   <span className="truncate">{m.name}</span>
-                  {on ? <span aria-hidden className="text-her">✓</span> : null}
+                  {on ? <Icon name="check" className="h-4 w-4 text-her" strokeWidth={2.6} /> : null}
                 </RadioCard>
               )
             })}

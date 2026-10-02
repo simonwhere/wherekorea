@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, addMonths } from '@/lib/dates'
-import { createInitialState } from '@/lib/initial'
-import { addAnniversary, setCoupleDates } from '@/lib/logic/anniversary'
+import { SETTINGS_DEFAULTS, createInitialState } from '@/lib/initial'
+import { addAnniversary, anniversaryNotices, setCoupleDates } from '@/lib/logic/anniversary'
 import {
   COVER_CAPTION_MAX,
   COVER_WORDS,
+  MEMORY_YEARS,
   captionLength,
   cleanCover,
   clearCover,
@@ -12,23 +13,29 @@ import {
   coverCaptionProblem,
   coverView,
   heroLine,
+  memoryFor,
+  memoryLineText,
   releasableCoverPhoto,
   setCover,
   setCoverFocus,
   setHideCover,
 } from '@/lib/logic/cover'
+import { PERIOD_EARLY_DAYS } from '@/lib/logic/ttcFlow'
 import { createDemoState } from '@/lib/demo'
 import { addEntry } from '@/lib/logic/diary'
 import { deletePhoto, getPhotoBlob, getPhotoURL, isBuiltinPhoto, savePhoto } from '@/lib/photos'
 import { parseState } from '@/lib/storage'
 import { BUILTIN_PHOTO_IDS } from '@/lib/content/demoPhotos'
 import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
+import { setEntryPrivacy } from '@/lib/logic/personalLog'
 import { activeDailyItems } from '@/lib/logic/checks'
 import { notifyCompleted, sendCheer, sendNudge } from '@/lib/logic/notifications'
 import { toggleWithCompletion } from '@/lib/logic/today'
 import { setPersonalPref } from '@/lib/logic/prefs'
 import { QUIET_DAYS_AFTER_END, backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
-import { sendSignal } from '@/lib/logic/signals'
+import { endPregnancy } from '@/lib/logic/today'
+import { markBleeding } from '@/lib/logic/positiveBleeding'
+import { ALL_SIGNALS, sendSignal } from '@/lib/logic/signals'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import type { AlertStyle, AppState, ISODate, MemberId } from '@/lib/types'
 
@@ -437,8 +444,19 @@ describe('heroLine', () => {
         ),
         { title: '테스트 두 줄 본 날', date: day, yearly: false },
       )
+      // 'N년 전 오늘' on, with a clean entry and one with health words a year ago today (the line is generic either way).
+      const memories: AppState = {
+        ...s,
+        settings: { ...s.settings, memories: true },
+        diary: [
+          ...s.diary,
+          { id: 'm1', date: addMonths(day, -12), author: p, stage: 'preparing', text: '가임기 첫날 LH 양성 테스트', createdAt: at(addMonths(day, -12), '20') },
+          { id: 'm2', date: addMonths(day, -24), author: viewer, stage: 'preparing', text: '한강 산책', createdAt: at(addMonths(day, -24), '20') },
+        ],
+      }
       return [
         s,
+        memories,
         sendSignal(s, p, viewer, 'not-this-month', day, at(day, '18')),
         sendSignal(s, p, viewer, 'clinic', day, at(day, '18')),
         sendSignal(s, p, viewer, 'no-baby-talk', day, at(day, '18')),
@@ -586,5 +604,192 @@ describe('the demo couple’s cover and line', () => {
     expect(coverView(shown, 'a', day).mode).toBe('art')
     // 42 days on, everything is back for both.
     expect(coverView(lost, 'a', addDays(day, QUIET_DAYS_AFTER_END))).toMatchObject({ quiet: false, mode: 'photo', decorate: true })
+  })
+})
+
+describe('Next B on the cover', () => {
+  const CYCLE_WORDS = /가임기|배란|LH|생리|테스트|임신|출혈|병원/
+  const DAYS: ISODate[] = ['2026-09-02', '2026-09-11', '2026-09-20', '2026-09-28', '2026-10-02']
+
+  it('잠금화면 숨김을 홈 카드까지: the line over the photo stays neutral for that person (owner and partner), whatever the moment', () => {
+    const bleeding = markBleeding(markPositivePending(fresh(), '2026-09-27'), '2026-09-28')
+    const lost = endPregnancy(startPregnancy(fresh(), '2026-07-01', '2026-08-05'), '2026-09-01')
+    for (const state of [fresh(), bleeding, lost]) {
+      for (const viewer of ['a', 'b'] as const) {
+        const s = setPersonalPref(state, viewer, 'homeDiscreet', true)
+        for (const day of DAYS) {
+          for (const hour of [8, 14, 21]) {
+            expect(heroLine(s, day, viewer, hour).text).not.toMatch(CYCLE_WORDS)
+          }
+        }
+      }
+    }
+  })
+
+  it('the quiet after a loss started by endPregnancy is the cover’s quiet too — the same 42 days', () => {
+    const lost = endPregnancy(startPregnancy(fresh(), '2026-07-01', '2026-08-05'), '2026-09-01')
+    expect(lost.restCycle?.until).toBe(addDays('2026-09-01', QUIET_DAYS_AFTER_END - 1))
+    expect(coverView(lost, OWNER, lost.restCycle!.until!).quiet).toBe(true)
+    expect(coverView(lost, OWNER, addDays(lost.restCycle!.until!, 1)).quiet).toBe(false)
+  })
+})
+
+// ── 'N년 전 오늘' · 기념일 알림 · signal chips (Next B, home polish) ──
+
+describe("'N년 전 오늘' (settings.memories, off by default)", () => {
+  const EVENING = 20
+  const on = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, memories: true } })
+  const entry = (s: AppState, date: ISODate, text: string, over: { stage?: 'preparing' | 'pregnant' | 'parenting'; author?: MemberId } = {}) =>
+    addEntry(s, { date, author: over.author ?? OWNER, text, stage: over.stage ?? 'preparing' }, at(date, '21'))
+  const yearsAgo = (d: ISODate, n: number) => addMonths(d, -12 * n)
+
+  it('off unless the couple turned it on (SETTINGS_DEFAULTS.memories = false): an entry from a year ago says nothing', () => {
+    expect(SETTINGS_DEFAULTS.memories).toBe(false)
+    const s = entry(fresh(), yearsAgo(TODAY, 1), '한강 산책')
+    expect(memoryFor(s, TODAY, OWNER)).toBeUndefined()
+    expect(heroLine(s, TODAY, OWNER, EVENING).kind).toBe('greeting')
+    expect(memoryFor({ ...s, settings: { ...s.settings, memories: false } }, TODAY, OWNER)).toBeUndefined()
+    expect(memoryFor(on(s), TODAY, OWNER)).toMatchObject({ date: yearsAgo(TODAY, 1), years: 1 })
+  })
+
+  it('on: an entry from exactly 1–3 years ago today, the nearest year first; the line opens 우리', () => {
+    let s = on(fresh())
+    for (const n of [1, 2, 3, 4]) s = entry(s, yearsAgo(TODAY, n), `${n}년 전`)
+    const line = heroLine(s, PARTNER === 'a' ? TODAY : TODAY, PARTNER, EVENING)
+    expect(line).toMatchObject({ kind: 'memory', text: '1년 전 오늘의 이야기 ›', target: 'diary' })
+    expect(line.memory).toMatchObject({ date: yearsAgo(TODAY, 1), years: 1 })
+    expect(line.avatar).toBeUndefined()
+    expect(memoryLineText({ years: 3 })).toBe('3년 전 오늘의 이야기 ›')
+    // Without the 1-year entry the 2-year one shows; four years is too far (MEMORY_YEARS).
+    expect(MEMORY_YEARS).toEqual({ min: 1, max: 3 })
+    const two = { ...s, diary: s.diary.filter((e) => e.date !== yearsAgo(TODAY, 1)) }
+    expect(heroLine(two, TODAY, PARTNER, EVENING).text).toBe('2년 전 오늘의 이야기 ›')
+    const four = { ...s, diary: s.diary.filter((e) => e.date === yearsAgo(TODAY, 4)) }
+    expect(memoryFor(four, TODAY, PARTNER)).toBeUndefined()
+    // The same month and day only — not the day before or after; the day's first entry when there are two.
+    expect(memoryFor(entry(on(fresh()), addDays(yearsAgo(TODAY, 1), 1), 'x'), TODAY, OWNER)).toBeUndefined()
+    expect(memoryFor(entry(on(fresh()), addDays(yearsAgo(TODAY, 1), -1), 'x'), TODAY, OWNER)).toBeUndefined()
+    let twice = entry(on(fresh()), yearsAgo(TODAY, 1), '저녁')
+    twice = addEntry(twice, { date: yearsAgo(TODAY, 1), author: PARTNER, text: '아침', stage: 'preparing' }, at(yearsAgo(TODAY, 1), '08'))
+    const first = memoryFor(twice, TODAY, OWNER)!
+    expect(twice.diary.find((e) => e.id === first.entryId)?.text).toBe('아침')
+  })
+
+  it('sits between the cheer and the anniversary: a cheer wins, an anniversary D-3 loses', () => {
+    let s = entry(on(setCoupleDates(fresh(), { marriedDate: '2024-09-14' })), yearsAgo(TODAY, 1), '한강 산책')
+    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('memory')
+    s = sendCheer(s, OWNER, PARTNER, at(TODAY, '12'))
+    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('cheer')
+    s = sendSignal(s, OWNER, PARTNER, 'thanks', TODAY, at(TODAY, '14'))
+    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('signal')
+  })
+
+  it('hard filters: nothing written while pregnant, nothing from inside an ended pregnancy or its 42 quiet days', () => {
+    const base = on(fresh())
+    expect(memoryFor(entry(base, yearsAgo(TODAY, 1), '태동이 느껴져요', { stage: 'pregnant' }), TODAY, OWNER)).toBeUndefined()
+    expect(memoryFor(entry(base, yearsAgo(TODAY, 1), '산책', { stage: 'parenting' }), TODAY, OWNER)).toBeDefined()
+    // Pregnant from the 2025-07-01 period, confirmed 08-05, ended 09-20 (a year before today) → quiet to 2025-10-31.
+    const lost = on(backToPreparing(startPregnancy(fresh(), '2025-07-01', '2025-08-05'), '2025-09-20'))
+    expect(memoryFor(entry(lost, '2025-07-01', '산책'), '2026-07-01', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(lost, '2025-09-11', '산책'), '2026-09-11', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(lost, '2025-10-31', '산책'), '2026-10-31', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(lost, '2025-11-01', '산책'), '2026-11-01', OWNER)).toMatchObject({ date: '2025-11-01' })
+    expect(memoryFor(entry(lost, '2025-06-30', '산책'), '2026-06-30', OWNER)).toMatchObject({ date: '2025-06-30' })
+    // And no memory at all on today's quiet days (the cover is quiet).
+    const quiet = entry(on(afterLoss('2026-09-01')), yearsAgo(TODAY, 1), '산책')
+    expect(memoryFor(quiet, TODAY, OWNER)).toBeUndefined()
+    expect(heroLine(quiet, TODAY, OWNER, EVENING).kind).toBe('greeting')
+    expect(memoryFor(quiet, addDays('2026-09-01', QUIET_DAYS_AFTER_END), OWNER)).toBeUndefined() // a different month-day
+  })
+
+  it("hard filters: period days 1–3 and a negative test's day — the entry's day and today", () => {
+    expect(PERIOD_EARLY_DAYS).toBe(3)
+    const periods = [{ start: '2025-09-10' }, { start: '2026-09-01' }]
+    const s = on(fresh({ periods }))
+    // 2025-09-11 is day 2 of that period; 09-13 is day 4.
+    expect(memoryFor(entry(s, '2025-09-11', '산책'), '2026-09-11', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(s, '2025-09-12', '산책'), '2026-09-12', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(s, '2025-09-13', '산책'), '2026-09-13', OWNER)).toMatchObject({ date: '2025-09-13' })
+    // Today is day 2 of the 2026-09-01 period: nothing, even for the partner.
+    const d2 = entry(s, '2025-09-02', '산책')
+    expect(memoryFor(d2, '2026-09-02', OWNER)).toBeUndefined()
+    expect(memoryFor(d2, '2026-09-02', PARTNER)).toBeUndefined()
+    expect(memoryFor(entry(s, '2025-09-04', '산책'), '2026-09-04', PARTNER)).toBeDefined()
+    // A negative test on the entry's day, or today.
+    const negThen = on(fresh({ pregnancyTests: [{ id: 't1', date: '2025-09-20', result: 'negative', by: OWNER }] }))
+    expect(memoryFor(entry(negThen, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()
+    const negNow = on(fresh({ pregnancyTests: [{ id: 't2', date: '2026-09-20', result: 'negative', by: OWNER }] }))
+    expect(memoryFor(entry(negNow, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(negNow, '2025-09-20', '산책'), '2026-09-20', PARTNER)).toBeUndefined()
+    // A faint line is a test day that led nowhere too (cover.ts sadTestOn): nothing that day either.
+    const faint = on(fresh({ pregnancyTests: [{ id: 't3', date: '2026-09-20', result: 'faint', by: OWNER }] }))
+    expect(memoryFor(entry(faint, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()
+    expect(memoryFor(entry(faint, '2025-09-21', '산책'), '2026-09-21', OWNER)).toBeDefined()
+  })
+
+  it("hard filters: health words (COVER_WORDS) and the other's '나만 보기' entries", () => {
+    const s = on(fresh())
+    for (const text of ['가임기 첫날', 'LH 양성 나온 날', '병원 다녀온 날', '임신 테스트 음성', '초음파 보고 옴']) {
+      expect(memoryFor(entry(s, yearsAgo(TODAY, 1), text), TODAY, OWNER), text).toBeUndefined()
+    }
+    // A later clean entry on the same day still shows (the filter skips, it doesn't block the day).
+    const mixed = entry(entry(s, yearsAgo(TODAY, 1), '병원 다녀온 날'), yearsAgo(TODAY, 1), '한강 산책')
+    expect(mixed.diary.find((e) => e.id === memoryFor(mixed, TODAY, OWNER)?.entryId)?.text).toBe('한강 산책')
+    // '나만 보기': not a shared memory for anyone — 설정 › 첫 화면 promises '두 사람이 함께 남긴 기록만'.
+    const mine = entry(s, yearsAgo(TODAY, 1), '혼자 쓴 날')
+    const privateOne = setEntryPrivacy(mine, mine.diary[mine.diary.length - 1]!.id, OWNER, true)
+    expect(memoryFor(mine, TODAY, OWNER)).toBeDefined()
+    expect(memoryFor(privateOne, TODAY, OWNER)).toBeUndefined()
+    expect(memoryFor(privateOne, TODAY, PARTNER)).toBeUndefined()
+    expect(heroLine(privateOne, TODAY, PARTNER, EVENING).kind).toBe('greeting')
+  })
+
+  it('the demo couple, memories on: never a health word, and only a target with a reason', () => {
+    for (const stage of ['preparing', 'pregnant', 'parenting'] as const) {
+      for (const day of ['2026-09-29', '2026-10-03', '2027-06-14'] as ISODate[]) {
+        const s = on(createDemoState(day, new Date(2026, 8, 29, 19, 30), stage))
+        for (const viewer of ['a', 'b'] as const) {
+          const line = heroLine(s, day, viewer, 19)
+          expect(line.text).not.toMatch(COVER_WORDS)
+          if (line.kind === 'memory') expect(line).toMatchObject({ target: 'diary', text: expect.stringMatching(/^[123]년 전 오늘의 이야기 ›$/) })
+        }
+      }
+    }
+  })
+})
+
+describe('기념일 알림 off (settings.anniversaryAlerts = false)', () => {
+  const EVENING = 20
+  const off = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, anniversaryAlerts: false } })
+
+  it('no anniversary line on the cover (D-N or the day itself) and no anniv: notices; the greeting shows instead', () => {
+    expect(SETTINGS_DEFAULTS.anniversaryAlerts).toBe(true)
+    const s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' })
+    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('anniversary')
+    expect(heroLine(s, '2026-09-14', PARTNER, EVENING).text).toBe('오늘은 결혼 2주년이에요')
+    expect(heroLine(off(s), TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(off(s), '2026-09-14', PARTNER, EVENING).kind).toBe('greeting')
+    expect(anniversaryNotices(s, '2026-09-07').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:7:a', 'anniv:married-year:2:2026-09-14:7:b'])
+    expect(anniversaryNotices(off(s), '2026-09-07')).toEqual([])
+    expect(anniversaryNotices(off(s), '2026-09-14')).toEqual([])
+    // Unset means on; everything else on the cover still works.
+    expect(heroLine(sendCheer(off(s), OWNER, PARTNER, at(TODAY, '12')), TODAY, PARTNER, EVENING).kind).toBe('cheer')
+  })
+})
+
+describe('signal chips and the privacy sweep', () => {
+  const EVENING = 20
+
+  it('no chip text carries a cycle word; the two with 임신·병원 words never reach the cover line', () => {
+    for (const sg of ALL_SIGNALS) expect(sg.text, sg.id).not.toMatch(/가임기|배란|LH|생리|테스트|임테기/)
+    // COVER_WORDS is the cover's own list (임신, 병원 included): these two chips carry such a word by design —
+    // '병원 같이 가 줄래요?' and '오늘은 임신 얘기 말고 쉬어요' — and only the person they were sent to reads them, in 우리 한 줄 and the inbox.
+    expect(ALL_SIGNALS.filter((sg) => COVER_WORDS.test(sg.text)).map((sg) => sg.id)).toEqual(['clinic', 'no-baby-talk'])
+    for (const sg of ALL_SIGNALS) {
+      const s = sendSignal(fresh(), OWNER, PARTNER, sg.id, TODAY, at(TODAY, '18'))
+      const line = heroLine(s, TODAY, PARTNER, EVENING)
+      expect(line.text, sg.id).not.toContain(sg.text)
+      expect(line.text).not.toMatch(COVER_WORDS)
+    }
   })
 })

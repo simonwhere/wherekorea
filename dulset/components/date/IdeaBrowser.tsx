@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Chip, Disclaimer, EmptyState, SectionTitle } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import {
   BUDGET_META,
   CATEGORY_META,
@@ -20,12 +21,30 @@ const BUDGETS: Budget[] = [1, 2, 3]
 const chipClass = 'min-h-[44px] px-3.5'
 const rowClass = '-mx-4 flex gap-1.5 overflow-x-auto px-4 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 
-/** Every idea for the stage, with category and budget filters. */
-export default function IdeaBrowser({ onPlan }: { onPlan: (idea: DateIdea) => void }) {
+/**
+ * Every idea for the stage, with category and budget filters in one row.
+ * Folded on #date until '아이디어 더 보기' opens it (review D-16); `onFold`
+ * puts it away again.
+ */
+export default function IdeaBrowser({
+  id,
+  onPlan,
+  onFold,
+}: {
+  /** The section's id (the fold button's aria-controls). */
+  id?: string
+  onPlan: (idea: DateIdea) => void
+  onFold?: () => void
+}) {
   const { state, today } = useApp()
   const [category, setCategory] = useState<DateCategory | 'all'>('all')
   const [budget, setBudget] = useState<Budget | 'all'>('all')
   const [shown, setShown] = useState(PAGE)
+  const headingRef = useRef<HTMLDivElement>(null)
+  // Opened by the fold button: start keyboard / screen-reader users at the section.
+  useEffect(() => {
+    if (onFold) headingRef.current?.querySelector('h2')?.focus({ preventScroll: true })
+  }, [onFold])
 
   const cats = categoriesFor(DATE_IDEAS, state.stage)
   const list = browseIdeas(DATE_IDEAS, state.stage, today, {
@@ -43,10 +62,29 @@ export default function IdeaBrowser({ onPlan }: { onPlan: (idea: DateIdea) => vo
   }
 
   return (
-    <section className="mt-6">
-      <SectionTitle sub={`${list.length}개 · 지금 계절에 맞는 것부터 보여 드려요`}>아이디어 모아보기</SectionTitle>
+    <section id={id} className="mt-6" ref={headingRef}>
+      <SectionTitle
+        sub={`${list.length}개 · 지금 계절에 맞는 것부터 보여 드려요`}
+        action={
+          onFold ? (
+            <button
+              type="button"
+              onClick={onFold}
+              className="-mr-1 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-xs font-semibold text-ink-2 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              접기
+              <Icon name="chev" className="h-4 w-4 rotate-180" strokeWidth={2.2} />
+            </button>
+          ) : undefined
+        }
+      >
+        <span tabIndex={-1} className="outline-none">
+          아이디어 모아보기
+        </span>
+      </SectionTitle>
 
-      <div role="group" aria-label="분류" className={rowClass}>
+      {/* One row: categories, a thin divider, then budgets (text, not pictures). */}
+      <div role="group" aria-label="분류와 예산" className={rowClass}>
         <Chip
           selected={category === 'all'}
           className={chipClass}
@@ -67,13 +105,10 @@ export default function IdeaBrowser({ onPlan }: { onPlan: (idea: DateIdea) => vo
               setShown(PAGE)
             }}
           >
-            <span aria-hidden>{CATEGORY_META[c].emoji}</span>
             {CATEGORY_META[c].label}
           </Chip>
         ))}
-      </div>
-
-      <div role="group" aria-label="예산" className={`${rowClass} mt-1.5`}>
+        <span aria-hidden className="mx-1 my-auto h-6 w-px shrink-0 bg-line" />
         <Chip
           selected={budget === 'all'}
           className={chipClass}
@@ -105,7 +140,7 @@ export default function IdeaBrowser({ onPlan }: { onPlan: (idea: DateIdea) => vo
       <div className="mt-3">
         {list.length === 0 ? (
           <EmptyState
-            icon="🔍"
+            icon="search"
             title="조건에 맞는 아이디어가 없어요"
             body="분류나 예산을 바꿔 보세요."
             action={

@@ -3,6 +3,7 @@
 // Small building blocks for the 챙길 것 tab.
 
 import { Avatar, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import type { Member, MemberId } from '@/lib/types'
 import type { PillTone } from '@/lib/logic/plan'
 
@@ -31,7 +32,7 @@ export function CheckBox({ checked, onToggle, label }: { checked: boolean; onTog
           checked ? 'border-ok bg-ok text-white' : 'border-control bg-surface text-transparent',
         )}
       >
-        ✓
+        <Icon name="check" className="h-4 w-4" strokeWidth={3} />
       </span>
     </button>
   )
@@ -130,7 +131,7 @@ export function ExternalLink({ href, children, className }: { href: string; chil
       )}
     >
       {children}
-      <span aria-hidden> ↗</span>
+      <Icon name="ext" className="ml-0.5 h-3 w-3 shrink-0" strokeWidth={2} />
       <span className="sr-only"> (새 창)</span>
     </a>
   )

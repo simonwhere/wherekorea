@@ -5,6 +5,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Icon, isIconName, type IconName } from '@/components/ui/icons'
 import type { Member } from '@/lib/types'
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -16,11 +17,16 @@ export function Card({
   className,
   tone = 'default',
   as: Tag = 'section',
+  ...rest
 }: {
   children: React.ReactNode
   className?: string
   tone?: 'default' | 'brand' | 'fert' | 'ok' | 'warn' | 'muted'
   as?: 'section' | 'div' | 'article' | 'li'
+  /** Landmark naming (aria-label / aria-labelledby) and an id reach the element; nothing else is forwarded. */
+  id?: string
+  'aria-label'?: string
+  'aria-labelledby'?: string
 }) {
   // Default cards lift off the paper background with a warm shadow and no
   // border; in dark mode (where shadows vanish) they get a hairline instead.
@@ -32,7 +38,11 @@ export function Card({
     warn: 'bg-warn-soft border-warn/25 shadow-card',
     muted: 'bg-surface-2 border-transparent shadow-card',
   } as const
-  return <Tag className={cx('rounded-xl2 border p-4', tones[tone], className)}>{children}</Tag>
+  return (
+    <Tag className={cx('rounded-xl2 border p-4', tones[tone], className)} {...rest}>
+      {children}
+    </Tag>
+  )
 }
 
 export function SectionTitle({
@@ -240,11 +250,19 @@ function focusNear(near: Element[]): void {
   focusMainHeading()
 }
 
+/** Dragging the handle this far down closes the sheet (review D-20). */
+export const SHEET_CLOSE_DRAG_PX = 80
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
 /**
- * Bottom sheet dialog, rendered in a portal. Closes on backdrop tap and Escape.
- * While open, everything else on the page is `inert` (no focus, hidden from
- * screen readers) and focus returns to the opener when it closes (or near it,
- * if the action removed the opener).
+ * Bottom sheet dialog, rendered in a portal. Closes on backdrop tap, Escape
+ * and a downward drag of the handle (SHEET_CLOSE_DRAG_PX). While open,
+ * everything else on the page is `inert` (no focus, hidden from screen
+ * readers) and focus returns to the opener when it closes (or near it, if the
+ * action removed the opener).
  */
 export function Sheet({
   open,
@@ -266,6 +284,47 @@ export function Sheet({
   onCloseRef.current = onClose
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Drag-to-close: the panel follows the finger from the handle (never from
+  // the scrolling body) and closes past the threshold; shorter drags settle
+  // back. With reduced motion the panel stays put and only the release counts.
+  const drag = useRef<{ id: number; startY: number; still: boolean } | null>(null)
+  const [dragY, setDragY] = useState(0)
+  const [settling, setSettling] = useState(false)
+  const dragDistance = (e: React.PointerEvent) => Math.max(0, e.clientY - (drag.current?.startY ?? e.clientY))
+  const onHandleDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    drag.current = { id: e.pointerId, startY: e.clientY, still: prefersReducedMotion() }
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setSettling(false)
+  }
+  const onHandleMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId || d.still) return
+    setDragY(dragDistance(e))
+  }
+  const onHandleUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    if (!d || d.id !== e.pointerId) return
+    const dy = dragDistance(e)
+    drag.current = null
+    setSettling(true)
+    setDragY(0)
+    if (dy >= SHEET_CLOSE_DRAG_PX) onCloseRef.current()
+  }
+  const onHandleCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.id !== e.pointerId) return
+    drag.current = null
+    setSettling(true)
+    setDragY(0)
+  }
+  useEffect(() => {
+    if (!open) {
+      drag.current = null
+      setDragY(0)
+      setSettling(false)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open || !mounted) return
@@ -320,9 +379,23 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-bg px-5 pt-2.5 text-ink shadow-2xl outline-none sm:rounded-3xl sm:pt-5"
+        // overscroll-contain: reaching the end of the sheet never scrolls the page behind it (iOS).
+        className="pb-safe relative max-h-[88dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[26px] bg-bg px-5 pt-2.5 text-ink shadow-2xl outline-none sm:rounded-3xl sm:pt-5"
+        style={{
+          transform: dragY ? `translateY(${dragY}px)` : undefined,
+          transition: settling ? 'transform 160ms ease-out' : 'none',
+        }}
       >
-        <div className="mx-auto mb-2 h-[5px] w-10 rounded-full bg-line sm:hidden" />
+        {/* The handle: a 32px-tall drag zone around the 5px bar (phones only; desktop sheets are centered). */}
+        <div
+          className="-mt-2.5 mb-1 flex h-8 cursor-grab touch-none select-none items-center justify-center sm:hidden"
+          onPointerDown={onHandleDown}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+          onPointerCancel={onHandleCancel}
+        >
+          <div className="h-[5px] w-10 rounded-full bg-line" />
+        </div>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 id={titleId} className="text-[19px] font-extrabold tracking-[-0.03em]">
             {title}
@@ -333,7 +406,7 @@ export function Sheet({
             aria-label="닫기"
             className="-mr-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
           >
-            ✕
+            <Icon name="x" className="h-[22px] w-[22px]" strokeWidth={2} />
           </button>
         </div>
         {children}
@@ -349,16 +422,23 @@ export function EmptyState({
   body,
   action,
 }: {
-  icon: string
+  /** A line icon name (preferred), or an emoji for content that has no icon. */
+  icon: IconName | (string & {})
   title: React.ReactNode
   body?: React.ReactNode
   action?: React.ReactNode
 }) {
   return (
     <div className="flex flex-col items-center rounded-xl2 border border-dashed border-line px-6 py-8 text-center">
-      <div className="text-3xl" aria-hidden>
-        {icon}
-      </div>
+      {isIconName(icon) ? (
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-2 text-ink-2" aria-hidden>
+          <Icon name={icon} className="h-6 w-6" />
+        </div>
+      ) : (
+        <div className="text-3xl" aria-hidden>
+          {icon}
+        </div>
+      )}
       <p className="mt-2 text-sm font-semibold text-ink">{title}</p>
       {body ? <p className="mt-1 text-xs leading-relaxed text-ink-3">{body}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}

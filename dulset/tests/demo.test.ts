@@ -17,6 +17,7 @@ import {
   DEMO_COVER,
   DEMO_FEEL_DAYS,
   DEMO_START_VIEWER,
+  DEMO_TREATMENT,
   PREP_APPLIED_DAYS_AGO,
   PREP_APPOINTMENTS,
   applyPrefs,
@@ -52,6 +53,7 @@ import { CLAIM_KEY } from '@/lib/logic/babyView'
 import { activeItems, coupleStreak, firstCheckedDate, isDone, itemsFor, progress, streak } from '@/lib/logic/checks'
 import { cycleAt, cycleStats, dayInfo, fertilityStatus, isSurge, sortedStarts } from '@/lib/logic/cycle'
 import { lhTestsOn } from '@/lib/logic/logs'
+import { giveIntimacyConsent, intimacyDays, stripIntimacy, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { lastCycleFeels, personalDays, stateForViewer } from '@/lib/logic/personalLog'
 import { FERTILITY_TEST_ID, completeMonthlyTask, fertilityChain, monthlyTask } from '@/lib/logic/partnerTrack'
 import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor } from '@/lib/logic/prefs'
@@ -59,6 +61,7 @@ import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
 import { buildItems, focusItems } from '@/lib/logic/roadmap'
 import { sanitizeBackup } from '@/lib/logic/settings'
+import { leaveDaysOf, leaveUsed, noticeStatus, supportCounts, treatmentsOf } from '@/lib/logic/treatments'
 import { chapterContext, entryChapter, receivedReactions } from '@/lib/logic/usView'
 import { isAppState, parseState } from '@/lib/storage'
 import type { AppState, CheckItem, LHResult, Stage } from '@/lib/types'
@@ -98,6 +101,7 @@ function fingerprint(s: AppState) {
     datePlans: s.datePlans.map(({ id: _id, ...rest }) => rest),
     pregnancyTests: s.pregnancyTests.map(({ id: _id, ...rest }) => rest),
     growth: s.growth.map(({ id: _id, ...rest }) => rest),
+    ...(s.treatments ? { treatments: s.treatments.map(({ id: _id, ...rest }) => rest) } : {}),
   }
 }
 
@@ -1128,5 +1132,91 @@ describe('preparing demo: 지은’s own log (본인만 보기) and the LH quest
       expect(s.customTasks.every((c) => c.deadlineAlerts === undefined)).toBe(true)
       if (stage !== 'preparing') expect(s.personalLog).toBeUndefined()
     }
+  })
+})
+
+describe('preparing demo: 난임 시술 지원 카운터 (Next B foundation)', () => {
+  for (const day of TODAYS) {
+    it(`has one past 인공수정 (음성, 지원, 통지서) right after the surge of the cycle before last, and 민수’s one leave day (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'preparing')
+      const [, before, prev] = sortedStarts(s.periods)
+      const list = treatmentsOf(s)
+      expect(list).toHaveLength(1)
+      const t = list[0]!
+      expect(t).toMatchObject({ kind: 'iui', outcome: 'negative', supported: true, noticeExpires: DEMO_TREATMENT.noticeExpires, note: DEMO_TREATMENT.note })
+      expect(t.startDate).toBe(addDays(before!, DEMO_TREATMENT.cycleOffset))
+      expect(t.startDate > before! && t.startDate < prev!).toBe(true)
+      expect(t.endDate).toBe(prev)
+      expect(t.startDate <= day).toBe(true)
+      // The IUI day is the day after that cycle's 가장 진함 strip.
+      const peak = s.lhTests.find((x) => x.result === 'peak' && x.date > before! && x.date < prev!)!
+      expect(t.startDate).toBe(addDays(peak.date, 1))
+      expect(t.note!.length).toBeLessThanOrEqual(140)
+      // 민수 took 난임치료휴가 that day; 지은 has none logged.
+      expect(leaveDaysOf(s, 'a')).toEqual([{ date: t.startDate, kind: 'infertility' }])
+      expect(leaveDaysOf(s, 'b')).toEqual([])
+      expect(leaveUsed(s, 'a', Number(t.startDate.slice(0, 4)))).toBe(1)
+    })
+  }
+
+  it('counts 인공수정 1/5 · 체외수정 0/20 · 1/25 and the notice to 2027-01-15', () => {
+    const today = '2026-09-26'
+    const s = createDemoState(today, NOW, 'preparing')
+    const c = supportCounts(s)
+    expect(c.iui).toEqual({ used: 1, total: 5, denominatorUnknown: false })
+    expect(c.ivf).toEqual({ used: 0, total: 20, denominatorUnknown: false })
+    expect(c.all).toEqual({ used: 1, total: 25, denominatorUnknown: false })
+    expect(c.since).toBeUndefined()
+    const n = noticeStatus(s, today)!
+    expect(n.expires).toBe('2027-01-15')
+    expect(n.daysLeft).toBe(diffDays(today, '2027-01-15'))
+    expect(n.expired).toBe(false)
+  })
+
+  it('survives a backup and a reload, and the other stages have no attempts or leave days', () => {
+    const today = '2026-09-26'
+    const s = createDemoState(today, NOW, 'preparing')
+    const raw = JSON.stringify(s)
+    expect(parseState(raw)!.treatments).toEqual(s.treatments)
+    expect(parseState(raw)!.leaveDays).toEqual(s.leaveDays)
+    expect(sanitizeBackup(JSON.parse(raw))).toEqual(JSON.parse(raw))
+    for (const stage of ['pregnant', 'parenting'] as const) {
+      const other = createDemoState(today, NOW, stage)
+      expect(other.treatments).toBeUndefined()
+      expect(other.leaveDays).toBeUndefined()
+    }
+  })
+
+  it('keeps the rest of the preparing story: no pending or rest state, no 관계일 record, no Next B switches set', () => {
+    const today = '2026-09-26'
+    for (const stage of STAGES) {
+      const s = createDemoState(today, NOW, stage)
+      expect(s.intimacy).toBeUndefined()
+      expect(s.restCycle?.until).toBeUndefined()
+      expect(s.positivePending?.bleedingSince).toBeUndefined()
+      for (const k of ['memories', 'anniversaryAlerts', 'showTryCount'] as const) expect(k in s.settings).toBe(false)
+      for (const id of ['a', 'b'] as const) {
+        expect(s.settings.personal?.[id]?.acceptNudges).toBeUndefined()
+        // 민수 (a) keeps his home card readable on first tap (demo choice); 지은 leaves it unset.
+        if (id === 'b') expect(s.settings.personal?.[id]?.homeDiscreet).toBeUndefined()
+        else expect(s.settings.personal?.[id]?.homeDiscreet).toBe(false)
+      }
+    }
+  })
+
+  it('관계일 record (if 지은 ever consents) never reaches 민수: stripIntimacy on what his phone may hold', () => {
+    const today = '2026-09-26'
+    let s = createDemoState(today, NOW, 'preparing')
+    s = giveIntimacyConsent(s, 'b', today)
+    s = toggleIntimacyDay(s, 'b', addDays(today, -3), today)
+    expect(intimacyDays(s, 'b')).toEqual([addDays(today, -3)])
+    expect(intimacyDays(s, 'a')).toEqual([])
+    const his = stripIntimacy(stateForViewer(s, 'a'), 'a')
+    expect('intimacy' in his).toBe(false)
+    expect('personalLog' in his).toBe(false)
+    expect(JSON.stringify(his)).not.toContain('consentAt')
+    // Her own phone keeps it; so do a reload and a backup.
+    expect(stripIntimacy(stateForViewer(s, 'b'), 'b').intimacy).toEqual(s.intimacy)
+    expect(parseState(JSON.stringify(s))!.intimacy).toEqual(s.intimacy)
   })
 })

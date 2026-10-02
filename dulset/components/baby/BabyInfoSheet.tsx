@@ -19,7 +19,7 @@ export default function BabyInfoSheet({
   mode: 'create' | 'edit'
 }) {
   return (
-    <Sheet open={open} onClose={onClose} title={mode === 'create' ? '아기 정보 입력 👶' : '아기 정보 수정'}>
+    <Sheet open={open} onClose={onClose} title={mode === 'create' ? '아기 정보 입력' : '아기 정보 수정'}>
       {/* Remount on open so the fields start from the saved values. */}
       {open ? <BabyInfoForm mode={mode} onDone={onClose} /> : null}
     </Sheet>

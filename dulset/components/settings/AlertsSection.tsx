@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useId, useState } from 'react'
 import { Button, Card, Toggle, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { NICE_GUIDANCE } from '@/lib/content/fertility'
 import { cycleLens, cyclePause, icsAvailability, windowRangeShort } from '@/lib/logic/calendarView'
 import { upcomingWindows } from '@/lib/logic/cycle'
 import { buildIcs, downloadText, fertileWindowEvents } from '@/lib/logic/ics'
 import {
   ALERT_STYLE_OPTIONS,
+  acceptNudgesFor,
   alertPreview,
   alertStyleLabel,
   alertStyleOf,
+  homeDiscreetFor,
   lockScreenText,
   setAlertStyle,
   setSetting,
@@ -77,6 +80,11 @@ export default function AlertsSection() {
                   : '잠금화면에는 ‘둘셋 — 새 알림이 있어요’로만 보여요.'
               }
             />
+            {/* 잠금화면 숨김을 홈 카드까지 (Next B): the owner's own moment card and ring stay neutral until tapped. */}
+            {preparing ? <HomeDiscreetToggle /> : null}
+          </div>
+          <div className="mt-1 border-t border-line pt-1">
+            <NudgesToggle />
           </div>
           <div className="mt-1 border-t border-line pt-1">
             <BrowserNotifications />
@@ -89,6 +97,67 @@ export default function AlertsSection() {
         {preparing && canLogCycle(state, viewer) && explicit ? <LHStripsCard /> : null}
       </div>
     </SettingsSection>
+  )
+}
+
+// ── 홈 카드까지 조용히 · 콕 받기 (per person, Next B) ───────────
+
+/**
+ * settings.personal[me].homeDiscreet — the 오늘 moment card and cycle ring on
+ * my phone show a neutral title ('오늘의 우리') until I tap them, so the phone
+ * can be handed over (review D-21). Unset follows 잠금화면에서 조용히
+ * (lib/logic/settings.ts homeDiscreetFor); a tap here sets it on its own.
+ */
+function HomeDiscreetToggle() {
+  const { state, update, viewer } = useApp()
+  const toast = useToast()
+  const on = homeDiscreetFor(state.settings, viewer)
+  return (
+    <div className="pl-3">
+      <Toggle
+        checked={on}
+        onChange={(v) => {
+          update((s) => setPersonalPref(s, viewer, 'homeDiscreet', v))
+          toast.show(v ? '홈 카드도 한 번 눌러야 내용이 보여요' : '홈 카드에 내용이 바로 보여요')
+        }}
+        label={
+          <>
+            홈 카드까지 조용히 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
+          </>
+        }
+        description="오늘 화면의 상황 카드와 띠가 ‘오늘의 우리’로만 보이고, 한 번 누르면 내용이 열려요. 폰을 건넬 때 편해요."
+      />
+    </div>
+  )
+}
+
+/**
+ * settings.personal[me].acceptNudges — whether the partner's 콕 reaches my
+ * phone at all (default yes). Off here, their 콕 button quietly disappears
+ * and sendNudge drops it (lib/logic/notifications.ts).
+ */
+function NudgesToggle() {
+  const { state, update, viewer, partner } = useApp()
+  const toast = useToast()
+  const on = acceptNudgesFor(state.settings, viewer)
+  return (
+    <Toggle
+      checked={on}
+      onChange={(v) => {
+        update((s) => setPersonalPref(s, viewer, 'acceptNudges', v))
+        toast.show(v ? `${partner.name}님의 콕을 받아요` : `${partner.name}님의 콕을 쉬어요 · 응원은 그대로 와요`)
+      }}
+      label={
+        <>
+          콕 받기 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
+        </>
+      }
+      description={
+        on
+          ? `${partner.name}님이 내 체크를 콕 찌르면 알림함에 와요. 끄면 ${partner.name}님 화면에서 콕 버튼이 사라져요.`
+          : `${partner.name}님 화면에서 콕 버튼이 사라졌어요. 응원과 신호는 그대로 와요.`
+      }
+    />
   )
 }
 
@@ -114,8 +183,9 @@ function LHStripsCard() {
   return (
     <Card>
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-bold text-ink">
-          <span aria-hidden>🧪 </span>배란테스트기(LH)
+        <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+          <Icon name="flask" className="h-[18px] w-[18px] text-ink-2" />
+          배란테스트기(LH)
         </h3>
         <button
           type="button"
@@ -172,7 +242,7 @@ function MyAlertStyle() {
   // home and calendar follow (no dates or peak days that give away an LH result).
   const limited = style === 'explicit' && !canSeeCycleDetails(state, viewer)
   // No dates in the preview while this cycle is paused (쉬어요 / 병원 확인 전).
-  const [w] = state.periods.length && !cyclePause(state) ? upcomingWindows(state, today, 1) : []
+  const [w] = state.periods.length && !cyclePause(state, today) ? upcomingWindows(state, today, 1) : []
   const preview = alertPreview(limited ? 'soft' : style, { lowPressure: low, isCycleOwner: isOwner, window: w })
   const lock = preview.message && discreetFor(state.settings, viewer) ? lockScreenText(preview.message, true) : null
 
@@ -277,9 +347,7 @@ function LowPressureToggle() {
       <details className="group">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-brand-ink [&::-webkit-details-marker]:hidden">
           왜 이런 방식이 있나요?
-          <span aria-hidden className="ml-1 transition-transform group-open:rotate-180">
-            ▾
-          </span>
+          <Icon name="chev" className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={2.2} />
         </summary>
         <div className="pb-2 text-xs leading-relaxed text-ink-2">
           <p>
@@ -297,7 +365,8 @@ function LowPressureToggle() {
             rel="noopener noreferrer"
             className="mt-1 inline-flex min-h-[44px] items-center font-semibold text-brand-ink underline-offset-2 hover:underline"
           >
-            NICE NG257 원문 보기 ↗
+            NICE NG257 원문 보기
+            <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
           </a>
         </div>
       </details>
@@ -424,7 +493,7 @@ function BrowserNotifications() {
       {perm === 'unsupported' ? (
         <p className="mt-2 rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
           이 브라우저에서는 웹 알림을 쓸 수 없어요. iPhone은 Safari에서 ‘홈 화면에 추가’한 뒤 열면 알림을 받을 수 있어요. 알림
-          없이도 앱 안의 🔔 알림함에는 그대로 쌓여요.
+          없이도 앱 안의 알림함에는 그대로 쌓여요.
         </p>
       ) : null}
       {checked ? (
@@ -447,9 +516,9 @@ function IcsCard() {
   const mine = settingsFor(state.settings, viewer)
   // The calendar's lens (the owner's own wording), and cyclePause: a rest cycle or a
   // positive test awaiting the clinic makes no date alarms either.
-  const lens = cycleLens(state, viewer)
+  const lens = cycleLens(state, viewer, today)
   const view = lens.view
-  const { enabled, reason, windows } = icsAvailability(state, today, mine, view, cyclePause(state))
+  const { enabled, reason, windows } = icsAvailability(state, today, mine, view, cyclePause(state, today))
   // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
   const discreet = mine.discreet || view === 'soft'
   const label = view === 'explicit' ? '가임기 일정 캘린더로 내보내기 (.ics)' : '우리의 주간 캘린더로 내보내기 (.ics)'
@@ -465,8 +534,9 @@ function IcsCard() {
 
   return (
     <Card>
-      <h3 className="text-sm font-bold text-ink">
-        <span aria-hidden>🗓️ </span>휴대폰 캘린더에 알람 넣기
+      <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+        <Icon name="cal" className="h-[18px] w-[18px] text-ink-2" />
+        휴대폰 캘린더에 알람 넣기
       </h3>
       <p className="mt-1 text-xs leading-relaxed text-ink-2">
         파일을 열어 구글·애플·삼성 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요. 내 캘린더에만 들어가요.

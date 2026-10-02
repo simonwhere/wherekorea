@@ -4,9 +4,10 @@ import { useId, useState } from 'react'
 import SettingsLink from '@/components/cycle/SettingsLink'
 import { QuickDateChips } from '@/components/onboarding/parts'
 import { Button, Card, inputClass, useToast } from '@/components/ui'
+import { IconTile } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
 import type { FertilityView } from '@/lib/logic/calendarView'
-import { logPeriodStart } from '@/lib/logic/logs'
+import { logPeriodOrBleeding } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 
 /**
@@ -25,15 +26,13 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
 
   const save = () => {
     if (!valid) return
-    update((s) => logPeriodStart(s, date, viewer, today))
+    update((s) => logPeriodOrBleeding(s, date, viewer, today))
     toast.show(`${formatKo(date, { weekday: false })} 생리 시작으로 기록했어요`)
   }
 
   return (
     <Card tone="brand">
-      <div className="text-3xl" aria-hidden>
-        🌷
-      </div>
+      <IconTile name="flower" tone="bg-surface" />
       <h2 className="mt-2 text-lg font-bold text-ink">마지막 생리 시작일을 알려 주세요</h2>
       <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
         한 번만 기록해도 다음 생리 예정일

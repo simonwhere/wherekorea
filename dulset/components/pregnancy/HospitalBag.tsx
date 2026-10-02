@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import { Card, cx } from '@/components/ui'
+import { Icon, IconTile } from '@/components/ui/icons'
 import { BAG_GROUP_LABEL, BAG_ITEMS, BAG_PROMINENT_WEEK, type BagGroup } from '@/lib/content/pregnancy'
 import { bagKey, bagProgress, bagProminent, checkedAt, toggleMilestone } from '@/lib/logic/pregnancyView'
 import { useApp } from '@/lib/store'
@@ -28,9 +29,7 @@ export default function HospitalBag({ weeks, since }: { weeks: number; since: st
           aria-controls={panelId}
           className="-m-1 flex min-h-[44px] w-[calc(100%+0.5rem)] items-center gap-3 rounded-xl p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >
-          <span aria-hidden className="text-2xl">
-            🎒
-          </span>
+          <IconTile name="bag" size="sm" />
           <span className="min-w-0 flex-1">
             <span className="block">출산 가방</span>
             <span className="block text-xs font-normal text-ink-3">
@@ -49,9 +48,7 @@ export default function HospitalBag({ weeks, since }: { weeks: number; since: st
               {total}개 중 {done}개 챙김
             </span>
           </span>
-          <span aria-hidden className={cx('text-ink-3 transition-transform', open && 'rotate-180')}>
-            ▾
-          </span>
+          <Icon name="chev" className={cx('h-4 w-4 text-ink-3 transition-transform', open && 'rotate-180')} strokeWidth={2.2} />
         </button>
       </h2>
 

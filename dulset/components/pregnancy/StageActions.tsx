@@ -2,8 +2,10 @@
 
 import { useCallback, useState } from 'react'
 import { Button, Card, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
-import { backToPreparing, recordBirth } from '@/lib/logic/pregnancy'
+import { recordBirth } from '@/lib/logic/pregnancy'
+import { endPregnancy } from '@/lib/logic/today'
 import { toBaby, validateBirth } from '@/lib/logic/pregnancyView'
 import { useApp } from '@/lib/store'
 import type { BabySex } from '@/lib/types'
@@ -27,7 +29,7 @@ export default function StageActions() {
       <Card tone="brand" className="text-center">
         <p className="text-sm text-ink-2">아기를 만났다면 육아 기록으로 이어 가요.</p>
         <Button size="lg" full className="mt-3" onClick={() => setBirthOpen(true)}>
-          아기가 태어났어요 <span aria-hidden>👶</span>
+          아기가 태어났어요 <Icon name="baby" className="h-5 w-5" strokeWidth={2} />
         </Button>
       </Card>
       <div className="mt-3 flex justify-center">
@@ -40,7 +42,7 @@ export default function StageActions() {
         </button>
       </div>
 
-      <Sheet open={birthOpen} onClose={closeBirth} title="아기가 태어났어요 👶">
+      <Sheet open={birthOpen} onClose={closeBirth} title="아기가 태어났어요">
         {birthOpen ? <BirthForm onDone={closeBirth} /> : null}
       </Sheet>
       <Sheet open={endOpen} onClose={closeEnd} title="임신 기록 종료">
@@ -127,9 +129,10 @@ function BirthForm({ onDone }: { onDone: () => void }) {
 function EndConfirm({ onDone }: { onDone: () => void }) {
   const { update, today } = useApp()
   const toast = useToast()
+  // endPregnancy also starts the 42-day 'loss' quiet (ttc.startLossRest).
   const confirm = () => {
-    update((s) => backToPreparing(s, today))
-    toast.show('준비 단계로 돌아왔어요')
+    update((s) => endPregnancy(s, today))
+    toast.show('준비 단계로 돌아왔어요 · 당분간 날짜 예상과 알림은 쉬어요')
     onDone()
     goToTab('today')
   }

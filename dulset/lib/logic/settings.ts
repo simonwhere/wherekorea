@@ -36,10 +36,23 @@ import {
   type Settings,
   type Stage,
 } from '../types'
-import { CYCLE_RANGE_DEFAULT, DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, cycleLengthRange, otherMember } from '../initial'
+import {
+  CYCLE_RANGE_DEFAULT,
+  DEFAULT_CYCLE_LENGTH,
+  DEFAULT_PERIOD_LENGTH,
+  PERSONAL_DEFAULTS,
+  ROLE_EMOJI,
+  ROLE_LABEL,
+  SETTINGS_DEFAULTS,
+  cycleLengthRange,
+  otherMember,
+} from '../initial'
 import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
 import { cleanCover } from './cover'
+import { cleanIntimacy } from './intimacy'
 import { cleanPersonalLog } from './personalLog'
+import { discreetFor } from './prefs'
+import { cleanLeaveDays, cleanTreatments } from './treatments'
 import { maxCycleLength, type CycleStats } from './cycle'
 import { SOFT_FERTILE_TITLE, localNowISO, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
@@ -154,6 +167,57 @@ export function setAlertStyle(state: AppState, id: MemberId, style: AlertStyle):
 
 export function setSetting<K extends keyof Settings>(state: AppState, key: K, value: Settings[K]): AppState {
   return { ...state, settings: { ...state.settings, [key]: value } }
+}
+
+// ── Next B switches: unset = the default (lib/initial.ts) ───
+
+/** The three couple-wide Next B switches (설정 › 첫 화면). */
+export type CoupleFlag = keyof typeof SETTINGS_DEFAULTS
+
+/**
+ * Turn one of them on or off. A value equal to its default (lib/initial.ts
+ * SETTINGS_DEFAULTS) leaves the key unset, so a save that never left the
+ * defaults stays byte-identical to an older one; the same value → the same
+ * state object. (setSetting writes the boolean as given — either reads the
+ * same through memoriesOn / anniversaryAlertsOn / showTryCountOn.)
+ */
+export function setCoupleFlag(state: AppState, key: CoupleFlag, value: boolean): AppState {
+  const current = state.settings[key]
+  const next = value === SETTINGS_DEFAULTS[key] ? undefined : value
+  if (current === next) return state
+  const settings = { ...state.settings }
+  if (next === undefined) delete settings[key]
+  else settings[key] = next
+  return { ...state, settings }
+}
+
+/** 'N년 전 오늘' — off unless the couple turned it on. */
+export function memoriesOn(settings: Pick<Settings, 'memories'>): boolean {
+  return settings.memories ?? SETTINGS_DEFAULTS.memories
+}
+
+/** 기념일 D-7·당일 알림 — on unless turned off. */
+export function anniversaryAlertsOn(settings: Pick<Settings, 'anniversaryAlerts'>): boolean {
+  return settings.anniversaryAlerts ?? SETTINGS_DEFAULTS.anniversaryAlerts
+}
+
+/** '시도 N번째 주기' in the history — hidden (neutral wording) unless turned on. */
+export function showTryCountOn(settings: Pick<Settings, 'showTryCount'>): boolean {
+  return settings.showTryCount ?? SETTINGS_DEFAULTS.showTryCount
+}
+
+/** 콕 받기 — this person takes the partner's nudges unless they said no. */
+export function acceptNudgesFor(settings: Pick<Settings, 'personal'>, member: MemberId): boolean {
+  return settings.personal?.[member]?.acceptNudges ?? PERSONAL_DEFAULTS.acceptNudges
+}
+
+/**
+ * 잠금화면 숨김을 홈 카드까지: the home's moment card and strip use the neutral
+ * wording for this person — their own choice, else whatever their 잠금화면
+ * 숨김 (discreetFor) says.
+ */
+export function homeDiscreetFor(settings: Pick<Settings, 'discreet' | 'personal'>, member: MemberId): boolean {
+  return settings.personal?.[member]?.homeDiscreet ?? discreetFor(settings, member)
 }
 
 /** The default stepper range (15–60); with 긴 주기 on, read cycleLengthRangeFor(state.cycle) instead (15–90). */
@@ -483,6 +547,10 @@ export function sanitizeBackup(input: AppState): AppState | null {
   if (!isISODate(settings.ttcStart)) delete settings.ttcStart
   // 써요 / 안 써요 / 나중에 (N17) — anything else means the question wasn't asked.
   if (!(typeof st.usesLH === 'boolean' || st.usesLH === 'later')) delete settings.usesLH
+  // Next B switches: a yes/no, or unset = the default (never filled in).
+  for (const k of ['memories', 'anniversaryAlerts', 'showTryCount'] as const) {
+    if (typeof st[k] !== 'boolean') delete settings[k]
+  }
   // Per-person prefs: only booleans for a/b, plus an 'HH:MM' LH test time.
   if (isObj(st.personal)) {
     const personal: NonNullable<Settings['personal']> = {}
@@ -494,6 +562,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (typeof p.discreet === 'boolean') out.discreet = p.discreet
       if (typeof p.hideCover === 'boolean') out.hideCover = p.hideCover
       if (isTime(p.lhTestTime)) out.lhTestTime = p.lhTestTime
+      if (typeof p.acceptNudges === 'boolean') out.acceptNudges = p.acceptNudges
+      if (typeof p.homeDiscreet === 'boolean') out.homeDiscreet = p.homeDiscreet
       personal[id] = out
     }
     settings.personal = personal
@@ -721,12 +791,35 @@ export function sanitizeBackup(input: AppState): AppState | null {
 
   const rc: unknown = input.restCycle
   if (isObj(rc) && isISODate(rc.since) && REST_REASONS.includes(rc.reason as RestReason)) {
-    next.restCycle = { since: rc.since, reason: rc.reason as RestReason }
+    // `until` (an optional end, Next B): a real day not before `since`, else gone.
+    next.restCycle = {
+      since: rc.since,
+      reason: rc.reason as RestReason,
+      ...(isISODate(rc.until) && rc.until >= rc.since ? { until: rc.until } : {}),
+    }
   } else delete next.restCycle
   const pp: unknown = input.positivePending
   if (isObj(pp) && isISODate(pp.since)) {
-    next.positivePending = { since: pp.since, ...(isStr(pp.testId) ? { testId: pp.testId } : {}) }
+    // bleedingSince (Next B): a real day not before the positive test, else gone.
+    next.positivePending = {
+      since: pp.since,
+      ...(isStr(pp.testId) ? { testId: pp.testId } : {}),
+      ...(isISODate(pp.bleedingSince) && pp.bleedingSince >= pp.since ? { bleedingSince: pp.bleedingSince } : {}),
+    }
   } else delete next.positivePending
+
+  // Next B lists: 난임 시술 회차, each person's 난임치료휴가 days, the owner's
+  // 관계일 record — strict shapes (lib/logic/treatments.ts, intimacy.ts); an
+  // empty or broken one is dropped, never kept as an empty container.
+  const treatments = cleanTreatments(input.treatments)
+  if (treatments) next.treatments = treatments
+  else delete next.treatments
+  const leaveDays = cleanLeaveDays(input.leaveDays)
+  if (leaveDays) next.leaveDays = leaveDays
+  else delete next.leaveDays
+  const intimacy = cleanIntimacy(input.intimacy)
+  if (intimacy) next.intimacy = intimacy
+  else delete next.intimacy
 
   // Each member's own log (본인만 보기) and the per-cycle notes: strict shapes, kept in a backup.
   const personalLog = cleanPersonalLog(input.personalLog)

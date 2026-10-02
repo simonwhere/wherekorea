@@ -3,13 +3,16 @@
 // Small presentational pieces shared by the Today screen cards.
 
 import { cx } from '@/components/ui'
-import { Icon } from '@/components/ui/icons'
+import { Icon, type IconName } from '@/components/ui/icons'
+import { CHECK_KIND_ICON } from '@/components/ui/kindIcons'
 import type { CheckKind, Member } from '@/lib/types'
 
-export const KIND_ICON: Record<CheckKind, string> = {
-  supplement: '💊',
-  medication: '💉',
-  habit: '🌿',
+/** The line icon of a check kind (components/ui/kindIcons). */
+export const KIND_ICON: Record<CheckKind, IconName> = CHECK_KIND_ICON
+
+/** A check kind's icon at the size of the text beside it. */
+export function KindIcon({ kind, className }: { kind: CheckKind; className?: string }) {
+  return <Icon name={KIND_ICON[kind]} className={cx('h-[18px] w-[18px] shrink-0', className)} />
 }
 
 export const KIND_LABEL: Record<CheckKind, string> = {
@@ -178,7 +181,7 @@ export function ExternalLink({ href, children, className }: { href: string; chil
       )}
     >
       {children}
-      <span aria-hidden>↗</span>
+      <Icon name="ext" className="h-3 w-3 shrink-0" strokeWidth={2} />
       <span className="sr-only">(새 창)</span>
     </a>
   )

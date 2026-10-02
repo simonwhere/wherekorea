@@ -111,6 +111,13 @@ export const REST_REASONS: readonly RestReason[] = ['rest', 'vaccine', 'loss', '
 export interface RestCycle {
   since: ISODate
   reason: RestReason
+  /**
+   * Optional last day of the pause (Next B, 'loss' rests): the rest also ends
+   * when this day has passed, even without a period — the first period after a
+   * loss usually comes in 4–6 weeks (docs/research/after-loss.json
+   * 'period-return'), so a track may set endedAt + 42 days. Never before `since`.
+   */
+  until?: ISODate
 }
 
 /** A positive home test, not yet confirmed at the clinic — no celebration yet. */
@@ -118,6 +125,13 @@ export interface PositivePending {
   since: ISODate
   /** The first positive test that started this state. */
   testId?: string
+  /**
+   * '양성 뒤에 출혈이 시작됐어요' (Next B): the first day of bleeding after the
+   * positive test, set by the owner through lib/logic/positiveBleeding.ts.
+   * Never before `since`. No reading of what it means is stored — the advice
+   * lines come from docs/research/early-pregnancy-bleeding.json.
+   */
+  bleedingSince?: ISODate
 }
 
 export interface CycleSettings {
@@ -142,6 +156,65 @@ export interface CycleNote {
 }
 
 export type CycleNotes = Record<ISODate, CycleNote>
+
+// ── 난임 시술 · 난임치료휴가 (Next B) ─────────────────────────
+
+/**
+ * One clinic attempt. 'ivf-fresh' / 'ivf-frozen' are one pool for the
+ * 건강보험 count (체외수정 20회, 신선·동결 통합 since 2024-02); 'iui' has its
+ * own 5; 'ovulation-induction' (약·주사) is not part of the 25 at all
+ * (docs/research/kr-programs.json 'ivf-count-merged-2024-02').
+ */
+export type TreatmentKind = 'ovulation-induction' | 'iui' | 'ivf-fresh' | 'ivf-frozen'
+export const TREATMENT_KINDS: readonly TreatmentKind[] = ['ovulation-induction', 'iui', 'ivf-fresh', 'ivf-frozen'] as const
+
+/** How the attempt ended: 음성 / 양성 / 중단 (cancelled before transfer, not counted) / still 진행 중. */
+export type TreatmentOutcome = 'negative' | 'positive' | 'cancelled' | 'ongoing'
+export const TREATMENT_OUTCOMES: readonly TreatmentOutcome[] = ['negative', 'positive', 'cancelled', 'ongoing'] as const
+
+export interface Treatment {
+  id: string
+  kind: TreatmentKind
+  /** The day the attempt started (약 시작·채취·이식 중 the couple's choice). */
+  startDate: ISODate
+  /** The day it ended (test, period, or cancellation); never before startDate. */
+  endDate?: ISODate
+  outcome?: TreatmentOutcome
+  /** 정부 지원(난임부부 시술비 지원)을 쓴 회차 — only these count toward N/25. */
+  supported?: boolean
+  /** 지원결정통지서 유효기간 끝 (발급일 + 6개월 from 2026-01, + 3개월 before). */
+  noticeExpires?: ISODate
+  /** The couple's own line (≤ 140 characters, lib/logic/treatments.ts TREATMENT_NOTE_MAX). */
+  note?: string
+}
+
+/** 난임치료휴가 (연 6일 — 유급 2일, 4일 from 2026-11-27; docs/research/kr-programs.json). */
+export type LeaveKind = 'infertility'
+export const LEAVE_KINDS: readonly LeaveKind[] = ['infertility'] as const
+
+export interface LeaveDay {
+  date: ISODate
+  kind: LeaveKind
+}
+
+/** leaveDays[member] = that person's own leave days (each member has their own 6). */
+export type LeaveDays = Partial<Record<MemberId, LeaveDay[]>>
+
+// ── 관계일 기록 (Next B, owner only, separate consent) ─────────
+
+/**
+ * The cycle owner's own record of 관계일, kept only after a separate consent
+ * (`consentAt`, by the owner). Nobody but the holder (`by`) ever sees `days`:
+ * not the partner's screen, not a notice, not an export or the state another
+ * phone may hold (lib/logic/intimacy.ts stripIntimacy — the stateForViewer
+ * pattern). Revoking deletes everything. Nothing here predicts anything.
+ */
+export interface Intimacy {
+  consentAt: ISODate
+  by: MemberId
+  /** Sorted, unique 'YYYY-MM-DD' days. */
+  days: ISODate[]
+}
 
 // ── Personal log (본인만 보기) ────────────────────────────────
 
@@ -299,6 +372,18 @@ export interface Settings {
    * 'later' 나중에 — undefined means the question hasn't been asked yet (N17).
    */
   usesLH?: boolean | 'later'
+  /**
+   * 'N년 전 오늘' on the home / 우리 (Next B). Unset = off (lib/initial.ts
+   * SETTINGS_DEFAULTS; read with lib/logic/settings.ts memoriesOn).
+   */
+  memories?: boolean
+  /** 기념일 D-7·당일 알림 (Next B). Unset = on (anniversaryAlertsOn). */
+  anniversaryAlerts?: boolean
+  /**
+   * '시도 N번째 주기' in the cycle history (Next B). Unset = hidden — the
+   * neutral wording is the default (showTryCountOn).
+   */
+  showTryCount?: boolean
 }
 
 export interface PersonalPrefs {
@@ -312,6 +397,17 @@ export interface PersonalPrefs {
    * ended pregnancy), true = always the default art, false = always the photo.
    */
   hideCover?: boolean
+  /**
+   * 콕 받기 (Next B): whether this person wants the partner's 콕 nudges at
+   * all. Unset = yes (lib/logic/settings.ts acceptNudgesFor).
+   */
+  acceptNudges?: boolean
+  /**
+   * 잠금화면 숨김을 홈 카드까지 (Next B): when true the home's moment card and
+   * strip use the neutral (discreet) wording even for the cycle owner. Unset
+   * follows this person's `discreet` (homeDiscreetFor).
+   */
+  homeDiscreet?: boolean
 }
 
 /**
@@ -448,6 +544,18 @@ export interface AppState {
   personalLog?: PersonalLog
   /** Per-cycle notes by cycle start date ('아직 안 왔어요' …). */
   cycleNotes?: CycleNotes
+  /**
+   * 난임 시술 회차 (Next B), oldest first — shared by the couple; the
+   * 지원 counter reads them (lib/logic/treatments.ts). Absent = none yet.
+   */
+  treatments?: Treatment[]
+  /** Each person's own 난임치료휴가 days (lib/logic/treatments.ts leaveUsed). */
+  leaveDays?: LeaveDays
+  /**
+   * 관계일 기록 (Next B): the cycle owner's own, after a separate consent.
+   * Never reaches the partner (lib/logic/intimacy.ts); a backup keeps it.
+   */
+  intimacy?: Intimacy
   settings: Settings
   /**
    * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser

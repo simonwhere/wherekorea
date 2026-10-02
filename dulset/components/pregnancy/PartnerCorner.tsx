@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, SectionTitle } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { TRIMESTER_LABEL, type PartnerIdea, type Trimester } from '@/lib/content/pregnancy'
 import { partnerIdeasFor } from '@/lib/logic/pregnancyView'
 import { useApp } from '@/lib/store'
@@ -52,7 +53,9 @@ function IdeaLink({ link }: { link: NonNullable<PartnerIdea['link']> }) {
   if (link.kind === 'url') {
     return (
       <a href={link.url} target="_blank" rel="noopener noreferrer" className={linkClass}>
-        {link.label} ↗<span className="sr-only"> (새 창)</span>
+        {link.label}
+        <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
+        <span className="sr-only"> (새 창)</span>
       </a>
     )
   }

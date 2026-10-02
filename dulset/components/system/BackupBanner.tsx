@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { goToSettings } from '@/components/settings/anchors'
 import { cx } from '@/components/ui'
-import { Icon } from '@/components/ui/icons'
+import { Icon, type IconName } from '@/components/ui/icons'
 import {
   BANNER_DISMISSED_KEY,
   FIRST_PERIOD_KEY,
@@ -30,10 +30,10 @@ import { useDeviceRecord } from './useDeviceRecord'
 const link =
   'inline-flex min-h-[44px] items-center rounded-lg px-1.5 text-[12.5px] font-bold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand'
 
-function copy(b: Banner): { icon: string; title: string; body: string } {
+function copy(b: Banner): { icon: IconName; title: string; body: string } {
   if (b.reason === 'first-period') {
     return {
-      icon: '🌱',
+      icon: 'sprout',
       title: '첫 기록을 남겼어요',
       body: b.installed
         ? '기록은 이 폰에만 있어요. 백업 파일을 한 번 받아 두면 폰을 바꿔도 되살릴 수 있어요.'
@@ -42,7 +42,7 @@ function copy(b: Banner): { icon: string; title: string; body: string } {
   }
   if (b.reason === 'not-installed') {
     return {
-      icon: '📲',
+      icon: 'phone',
       title: '홈 화면에 추가해 두세요',
       body: b.nudge
         ? '브라우저 탭은 7일 동안 안 열면 기록이 지워질 수 있어요. 백업 파일도 받아 두세요.'
@@ -50,9 +50,9 @@ function copy(b: Banner): { icon: string; title: string; body: string } {
     }
   }
   if (b.reason === 'stale') {
-    return { icon: '💾', title: `백업한 지 ${b.nudge?.days ?? 0}일 지났어요`, body: '기록은 이 폰에만 있어요. 일주일에 한 번 백업 파일을 받아 두세요.' }
+    return { icon: 'box', title: `백업한 지 ${b.nudge?.days ?? 0}일 지났어요`, body: '기록은 이 폰에만 있어요. 일주일에 한 번 백업 파일을 받아 두세요.' }
   }
-  return { icon: '💾', title: '아직 백업 파일이 없어요', body: '기록은 이 폰에만 있어요. 백업 파일을 받아 두면 폰을 바꿔도 되살릴 수 있어요.' }
+  return { icon: 'box', title: '아직 백업 파일이 없어요', body: '기록은 이 폰에만 있어요. 백업 파일을 받아 두면 폰을 바꿔도 되살릴 수 있어요.' }
 }
 
 /** Go to 설정 › 데이터와 개인정보 (#data, 전체 백업). */
@@ -82,9 +82,7 @@ export default function BackupBanner({ className }: { className?: string }) {
   return (
     <section aria-label="기록 지키기" className={cx('relative rounded-xl bg-surface-2 py-3 pl-4 pr-12', className)}>
       <div className="flex items-start gap-3">
-        <span aria-hidden className="pt-px text-lg leading-6">
-          {text.icon}
-        </span>
+        <Icon name={text.icon} className="mt-0.5 h-5 w-5 shrink-0 text-ink-2" />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold leading-5 text-ink">{text.title}</p>
           <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{text.body}</p>

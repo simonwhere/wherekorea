@@ -2,8 +2,22 @@
 
 // Small building blocks shared by the settings sections.
 
+import { createContext, useContext, useId } from 'react'
 import { Button, SectionTitle, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import type { SettingsAnchor } from './anchors'
+
+/**
+ * Which sections are unfolded (SettingsTab owns the set: the first one and
+ * any section a deep link or the chip table of contents asked for). Without
+ * a provider every section is open, as before.
+ */
+export interface SectionsApi {
+  isOpen: (id: SettingsAnchor) => boolean
+  toggle: (id: SettingsAnchor) => void
+}
+
+export const SectionsContext = createContext<SectionsApi | null>(null)
 
 export function SettingsSection({
   id,
@@ -19,13 +33,45 @@ export function SettingsSection({
   action?: React.ReactNode
   children: React.ReactNode
 }) {
+  const sections = useContext(SectionsContext)
+  const headingId = useId()
+  const bodyId = useId()
+  const foldable = !!sections && !!id
+  const open = !foldable || sections.isOpen(id)
+  if (!foldable) {
+    return (
+      // globals.css scroll-padding-top keeps the heading clear of the sticky top bar when scrolled to.
+      <section id={id} aria-label={title} className="mt-7 first:mt-0">
+        <SectionTitle sub={sub} action={action}>
+          {title}
+        </SectionTitle>
+        {children}
+      </section>
+    )
+  }
   return (
-    // globals.css scroll-padding-top keeps the heading clear of the sticky top bar when scrolled to.
-    <section id={id} aria-label={title} className="mt-7 first:mt-0">
-      <SectionTitle sub={sub} action={action}>
-        {title}
-      </SectionTitle>
-      {children}
+    // Folded: the heading (a disclosure button) and its one-line sub stay; the body mounts when opened.
+    // scroll-mt: the sticky chip row (SettingsTab) on top of html's scroll-padding-top (the top bar).
+    <section id={id} aria-labelledby={headingId} className={cx('scroll-mt-24', open ? 'mt-7 first:mt-0' : 'mt-1 first:mt-0')}>
+      <div className={cx('flex items-end justify-between gap-3 px-1', open ? 'mb-2' : 'border-b border-line/70 pb-1')}>
+        <div className="min-w-0 flex-1">
+          <h2 id={headingId} className="text-[15px] font-bold text-ink">
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={open ? bodyId : undefined}
+              onClick={() => sections.toggle(id)}
+              className="-ml-1 flex min-h-[44px] w-full items-center gap-1.5 rounded-lg px-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              <span className="min-w-0 flex-1">{title}</span>
+              <Icon name="chev" className={cx('h-[18px] w-[18px] shrink-0 text-ink-3 transition-transform', open && 'rotate-180')} strokeWidth={2} />
+            </button>
+          </h2>
+          {sub ? <p className={cx('text-xs text-ink-3', open ? '-mt-1' : '-mt-1.5 pb-1.5')}>{sub}</p> : null}
+        </div>
+        {open ? action : null}
+      </div>
+      {open ? <div id={bodyId}>{children}</div> : null}
     </section>
   )
 }
@@ -169,7 +215,7 @@ export function ExternalLinkButton({
       )}
     >
       {children}
-      <span aria-hidden>↗</span>
+      <Icon name="ext" className="h-3.5 w-3.5" strokeWidth={2.2} />
     </a>
   )
 }

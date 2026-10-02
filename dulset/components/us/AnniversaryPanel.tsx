@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Button, Card, EmptyState, SectionTitle, cx } from '@/components/ui'
+import { IconTile, type IconName } from '@/components/ui/icons'
 import { dLabel, formatKo } from '@/lib/dates'
 import type { AnniversaryEvent } from '@/lib/logic/anniversary'
 import { anniversaryEmoji, anniversaryLists, nextCustomOccurrence } from '@/lib/logic/usView'
@@ -49,7 +50,7 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
         </Card>
       ) : (
         <EmptyState
-          icon="🗓️"
+          icon="cal"
           title="챙길 기념일이 아직 없어요"
           body="처음 만난 날이나 결혼한 날을 넣으면 100일·주년이 저절로 생겨요. 우리만의 날도 더할 수 있어요."
           action={hasStart ? undefined : <Button onClick={onEditDates}>만난 날 넣기</Button>}
@@ -127,8 +128,8 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
       <SectionTitle>우리의 시작</SectionTitle>
       <Card className="py-1">
         <ul>
-          <StartRow label="처음 만난 날" icon="💞" date={couple.metDate} />
-          <StartRow label="결혼한 날" icon="💍" date={couple.marriedDate} divider />
+          <StartRow label="처음 만난 날" icon="heart" date={couple.metDate} />
+          <StartRow label="결혼한 날" icon="ring" date={couple.marriedDate} divider />
         </ul>
         <Button variant="secondary" full className="mb-2 mt-1" onClick={onEditDates}>
           {hasStart ? '날짜 고치기' : '날짜 넣기'}
@@ -175,12 +176,10 @@ function EventRow({
   )
 }
 
-function StartRow({ label, icon, date, divider = false }: { label: string; icon: string; date?: string; divider?: boolean }) {
+function StartRow({ label, icon, date, divider = false }: { label: string; icon: IconName; date?: string; divider?: boolean }) {
   return (
     <li className={cx('flex items-center gap-3 py-2.5', divider && 'border-t border-line')}>
-      <span className="text-xl leading-none" aria-hidden>
-        {icon}
-      </span>
+      <IconTile name={icon} size="sm" />
       <p className="min-w-0 flex-1 text-sm font-medium text-ink">{label}</p>
       <p className={cx('shrink-0 text-sm', date ? 'font-semibold text-ink-2' : 'text-ink-3')}>
         {date ? formatKo(date, { year: true, weekday: false }) : '아직 없어요'}

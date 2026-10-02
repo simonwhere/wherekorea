@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from 'react'
 import { Button, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import {
   EVIDENCE_LABEL,
   availableSuggestions,
@@ -21,7 +22,7 @@ import {
 import { isSpermSide } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem, CheckKind } from '@/lib/types'
-import { Badge, ExternalLink, KIND_ICON, KIND_LABEL } from './bits'
+import { Badge, ExternalLink, KIND_LABEL, KindIcon } from './bits'
 
 const KINDS: CheckKind[] = ['supplement', 'medication', 'habit']
 
@@ -103,7 +104,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
           <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
             {active.map((i) => (
               <li key={i.id} className="flex items-center gap-2 pl-3">
-                <span aria-hidden>{KIND_ICON[i.kind]}</span>
+                <KindIcon kind={i.kind} className="text-ink-2" />
                 <span className="min-w-0 flex-1 py-2">
                   <span className="block truncate text-sm font-medium text-ink">{i.label}</span>
                   {i.note || isWeekly(i) ? (
@@ -176,7 +177,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
                   kind === k ? 'border-brand bg-brand-soft text-brand-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
                 )}
               >
-                <span aria-hidden>{KIND_ICON[k]}</span>
+                <KindIcon kind={k} className="h-4 w-4" />
                 {KIND_LABEL[k]}
               </button>
             ))}
@@ -250,9 +251,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
           <ul className="divide-y divide-line rounded-xl border border-line bg-surface-2">
             {archived.map((i) => (
               <li key={i.id} className="flex items-center gap-2 pl-3">
-                <span aria-hidden className="opacity-60">
-                  {KIND_ICON[i.kind]}
-                </span>
+                <KindIcon kind={i.kind} className="text-ink-3" />
                 <span className="min-w-0 flex-1 truncate py-2 text-sm text-ink-3">{i.label}</span>
                 <button
                   type="button"
@@ -285,7 +284,7 @@ function SuggestionRow({ s, onAdd }: { s: Suggestion; onAdd?: () => void }) {
   return (
     <li className="rounded-xl border border-line bg-surface">
       <div className="flex items-center gap-2 pl-3">
-        <span aria-hidden>{s.infoOnly ? 'ℹ️' : KIND_ICON[s.kind]}</span>
+        {s.infoOnly ? <Icon name="info" className="h-[18px] w-[18px] shrink-0 text-ink-2" /> : <KindIcon kind={s.kind} className="text-ink-2" />}
         <span className="min-w-0 flex-1 py-2">
           <span className="flex flex-wrap items-center gap-1.5">
             <span className="text-sm font-medium text-ink">{s.label}</span>

@@ -54,9 +54,7 @@ export default function SetupCard({ className }: { className?: string }) {
   return (
     <section aria-label="설정 마저 하기" className={cx('relative rounded-xl bg-surface-2 py-3 pl-4 pr-12', className)}>
       <div className="flex items-start gap-3">
-        <span aria-hidden className="pt-px text-lg leading-6">
-          ⚙️
-        </span>
+        <Icon name="gear" className="mt-0.5 h-5 w-5 shrink-0 text-ink-2" />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold leading-5 text-ink">설정 마저 하기</p>
           <p className="mt-0.5 text-xs leading-relaxed text-ink-2">

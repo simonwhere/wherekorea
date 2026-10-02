@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Card, Disclaimer, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { ESTIMATE_DISCLAIMER, NICE_GUIDANCE } from '@/lib/content/fertility'
 import { formatKo } from '@/lib/dates'
 import { irregularMessage, type CycleSummary as Summary, type Lens } from '@/lib/logic/calendarView'
@@ -93,7 +94,7 @@ export default function CycleSummary({
       {details && !pause && stats.irregular ? (
         <Card tone="warn" as="div">
           <p className="flex gap-2 text-[13px] leading-relaxed text-ink">
-            <span aria-hidden>🌀</span>
+            <Icon name="info" className="mt-0.5 h-4 w-4 shrink-0 text-warn" strokeWidth={2} />
             <span>{irregularMessage(view)}</span>
           </p>
         </Card>
@@ -101,7 +102,10 @@ export default function CycleSummary({
 
       {view === 'hidden' ? (
         <Card tone="muted" as="div">
-          <p className="text-sm font-bold text-ink">🌿 {NICE_GUIDANCE.title}</p>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+            <Icon name="sprout" className="h-4 w-4 shrink-0 text-ink-2" />
+            {NICE_GUIDANCE.title}
+          </p>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{NICE_GUIDANCE.body}</p>
           <a
             href={NICE_GUIDANCE.source.url}

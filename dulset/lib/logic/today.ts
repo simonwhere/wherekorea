@@ -25,8 +25,8 @@ import {
   ttcClockStart,
 } from './notifications'
 import { canSeeCycleDetails, lowPressureFor } from './prefs'
-import { MAX_GESTATION_DAYS, canStartPregnancy, recentlyEnded, startPregnancy } from './pregnancy'
-import { activePositivePending, clearPositivePending } from './ttc'
+import { MAX_GESTATION_DAYS, backToPreparing, canStartPregnancy, recentlyEnded, startPregnancy } from './pregnancy'
+import { activePositivePending, clearPositivePending, startLossRest } from './ttc'
 
 // ── Clock anchored to the app's `today` ─────────────────────
 
@@ -386,7 +386,8 @@ export function doctorAdvice(state: AppState, today: ISODate, viewer?: MemberId)
   const checked = checkupsDone(state)
   if (threshold === 0) reasons.push('age')
   else if (months !== undefined && months >= threshold && !checked) reasons.push('months')
-  const stats = cycleStats(state.periods, state.cycle)
+  // The gap that held an ended pregnancy is not a cycle (cycle.spansEndedPregnancy).
+  const stats = cycleStats(state.periods, state.cycle, undefined, undefined, state.pregnancy)
   let irregularBy: DoctorAdvice['irregularBy']
   // Her period data: the partner reads it only with shared details.
   if (stats.irregular && (viewer === undefined || canSeeCycleDetails(state, viewer))) {
@@ -457,6 +458,21 @@ export function confirmPregnancy(
   ).state
 }
 
+/**
+ * The pregnancy ended (유산·임신 종료, from 설정 › 단계 or the pregnancy tab):
+ * back to preparing (pregnancy.backToPreparing keeps the record, settles its
+ * notices and starts the quiet on its own — a 'loss' rest until the 42nd day:
+ * no date estimates, no LH prompts, the support card first, and a period
+ * logged inside it does not end it). ttc.startLossRest is applied once more
+ * here so the rest is the same whichever of the two a screen calls. She can
+ * turn it off (ttcFlow.endRestFromHome / the 쉬어요 switch). Not pregnant →
+ * unchanged.
+ */
+export function endPregnancy(state: AppState, today: ISODate): AppState {
+  if (state.stage !== 'pregnant') return state
+  return startLossRest(backToPreparing(state, today), today)
+}
+
 export const TRIMESTER_LABEL: Record<1 | 2 | 3, string> = {
   1: '임신 초기',
   2: '임신 중기',
@@ -512,10 +528,11 @@ export type NoticeTab = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'date' | 'pla
 export function noticeTarget(kind: NotificationKind, stage: Stage, key?: string): NoticeTab | null {
   // Couple-wide notices are routed by their key (kind alone is ambiguous).
   if (key?.startsWith('anniv:') || key?.startsWith('reaction:')) return 'diary'
-  if (key?.startsWith('appt:') || key?.startsWith('deadline:')) return 'plan'
+  // 지원결정통지서 만료 D-N (planNotices.noticeExpiryNotices): the counter card sits first on 챙길 것.
+  if (key?.startsWith('appt:') || key?.startsWith('deadline:') || key?.startsWith('notice-expiry:')) return 'plan'
   // What the cycle owner chose to tell (ttcFlow.tellPartnerPeriod / tellPartnerPositive):
   // the partner's card on 오늘 says what to do with it.
-  if (key?.startsWith('period-told:') || key?.startsWith('positive-told:')) return 'today'
+  if (key?.startsWith('period-told:') || key?.startsWith('positive-told:') || key?.startsWith('bleeding-told:')) return 'today'
   switch (kind) {
     case 'fertile-start':
       // The 우리의 주간 card (with its date ideas) is on 오늘 now, not the 데이트 tab.

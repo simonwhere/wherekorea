@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ALBUM_CAPTION_MAX,
+  ALBUM_SECTION,
   DIARY_MAX_TEXT,
+  albumOrder,
   buildDiaryHtml,
+  excerpt,
   clampDiaryDate,
   diaryDraftKey,
   entryStageLabel,
@@ -152,7 +156,10 @@ describe('buildDiaryHtml', () => {
     const out = html([withPhoto, missing, unsafe], {
       photos: { p1: PNG, bad: 'javascript:alert(1)' },
     })
-    expect(out.match(/<img /g)).toHaveLength(1)
+    // One in the story, and the same one again in the album chapter at the end.
+    const story = out.slice(0, out.indexOf('stage-album'))
+    expect(story.match(/<img /g)).toHaveLength(1)
+    expect(out.match(/<img /g)).toHaveLength(2)
     expect(out).toContain(`<img src="${PNG}"`)
     expect(out).toContain('alt="민수의 사진 · 2026년 9월 1일"')
     expect(out.match(/class="photo-missing"/g)).toHaveLength(2)
@@ -166,6 +173,87 @@ describe('buildDiaryHtml', () => {
     const out = html([])
     expect(out).toContain('아직 남긴 기록이 없어요')
     expect(out).not.toContain('<section')
+  })
+
+  describe('album chapter (export order: story, then the photos again)', () => {
+    const JPG = 'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+    const story = () => [
+      entry({ date: '2026-08-02', author: 'a', text: '', photoId: 'p1' }),
+      entry({ date: '2026-09-10', author: 'b', text: '글만' }),
+      entry({ date: '2026-09-12', author: 'b', text: '아침 산책\n두 번째 줄', photoId: 'p2', createdAt: '2026-09-12T10:00:00+09:00' }),
+      entry({ date: '2026-09-12', author: 'a', text: '같은 날 저녁', photoId: 'p4', createdAt: '2026-09-12T19:00:00+09:00' }),
+      entry({ date: '2026-08-20', author: 'a', text: '가'.repeat(ALBUM_CAPTION_MAX + 20), photoId: 'p3' }),
+    ]
+    const photos = { p1: PNG, p2: JPG, p3: PNG, p4: JPG }
+
+    it('comes last, newest first with month headings, the day, the author and a cut caption', () => {
+      const out = html(story(), { photos, viewer: 'a' })
+      const album = out.slice(out.indexOf('class="stage stage-album"'))
+      // After every stage chapter and before the footer.
+      expect(out.indexOf('stage-album')).toBeGreaterThan(out.lastIndexOf('class="stage stage-preparing"'))
+      expect(album.indexOf('<footer>')).toBeGreaterThan(album.indexOf('</section>'))
+      expect(album).toContain(`<h2>${ALBUM_SECTION}</h2>`)
+      expect(album).toContain('사진 4장 · 최근 것부터')
+      // Newest first; same day: the later one first; month headings where the month changes.
+      const srcs = Array.from(album.matchAll(/<img src="([^"]+)" alt="([^"]+)"/g)).map((m) => [m[1], m[2]])
+      expect(srcs.map((s) => s[1])).toEqual([
+        '민수의 사진 · 2026년 9월 12일',
+        '지은의 사진 · 2026년 9월 12일',
+        '민수의 사진 · 2026년 8월 20일',
+        '민수의 사진 · 2026년 8월 2일',
+      ])
+      expect(album.match(/<h3>/g)).toHaveLength(2)
+      expect(album.indexOf('2026년 9월')).toBeLessThan(album.indexOf('2026년 8월'))
+      // The same photo bytes as the story card (no second encoding), lazily loaded.
+      expect(srcs[0]![0]).toBe(JPG)
+      expect(album.match(/loading="lazy"/g)).toHaveLength(4)
+      // Captions: the words (pre-wrap, cut at the album length), none for a photo without words.
+      expect(album).toContain('<span class="caption">같은 날 저녁</span>')
+      expect(album).toContain('<span class="caption">아침 산책\n두 번째 줄</span>')
+      expect(album.match(/class="caption"/g)).toHaveLength(3)
+      expect(album).toContain(`${'가'.repeat(ALBUM_CAPTION_MAX)}…`)
+    })
+
+    it('shows only photos that exist here, and no chapter at all without one', () => {
+      const out = html(story(), { photos: { p2: JPG }, viewer: 'b' })
+      expect(out.match(/stage-album/g)).toHaveLength(1)
+      expect(out).toContain('사진 1장 · 최근 것부터')
+      expect(out.slice(out.indexOf('stage-album')).match(/<img /g)).toHaveLength(1)
+      expect(html(story(), { photos: {} })).not.toContain('stage-album')
+      expect(html([entry({ date: '2026-09-01' })], { photos })).not.toContain(ALBUM_SECTION)
+      // Unsafe data never reaches the album either.
+      const bad = html([entry({ date: '2026-09-01', photoId: 'x' })], { photos: { x: 'javascript:alert(1)' } })
+      expect(bad).not.toContain('stage-album')
+      expect(bad).not.toContain('javascript:')
+    })
+
+    it("keeps the other member's '나만 보기' photo out for that reader, like the story", () => {
+      const list = story()
+      const hers = { ...list[2]!, privateTo: 'b' as const }
+      const entries = [list[0]!, list[1]!, hers, list[3]!, list[4]!]
+      expect(albumOrder(entries, 'a').map((e) => e.photoId)).toEqual(['p4', 'p3', 'p1'])
+      expect(albumOrder(entries, 'b').map((e) => e.photoId)).toEqual(['p4', 'p2', 'p3', 'p1'])
+      expect(albumOrder(entries).map((e) => e.photoId)).toEqual(['p4', 'p2', 'p3', 'p1'])
+      const his = html(entries, { photos, viewer: 'a' })
+      expect(his).not.toContain(JPG.slice(0, 30) + '" alt="지은')
+      expect(his).not.toContain('아침 산책')
+      expect(his.slice(his.indexOf('stage-album'))).toContain('사진 3장')
+      const own = html(entries, { photos, viewer: 'b' })
+      expect(own.slice(own.indexOf('stage-album'))).toContain('사진 4장')
+      expect(own).toContain('아침 산책')
+    })
+
+    it('escapes everything a person wrote in a caption', () => {
+      const out = html([entry({ date: '2026-09-01', photoId: 'p1', text: '<img onerror=alert(1)> & "따옴표"' })], { photos })
+      expect(out).not.toContain('<img onerror')
+      expect(out).toContain('&lt;img onerror=alert(1)&gt; &amp; &quot;따옴표&quot;')
+    })
+
+    it('cuts a caption at a code point boundary', () => {
+      expect(excerpt('  짧은 글  ')).toBe('짧은 글')
+      expect(excerpt('가나다라마', 3)).toBe('가나다…')
+      expect(excerpt('😀😀😀', 2)).toBe('😀😀…')
+    })
   })
 
   it('labels moods for screen readers', () => {

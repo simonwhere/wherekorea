@@ -30,6 +30,7 @@ export default function CycleSection() {
 
   return (
     <SettingsSection
+      id="cycle-numbers"
       title="주기 설정"
       sub={owner ? `${cycleOwner.name}님 주기 기준 · 모든 값은 예상에 쓰는 참고값이에요` : `${cycleOwner.name}님이 관리해요`}
     >
@@ -58,7 +59,7 @@ export default function CycleSection() {
 /** Where the estimates come from: the logged average, or the numbers below. */
 function CycleStatsNote() {
   const { state } = useApp()
-  const stats = cycleStats(state.periods, state.cycle)
+  const stats = cycleStats(state.periods, state.cycle, undefined, undefined, state.pregnancy)
   const fromLogs = stats.source === 'logs'
   const note = cycleSourceNote(stats, state.periods.length, state.cycle)
   return (
@@ -83,7 +84,7 @@ function CycleStatsNote() {
 function CycleNumbers() {
   const { state, update } = useApp()
   const toast = useToast()
-  const fromLogs = cycleStats(state.periods, state.cycle).source === 'logs'
+  const fromLogs = cycleStats(state.periods, state.cycle, undefined, undefined, state.pregnancy).source === 'logs'
   const longCycles = state.cycle.longCycles === true
   // "45일 이상이거나 들쭉날쭉해요" (N12): the stepper goes to 90 and the
   // calendar shows a wide band without a peak day (lib/initial cycleLengthRange).

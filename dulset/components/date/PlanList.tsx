@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Card, EmptyState, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { DATE_IDEAS } from '@/lib/content/dateIdeas'
 import { dLabel, formatKo, parts, weekdayKo } from '@/lib/dates'
 import {
@@ -38,7 +39,8 @@ export default function PlanList({ onAdd }: { onAdd: () => void }) {
         sub="둘 중 누가 담아도 같이 보여요"
         action={
           <button type="button" onClick={onAdd} className={cx(btn, 'text-brand-ink hover:bg-brand-soft')}>
-            ＋ 직접 추가
+            <Icon name="plus" className="h-4 w-4" strokeWidth={2.4} />
+            직접 추가
           </button>
         }
       >
@@ -47,7 +49,7 @@ export default function PlanList({ onAdd }: { onAdd: () => void }) {
 
       {upcoming.length === 0 ? (
         <EmptyState
-          icon="🗓️"
+          icon="cal"
           title="아직 정한 데이트가 없어요"
           body="마음에 드는 아이디어에서 '일정에 담기'를 누르면 서로에게 제안이 가요."
         />
@@ -155,7 +157,7 @@ function PlanRow({ plan }: { plan: DatePlan }) {
             <span className="text-[11px] text-ink-3">
               <span className="sr-only">{formatKo(plan.date)}, </span>
               {creator ? `${creator.name}님 제안` : null}
-              {partnerAccepted ? ` · 👍 ${partner.name}님도 좋대요` : null}
+              {partnerAccepted ? ` · ${partner.name}님도 좋대요` : null}
             </span>
           </div>
           {confirming ? null : (
@@ -174,7 +176,12 @@ function PlanRow({ plan }: { plan: DatePlan }) {
           {idea ? <span aria-hidden>{idea.emoji} </span> : null}
           {plan.title}
         </p>
-        {plan.place ? <p className="mt-0.5 truncate text-xs text-ink-2">📍 {plan.place}</p> : null}
+        {plan.place ? (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-2">
+            <Icon name="pin" className="h-3.5 w-3.5 shrink-0 text-ink-3" strokeWidth={2.2} />
+            <span className="min-w-0 truncate">{plan.place}</span>
+          </p>
+        ) : null}
         {plan.note ? <p className="mt-0.5 text-xs text-ink-3">“{plan.note}”</p> : null}
 
         {confirming ? (
@@ -195,8 +202,9 @@ function PlanRow({ plan }: { plan: DatePlan }) {
           <div key="actions" className="mt-2 flex flex-wrap gap-1.5">
             {!isPast && !mine ? (
               iAccepted ? (
-                <span className="inline-flex min-h-[44px] items-center px-1 text-xs font-medium text-ok">
-                  👍 좋다고 전했어요
+                <span className="inline-flex min-h-[44px] items-center gap-1 px-1 text-xs font-medium text-ok">
+                  <Icon name="thumb" className="h-4 w-4" strokeWidth={2} />
+                  좋다고 전했어요
                 </span>
               ) : (
                 <button
@@ -207,7 +215,8 @@ function PlanRow({ plan }: { plan: DatePlan }) {
                     toast.show(`${partner.name}님에게 좋다고 전했어요`)
                   }}
                 >
-                  👍 좋아요
+                  <Icon name="thumb" className="h-4 w-4" strokeWidth={2} />
+                  좋아요
                 </button>
               )
             ) : null}
@@ -221,12 +230,14 @@ function PlanRow({ plan }: { plan: DatePlan }) {
                 )}
                 onClick={() => update((s) => toggleDatePlanDone(s, plan.id))}
               >
-                다녀왔어요 ✓
+                다녀왔어요
+                <Icon name="check" className="h-4 w-4" strokeWidth={2.4} />
               </button>
             ) : null}
             {!isPast ? (
               <button type="button" className={btnSecondary} onClick={addToCalendar}>
-                📅 캘린더에 추가
+                <Icon name="cal" className="h-4 w-4" strokeWidth={2} />
+                캘린더에 추가
               </button>
             ) : null}
             {plan.done ? (
@@ -235,7 +246,8 @@ function PlanRow({ plan }: { plan: DatePlan }) {
                 className={cx(btn, 'bg-brand-soft text-brand-ink hover:bg-brand/15')}
                 onClick={writeDiary}
               >
-                📔 기록으로 남기기
+                <Icon name="book" className="h-4 w-4" strokeWidth={2} />
+                기록으로 남기기
               </button>
             ) : null}
           </div>

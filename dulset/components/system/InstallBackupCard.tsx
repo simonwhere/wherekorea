@@ -8,6 +8,7 @@
 
 import { INSTALL_STEPS, backupNudge } from '@/lib/persist'
 import { goToSettings } from '@/components/settings/anchors'
+import { Icon } from '@/components/ui/icons'
 import { useApp } from '@/lib/store'
 import { useDeviceRecord } from './useDeviceRecord'
 
@@ -32,9 +33,7 @@ export default function InstallBackupCard() {
     <section aria-label="기록 지키기" className="space-y-3">
       {device.installed ? null : (
         <div className="flex items-start gap-3 rounded-xl bg-surface-2 px-4 py-3">
-          <span aria-hidden className="pt-0.5">
-            📲
-          </span>
+          <Icon name="phone" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-ink-2" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-ink">홈 화면에 추가해 두세요</p>
             <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
@@ -56,9 +55,7 @@ export default function InstallBackupCard() {
       )}
       {nudge ? (
         <div className="flex items-start gap-3 rounded-xl bg-surface-2 px-4 py-3">
-          <span aria-hidden className="pt-0.5">
-            💾
-          </span>
+          <Icon name="box" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-ink-2" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-ink">
               {nudge.kind === 'stale' ? `백업한 지 ${nudge.days}일 지났어요` : '아직 이 기기에서 받은 백업 파일이 없어요'}

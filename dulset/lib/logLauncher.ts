@@ -5,7 +5,12 @@
 
 import type { ISODate } from './types'
 
-export type LogKind = 'period' | 'lh' | 'ptest' | 'note'
+/**
+ * The sheet's chips. 'intimacy' (관계, Next B) exists only for the 관계일 record's
+ * holder (lib/logic/intimacy.ts): it is never the default chip and never offered
+ * to anyone else.
+ */
+export type LogKind = 'period' | 'lh' | 'ptest' | 'note' | 'intimacy'
 
 export interface LogRequest {
   date?: ISODate

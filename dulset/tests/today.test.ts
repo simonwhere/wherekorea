@@ -21,6 +21,7 @@ import {
   currentRun,
   dayCount,
   doctorAdvice,
+  endPregnancy,
   fertilityVoice,
   firstUnchecked,
   folicTimer,
@@ -42,6 +43,8 @@ import {
 } from '@/lib/logic/today'
 import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
+import { QUIET_DAYS_AFTER_END, startPregnancy } from '@/lib/logic/pregnancy'
+import { activeRest } from '@/lib/logic/ttc'
 import type { AppState } from '@/lib/types'
 
 // 'a' = 민수 (does not track the cycle), 'b' = 지은 (tracks the cycle).
@@ -489,5 +492,26 @@ describe('supplement suggestions', () => {
     expect(ownerIds).toContain('multivitamin')
     const added = addCheckItem(s, 'b', '커피 한 잔만', 'habit', '2026-09-02')
     expect(availableSuggestions('cycle-owner', activeItems(added, 'b')).map((x) => x.id)).not.toContain('caffeine')
+  })
+})
+
+describe('endPregnancy (Next B): back to preparing with the 42-day quiet started', () => {
+  it('records the end, starts a loss rest until the 42nd day, and leaves a non-pregnant state alone', () => {
+    const pregnant = startPregnancy(fresh(), '2026-08-01', '2026-09-01')
+    const ended = endPregnancy(pregnant, '2026-09-20')
+    expect(ended.stage).toBe('preparing')
+    expect(ended.pregnancy).toMatchObject({ lmp: '2026-08-01', confirmedAt: '2026-09-01', endedAt: '2026-09-20' })
+    expect(ended.restCycle).toEqual({ since: '2026-09-20', reason: 'loss', until: addDays('2026-09-20', QUIET_DAYS_AFTER_END - 1) })
+    expect(activeRest(ended, '2026-10-31')?.reason).toBe('loss')
+    expect(activeRest(ended, '2026-11-01')).toBeUndefined()
+    // No specialist card through the quiet.
+    expect(doctorAdvice({ ...ended, settings: { ...ended.settings, ttcStart: '2024-01-01' } }, '2026-10-10')).toBeNull()
+    const s = fresh()
+    expect(endPregnancy(s, '2026-09-20')).toBe(s)
+  })
+
+  it('the bleeding notice opens 오늘 like the other things she chose to tell', () => {
+    expect(noticeTarget('system', 'preparing', 'bleeding-told:2026-09-26')).toBe('today')
+    expect(noticeTarget('system', 'pregnant', 'bleeding-told:2026-09-26')).toBe('today')
   })
 })

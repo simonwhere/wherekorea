@@ -172,9 +172,10 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     const cycleStart = [...sortedStarts(state.periods)].reverse().find((d) => d <= today)
     // A positive test awaiting the clinic already answers "late?" — no test prompt.
     // A rest cycle pauses every date (ttcFlow.ttcPhase shows 쉬는 주기 even on
-    // late days), so neither the late nor the period-due notice goes out.
+    // late days), so neither the late nor the period-due notice goes out. A
+    // 'loss' quiet (ttc.startLossRest) counts until its last day, period or not.
     const pending = activePositivePending(state)
-    const resting = !!activeRest(state)
+    const resting = !!activeRest(state, today)
     if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending && !resting && cycleStart) {
       // The day after the expected range: log it if it started. The pregnancy
       // test comes up only LATE_TEST_DAYS days past the range (periodDue.ts).
@@ -389,7 +390,7 @@ export function mergeNotices(state: AppState, notices: Notice[], nowISO: string)
  *   told / skipped, the positive-test note, the live-vaccine rest suggestion) —
  *   otherwise an answered question would be asked again. A few per cycle at most.
  */
-const LONG_LIVED_KEY = /^(doctor|period-told|positive-told|rest-suggest):/
+const LONG_LIVED_KEY = /^(doctor|period-told|positive-told|bleeding-told|rest-suggest):/
 
 function trim(list: AppNotification[]): AppNotification[] {
   if (list.length <= MAX_KEPT) return list
@@ -405,18 +406,37 @@ function trim(list: AppNotification[]): AppNotification[] {
 
 export const NUDGES_PER_DAY = 3
 
-export function nudgesSentToday(state: AppState, from: MemberId, today: ISODate): number {
+export function nudgesSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'nudge' && n.from === from && n.createdAt.startsWith(today))
     .length
 }
 
 /**
+ * Can `from` 콕 `to` today at all? Not once the day's NUDGES_PER_DAY are used,
+ * and never when `to` turned 콕 받기 off (settings.acceptNudgesFor, Next B) —
+ * the home hides the button and sendNudge drops the call either way.
+ */
+export function canNudge(state: Pick<AppState, 'notifications' | 'settings'>, from: MemberId, to: MemberId, today: ISODate): boolean {
+  return acceptsNudges(state.settings, to) && nudgesSentToday(state, from, today) < NUDGES_PER_DAY
+}
+
+/**
+ * settings.acceptNudgesFor, read here without importing settings.ts (which
+ * imports this file): unset = yes, the lib/initial PERSONAL_DEFAULTS value
+ * (tests/notificationsV2.test.ts keeps the two in step).
+ */
+function acceptsNudges(settings: Pick<AppState['settings'], 'personal'>, member: MemberId): boolean {
+  return settings.personal?.[member]?.acceptNudges ?? true
+}
+
+/**
  * "콕 찌르기" — a gentle reminder to the partner. Limited per day so it never
- * turns into nagging. `nowISO` should be a local-date-prefixed timestamp.
+ * turns into nagging, and dropped for a partner who said no to 콕 (canNudge).
+ * `nowISO` should be a local-date-prefixed timestamp.
  */
 export function sendNudge(state: AppState, from: MemberId, to: MemberId, today: ISODate, nowISO: string, itemLabel?: string): AppState {
+  if (!canNudge(state, from, to, today)) return state
   const sent = nudgesSentToday(state, from, today)
-  if (sent >= NUDGES_PER_DAY) return state
   const name = memberName(state, from)
   const n: AppNotification = {
     id: uid(),

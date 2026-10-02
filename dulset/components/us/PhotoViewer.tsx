@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { CHAPTER_BADGE_TONE } from '@/components/diary/EntryCard'
 import { Avatar, Sheet, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { moodLabel } from '@/lib/logic/diaryExport'
 import { chapterContext, chapterLabel, entryChapter, excerpt } from '@/lib/logic/usView'
@@ -90,8 +91,9 @@ function ViewerBody({
             onError={() => setBroken(shown)}
           />
         ) : missing ? (
-          <p className="px-4 text-center text-xs text-ink-3">
-            <span aria-hidden>📷 </span>이 기기에서 사진을 찾을 수 없어요.
+          <p className="flex items-center gap-1.5 px-4 text-center text-xs text-ink-3">
+            <Icon name="cam" className="h-4 w-4" />
+            이 기기에서 사진을 찾을 수 없어요.
           </p>
         ) : (
           <div className="h-full w-full animate-pulse bg-surface-2" role="img" aria-label="사진 불러오는 중" />

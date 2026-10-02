@@ -6,6 +6,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Disclaimer, useToast } from '@/components/ui'
+import TreatmentsCard from '@/components/clinic/TreatmentsCard'
 import AppointmentList from '@/components/plan/AppointmentList'
 import AppointmentSheet from '@/components/plan/AppointmentSheet'
 import CustomTaskSheet from '@/components/plan/CustomTaskSheet'
@@ -29,6 +30,7 @@ import { ROADMAP_CHECKED_AT } from '@/lib/content/roadmap'
 import { setAppointmentDone } from '@/lib/logic/appointments'
 import { FERTILITY_APPLY_ID, appliedInfo, setFertilityApplied } from '@/lib/logic/partnerTrack'
 import { removeCustomTask } from '@/lib/logic/roadmap'
+import { showsTreatmentCounter } from '@/lib/logic/treatments'
 import { useApp } from '@/lib/store'
 import type { Appointment, AppState, ISODate, MemberId } from '@/lib/types'
 
@@ -98,6 +100,9 @@ export default function PlanTab() {
         <h1 className="text-xl font-extrabold tracking-tight text-ink">챙길 것</h1>
         <p className="mt-1 text-sm text-ink-2">{HEADER_LINE[state.stage]}</p>
       </header>
+
+      {/* 난임 시술 · 지원 counter (Next B — B2): while 병원과 함께 준비 중, or once anything was logged. */}
+      {showsTreatmentCounter(state) ? <TreatmentsCard /> : null}
 
       <FocusCard items={items} actions={actions} />
 

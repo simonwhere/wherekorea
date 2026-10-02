@@ -2,15 +2,11 @@
 
 import { useId, useState } from 'react'
 import { Button, Field, Sheet, inputClass, textareaClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { templateById } from '@/lib/content/roadmap'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
-import {
-  APPOINTMENT_KIND_EMOJI,
-  APPOINTMENT_KIND_LABEL,
-  addAppointment,
-  needsTime,
-  updateAppointment,
-} from '@/lib/logic/appointments'
+import { APPOINTMENT_KIND_LABEL, addAppointment, needsTime, updateAppointment } from '@/lib/logic/appointments'
 import { useApp } from '@/lib/store'
 import { APPOINTMENT_KINDS, type Appointment, type AppointmentKind } from '@/lib/types'
 import { ChoiceChips, FieldError } from './bits'
@@ -61,7 +57,7 @@ export default function AppointmentSheet({
   const [a, b] = state.couple.members
   // Past visits count too (a test already taken, a clinic day written up at night).
   const minDate = addDays(today, -APPT_PAST_DAYS)
-  const task = draft.taskId ? templateById(draft.taskId) ?? state.customTasks.find((c) => c.id === draft.taskId) : undefined
+  const task = draft.taskId ? (templateById(draft.taskId) ?? state.customTasks.find((c) => c.id === draft.taskId)) : undefined
 
   const timed = needsTime(draft.kind)
 
@@ -127,8 +123,11 @@ export default function AppointmentSheet({
     <Sheet open onClose={onClose} title={editing ? '일정 고치기' : '일정 추가'}>
       <form onSubmit={submit} className="space-y-4" noValidate>
         {task ? (
-          <p className="rounded-xl bg-surface-2 px-3 py-2 text-xs text-ink-2">
-            <span aria-hidden>✅ </span>챙길 것 · <b className="font-semibold text-ink">{task.title}</b>
+          <p className="flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2 text-xs text-ink-2">
+            <Icon name="list" className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            <span>
+              챙길 것 · <b className="font-semibold text-ink">{task.title}</b>
+            </span>
           </p>
         ) : null}
 
@@ -209,7 +208,7 @@ export default function AppointmentSheet({
               value: k,
               label: (
                 <>
-                  <span aria-hidden>{APPOINTMENT_KIND_EMOJI[k]}</span> {APPOINTMENT_KIND_LABEL[k]}
+                  <Icon name={APPOINTMENT_KIND_ICON[k]} className="h-3.5 w-3.5 shrink-0" /> {APPOINTMENT_KIND_LABEL[k]}
                 </>
               ),
             }))}
@@ -227,11 +226,14 @@ export default function AppointmentSheet({
           />
         </Field>
 
-        <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
-          🔔 {draft.who === 'both' ? '둘 다' : draft.who === me.id ? '나' : `${partner.name}님`}에게{' '}
-          <b className="font-semibold text-ink">{isISODate(draft.date) ? formatKo(draft.date) : '그날'}</b> 전날과 당일에
-          알림이 가요.
-          {draft.who !== 'both' ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
+        <div className="flex items-start gap-1.5 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
+          <Icon name="bell" className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+          <span>
+            {draft.who === 'both' ? '둘 다' : draft.who === me.id ? '나' : `${partner.name}님`}
+            에게 <b className="font-semibold text-ink">{isISODate(draft.date) ? formatKo(draft.date) : '그날'}</b> 전날과 당일에 알림이
+            가요.
+            {draft.who !== 'both' ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
+          </span>
         </div>
 
         <Button type="submit" full size="lg">

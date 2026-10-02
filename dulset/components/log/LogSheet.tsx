@@ -5,6 +5,7 @@
 // Tapping a choice saves right away (no save button) and offers 되돌리기.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import IntimacyPanel from '@/components/log/IntimacyPanel'
 import LHPanel from '@/components/log/LHPanel'
 import NotePanel from '@/components/log/NotePanel'
 import PeriodPanel from '@/components/log/PeriodPanel'
@@ -15,6 +16,7 @@ import { Sheet, useToast } from '@/components/ui'
 import { isISODate } from '@/lib/dates'
 import { cycleLens, dayLine, showsLH, showsTests } from '@/lib/logic/calendarView'
 import { dayInfo } from '@/lib/logic/cycle'
+import { canSeeIntimacy } from '@/lib/logic/intimacy'
 import { defaultLogKind, logUndo, undoLog, type LogKind, type LogUndo } from '@/lib/logic/logs'
 import { canLogCycle } from '@/lib/logic/prefs'
 import type { LogRequest } from '@/lib/logLauncher'
@@ -91,10 +93,14 @@ export default function LogSheet({ request, onClose }: { request: LogRequest | n
 
 function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLog; onClose: () => void }) {
   const { state, today, viewer, partner, cycleOwner } = useApp()
-  const lens = useMemo(() => cycleLens(state, viewer), [state, viewer])
+  const lens = useMemo(() => cycleLens(state, viewer, today), [state, viewer, today])
   // Only the person whose cycle it is logs periods, LH and tests — and only while preparing.
   const canLog = canLogCycle(state, viewer) && state.stage === 'preparing'
-  const kinds: LogKind[] = canLog ? (lens.view === 'hidden' ? ['period', 'ptest', 'note'] : ['period', 'lh', 'ptest', 'note']) : ['note']
+  // 관계 (Next B): only for the person who gave the separate consent, and only while they still log the cycle.
+  const intimacy = canLog && canSeeIntimacy(state, viewer)
+  const kinds: LogKind[] = canLog
+    ? [...(lens.view === 'hidden' ? (['period', 'ptest', 'note'] as const) : (['period', 'lh', 'ptest', 'note'] as const)), ...(intimacy ? (['intimacy'] as const) : [])]
+    : ['note']
 
   const [date, setDate] = useState<ISODate>(() => {
     const d = request.date
@@ -107,7 +113,7 @@ function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLo
 
   const line = canLog ? dayLine(dayInfo(state, date, today), lens) : ''
   // What the partner's screen shows of this kind of record (their own wording applies too).
-  const partnerLens = cycleLens(state, partner.id)
+  const partnerLens = cycleLens(state, partner.id, today)
   const partnerSees = kind === 'lh' ? showsLH(partnerLens) : kind === 'ptest' ? showsTests(partnerLens) : partnerLens.details
 
   return (
@@ -122,13 +128,15 @@ function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLo
           <LHPanel key={date} date={date} view={lens.view} paused={!!lens.pause} save={save} />
         ) : kind === 'ptest' ? (
           <PTestPanel key={date} date={date} view={lens.view} save={save} onClose={onClose} />
+        ) : kind === 'intimacy' ? (
+          <IntimacyPanel key={date} date={date} />
         ) : (
           <NotePanel date={date} save={save} />
         )}
       </section>
 
       {canLog ? (
-        kind !== 'note' ? (
+        kind === 'intimacy' ? null : kind !== 'note' ? (
           <p className="text-[11px] leading-relaxed text-ink-3">
             {partnerSees
               ? `${partner.name}님 화면에도 함께 보여요.`

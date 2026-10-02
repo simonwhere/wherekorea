@@ -12,25 +12,25 @@
 // "today": the next deadline counts from that date. Done and undo both go
 // through completeMonthlyTask — never tickItem: the claim step ('검사비
 // 청구하기') has no roadmap row of its own.
+//
+// Leading the home on a short phone (375×667, useShortViewport), the card is
+// one row — the emoji, '제목 · D-12' and a chevron — so the moment card's
+// title still sits above the tab bar; a tap opens the full card in place.
 
 import { useCallback, useMemo, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import UndoToast, { type UndoMessage } from '@/components/log/UndoToast'
 import AppointmentSheet from '@/components/plan/AppointmentSheet'
 import { Button, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
-import { Icon } from '@/components/ui/icons'
-import { addDays, formatKo, formatShort, isISODate } from '@/lib/dates'
-import {
-  bookingDraft,
-  completeMonthlyTask,
-  setClaimDocDone,
-  type MonthlyTask,
-  type TaskStage,
-} from '@/lib/logic/partnerTrack'
-import { KIND_EMOJI, type AppointmentDraft } from '@/lib/logic/plan'
+import { Icon, type IconName } from '@/components/ui/icons'
+import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
+import { addDays, dLabel, formatKo, formatShort, isISODate } from '@/lib/dates'
+import { bookingDraft, completeMonthlyTask, setClaimDocDone, type MonthlyTask, type TaskStage } from '@/lib/logic/partnerTrack'
+import type { AppointmentDraft } from '@/lib/logic/plan'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
 import { ExternalLink, LinkButton } from './bits'
+import { useShortViewport } from './useFoldFit'
 
 type Nav = (tab: TabKey) => void
 
@@ -141,7 +141,10 @@ function WhenSheet({ task, onConfirm, onClose }: { task: MonthlyTask; onConfirm:
  * 되돌리기. Keep it in a parent that outlives the row: once done, monthlyTask
  * moves on to the next step. `toast` renders the toast and the sheet.
  */
-export function useMonthlyTaskDone(): { done: (task: MonthlyTask) => void; toast: React.ReactNode } {
+export function useMonthlyTaskDone(): {
+  done: (task: MonthlyTask) => void
+  toast: React.ReactNode
+} {
   const { update, today, me } = useApp()
   const toast = useToast()
   const [undo, setUndo] = useState<(UndoMessage & { task: MonthlyTask; at: ISODate }) | null>(null)
@@ -153,7 +156,12 @@ export function useMonthlyTaskDone(): { done: (task: MonthlyTask) => void; toast
     (task: MonthlyTask, at: ISODate) => {
       update((s) => completeMonthlyTask(s, task, at, me.id))
       const when = task.step ? ` · ${formatKo(at, { weekday: false })}` : ''
-      setUndo({ id: Date.now(), text: `‘${task.title}’ 완료했어요${when}`, task, at })
+      setUndo({
+        id: Date.now(),
+        text: `‘${task.title}’ 완료했어요${when}`,
+        task,
+        at,
+      })
     },
     [update, me.id],
   )
@@ -272,11 +280,13 @@ function AppointmentLine({ task, muted = false }: { task: MonthlyTask; muted?: b
   const a = task.appointment
   if (!a) return null
   return (
-    <p className={cx('mt-1.5 text-[13px] font-semibold', muted ? 'text-ink-3' : 'text-ink')}>
-      <span aria-hidden>📅 </span>
-      {formatKo(a.date)}
-      {a.time ? ` ${a.time}` : ''}
-      {a.place ? ` · ${a.place}` : ''}
+    <p className={cx('mt-1.5 flex items-center gap-1.5 text-[13px] font-semibold', muted ? 'text-ink-3' : 'text-ink')}>
+      <Icon name="cal" className="h-4 w-4 shrink-0" />
+      <span>
+        {formatKo(a.date)}
+        {a.time ? ` ${a.time}` : ''}
+        {a.place ? ` · ${a.place}` : ''}
+      </span>
     </p>
   )
 }
@@ -308,7 +318,7 @@ function ClaimDocs({ task }: { task: MonthlyTask }) {
                   d.done ? 'border-ok bg-ok text-white' : 'border-control bg-surface text-transparent',
                 )}
               >
-                ✓
+                <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
               </span>
               <span className={cx(d.done && 'text-ink-3 line-through')}>{d.label}</span>
             </button>
@@ -355,9 +365,7 @@ function StageBody({
 
   return (
     <>
-      {task.dueText ? (
-        <p className={cx('mt-0.5 text-xs font-semibold', overdue ? 'text-warn' : 'text-ink-2')}>{task.dueText}</p>
-      ) : null}
+      {task.dueText ? <p className={cx('mt-0.5 text-xs font-semibold', overdue ? 'text-warn' : 'text-ink-2')}>{task.dueText}</p> : null}
 
       {stage === 'visited' ? (
         <>
@@ -368,7 +376,9 @@ function StageBody({
         <>
           <AppointmentLine task={task} muted={pastBooked} />
           <p className="mt-0.5 text-[12.5px] text-ink-3">
-            {pastBooked ? '예약일이 지났어요. 일정을 고치거나 다녀온 날을 기록해요.' : `${task.guide?.bring ?? '검사의뢰서'} 챙기기 · 검사 준비는 병원 안내를 따라요.`}
+            {pastBooked
+              ? '예약일이 지났어요. 일정을 고치거나 다녀온 날을 기록해요.'
+              : `${task.guide?.bring ?? '검사의뢰서'} 챙기기 · 검사 준비는 병원 안내를 따라요.`}
           </p>
         </>
       ) : (
@@ -482,17 +492,28 @@ export function MonthlyTaskBody({
 }
 
 /** The tile on the compact card: the 가임력 검사 chain's own steps, else the roadmap kind. */
-function taskEmoji(task: MonthlyTask): string {
-  if (task.step === 'test') return task.stage === 'visited' ? '🙋' : task.stage === 'booked' ? '📅' : '🧪'
-  if (task.step === 'apply') return '📝'
-  if (task.step === 'claim') return '🧾'
-  return KIND_EMOJI[task.kind] ?? '📌'
+function taskIcon(task: MonthlyTask): IconName {
+  if (task.step === 'test') return task.stage === 'visited' ? 'check' : task.stage === 'booked' ? 'cal' : 'flask'
+  if (task.step === 'apply') return 'pen'
+  if (task.step === 'claim') return 'doc'
+  return ROADMAP_KIND_ICON[task.kind] ?? 'pin'
 }
+
+/** The compact row's due: 'D-12' / 'D+3' from the deadline, else the first clause of the due text. */
+export function compactDue(task: Pick<MonthlyTask, 'dueBy' | 'dueText'>, today: ISODate): string | undefined {
+  if (task.dueBy && isISODate(task.dueBy)) return dLabel(task.dueBy, today)
+  return task.dueText?.split(' · ')[0] || undefined
+}
+
+const CARD_FRAME = 'rounded-[20px] border shadow-warm dark:shadow-none'
+const cardTone = (overdue: boolean) =>
+  overdue ? 'border-warn/25 bg-warn-soft' : 'border-transparent bg-surface dark:border-line/70 forced-colors:border-line'
 
 /**
  * The partner's first line when the task is urgent (`top`: a live deadline, or
  * the owner is 35+): the stage card under the cover — what, by when, where,
- * what to bring, and the stage's one action.
+ * what to bring, and the stage's one action. With `compactOnShort`, on a
+ * phone under 700px tall it is one row ('제목 · D-12 ›') until tapped.
  */
 export function MonthlyTaskCard({
   task,
@@ -500,6 +521,7 @@ export function MonthlyTaskCard({
   onNavigate,
   className,
   fold = false,
+  compactOnShort = false,
 }: {
   task: MonthlyTask
   onDone: (task: MonthlyTask) => void
@@ -507,24 +529,69 @@ export function MonthlyTaskCard({
   className?: string
   /** Leading the home (above the moment card): its action row is the first-screen fold target. */
   fold?: boolean
+  /** Leading the home: one row on a short viewport (useShortViewport), the full card after a tap. */
+  compactOnShort?: boolean
 }) {
+  const { today } = useApp()
+  const short = useShortViewport()
+  const [expanded, setExpanded] = useState(false)
   const overdue = task.status === 'overdue'
+  const compact = compactOnShort && short && !expanded
+
+  if (compact) {
+    const due = compactDue(task, today)
+    return (
+      <section aria-label="이번 달 할 일" className={className}>
+        <button
+          type="button"
+          data-fold={fold ? '' : undefined}
+          aria-expanded={false}
+          onClick={() => setExpanded(true)}
+          className={cx(
+            'flex min-h-[56px] w-full items-center gap-3 py-2 pl-3 pr-2.5 text-left transition-colors hover:bg-surface-2',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+            CARD_FRAME,
+            cardTone(overdue),
+          )}
+        >
+          <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-ink">
+            <Icon name={taskIcon(task)} className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-bold leading-[14px] text-brand-ink">이번 달 할 일</span>
+            <span className="block truncate text-[15px] font-extrabold leading-[20px] tracking-[-0.03em] text-ink">
+              {task.title}
+              {due ? <span className={cx('font-bold', overdue ? 'text-warn' : 'text-ink-3')}> · {due}</span> : null}
+            </span>
+          </span>
+          <Icon name="right" className="h-[18px] w-[18px] shrink-0 text-ink-3" strokeWidth={2.2} />
+          <span className="sr-only">자세히 보기</span>
+        </button>
+      </section>
+    )
+  }
+
   return (
-    <section
-      aria-label="이번 달 할 일"
-      className={cx(
-        'flex gap-3 rounded-[20px] border py-3 pl-3.5 pr-3 shadow-warm dark:shadow-none',
-        overdue
-          ? 'border-warn/25 bg-warn-soft'
-          : 'border-transparent bg-surface dark:border-line/70 forced-colors:border-line',
-        className,
-      )}
-    >
-      <span aria-hidden className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-[21px]">
-        {taskEmoji(task)}
+    <section aria-label="이번 달 할 일" className={cx('flex gap-3 py-3 pl-3.5 pr-3', CARD_FRAME, cardTone(overdue), className)}>
+      <span aria-hidden className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand-ink">
+        <Icon name={taskIcon(task)} className="h-6 w-6" />
       </span>
       <div className="min-w-0 flex-1">
-        <StageEyebrow task={task} />
+        <div className="flex items-start justify-between gap-2">
+          <StageEyebrow task={task} />
+          {expanded ? (
+            // Opened from the compact row: a way back to one row (44px to tap).
+            <button
+              type="button"
+              aria-label="접기"
+              aria-expanded
+              onClick={() => setExpanded(false)}
+              className="-my-3 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              <Icon name="chev" className="h-[18px] w-[18px] rotate-180" strokeWidth={2.2} />
+            </button>
+          ) : null}
+        </div>
         <p className="mt-px text-base font-extrabold leading-snug tracking-[-0.03em] text-ink">{task.title}</p>
         <StageBody task={task} onDone={onDone} onNavigate={onNavigate} onSurface2={overdue} compact fold={fold} />
       </div>

@@ -1,0 +1,156 @@
+{
+ "summary": "유산 뒤 '쉬어 가기'(RestCycle reason 'loss', 선택적 until) 트랙이 몸에 대해 말할 수 있는 것의 근거예요. 일관되게 확인된 것: ① 유산 뒤 첫 생리는 보통 4~6주 뒤에 오고, 몇 달은 주기가 들쭉날쭉할 수 있어요(ACOG를 인용한 MNT·Tommy's·국내 의사 답변). ② 몸은 유산 뒤 2주면 다시 배란할 수 있어서 생리 전에도 임신이 될 수 있어요(ACOG 초기 임신 손실 FAQ). ③ ACOG: 다시 시도하기까지 의학적으로 기다려야 하는 이유는 없어요. 다만 감염 예방으로 1~2주는 질 안에 아무것도 넣지 않고, 예정일 계산이 쉬우라고 생리 한 번을 기다리는 사람도 있어요. ④ WHO(2005)는 유산·인공임신중절 뒤 최소 6개월을 권했지만 라틴아메리카 코호트 연구 하나에 근거해요. ⑤ 더 새로운 근거(Kangatharan 2017 메타분석, Schliep 2016 EAGeR 분석)는 6개월 안(3개월 안도)에 임신해도 다음 유산·조산 위험이 높아지지 않고 생아 출생이 오히려 많다고 해요. 2분기 유산과 정신건강에 대해서는 근거 질이 낮아요. ⑥ 열·오한·심한 통증·많은 출혈은 바로 병원. ⑦ 두 번 이상 반복되면 검사를 권할 수 있어요. ⑧ 한국 법정 유산·사산휴가(근로기준법)와 배우자 유산·사산휴가 5일(2026-09-18)은 admin-timeline.json과 함께 봐요.",
+ "checkedAt": "2026-10-02",
+ "method": "모든 항목은 WebSearch 결과 요약과 발췌에 근거해요. 프록시가 acog.org, tommys.org, academic.oup.com, aura.abdn.ac.uk, nichd.nih.gov, mdedge.com, medicalnewstoday.com을 막아 원문을 열지 못했어요(egress blocked). verified는 전부 false예요. ACOG 문장('as soon as two weeks after an early pregnancy loss', 'there is no medical reason to wait to begin trying again')과 Kangatharan 2017의 RR 값은 검색 엔진 발췌 그대로예요. 출시 전 전문의 자문 의제(N18 '유산 뒤 신체 경고')에서 원문과 함께 확인해요. UI 문장(ui)은 '유산' 대신 '임신이 끝난 뒤'로 쓰고, 소프트 모드 사용자에게는 '배란'이 들어간 줄을 보여 주지 않아요(ovulation-2-weeks는 inUI false).",
+ "findings": [
+  {
+   "id": "period-return",
+   "topic": "첫 생리는 보통 4~6주 뒤",
+   "claim": "MNT(ACOG·전문가 인용): 'After a miscarriage, many women will have their first period 4–6 weeks later. However, it can take several months for the menstrual cycle to return to how it was before pregnancy.' Tommy's와 국내 의사 답변(닥터나우)도 '보통 4~6주 안에 생리가 돌아오고 개인차가 있다'고 해요. hCG가 남아 있는 동안은 배란이 늦어질 수 있어요.",
+   "ui": "임신이 끝난 뒤 첫 생리는 보통 4~6주 뒤에 와요. 몇 달은 주기가 들쭉날쭉할 수 있어요.",
+   "sources": [
+    "https://www.medicalnewstoday.com/articles/325642",
+    "https://www.tommys.org/baby-loss-support/miscarriage-information-and-support/pregnancy-after-miscarriage/getting-pregnant-after-miscarriage",
+    "https://doctornow.co.kr/content/qna/cbf02e1127b94239ae3161fda4d857b1",
+    "https://doctornow.co.kr/content/qna/e5bb981182af4e4f8ce403f2fcecb10e"
+   ],
+   "confidence": "medium-high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "'loss' rest의 기본 until을 끝난 날 + 6주로 두면 이 범위와 맞아요(그 전에 생리가 오면 생리가 끝내요). 6주보다 늦으면 '병원에 물어봐요' 한 줄."
+  },
+  {
+   "id": "ovulation-2-weeks",
+   "topic": "2주 뒤면 다시 배란할 수 있어요",
+   "claim": "ACOG(초기 임신 손실 FAQ): 'You can ovulate and become pregnant as soon as two weeks after an early pregnancy loss.'",
+   "ui": "생리가 오기 전에도 다시 임신이 될 수 있어요(빠르면 2주 뒤).",
+   "sources": [
+    "https://www.acog.org/womens-health/faqs/early-pregnancy-loss",
+    "https://www.medicalnewstoday.com/articles/325642"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "ui 문장은 '배란' 없이 썼어요. 피임 안내가 아니라 '쉬어 가기 중에도 가능성이 있다'는 사실만."
+  },
+  {
+   "id": "no-medical-wait",
+   "topic": "의학적으로 기다려야 하는 기간은 없어요(ACOG)",
+   "claim": "ACOG(초기 임신 손실 FAQ): 'If you wish to become pregnant, there is no medical reason to wait to begin trying again', 'you may want to wait until after you have had a menstrual period so that calculating the due date of your next pregnancy is easier.' 'To help prevent infection, do not put anything in your vagina for 1–2 weeks' (탐폰·관계 포함).",
+   "ui": "의학적으로 꼭 기다려야 하는 기간은 없어요. 다만 감염을 막기 위해 1~2주는 관계와 탐폰을 쉬고, 날짜 계산이 쉬우라고 생리 한 번을 기다리는 분도 있어요.",
+   "sources": [
+    "https://www.acog.org/womens-health/faqs/early-pregnancy-loss",
+    "https://www.medicalnewstoday.com/articles/325642",
+    "https://www.nichd.nih.gov/health/topics/pregnancyloss/more_information/faqs"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "'병원·회사·보건소마다 달라요' 대신 여기서는 '병원마다 권하는 시기가 달라요'를 붙여요."
+  },
+  {
+   "id": "who-6-months",
+   "topic": "WHO 2005: 최소 6개월 — 연구 하나에 근거",
+   "claim": "WHO(2005 technical consultation on birth spacing): 유산·인공임신중절 뒤 최소 6개월의 임신 간격을 권해요. 이 권고는 유산과 인공임신중절을 함께 포함한 라틴아메리카 다기관 코호트 연구 하나(Conde-Agudelo 2005)에 근거해요.",
+   "ui": null,
+   "sources": [
+    "https://community.the-hospitalist.org/content/time-conception-after-miscarriage-how-long-wait",
+    "https://aura.abdn.ac.uk/items/5ad14504-eb82-4047-9801-d82ae26852d3/full",
+    "https://academic.oup.com/humupd/article/23/2/221/2605946"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": false,
+   "notes": "UI에는 '6개월'을 권고로 쓰지 않아요. newer-evidence와 짝으로만."
+  },
+  {
+   "id": "newer-evidence",
+   "topic": "더 새로운 근거: 6개월 안에 임신해도 결과가 나쁘지 않아요",
+   "claim": "Kangatharan et al. 2017(Human Reproduction Update 23(2):221–231, 체계적 문헌고찰·메타분석): 유산 뒤 임신 간격 6개월 미만은 다음 유산(RR 0.82, 95% CI 0.78–0.86)과 조산(RR 0.79, 0.75–0.83) 위험이 유의하게 낮고 생아 출생률은 높았으며, 사산·전자간증·저체중은 차이가 없었어요. 3개월 미만 간격이 다음 유산률이 가장 낮았어요. Schliep et al. 2016(Obstet Gynecol, EAGeR 시험 1,228명 분석): 초기 임신 손실 뒤 3개월 안에 시도한 여성이 3개월 넘게 기다린 여성보다 임신(68.6% vs 51.1%)과 생아 출생(53.2% vs 36.1%)이 많았고 합병증은 더 많지 않았어요. 2분기 유산과 산모 정신건강에 대한 근거는 질이 낮아요.",
+   "ui": "최근 연구들은 6개월을 기다리지 않아도 다음 임신 결과가 나쁘지 않다고 해요. 몸이 회복되고 마음이 준비됐을 때 시작하면 돼요.",
+   "sources": [
+    "https://academic.oup.com/humupd/article/23/2/221/2605946",
+    "https://aura.abdn.ac.uk/items/5ad14504-eb82-4047-9801-d82ae26852d3/full",
+    "https://community.the-hospitalist.org/content/time-conception-after-miscarriage-how-long-wait",
+    "https://www.nichd.nih.gov/newsroom/releases/011116-conception-pregnancy-loss",
+    "https://nihrecord.nih.gov/2016/01/29/trying-conceive-soon-after-pregnancy-loss-may-increase-chances-live-birth",
+    "https://www.mdedge.com/content/no-wait-needed-after-early-pregnancy-loss"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "RR 숫자와 백분율은 UI에 넣지 않아요(의료기기 경계·'성공률' 표현 금지)."
+  },
+  {
+   "id": "emotional-readiness",
+   "topic": "마음이 먼저예요",
+   "claim": "Tommy's·ACOG: 'Many need time and support to recover before they try to conceive again. Others may wish to become pregnant as soon as possible.' 결정은 두 사람의 것이고, 전문가(상담)의 도움을 받을 수 있어요. 한국에는 난임·임산부 심리상담센터가 있어요(kr-programs.json '2026년 변경사항': 13곳).",
+   "ui": "몸보다 마음이 먼저예요. 준비됐다고 느낄 때까지 쉬어도 괜찮고, 상담센터의 도움을 받아도 돼요.",
+   "sources": [
+    "https://www.tommys.org/baby-loss-support/miscarriage-information-and-support/pregnancy-after-miscarriage/getting-pregnant-after-miscarriage",
+    "https://www.acog.org/womens-health/faqs/early-pregnancy-loss"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "42일 조용한 기간(QUIET_DAYS_AFTER_END)의 톤과 같아요."
+  },
+  {
+   "id": "see-doctor-after-loss",
+   "topic": "바로 병원: 열·오한·심한 통증·많은 출혈",
+   "claim": "ACOG(초기 임신 손실 FAQ): 'If you have a fever, chills, severe pain, or heavy bleeding, call your ob-gyn right away.' 응급 기준은 early-pregnancy-bleeding.json 'urgent-signs'와 같아요.",
+   "ui": "열이 나거나 오한이 있거나, 통증이 심하거나 출혈이 많으면 바로 병원에 연락해요.",
+   "sources": [
+    "https://www.acog.org/womens-health/faqs/early-pregnancy-loss"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": ""
+  },
+  {
+   "id": "repeated-loss-testing",
+   "topic": "두 번 이상 반복되면 검사를 권할 수 있어요",
+   "claim": "ACOG(반복 유산 FAQ): 두 번 이상 연속된 유산이 있으면 산부인과에서 검사(원인 평가)를 권할 수 있어요. 한 번의 초기 유산은 대부분 우연한 염색체 문제라 검사를 권하지 않아요.",
+   "ui": "두 번 이상 반복됐다면 병원에서 검사를 권할 수 있어요. 한 번은 대부분 우연이에요.",
+   "sources": [
+    "https://www.acog.org/womens-health/faqs/repeated-miscarriages",
+    "https://www.nichd.nih.gov/health/topics/pregnancyloss/more_information/faqs"
+   ],
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": false,
+   "notes": "이번 세션에서 ACOG 반복 유산 FAQ 발췌를 직접 받지 못했어요(일반 지식). 원문 확인 전까지 inUI false."
+  },
+  {
+   "id": "kr-leave",
+   "topic": "한국 법정 휴가(참고)",
+   "claim": "근로기준법 유산·사산휴가(임신 주수별: 2025-02-23부터 15주 이내 10일, 16~21주 30일, 22~27주 60일, 28주 이상 90일 — 검색 요약끼리 11주 이내 5일/10일로 엇갈려 원문 확인 필요)와 배우자 유산·사산휴가 5일(2026-09-18 신설, 최초 3일 유급 — admin-timeline.json). 연차와 별개이고 통상임금 100%.",
+   "ui": null,
+   "sources": [
+    "https://studygov.kr/blog/0402-miscarriage-leave-benefit-2026/",
+    "https://www.shoplworks.com/blog-insight/miscarriage-stillbirth-leave-guide-jun",
+    "https://www.yugacrew.com/yugawiki/%EC%9C%A0%EC%82%B0%C2%B7%EC%82%AC%EC%82%B0%ED%9C%B4%EA%B0%80",
+    "https://m.work24.go.kr/cm/ou3"
+   ],
+   "confidence": "low-medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": false,
+   "notes": "숫자가 요약마다 달라서 UI에 쓰지 않아요. 배우자 휴가 5일은 admin-timeline.json(ttcFlow LOSS_SUPPORT)에서 이미 써요."
+  }
+ ],
+ "implications": [
+  "'loss' rest: 끝난 날(pregnancy.endedAt)부터 시작하고, until은 기본 끝난 날 + 42일(QUIET_DAYS_AFTER_END, 4~6주 생리 복귀 범위와 겹침)로 두되 사람이 바꿀 수 있게. 그 전에 생리가 기록되면 periodEndsRest가 끝내고, until이 지나도 생리가 없으면 '첫 생리가 6주 넘게 안 오면 병원에 물어봐요' 한 줄(period-return).",
+  "몸 안내 카드 줄 순서: period-return → no-medical-wait → newer-evidence → emotional-readiness → see-doctor-after-loss. 소프트/부담 없이 사용자에게는 ovulation-2-weeks를 빼요.",
+  "상대(남편)에게는 몸 안내가 아니라 '옆에 있어 주는 법'(admin-timeline 배우자 유산·사산휴가 5일, 상담센터)만 가요."
+ ]
+}

@@ -27,6 +27,13 @@ export interface RingOptions {
    * peak arcs, and the legend lists only the period items.
    */
   quietWindow: boolean
+  /**
+   * "(예상)" at most once per card (review D-1): 'none' when the card's copy
+   * already carries it (every legend label plain — '생리 예정', '가임기'),
+   * 'one' when it doesn't (the window label keeps its marker, the rest are
+   * plain). Unset keeps the labels as the strip names them.
+   */
+  estimate?: 'none' | 'one'
 }
 
 /** Window arcs get deeper toward the peak: .34 / .44 / .54 / .62 by strip level. */
@@ -85,20 +92,35 @@ export interface LegendItem {
 export const LEGEND_MAX = 4
 
 /**
+ * A legend label without its "(예상)" marker: '생리 (예상)' → '생리 예정',
+ * '가임기 (예상)' → '가임기', '우리의 주간 (예상 범위)' → '우리의 주간 (넓은 범위)',
+ * '특히 좋은 때 (예상)' → '특히 좋은 때'. Labels without a marker stay as they are.
+ */
+export function plainLegendLabel(label: string): string {
+  if (label === '생리 (예상)') return '생리 예정'
+  return label.replace(/ \(예상 범위\)/, ' (넓은 범위)').replace(/ \(예상\)/g, '')
+}
+
+/**
  * The legend under the ring / week row: only what is actually drawn, in the
  * viewer's own wording (strip.windowLabel / peakLabel). Same flags as the old
  * strip legend. When five would show, the lighter "생리 (예상)" goes first.
+ * With opts.estimate the "(예상)" markers follow the once-per-card rule
+ * (plainLegendLabel).
  */
 export function ringLegend(strip: CycleStrip, opts: RingOptions): LegendItem[] {
   const arcs = strip.mode === 'cycle' ? ringArcs(strip, opts) : strip.days.map((d) => ({ tone: d.tone, lh: d.lh }))
   const has = (t: RingTone) => arcs.some((a) => a.tone === t)
   const low = arcs.some((a) => a.lh === 'low')
   const surge = arcs.some((a) => a.lh === 'surge')
+  const plain = (label: string) => (opts.estimate ? plainLegendLabel(label) : label)
   const items: LegendItem[] = []
   if (has('period')) items.push({ key: 'period', label: '생리' })
-  if (has('period-predicted')) items.push({ key: 'period-predicted', label: '생리 (예상)' })
-  if ((has('fertile') || has('peak')) && strip.windowLabel) items.push({ key: 'window', label: strip.windowLabel })
-  if (has('peak') && strip.peakLabel) items.push({ key: 'peak', label: strip.peakLabel })
+  if (has('period-predicted')) items.push({ key: 'period-predicted', label: plain('생리 (예상)') })
+  if ((has('fertile') || has('peak')) && strip.windowLabel) {
+    items.push({ key: 'window', label: opts.estimate === 'one' ? strip.windowLabel : plain(strip.windowLabel) })
+  }
+  if (has('peak') && strip.peakLabel) items.push({ key: 'peak', label: plain(strip.peakLabel) })
   if (low || surge) {
     items.push({ key: 'lh', label: low && surge ? 'LH 양성 · 기록' : surge ? 'LH 양성' : 'LH 기록', lh: { low, surge } })
   }

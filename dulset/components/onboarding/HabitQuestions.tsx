@@ -5,6 +5,7 @@
 // first run (PartnerFirstRunSheet), never of their partner.
 
 import { cx } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui/icons'
 import type { HabitAnswers } from '@/lib/initial'
 import { ChoiceGroup, Group } from './parts'
 
@@ -62,11 +63,11 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
 
       <Group title="이미 하고 있는 게 있나요? (선택, 여러 개 골라도 돼요)">
         <div className="grid grid-cols-2 gap-2">
-          <PickToggle on={habits.exercises} onClick={() => set({ exercises: !habits.exercises })} emoji="🏃" label="운동" />
+          <PickToggle on={habits.exercises} onClick={() => set({ exercises: !habits.exercises })} icon="run" label="운동" />
           <PickToggle
             on={habits.takesSupplements}
             onClick={() => set({ takesSupplements: !habits.takesSupplements })}
-            emoji="💊"
+            icon="pill"
             label="영양제"
           />
         </div>
@@ -75,7 +76,7 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
   )
 }
 
-function PickToggle({ on, onClick, emoji, label }: { on: boolean; onClick: () => void; emoji: string; label: string }) {
+function PickToggle({ on, onClick, icon, label }: { on: boolean; onClick: () => void; icon: IconName; label: string }) {
   return (
     <button
       type="button"
@@ -87,7 +88,7 @@ function PickToggle({ on, onClick, emoji, label }: { on: boolean; onClick: () =>
         on ? 'border-brand bg-brand-soft text-brand-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
       )}
     >
-      <span aria-hidden>{emoji}</span>
+      <Icon name={icon} className="h-[18px] w-[18px]" />
       {label}
     </button>
   )

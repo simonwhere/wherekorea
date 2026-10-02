@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '@/lib/initial'
+import { addAnniversary, anniversaryNotices, setCoupleDates } from '@/lib/logic/anniversary'
 import { addEntry } from '@/lib/logic/diary'
+import { setEntryPrivacy } from '@/lib/logic/personalLog'
 import { backToPreparing, startPregnancy, recordBirth } from '@/lib/logic/pregnancy'
+import { anniversaryAlertsOn, setSetting } from '@/lib/logic/settings'
 import {
+  ALBUM_CAPTION_MAX,
+  albumFeed,
   albumGroups,
   anniversaryEmoji,
   anniversaryLists,
@@ -296,5 +301,82 @@ describe('album', () => {
     expect(excerpt('  짧은 글  ')).toBe('짧은 글')
     expect(excerpt('가나다라마', 3)).toBe('가나다…')
     expect(excerpt('😀😀😀', 2)).toBe('😀😀…')
+  })
+})
+
+describe('album feed (우리 › 앨범, Next B)', () => {
+  function withPhotos(): AppState {
+    let s = fresh()
+    s = addEntry(s, { date: '2026-08-02', author: 'a', text: '', photoId: 'p1' }, '2026-08-02T10:00:00+09:00')
+    s = addEntry(s, { date: '2026-09-10', author: 'b', text: '글만' }, '2026-09-10T10:00:00+09:00')
+    s = addEntry(s, { date: '2026-09-12', author: 'b', text: '아침 산책\n두 번째 줄', photoId: 'p2' }, '2026-09-12T10:00:00+09:00')
+    s = addEntry(s, { date: '2026-09-12', author: 'a', text: '같은 날 저녁', photoId: 'p4' }, '2026-09-12T19:00:00+09:00')
+    s = addEntry(s, { date: '2026-08-20', author: 'a', text: '가'.repeat(ALBUM_CAPTION_MAX + 20), photoId: 'p3' }, '2026-08-20T10:00:00+09:00')
+    return s
+  }
+
+  it('is flat, photos only, newest first (same day: the later one first), with the month and a caption', () => {
+    const feed = albumFeed(withPhotos().diary)
+    expect(feed.map((i) => i.entry.photoId)).toEqual(['p4', 'p2', 'p3', 'p1'])
+    expect(feed.map((i) => i.month)).toEqual(['2026-09', '2026-09', '2026-08', '2026-08'])
+    expect(feed[0]!.caption).toBe('같은 날 저녁')
+    expect(feed[1]!.caption).toBe('아침 산책\n두 번째 줄')
+    expect(feed[3]!.caption).toBe('') // a photo without words
+    // A long story is cut like the viewer's excerpt.
+    expect(Array.from(feed[2]!.caption)).toHaveLength(ALBUM_CAPTION_MAX + 1)
+    expect(feed[2]!.caption.endsWith('…')).toBe(true)
+  })
+
+  it("leaves the other member's '나만 보기' photos out for that viewer, and shows the owner's own", () => {
+    let s = withPhotos()
+    const hers = s.diary.find((e) => e.photoId === 'p2')!
+    s = setEntryPrivacy(s, hers.id, 'b', true)
+    expect(albumFeed(s.diary, 'a').map((i) => i.entry.photoId)).toEqual(['p4', 'p3', 'p1'])
+    expect(albumFeed(s.diary, 'b').map((i) => i.entry.photoId)).toEqual(['p4', 'p2', 'p3', 'p1'])
+    // Without a viewer nothing is hidden (a count, a backup).
+    expect(albumFeed(s.diary)).toHaveLength(4)
+  })
+
+  it('carries nothing but diary entries — no cycle, test or stage data rides along', () => {
+    const s = { ...withPhotos(), lhTests: [{ date: '2026-09-12', result: 'positive', time: '08:00' }] } as AppState
+    const json = JSON.stringify(albumFeed(s.diary, 'a'))
+    expect(json).not.toContain('lhTests')
+    expect(json).not.toContain('positive')
+    expect(json).not.toContain('periods')
+    for (const item of albumFeed(s.diary, 'a')) expect(Object.keys(item).sort()).toEqual(['caption', 'entry', 'month'])
+  })
+})
+
+describe('기념일 알림 switch (settings.anniversaryAlerts, Next B)', () => {
+  function withDays(): AppState {
+    let s = setCoupleDates(fresh(), { metDate: '2021-05-14' })
+    s = addAnniversary(s, { title: '첫 여행', date: '2022-10-09', yearly: true })
+    return s
+  }
+
+  it('sends D-7 and 당일 notices to both by default (unset = on)', () => {
+    const s = withDays()
+    expect(anniversaryAlertsOn(s.settings)).toBe(true)
+    const d7 = anniversaryNotices(s, '2026-10-02')
+    expect(d7.map((n) => n.to).sort()).toEqual(['a', 'b'])
+    expect(d7[0]!.title).toMatch(/첫 여행.*까지 일주일/)
+    const day = anniversaryNotices(s, '2026-10-09')
+    expect(day.some((n) => /오늘은 .*첫 여행/.test(n.title))).toBe(true)
+  })
+
+  it('sends nothing once the couple turned it off, and again once it is back on', () => {
+    const off = setSetting(withDays(), 'anniversaryAlerts', false)
+    expect(anniversaryAlertsOn(off.settings)).toBe(false)
+    expect(anniversaryNotices(off, '2026-10-02')).toEqual([])
+    expect(anniversaryNotices(off, '2026-10-09')).toEqual([])
+    const on = setSetting(off, 'anniversaryAlerts', true)
+    expect(anniversaryNotices(on, '2026-10-02')).toHaveLength(2)
+  })
+
+  it('reads the switch the same way as settings.anniversaryAlertsOn for every stored value', () => {
+    for (const value of [undefined, true, false] as const) {
+      const s = value === undefined ? withDays() : setSetting(withDays(), 'anniversaryAlerts', value)
+      expect(anniversaryNotices(s, '2026-10-02').length > 0).toBe(anniversaryAlertsOn(s.settings))
+    }
   })
 })

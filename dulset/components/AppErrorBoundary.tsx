@@ -9,6 +9,7 @@
 import { Component, useState } from 'react'
 import RestoreFullBackup from '@/components/system/RestoreFullBackup'
 import { Button } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
 import { useStore } from '@/lib/store'
@@ -54,8 +55,10 @@ function RecoveryScreen({ onRetry }: { onRetry: () => void }) {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10 pb-safe pt-safe">
-      <p aria-hidden className="text-center text-4xl">
-        🧩
+      <p aria-hidden className="flex justify-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-warn-soft text-ink-2">
+          <Icon name="alert" className="h-7 w-7" />
+        </span>
       </p>
       <h1 className="mt-3 text-center text-xl font-bold text-ink">화면을 여는 중에 문제가 생겼어요</h1>
       <p className="mt-2 text-center text-sm leading-relaxed text-ink-2">

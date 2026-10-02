@@ -9,7 +9,7 @@
 import { cx } from '@/components/ui'
 import { addDays } from '@/lib/dates'
 import { upcomingWindows } from '@/lib/logic/cycle'
-import { weekRows, type WeekBand } from '@/lib/logic/cycleRing'
+import { plainLegendLabel, weekRows, type WeekBand } from '@/lib/logic/cycleRing'
 import type { CycleStrip } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import { describe } from './CycleStrip'
@@ -30,8 +30,16 @@ function Band({ band }: { band: WeekBand }) {
   )
 }
 
-export default function WeekRow({ strip }: { strip: CycleStrip }) {
+export default function WeekRow({
+  strip,
+  estimate,
+}: {
+  strip: CycleStrip
+  /** "(예상)" once per card: 'none' when the card's copy carries it (the band label goes plain). */
+  estimate?: 'none' | 'one'
+}) {
   const { state } = useApp()
+  const bandLabel = strip.windowLabel && estimate === 'none' ? plainLegendLabel(strip.windowLabel) : strip.windowLabel
   const monday = strip.days[0]?.date
   // Did the same shared window already run on the Sunday before? Then the band's
   // left end is square (it continues), like the mockup's cut strip.
@@ -77,7 +85,7 @@ export default function WeekRow({ strip }: { strip: CycleStrip }) {
       {strip.windowLabel && rows.some((r) => r.bands.length) ? (
         <p aria-hidden className="mt-2 flex items-center gap-1.5 text-[11.5px] text-ink-2">
           <span className="h-[9px] w-4 rounded-full bg-gradient-to-r from-fert/[.12] to-fert/[.26]" />
-          {strip.windowLabel}
+          {bandLabel}
         </p>
       ) : null}
     </div>

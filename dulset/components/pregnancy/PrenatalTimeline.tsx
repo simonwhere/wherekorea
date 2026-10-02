@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import { Card, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { programById } from '@/lib/content/programs'
 import { formatShort } from '@/lib/dates'
 import { stampOn } from '@/lib/logic/today'
@@ -81,11 +82,14 @@ export default function PrenatalTimeline({ weeks, since }: { weeks: number; sinc
             >
               <span>
                 {showEarlier ? '지난 일정 접기' : `지난 일정 ${earlier.length}개 보기`}
-                {earlierDone > 0 ? <span className="ml-1.5 text-ok">✓ {earlierDone}</span> : null}
+                {earlierDone > 0 ? (
+                  <span className="ml-1.5 inline-flex items-center gap-0.5 text-ok">
+                    <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} />
+                    {earlierDone}
+                  </span>
+                ) : null}
               </span>
-              <span aria-hidden className={cx('transition-transform', showEarlier && 'rotate-180')}>
-                ▾
-              </span>
+              <Icon name="chev" className={cx('h-4 w-4 transition-transform', showEarlier && 'rotate-180')} strokeWidth={2.2} />
             </button>
             <ol id={earlierId} hidden={!showEarlier} aria-label="지난 검사 일정" className="border-b border-line/70 pb-1">
               {earlier.map(renderRow)}
@@ -139,13 +143,13 @@ function Row({
           <div className="-mb-2 flex flex-wrap gap-x-4">
             {program ? (
               <a href={program.url} target="_blank" rel="noopener noreferrer" className={cx(linkClass, 'text-brand-ink')}>
-                {program.urlLabel}에서 신청 ↗<span className="sr-only"> (새 창)</span>
+                {program.urlLabel}에서 신청
+                <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
+                <span className="sr-only"> (새 창)</span>
               </a>
             ) : (
-              <button type="button" onClick={onShare} className={cx(linkClass, 'text-ink-2')}>
-                <span aria-hidden className="mr-1">
-                  🤝
-                </span>
+              <button type="button" onClick={onShare} className={cx(linkClass, 'gap-1 text-ink-2')}>
+                <Icon name="users" className="h-4 w-4" />
                 {partnerName}님에게 일정 알리기
               </button>
             )}

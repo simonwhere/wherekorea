@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { Button, Card, EmptyState, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { GROWTH_CHART_LINK, GROWTH_LIMITS, type GrowthField } from '@/lib/content/baby'
 import { formatKo } from '@/lib/dates'
 import { removeGrowth } from '@/lib/logic/baby'
@@ -50,7 +51,7 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
 
       {list.length === 0 ? (
         <EmptyState
-          icon="📏"
+          icon="ruler"
           title="첫 성장 기록을 남겨 볼까요?"
           body="키·몸무게·머리둘레 중 잰 것만 적어도 돼요. 쌓이면 그래프로 보여 드려요."
           action={
@@ -173,7 +174,7 @@ function GrowthRow({ record, birth }: { record: GrowthRecord; birth: string }) {
         aria-label={`${when} 성장 기록 삭제`}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink-2"
       >
-        <span aria-hidden>🗑️</span>
+        <Icon name="trash" className="h-5 w-5" />
       </button>
     </li>
   )

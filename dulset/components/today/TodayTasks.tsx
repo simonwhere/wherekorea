@@ -6,9 +6,10 @@
 import { useCallback, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import { cx, useToast } from '@/components/ui'
-import { Icon } from '@/components/ui/icons'
+import { Icon, type IconName } from '@/components/ui/icons'
+import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { doneIds, isWeekly } from '@/lib/logic/checks'
-import { APPOINTMENT_KIND_EMOJI, APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
+import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
 import { stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem } from '@/lib/types'
@@ -87,8 +88,11 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
               onClick={() => onNavigate('plan')}
               className="flex min-h-[62px] w-full items-center gap-3 py-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
             >
-              <span aria-hidden className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-lg">
-                {APPOINTMENT_KIND_EMOJI[appt.kind]}
+              <span
+                aria-hidden
+                className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2"
+              >
+                <Icon name={APPOINTMENT_KIND_ICON[appt.kind]} className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-base font-bold leading-[1.3] tracking-[-0.025em] text-ink">
@@ -121,10 +125,10 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
 /** Sleep items get a moon on him-soft (by their label: 잠 · 수면 · 자기). */
 const SLEEP = /잠|수면|자기/
 
-function bubble(item: CheckItem): { emoji: string; tone: string } {
-  if (SLEEP.test(item.label)) return { emoji: '🌙', tone: 'bg-him-soft' }
-  if (item.kind === 'habit') return { emoji: KIND_ICON.habit, tone: 'bg-ok-soft' }
-  return { emoji: KIND_ICON[item.kind], tone: 'bg-brand-soft' }
+function bubble(item: CheckItem): { icon: IconName; tone: string } {
+  if (SLEEP.test(item.label)) return { icon: 'moon', tone: 'bg-him-soft' }
+  if (item.kind === 'habit') return { icon: KIND_ICON.habit, tone: 'bg-ok-soft' }
+  return { icon: KIND_ICON[item.kind], tone: 'bg-brand-soft' }
 }
 
 function Row({ item, checked, weekly = false, onToggle }: { item: CheckItem; checked: boolean; weekly?: boolean; onToggle: () => void }) {
@@ -137,8 +141,8 @@ function Row({ item, checked, weekly = false, onToggle }: { item: CheckItem; che
       onClick={onToggle}
       className="flex min-h-[62px] w-full items-center gap-3 py-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
     >
-      <span aria-hidden className={cx('flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-lg', b.tone)}>
-        {b.emoji}
+      <span aria-hidden className={cx('flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-ink-2', b.tone)}>
+        <Icon name={b.icon} className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
         <span

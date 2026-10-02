@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, SectionTitle, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { activeItems } from '@/lib/logic/checks'
 import { folicTimer, habitTimer, isSpermSide, type Timer } from '@/lib/logic/today'
@@ -70,8 +71,8 @@ export default function HabitTimers() {
         {showHabit && other && habit ? (
           <div>
             <div>
-              <h3 className="text-sm font-bold text-ink">
-                <span aria-hidden>🌱 </span>
+              <h3 className="flex flex-wrap items-center gap-x-1.5 text-sm font-bold text-ink">
+                <Icon name="sprout" className="h-4 w-4 shrink-0 text-ink-2" />
                 {who(other.id, other.name)}의 건강 습관 <TimerLabel t={habit} tone="him" />
               </h3>
             </div>
@@ -82,8 +83,8 @@ export default function HabitTimers() {
         {folic ? (
           <div className={showHabit ? 'border-t border-line pt-4' : undefined}>
             <div>
-              <h3 className="text-sm font-bold text-ink">
-                <span aria-hidden>💊 </span>
+              <h3 className="flex flex-wrap items-center gap-x-1.5 text-sm font-bold text-ink">
+                <Icon name="pill" className="h-4 w-4 shrink-0 text-ink-2" />
                 {cycleOwner.id === me.id ? '' : `${cycleOwner.name}님 · `}
                 {folic.day !== undefined ? '엽산 먹은 지 ' : '엽산 타이머 '}
                 <TimerLabel t={folic} tone="her" />

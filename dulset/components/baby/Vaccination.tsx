@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, SectionTitle } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { VACCINE_ALERT_TIP, VACCINE_ANCHORS, VACCINE_NOTE } from '@/lib/content/baby'
 import { programById } from '@/lib/content/programs'
 import { ExternalLink, primaryLinkClass } from './bits'
@@ -33,10 +34,8 @@ export default function Vaccination() {
         </div>
 
         <div className="mt-3 rounded-xl border border-line p-3">
-          <p className="text-sm font-bold text-ink">
-            <span aria-hidden className="mr-1">
-              📱
-            </span>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+            <Icon name="phone" className="h-[18px] w-[18px] text-ink-2" />
             국민비서로 접종 알림 받기
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink-2">{VACCINE_ALERT_TIP}</p>

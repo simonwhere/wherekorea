@@ -1,6 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { PROGRAMS_CHECKED_AT, programsFor } from '@/lib/content/programs'
 import { settingsFor } from '@/lib/logic/prefs'
 import { effectiveLabel, formatDot } from '@/lib/logic/settings'
@@ -18,7 +19,7 @@ export default function ProgramsSection() {
   const titleOf = (title: string) => (explicit ? title : title.replace('가임력 검사', '임신 전 검사'))
 
   return (
-    <SettingsSection title="도움이 되는 정부 지원" sub="지금 단계에서 챙겨 볼 만한 제도예요">
+    <SettingsSection id="programs" title="도움이 되는 정부 지원" sub="지금 단계에서 챙겨 볼 만한 제도예요">
       <ul className="grid gap-2">
         {programs.map((p) => (
           <Card as="li" key={p.id} className="py-3">
@@ -32,9 +33,9 @@ export default function ProgramsSection() {
               {p.deadline ? (
                 <div className="flex gap-2">
                   <dt className="w-8 shrink-0 font-semibold text-ink-3">기한</dt>
-                  <dd className="min-w-0 text-ink-2">
-                    <span aria-hidden>⏰ </span>
-                    {p.deadline}
+                  <dd className="flex min-w-0 items-start gap-1 text-ink-2">
+                    <Icon name="clock" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-3" strokeWidth={2.2} />
+                    <span>{p.deadline}</span>
                   </dd>
                 </div>
               ) : null}

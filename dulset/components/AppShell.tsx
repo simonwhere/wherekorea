@@ -1,24 +1,21 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppErrorBoundary from '@/components/AppErrorBoundary'
+import CoverAsk from '@/components/cover/CoverAsk'
 import LHHowTo from '@/components/log/LHHowTo'
 import LogSheet from '@/components/log/LogSheet'
-import Onboarding from '@/components/Onboarding'
 import PartnerFirstRunSheet from '@/components/onboarding/PartnerFirstRunSheet'
 import { goToSettings, isSettingsAnchor } from '@/components/settings/anchors'
 import NotificationsSheet from '@/components/NotificationsSheet'
-import BabyTab from '@/components/tabs/BabyTab'
 import CycleTab from '@/components/tabs/CycleTab'
-import DateTab from '@/components/tabs/DateTab'
 import PlanTab from '@/components/tabs/PlanTab'
-import PregnancyTab from '@/components/tabs/PregnancyTab'
-import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
 import UsTab from '@/components/tabs/UsTab'
 import { useFirstPeriodMarker } from '@/components/system/BackupBanner'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
-import { Icon, isIconName, type IconName } from '@/components/ui/icons'
+import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
@@ -27,11 +24,33 @@ import type { ISODate, Stage } from '@/lib/types'
 
 export type TabKey = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'plan' | 'date' | 'diary' | 'settings'
 
+/**
+ * Screens that most sessions never open load as their own chunks (local files
+ * under _next/static, so nothing needs the network): the other stages' tabs,
+ * #date, 설정 and the first run (which carries the demo couple's data). The
+ * preparing couple's daily tabs stay in the first load for instant switching.
+ */
+function Loading() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center text-ink-3" aria-busy="true">
+      <span className="animate-pulse text-sm">불러오는 중…</span>
+    </div>
+  )
+}
+/** Tab placeholders are blank (a local chunk arrives within a frame or two; a spinner would only flash). */
+function TabLoading() {
+  return <div className="min-h-[50vh]" aria-busy="true" />
+}
+const Onboarding = dynamic(() => import('@/components/Onboarding'), { ssr: false, loading: Loading })
+const PregnancyTab = dynamic(() => import('@/components/tabs/PregnancyTab'), { ssr: false, loading: TabLoading })
+const BabyTab = dynamic(() => import('@/components/tabs/BabyTab'), { ssr: false, loading: TabLoading })
+const DateTab = dynamic(() => import('@/components/tabs/DateTab'), { ssr: false, loading: TabLoading })
+const SettingsTab = dynamic(() => import('@/components/tabs/SettingsTab'), { ssr: false, loading: TabLoading })
+
 interface TabDef {
   key: TabKey
   label: string
-  /** A line icon, or an emoji for the stage tabs that have no line icon yet. */
-  icon: IconName | '🤰' | '👶'
+  icon: IconName
 }
 
 // Settings lives behind the header gear. Preparing is the core stage: its bar
@@ -46,13 +65,13 @@ const TAB_SETS: Record<Stage, TabDef[]> = {
   ],
   pregnant: [
     { key: 'today', label: '오늘', icon: 'home' },
-    { key: 'pregnancy', label: '임신', icon: '🤰' },
+    { key: 'pregnancy', label: '임신', icon: 'bump' },
     { key: 'plan', label: '챙길 것', icon: 'list' },
     { key: 'diary', label: '우리', icon: 'heart' },
   ],
   parenting: [
     { key: 'today', label: '오늘', icon: 'home' },
-    { key: 'baby', label: '아기', icon: '👶' },
+    { key: 'baby', label: '아기', icon: 'baby' },
     { key: 'diary', label: '우리', icon: 'heart' },
     { key: 'plan', label: '챙길 것', icon: 'list' },
   ],
@@ -113,13 +132,7 @@ function PinnedTodayBanner() {
 
 export default function AppShell() {
   const { hydrated, state } = useStore()
-  if (!hydrated) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center text-ink-3" aria-busy="true">
-        <span className="animate-pulse text-sm">불러오는 중…</span>
-      </div>
-    )
-  }
+  if (!hydrated) return <Loading />
   // (The two branches are different trees, so a wipe or a first onboarding
   // remounts the boundary; a restore resets it from the recovery screen.)
   if (!state || !state.onboarded)
@@ -166,11 +179,36 @@ function MainApp() {
   // 기록 지키기: remember the day the first period gets logged (BackupBanner shows it once).
   useFirstPeriodMarker()
 
+  // The lazily split tabs (DateTab, SettingsTab, the album, the stage tab, the
+  // clinic summary) are fetched once the home is idle, so they open offline
+  // too — there is no service worker, and a chunk that was never fetched
+  // cannot load without the network. First Load JS stays as small as before.
+  useEffect(() => {
+    const warm = () => {
+      void import('@/components/tabs/DateTab')
+      void import('@/components/tabs/SettingsTab')
+      void import('@/components/us/AlbumPanel')
+      if (state.stage === 'pregnant') void import('@/components/tabs/PregnancyTab')
+      if (state.stage === 'parenting') void import('@/components/tabs/BabyTab')
+      if (state.stage === 'preparing') void import('@/components/clinic/ClinicSummarySheet')
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(warm, { timeout: 4000 })
+      return () => w.cancelIdleCallback?.(id)
+    }
+    const t = window.setTimeout(warm, 2500)
+    return () => window.clearTimeout(t)
+  }, [state.stage])
+
   // Hash routing (#today, #cycle, …) keeps the static export portable and the back button useful.
   useEffect(() => {
     const sync = () => {
       const h = readHash()
-      if (h === 'days') setTab('diary') // 우리 → 기념일
+      if (h === 'days' || h === 'album') setTab('diary') // 우리 → 기념일 / 앨범
       else if (isSettingsAnchor(h)) setTab('settings') // 설정 → 공유 범위 / 내 알림 / 데이터
       else if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
       else setTab('today')
@@ -182,14 +220,23 @@ function MainApp() {
 
   // After a tab change that dropped focus (e.g. a stage change routed here from
   // a sheet), start keyboard / screen-reader users at the new tab's heading.
+  // A lazily loaded tab has no heading for a frame or two, so keep trying briefly.
   const firstTab = useRef(true)
   useEffect(() => {
     if (firstTab.current) {
       firstTab.current = false
       return
     }
-    const a = document.activeElement
-    if (!a || a === document.body) focusMainHeading()
+    let tries = 0
+    let raf = 0
+    const tryFocus = () => {
+      const a = document.activeElement
+      if (a && a !== document.body) return
+      if (focusMainHeading()) return
+      if (++tries < 60) raf = requestAnimationFrame(tryFocus)
+    }
+    tryFocus()
+    return () => cancelAnimationFrame(raf)
   }, [tab])
 
   const go = (key: TabKey) => {
@@ -321,13 +368,7 @@ function MainApp() {
                         : 'font-semibold text-ink-3',
                     )}
                   >
-                    {isIconName(t.icon) ? (
-                      <Icon name={t.icon} className="h-6 w-6" strokeWidth={active ? 2 : 1.7} />
-                    ) : (
-                      <span aria-hidden className="flex h-6 items-center text-[20px] leading-none">
-                        {t.icon}
-                      </span>
-                    )}
+                    <Icon name={t.icon} className="h-6 w-6" strokeWidth={active ? 2 : 1.7} />
                     {t.label}
                   </button>
                 </li>
@@ -343,6 +384,8 @@ function MainApp() {
       <LHHowTo />
       {/* "민수님, 처음이죠?" — the joining member's own first run (N15); it decides by itself when to open. */}
       <PartnerFirstRunSheet />
+      {/* '첫 화면에 우리 사진을 걸어 볼까요?' — once, right after the onboarding's 시작하기 (Next B). */}
+      <CoverAsk />
     </div>
   )
 }

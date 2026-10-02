@@ -24,6 +24,7 @@ import {
   cycleFeels,
   cycleHistory,
   cycleLens,
+  cyclePause,
   cycleSummary,
   dayChanceFor,
   dayLine,
@@ -33,7 +34,10 @@ import {
   lensPhase,
   lhBadge,
   lhRowLine,
+  lossPauseHeadline,
   monthConfidence,
+  pauseHeadline,
+  pauseRest,
   PEAK_SOFT_LABEL,
   peakLabel,
   showsPeak,
@@ -65,6 +69,8 @@ import {
   type FertilityView,
 } from '@/lib/logic/calendarView'
 import { createInitialState } from '@/lib/initial'
+import { startPregnancy } from '@/lib/logic/pregnancy'
+import { endPregnancy } from '@/lib/logic/today'
 import type { AppState, Settings } from '@/lib/types'
 
 // Three regular 28-day cycles before the current period (confidence 'cycles'):
@@ -1072,5 +1078,45 @@ describe('log sheet copy', () => {
     const text = [...LH_CHOICES.map((c) => c.hint), ...PTEST_CHOICES.map((c) => c.hint), ...after.flatMap((a) => [a.title, ...a.body])].join('\n')
     expect(text).not.toMatch(PRESSURE_WORDS)
     expect(text).not.toMatch(/노력|🎉|축하|정확한 배란일|성공률/)
+  })
+})
+
+describe('the loss quiet on the calendar (Next B)', () => {
+  /** Ended 09-20 → quiet to 10-31. */
+  const lost = () => endPregnancy(startPregnancy(couple(), '2026-08-01', '2026-09-01'), '2026-09-20')
+
+  it('cycleLens reads the quiet with `today`: paused to its last day, over the day after; without `today` it errs on the quiet side', () => {
+    const s = lost()
+    expect(cycleLens(s, 'b', '2026-10-10')).toMatchObject({ pause: 'rest', rest: { reason: 'loss', until: '2026-10-31' } })
+    expect(cycleLens(s, 'b', '2026-10-31').pause).toBe('rest')
+    expect(cycleLens(s, 'b', '2026-11-01').pause).toBeUndefined()
+    expect(cycleLens(s, 'b', '2026-11-01').rest).toBeUndefined()
+    expect(cycleLens(s, 'b').pause).toBe('rest')
+    expect(cyclePause(s, '2026-11-01')).toBeUndefined()
+    expect(pauseRest(s, '2026-10-10')).toEqual({ reason: 'loss', until: '2026-10-31' })
+    // A period inside the quiet keeps it; one after ends it even without `today`.
+    const inside = { ...s, periods: [...s.periods, { start: '2026-10-25' }] }
+    expect(cycleLens(inside, 'b', '2026-10-26').pause).toBe('rest')
+    const after = { ...s, periods: [...s.periods, { start: '2026-11-03' }] }
+    expect(cycleLens(after, 'b').pause).toBeUndefined()
+    // An ordinary rest carries no `until`.
+    expect(cycleLens(couple({ restCycle: { since: '2026-09-03', reason: 'rest' } }), 'b', '2026-09-10').rest).toEqual({ reason: 'rest' })
+  })
+
+  it('the owner’s headline names the quiet and its last day; the partner reads the calm line; no 생리 예정 row', () => {
+    const s = lost()
+    const lens = cycleLens(s, 'b', '2026-10-10')
+    expect(pauseHeadline('rest', 'explicit', true, lens.rest)).toEqual(lossPauseHeadline('2026-10-31'))
+    expect(lossPauseHeadline('2026-10-31').sub).toContain('10월 31일까지')
+    expect(lossPauseHeadline(undefined).title).toBe('천천히 괜찮아요')
+    expect(pauseHeadline('rest', 'soft', false, lens.rest)).toEqual({ title: '이번 주기는 쉬어 가요', sub: '평소처럼 편하게 지내요.' })
+    expect(pauseHeadline('rest', 'explicit', true).title).toBe('이번 주기는 쉬어요')
+    const inside = { ...s, periods: [...s.periods, { start: '2026-10-25' }] }
+    const summary = cycleSummary(inside, '2026-10-26', 'explicit', cycleLens(inside, 'b', '2026-10-26'))
+    expect(summary.headline.title).toBe('천천히 괜찮아요')
+    expect(summary.rows.map((r) => r.key)).toEqual(['avg'])
+    expect(summary.nextPeriod).toBeUndefined()
+    const text = `${summary.headline.title} ${summary.headline.sub} ${summary.rows.map((r) => `${r.label} ${r.value} ${r.sub ?? ''}`).join(' ')}`
+    expect(text).not.toMatch(/가임기|배란|LH|유산|예정/)
   })
 })

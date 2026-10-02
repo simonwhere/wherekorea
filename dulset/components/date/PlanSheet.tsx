@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react'
 import { Button, Field, Sheet, inputClass, textareaClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import type { DateIdea } from '@/lib/content/dateIdeas'
 import { formatKo, isISODate } from '@/lib/dates'
 import { uid } from '@/lib/id'
@@ -120,10 +121,12 @@ export default function PlanSheet({ idea, onClose }: { idea?: DateIdea; onClose:
           />
         </Field>
 
-        <div className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
-          💌 {partner.name}님에게{' '}
-          <b className="font-semibold text-ink">{isISODate(date) ? formatKo(date) : '고른 날'}</b> 데이트 제안 알림이
-          가요.
+        <div className="flex gap-2 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
+          <Icon name="mail" className="mt-0.5 h-4 w-4 shrink-0 text-ink-3" />
+          <span>
+            {partner.name}님에게 <b className="font-semibold text-ink">{isISODate(date) ? formatKo(date) : '고른 날'}</b> 데이트
+            제안 알림이 가요.
+          </span>
         </div>
 
         <Button type="submit" full size="lg">

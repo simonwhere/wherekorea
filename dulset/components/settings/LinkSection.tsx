@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Card, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
 import { linkPartner, unlinkPartner } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
@@ -48,7 +49,7 @@ export default function LinkSection() {
   const link = () => {
     // stampOn keeps the date on the app's `today` (?today= demos), like the 오늘 tab.
     update((s) => linkPartner(s, stampOn(today)))
-    toast.show(`${partner.name}님과 연결됐어요 🔗`)
+    toast.show(`${partner.name}님과 연결됐어요`)
   }
 
   const unlink = () => {
@@ -57,7 +58,7 @@ export default function LinkSection() {
   }
 
   return (
-    <SettingsSection title="연결" sub="두 사람이 같은 공간을 함께 써요">
+    <SettingsSection id="link" title="연결" sub="두 사람이 같은 공간을 함께 써요">
       <Card>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -75,9 +76,7 @@ export default function LinkSection() {
           className={cx('mt-3 flex items-start gap-2.5 rounded-xl p-3', linked ? 'bg-ok-soft' : 'bg-surface-2')}
           role="status"
         >
-          <span aria-hidden className="text-lg leading-6">
-            {linked ? '🔗' : '⏳'}
-          </span>
+          <Icon name={linked ? 'link' : 'clock'} className="mt-0.5 h-5 w-5 text-ink-2" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink">
               {linked ? `${partner.name}님과 연결됐어요` : '아직 연결 전이에요'}

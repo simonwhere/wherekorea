@@ -6,7 +6,7 @@
 // ③ 동의 + 공유 범위 → ④ 초대·설치. Nobody answers for the other person:
 // their habits and alert style stay at the defaults (걷기 30분 + 은근하게)
 // until they open their own screen (onboarding/PartnerFirstRunSheet).
-// Answers live in a draft (lib/demo.ts) plus the extras kept here, and become
+// Answers live in a draft (lib/onboardingDraft.ts) plus the extras kept here, and become
 // the app state only on the last "시작하기".
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -17,17 +17,9 @@ import DoneStep from '@/components/onboarding/DoneStep'
 import WelcomeStep from '@/components/onboarding/WelcomeStep'
 import type { ShareChoice } from '@/components/onboarding/consentCopy'
 import { ProgressDots } from '@/components/onboarding/parts'
+import { requestCoverAsk } from '@/components/cover/coverAskFlag'
 import { Button } from '@/components/ui'
-import {
-  DEMO_START_VIEWER,
-  createDemoState,
-  draftNames,
-  draftToChoices,
-  initialDraft,
-  stateFromOnboarding,
-  stepProblem,
-  type OnboardingDraft,
-} from '@/lib/demo'
+import { draftNames, draftToChoices, initialDraft, stateFromOnboarding, stepProblem, type OnboardingDraft } from '@/lib/onboardingDraft'
 import { inviteCode } from '@/lib/id'
 import { applyOnboardingExtras } from '@/lib/initial'
 import { applyOnboardingCycle, applyPartnerDefaults } from '@/lib/logic/onboarding'
@@ -38,7 +30,7 @@ type StepKey = 'couple' | 'cycle' | 'consent' | 'done'
 
 const STEPS: readonly StepKey[] = ['couple', 'cycle', 'consent', 'done']
 
-/** lib/demo's stepProblem numbers the old seven steps; the four screens map onto those numbers. */
+/** lib/onboardingDraft's stepProblem numbers the old seven steps; the four screens map onto those numbers. */
 const DRAFT_STEP: Record<StepKey, number> = { couple: 1, cycle: 2, consent: 5, done: 6 }
 
 function stepMeta(key: StepKey, names: { a: string; b: string }): { title: string; sub?: string } {
@@ -94,7 +86,10 @@ export default function Onboarding() {
   const patch = useCallback((p: Partial<OnboardingDraft>) => setDraft((d) => ({ ...d, ...p })), [])
 
   // The demo opens on the cycle owner's screen (지은, DEMO_START_VIEWER) — the app's main user — at the top.
-  const startDemo = (stage: Stage) => {
+  // The demo couple's data is fetched only when a demo button is pressed (its own chunk:
+  // the draft helpers this screen needs live in lib/onboardingDraft, not lib/demo).
+  const startDemo = async (stage: Stage) => {
+    const { DEMO_START_VIEWER, createDemoState } = await import('@/lib/demo')
     const demo = createDemoState(today, new Date(), stage)
     setViewer(DEMO_START_VIEWER)
     openOnHome()
@@ -131,6 +126,8 @@ export default function Onboarding() {
     state = applyOnboardingCycle(state, { pastStarts, usesLH }, today)
     setViewer('a')
     openOnHome()
+    // The home then asks once whether to hang a cover photo (components/cover/CoverAsk).
+    requestCoverAsk()
     replace(state)
     scrollTopSoon()
   }

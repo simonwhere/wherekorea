@@ -5,6 +5,7 @@
 
 import { useId, useState } from 'react'
 import { cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { QUICK_START_CHIPS, quickStartDate } from '@/lib/logic/onboarding'
 import type { ISODate } from '@/lib/types'
@@ -214,9 +215,7 @@ export function Disclosure({
         className="inline-flex min-h-[44px] items-center gap-1 text-xs font-semibold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
       >
         {open ? closeLabel : label}
-        <span aria-hidden className={cx('transition-transform', open && 'rotate-180')}>
-          ▾
-        </span>
+        <Icon name="chev" className={cx('h-4 w-4 transition-transform', open && 'rotate-180')} strokeWidth={2.2} />
       </button>
       {open ? (
         <div id={id} className="pb-1">

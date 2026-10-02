@@ -29,7 +29,7 @@ export default function BabyTab() {
     return (
       <div className="pt-4">
         <EmptyState
-          icon="👶"
+          icon="baby"
           title="아기 정보를 알려 주세요"
           body="이름과 태어난 날을 적으면 기념일, 영유아 건강검진 시기, 성장 기록을 우리 둘이 함께 볼 수 있어요."
           action={

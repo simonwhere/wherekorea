@@ -6,7 +6,7 @@
 import type { TabKey } from '@/components/AppShell'
 import { cx, useToast } from '@/components/ui'
 import type { MonthlyTask } from '@/lib/logic/partnerTrack'
-import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
+import { canNudge as nudgeAllowed, sendCheer, sendNudge } from '@/lib/logic/notifications'
 import { pendingSignal, signalIdOf } from '@/lib/logic/signals'
 import { stampOn } from '@/lib/logic/today'
 import { PERIOD_PARTNER_TIP } from '@/lib/logic/ttcFlow'
@@ -38,8 +38,8 @@ export default function UsLine({
   const toast = useToast()
   const prog = dailyProgress(state, partner.id, today)
   const target = nudgeTarget(state, partner.id, today)
-  const left = Math.max(0, NUDGES_PER_DAY - nudgesSentToday(state, me.id, today))
-  const canNudge = !!target && left > 0
+  // No 콕 button once today's are used — or at all for a partner who turned 콕 받기 off (Next B).
+  const canNudge = !!target && nudgeAllowed(state, me.id, partner.id, today)
   const pending = pendingSignal(state, me.id, today)
   // '이번 달은 아니었어요' is the month's hardest line: what to say (and not) goes with the reply.
   const notThisMonth = !!pending && signalIdOf(pending) === 'not-this-month'

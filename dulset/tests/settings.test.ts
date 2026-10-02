@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { CYCLE_RANGE_DEFAULT, CYCLE_RANGE_LONG, applyOnboardingExtras, createInitialState, cycleLengthRange } from '@/lib/initial'
+import { CYCLE_RANGE_DEFAULT, CYCLE_RANGE_LONG, PERSONAL_DEFAULTS, SETTINGS_DEFAULTS, applyOnboardingExtras, createInitialState, cycleLengthRange } from '@/lib/initial'
 import { CYCLE_RANGE } from '@/lib/demo'
 import { startClinicMode } from '@/lib/logic/clinic'
+import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
+import { markBleeding } from '@/lib/logic/positiveBleeding'
+import { addLeaveDay, addTreatment } from '@/lib/logic/treatments'
+import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import { addEntry } from '@/lib/logic/diary'
 import { setEntryPrivacy, setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { cycleStats } from '@/lib/logic/cycle'
@@ -14,8 +18,13 @@ import {
   NAME_MAX,
   PERIOD_LENGTH_RANGE,
   STAGE_INFO,
+  acceptNudgesFor,
   alertPreview,
   alertStyleOf,
+  anniversaryAlertsOn,
+  homeDiscreetFor,
+  memoriesOn,
+  showTryCountOn,
   backupSummary,
   effectiveLabel,
   emojiChoices,
@@ -754,5 +763,112 @@ describe('sanitizeBackup: Now 2 fields (personal log · 나만 보기 · 긴 주
     // One valid note among bad ones stays.
     s.cycleNotes = { '2026-09-10': { stillWaiting: TODAY, extra: 1 } as never, nope: {} }
     expect(sanitizeBackup(s)!.cycleNotes).toEqual({ '2026-09-10': { stillWaiting: TODAY } })
+  })
+})
+
+describe('sanitizeBackup: Next B fields (시술 · 휴가 · 관계일 · 출혈 · until · switches)', () => {
+  const clone = (s: AppState) => JSON.parse(JSON.stringify(s)) as AppState
+
+  /** A state using every Next B field the way the app would write it. */
+  const rich = (): AppState => {
+    let s = fresh()
+    s = addTreatment(s, { id: 't1', kind: 'iui', startDate: '2026-07-01', endDate: '2026-07-28', outcome: 'negative', supported: true, noticeExpires: '2027-01-15', note: '첫 회차' })
+    s = addTreatment(s, { id: 't2', kind: 'ivf-fresh', startDate: '2026-09-01', outcome: 'ongoing', supported: true })
+    s = addLeaveDay(s, 'a', '2026-07-14')
+    s = addLeaveDay(s, 'b', '2026-07-14')
+    s = addLeaveDay(s, 'b', '2026-07-15')
+    s = giveIntimacyConsent(s, 'b', '2026-09-01')
+    s = toggleIntimacyDay(s, 'b', '2026-09-05')
+    s = markPositivePending(s, '2026-09-24', 'pt1')
+    s = markBleeding(s, '2026-09-25')
+    return {
+      ...s,
+      settings: {
+        ...s.settings,
+        memories: true,
+        anniversaryAlerts: false,
+        showTryCount: true,
+        personal: { a: { acceptNudges: false, homeDiscreet: true }, b: { discreet: true, homeDiscreet: false } },
+      },
+    }
+  }
+
+  it('round-trips every new field through a backup and a reload', () => {
+    const s = rich()
+    const raw = JSON.stringify(s)
+    expect(sanitizeBackup(JSON.parse(raw))).toEqual(JSON.parse(raw))
+    const back = parseState(raw)!
+    expect(back).toEqual(JSON.parse(raw))
+    expect(back.treatments!.map((t) => t.id)).toEqual(['t1', 't2'])
+    expect(back.leaveDays).toEqual({ a: [{ date: '2026-07-14', kind: 'infertility' }], b: [{ date: '2026-07-14', kind: 'infertility' }, { date: '2026-07-15', kind: 'infertility' }] })
+    expect(back.intimacy).toEqual({ consentAt: '2026-09-01', by: 'b', days: ['2026-09-05'] })
+    expect(back.positivePending).toEqual({ since: '2026-09-24', testId: 'pt1', bleedingSince: '2026-09-25' })
+    expect(back.settings).toMatchObject({ memories: true, anniversaryAlerts: false, showTryCount: true })
+    expect(back.settings.personal).toEqual({ a: { acceptNudges: false, homeDiscreet: true }, b: { discreet: true, homeDiscreet: false } })
+    // A 'loss' rest with an end day.
+    const rest = startRestCycle(s, '2026-09-26', 'loss')
+    const withUntil: AppState = { ...rest, restCycle: { ...rest.restCycle!, until: '2026-11-07' } }
+    expect(parseState(JSON.stringify(withUntil))!.restCycle).toEqual({ since: '2026-09-26', reason: 'loss', until: '2026-11-07' })
+  })
+
+  it('loads data from before these fields existed unchanged', () => {
+    const legacy = clone(fresh())
+    const raw = JSON.stringify(legacy)
+    const back = parseState(raw)!
+    expect(back).toEqual(JSON.parse(raw))
+    for (const k of ['treatments', 'leaveDays', 'intimacy']) expect(k in back).toBe(false)
+    for (const k of ['memories', 'anniversaryAlerts', 'showTryCount']) expect(k in back.settings).toBe(false)
+    expect(normalize(legacy)).toEqual(legacy)
+  })
+
+  it('is strict: broken attempts, leave days, a record without consent, a bad until / bleedingSince and non-boolean switches are dropped', () => {
+    const s = clone(rich())
+    s.treatments = [
+      { id: 't1', kind: 'iui', startDate: '2026-07-01', endDate: '2026-06-01', outcome: 'maybe', supported: 'yes', noticeExpires: 'soon', note: 5 } as never,
+      { id: 't1', kind: 'ivf-frozen', startDate: '2026-08-01' },
+      { id: 'bad', kind: 'icsi', startDate: '2026-08-01' } as never,
+      { kind: 'iui', startDate: '2026-08-01' } as never,
+    ]
+    s.leaveDays = { a: [{ date: '2026-07-14', kind: 'sick' }, { date: '2026-07-14', kind: 'infertility' }, { date: 'x', kind: 'infertility' }], b: [] } as never
+    s.intimacy = { by: 'b', days: ['2026-09-05'] } as never
+    s.restCycle = { since: '2026-09-26', reason: 'loss', until: '2026-09-20' }
+    s.positivePending = { since: '2026-09-24', bleedingSince: '2026-09-20' }
+    s.settings = { ...s.settings, memories: 'on', anniversaryAlerts: 0, showTryCount: null, personal: { a: { acceptNudges: 'no', homeDiscreet: 'yes' } } } as never
+    const out = sanitizeBackup(s)!
+    expect(out.treatments).toEqual([{ id: 't1', kind: 'iui', startDate: '2026-07-01' }])
+    expect(out.leaveDays).toEqual({ a: [{ date: '2026-07-14', kind: 'infertility' }] })
+    expect('intimacy' in out).toBe(false)
+    expect(out.restCycle).toEqual({ since: '2026-09-26', reason: 'loss' })
+    expect(out.positivePending).toEqual({ since: '2026-09-24' })
+    for (const k of ['memories', 'anniversaryAlerts', 'showTryCount']) expect(k in out.settings).toBe(false)
+    expect(out.settings.personal).toEqual({ a: {} })
+    // Empty lists never survive as empty containers.
+    const empty = { ...clone(rich()), treatments: [], leaveDays: { a: [] }, intimacy: null } as unknown as AppState
+    const cleaned = sanitizeBackup(empty)!
+    for (const k of ['treatments', 'leaveDays', 'intimacy']) expect(k in cleaned).toBe(false)
+  })
+
+  it('switches read their defaults when unset: memories off, anniversary alerts on, try count hidden, 콕 받기 on, home card follows 잠금화면 숨김', () => {
+    const s = fresh()
+    expect(SETTINGS_DEFAULTS).toEqual({ memories: false, anniversaryAlerts: true, showTryCount: false })
+    expect(PERSONAL_DEFAULTS).toEqual({ acceptNudges: true })
+    expect(memoriesOn(s.settings)).toBe(false)
+    expect(anniversaryAlertsOn(s.settings)).toBe(true)
+    expect(showTryCountOn(s.settings)).toBe(false)
+    expect(acceptNudgesFor(s.settings, 'a')).toBe(true)
+    expect(homeDiscreetFor(s.settings, 'a')).toBe(false)
+    const set = setSetting(setSetting(setSetting(s, 'memories', true), 'anniversaryAlerts', false), 'showTryCount', true)
+    expect(memoriesOn(set.settings)).toBe(true)
+    expect(anniversaryAlertsOn(set.settings)).toBe(false)
+    expect(showTryCountOn(set.settings)).toBe(true)
+    // Per person: 잠금화면 숨김 pulls the home card along unless the person chose otherwise.
+    const discreetA = { ...s.settings, personal: { a: { discreet: true } } }
+    expect(homeDiscreetFor(discreetA, 'a')).toBe(true)
+    expect(homeDiscreetFor(discreetA, 'b')).toBe(false)
+    expect(homeDiscreetFor({ ...s.settings, discreet: true }, 'b')).toBe(true)
+    expect(homeDiscreetFor({ ...s.settings, discreet: true, personal: { b: { homeDiscreet: false } } }, 'b')).toBe(false)
+    expect(homeDiscreetFor({ ...s.settings, personal: { b: { discreet: false, homeDiscreet: true } } }, 'b')).toBe(true)
+    expect(acceptNudgesFor({ ...s.settings, personal: { a: { acceptNudges: false } } }, 'a')).toBe(false)
+    expect(acceptNudgesFor({ ...s.settings, personal: { a: { acceptNudges: false } } }, 'b')).toBe(true)
   })
 })

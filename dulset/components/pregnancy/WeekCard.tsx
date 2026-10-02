@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, Disclaimer, cx } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui/icons'
 import { WEEK_INFO_NOTE } from '@/lib/content/pregnancy'
 import { weekBadgeLabel, weekInfoFor } from '@/lib/logic/pregnancyView'
 import { useApp } from '@/lib/store'
@@ -16,9 +17,9 @@ export default function WeekCard({ weeks }: { weeks: number }) {
   const info = weekInfoFor(weeks)
   const supporter = carrier.id === me.id ? partner : me
 
-  const tips = [
-    { who: carrier, icon: '🤰', heading: '엄마에게', text: info.mom, tone: 'bg-her-soft' },
-    { who: supporter, icon: '🤝', heading: `이번 주 ${supportLabel(supporter)} 할 일`, text: info.partner, tone: 'bg-him-soft' },
+  const tips: Array<{ who: Member; icon: IconName; heading: string; text: string; tone: string }> = [
+    { who: carrier, icon: 'bump', heading: '엄마에게', text: info.mom, tone: 'bg-her-soft' },
+    { who: supporter, icon: 'users', heading: `이번 주 ${supportLabel(supporter)} 할 일`, text: info.partner, tone: 'bg-him-soft' },
   ]
   // The viewer's own tip goes first.
   if (viewer === supporter.id) tips.reverse()
@@ -58,7 +59,7 @@ export default function WeekCard({ weeks }: { weeks: number }) {
         {tips.map((t) => (
           <div key={t.heading} className={cx('rounded-xl p-3', t.tone)}>
             <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
-              <span aria-hidden>{t.icon}</span>
+              <Icon name={t.icon} className="h-4 w-4" />
               {t.heading}
               {t.who.id === viewer ? (
                 <span className="rounded-full bg-surface px-1.5 py-0.5 text-[10px] font-bold text-brand-ink">나</span>

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import ClinicSwitch from '@/components/cycle/ClinicSwitch'
 import { Button, Card, Field, Sheet, inputClass, useToast } from '@/components/ui'
+import { Icon, IconTile, type IconName } from '@/components/ui/icons'
 import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
-import { PREGNANCY_DAYS, backToPreparing, dueDate, recordBirth } from '@/lib/logic/pregnancy'
+import { PREGNANCY_DAYS, dueDate, recordBirth } from '@/lib/logic/pregnancy'
+import { endPregnancy } from '@/lib/logic/today'
 import {
   defaultLmp,
   dueDateBounds,
@@ -19,7 +21,7 @@ import { canLogCycle } from '@/lib/logic/prefs'
 import { STAGE_INFO, markPregnant } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
-import type { BabySex } from '@/lib/types'
+import type { BabySex, Stage } from '@/lib/types'
 import { ConfirmActions, Segmented, SettingsSection } from './bits'
 
 type SheetKind = 'pregnant' | 'birth' | 'back' | null
@@ -29,6 +31,9 @@ function openTab(key: 'pregnancy' | 'baby') {
   window.location.hash = key
   window.scrollTo({ top: 0 })
 }
+
+/** The stage tile's line icon (STAGE_INFO's emoji stays for text surfaces). */
+const STAGE_ICON: Record<Stage, IconName> = { preparing: 'sprout', pregnant: 'bump', parenting: 'baby' }
 
 const SEX_OPTIONS: ReadonlyArray<{ value: BabySex; label: string }> = [
   { value: 'girl', label: '여아' },
@@ -45,12 +50,10 @@ export default function StageSection() {
   const info = STAGE_INFO[state.stage]
 
   return (
-    <SettingsSection title="단계" sub="단계에 맞춰 탭과 알림이 바뀌어요">
+    <SettingsSection id="stage" title="단계" sub="단계에 맞춰 탭과 알림이 바뀌어요">
       <Card>
         <div className="flex items-start gap-3">
-          <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-2xl">
-            {info.icon}
-          </span>
+          <IconTile name={STAGE_ICON[state.stage]} tone="bg-brand-soft" />
           <div className="min-w-0">
             <p className="text-xs font-medium text-ink-3">지금 단계</p>
             <p className="text-base font-bold text-ink">{info.label}</p>
@@ -77,7 +80,7 @@ export default function StageSection() {
         {state.stage === 'pregnant' ? (
           <>
             <Button full className="mt-4" onClick={() => setSheet('birth')}>
-              아기가 태어났어요 <span aria-hidden>👶</span>
+              아기가 태어났어요 <Icon name="baby" className="h-5 w-5" strokeWidth={2} />
             </Button>
             <Button full variant="ghost" size="sm" className="mt-1 min-h-[44px] text-ink-3" onClick={() => setSheet('back')}>
               준비 단계로 돌아가기
@@ -98,10 +101,10 @@ export default function StageSection() {
       {/* Each sheet only while the stage still fits it: if the partner changes the
           stage on their phone, a sheet left open here closes instead of
           overwriting what they entered. */}
-      <Sheet open={sheet === 'pregnant' && state.stage === 'preparing'} onClose={close} title="축하해요! 🎉">
+      <Sheet open={sheet === 'pregnant' && state.stage === 'preparing'} onClose={close} title="축하해요!">
         {sheet === 'pregnant' && state.stage === 'preparing' ? <PregnantForm onDone={close} /> : null}
       </Sheet>
-      <Sheet open={sheet === 'birth' && state.stage === 'pregnant'} onClose={close} title="아기가 태어났어요 👶">
+      <Sheet open={sheet === 'birth' && state.stage === 'pregnant'} onClose={close} title="아기가 태어났어요">
         {sheet === 'birth' && state.stage === 'pregnant' ? <BirthForm onDone={close} /> : null}
       </Sheet>
       <Sheet open={sheet === 'back' && state.stage === 'pregnant'} onClose={close} title="준비 단계로 돌아가기">
@@ -248,9 +251,11 @@ export function BirthForm({ onDone }: { onDone: () => void }) {
 export function BackConfirm({ onDone }: { onDone: () => void }) {
   const { update, today } = useApp()
   const toast = useToast()
+  // endPregnancy also starts the 42-day 'loss' quiet (ttc.startLossRest): no
+  // date estimates or cycle notices until its last day, whatever gets logged.
   const confirm = () => {
-    update((s) => backToPreparing(s, today))
-    toast.show('준비 단계로 돌아왔어요')
+    update((s) => endPregnancy(s, today))
+    toast.show('준비 단계로 돌아왔어요 · 당분간 날짜 예상과 알림은 쉬어요')
     onDone()
   }
   return (

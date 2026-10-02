@@ -1,6 +1,7 @@
 'use client'
 
 import { cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 
 /** 44px tap target with a 24px visual box. */
 export function CheckBox({
@@ -32,11 +33,11 @@ export function CheckMark({ checked }: { checked: boolean }) {
     <span
       aria-hidden
       className={cx(
-        'flex h-6 w-6 items-center justify-center rounded-md border-2 text-[13px] font-bold leading-none transition-colors',
+        'flex h-6 w-6 items-center justify-center rounded-md border-2 transition-colors',
         checked ? 'border-ok bg-ok text-white' : 'border-line bg-surface text-transparent',
       )}
     >
-      ✓
+      <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
     </span>
   )
 }

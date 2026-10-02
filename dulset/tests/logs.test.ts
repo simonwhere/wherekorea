@@ -19,6 +19,7 @@ import {
   logPeriodStart,
   logUndo,
   movePeriodStart,
+  openPeriodOn,
   planLHTest,
   pregnancyTestsOn,
   removeLHTest,
@@ -404,17 +405,51 @@ describe('periods', () => {
     expect(logPeriodEnd(s, '2026-01-01', '2026-01-03')).toBe(s)
   })
 
-  it('a new period ends a rest cycle and quietly clears an unconfirmed positive', () => {
+  it('a new period ends a rest cycle; during a pending positive it is a bleeding mark until she settles it (asPeriod)', () => {
     let s = startRestCycle(preparing(), '2026-09-10', 'rest')
     s = addPregnancyTest(s, { date: '2026-09-26', result: 'positive' }).state
     expect(s.restCycle).toBeDefined()
     expect(s.positivePending).toBeDefined()
-    s = logPeriodStart(s, '2026-09-29', 'b')
+    // Next B: a start on/after the positive test's day marks bleeding from any screen — the periods, the rest and the test stay.
+    const marked = logPeriodStart(s, '2026-09-29', 'b')
+    expect(marked.periods).toEqual(s.periods)
+    expect(marked.restCycle).toEqual(s.restCycle)
+    expect(marked.positivePending).toMatchObject({ since: '2026-09-26', bleedingSince: '2026-09-29' })
+    // [생리로 기록할게요] (asPeriod): the period is recorded, the rest ends and the test is settled quietly.
+    s = logPeriodStart(marked, '2026-09-29', 'b', undefined, { asPeriod: true })
+    expect(s.periods.at(-1)).toEqual({ start: '2026-09-29', by: 'b' })
     expect(s.restCycle).toBeUndefined()
     expect(s.positivePending).toBeUndefined()
+    // A start before the test's day is an ordinary (late-entered) period: the test is not touched (it came after).
+    const before = logPeriodStart(marked, '2026-09-20', 'b')
+    expect(before.periods.some((p) => p.start === '2026-09-20')).toBe(true)
+    expect(before.positivePending).toEqual(marked.positivePending)
     // A live-vaccine rest lasts until a period at least a month after the shot (ttc.ts).
     const vaccine = logPeriodStart(startRestCycle(preparing(), '2026-09-10', 'vaccine'), '2026-09-29', 'b')
     expect(vaccine.restCycle?.reason).toBe('vaccine')
+  })
+
+  it("offers [오늘 끝났어요] for the open period today falls in — by the expected length, never once it's closed", () => {
+    const len = 5
+    const periods = [{ start: '2026-09-01', by: 'b' as const }, { start: '2026-09-28', by: 'b' as const }]
+    // Day 1 … day 5 of an open period: still bleeding by the record.
+    expect(openPeriodOn(periods, '2026-09-28', len)?.start).toBe('2026-09-28')
+    expect(openPeriodOn(periods, '2026-10-02', len)?.start).toBe('2026-09-28')
+    // Day 6: past the expected length — the sheet's 끝났어요 for a late log (extendable) takes over.
+    expect(openPeriodOn(periods, '2026-10-03', len)).toBeUndefined()
+    // Before the start, and a closed period, offer nothing.
+    expect(openPeriodOn(periods, '2026-09-27', len)).toBeUndefined()
+    expect(openPeriodOn([{ start: '2026-09-28', end: '2026-10-01' }], '2026-09-30', len)).toBeUndefined()
+    // An older open record never wins over the newest one that covers the day.
+    expect(openPeriodOn([{ start: '2026-09-27' }, { start: '2026-09-28' }], '2026-09-29', len)?.start).toBe('2026-09-28')
+    // A silly length still counts the start day itself; the input is not mutated.
+    expect(openPeriodOn(periods, '2026-09-28', 0)?.start).toBe('2026-09-28')
+    expect(openPeriodOn(periods, '2026-09-29', 0)).toBeUndefined()
+    expect(periods.map((p) => p.start)).toEqual(['2026-09-01', '2026-09-28'])
+    // One tap then closes it on today (logPeriodEnd keeps who logged it).
+    const s = logPeriodEnd({ ...preparing(), periods }, '2026-09-28', '2026-10-02')
+    expect(s.periods.at(-1)).toEqual({ start: '2026-09-28', end: '2026-10-02', by: 'b' })
+    expect(openPeriodOn(s.periods, '2026-10-02', len)).toBeUndefined()
   })
 
   it('moves a start (keeping its end and author) and removes one', () => {

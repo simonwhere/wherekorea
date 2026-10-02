@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Field, Sheet, inputClass, useToast } from '@/components/ui'
+import { Button, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo } from '@/lib/dates'
 import { PREGNANCY_DAYS, updatePregnancy } from '@/lib/logic/pregnancy'
@@ -108,9 +109,7 @@ function DueDateForm({ pregnancy, onDone }: { pregnancy: Pregnancy; onDone: () =
           className="flex min-h-[44px] w-full items-center justify-between text-left text-sm font-medium text-ink-2"
         >
           마지막 생리 시작일 고치기
-          <span aria-hidden className="text-ink-3">
-            {showLmp ? '▴' : '▾'}
-          </span>
+          <Icon name="chev" className={cx('h-4 w-4 text-ink-3 transition-transform', showLmp && 'rotate-180')} strokeWidth={2.2} />
         </button>
         {showLmp ? (
           <div className="mt-2 space-y-3">

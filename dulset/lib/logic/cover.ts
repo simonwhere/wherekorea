@@ -6,12 +6,13 @@
 // 기다리는 주, and the line above it (heroLine) never uses cycle words.
 //
 // Imports stay within ../types, ../dates, ./pregnancy, ./signals,
-// ./anniversary, ./today and ./prefs (see the import-cycle note in AGENTS.md).
+// ./anniversary, ./today and ./prefs (see the import-cycle note in AGENTS.md;
+// settings.ts and ttcFlow.ts import this file, so their flags are read inline).
 
 import { addDays, diffDays, isISODate } from '../dates'
-import type { AppState, CoverPhoto, ISODate, MemberId } from '../types'
+import type { AppState, Appointment, CoverPhoto, DiaryEntry, ISODate, MemberId, PeriodLog, Pregnancy, PregnancyTest } from '../types'
 import { anniversariesBetween, daysSince } from './anniversary'
-import { recentlyEnded } from './pregnancy'
+import { QUIET_DAYS_AFTER_END, recentlyEnded } from './pregnancy'
 import { isSignal, pendingSignal } from './signals'
 import { greetingFor, rowProgress } from './today'
 
@@ -200,15 +201,114 @@ export function coverView(state: AppState, viewer: MemberId, today: ISODate): Co
   }
 }
 
+// ── 'N년 전 오늘' (Next B) ───────────────────────────────────
+
+/** How far back a memory reaches: an entry from exactly 1, 2 or 3 years ago today. */
+export const MEMORY_YEARS = { min: 1, max: 3 } as const
+
+/** Period days 1–3 — the 수고했어요 days (ttcFlow.PERIOD_EARLY_DAYS; pinned by a test). */
+const PERIOD_QUIET_DAYS = 3
+
+export interface Memory {
+  entryId: string
+  date: ISODate
+  /** 1, 2 or 3. */
+  years: number
+}
+
+/** Day 1–3 of a logged period. */
+function onPeriodStart(periods: readonly PeriodLog[], date: ISODate): boolean {
+  return periods.some((p) => date >= p.start && date <= addDays(p.start, PERIOD_QUIET_DAYS - 1))
+}
+
+/**
+ * A home test on that day that did not lead anywhere: a negative or faint
+ * one, or a positive outside a pregnancy that went on (it was settled by a
+ * period, or the pregnancy ended — insideEndedPregnancy covers the latter's
+ * days too). A positive inside the pregnancy that is still going on, or that
+ * ended with a birth, is left alone — 그날의 두 줄 is a happy memory.
+ */
+function sadTestOn(state: Pick<AppState, 'pregnancyTests' | 'pregnancy'>, date: ISODate): boolean {
+  const p = state.pregnancy
+  const carried = !!p && !p.endedAt && date >= p.lmp
+  return !!state.pregnancyTests?.some((t) => t.date === date && (t.result !== 'positive' || !carried))
+}
+
+/** A clinic day: a visit, test, shot, injection or medication appointment on that day (신청·행정 and 기타 are not). */
+const CLINIC_APPOINTMENT_KINDS: ReadonlySet<Appointment['kind']> = new Set(['hospital', 'test', 'vaccine', 'injection', 'medication'])
+
+function clinicDayOn(appointments: readonly Appointment[] | undefined, date: ISODate): boolean {
+  return !!appointments?.some((a) => a.date === date && CLINIC_APPOINTMENT_KINDS.has(a.kind))
+}
+
+/**
+ * Inside the ended pregnancy — from its last period's first day to the day it
+ * ended — or in the 42 quiet days after it (QUIET_DAYS_AFTER_END).
+ */
+function insideEndedPregnancy(p: Pregnancy | undefined, date: ISODate): boolean {
+  if (!p?.endedAt || !(p.endedAt > p.confirmedAt)) return false
+  return date >= p.lmp && date <= addDays(p.endedAt, QUIET_DAYS_AFTER_END - 1)
+}
+
+/**
+ * The entry behind '1년 전 오늘의 이야기': a diary entry the two wrote for each
+ * other, dated exactly 1–3 years ago today (the most recent year first). Off
+ * unless the couple turned 'N년 전 오늘' on (settings.memories; unset = off, as
+ * lib/initial.ts SETTINGS_DEFAULTS has it — read inline, see the import note).
+ * Hard filters, so nothing painful or private resurfaces (설정 › 첫 화면
+ * promises exactly these): no '나만 보기' entry at all — not even the viewer's
+ * own, it is not a shared memory (`viewer` is kept for a later per-person
+ * rule); no entry written while pregnant; none dated inside an ended pregnancy
+ * or its 42 quiet days; none from period days 1–3, a home test's day that led
+ * nowhere (sadTestOn) or a clinic day (clinicDayOn); none with a health word
+ * (COVER_WORDS). And no memory at all on a quiet day, a period day 1–3 or the
+ * day of such a test.
+ */
+export function memoryFor(
+  state: Pick<AppState, 'stage' | 'settings' | 'diary' | 'periods' | 'pregnancyTests' | 'pregnancy'> & Partial<Pick<AppState, 'appointments'>>,
+  today: ISODate,
+  viewer: MemberId,
+): Memory | undefined {
+  void viewer
+  if (state.settings.memories !== true) return undefined
+  if (!isISODate(today) || recentlyEnded(state, today)) return undefined
+  if (onPeriodStart(state.periods, today) || sadTestOn(state, today)) return undefined
+  const monthDay = today.slice(5)
+  const year = Number(today.slice(0, 4))
+  let best: (Memory & { createdAt: string }) | undefined
+  for (const e of state.diary) {
+    if (!isISODate(e.date) || e.date.slice(5) !== monthDay) continue
+    const years = year - Number(e.date.slice(0, 4))
+    if (years < MEMORY_YEARS.min || years > MEMORY_YEARS.max) continue
+    if (e.privateTo !== undefined) continue
+    if (e.stage === 'pregnant') continue
+    if (insideEndedPregnancy(state.pregnancy, e.date)) continue
+    if (onPeriodStart(state.periods, e.date) || sadTestOn(state, e.date) || clinicDayOn(state.appointments, e.date)) continue
+    if (COVER_WORDS.test(e.text)) continue
+    // The nearest year; within it, the day's first entry.
+    if (!best || years < best.years || (years === best.years && e.createdAt < best.createdAt)) {
+      best = { entryId: e.id, date: e.date, years, createdAt: e.createdAt }
+    }
+  }
+  return best ? { entryId: best.entryId, date: best.date, years: best.years } : undefined
+}
+
+/** '1년 전 오늘의 이야기 ›' */
+export function memoryLineText(memory: Pick<Memory, 'years'>): string {
+  return `${memory.years}년 전 오늘의 이야기 ›`
+}
+
 // ── The line above the photo ────────────────────────────────
 
 export interface HeroLine {
-  kind: 'signal' | 'done' | 'cheer' | 'anniversary' | 'greeting'
+  kind: 'signal' | 'done' | 'cheer' | 'memory' | 'anniversary' | 'greeting'
   text: string
   /** Whose avatar goes in front of the line (the partner's, for things they did). */
   avatar?: MemberId
   /** Where tapping the line goes: 우리 한 줄 on this screen, or the 우리 tab. */
   target?: 'us' | 'diary'
+  /** kind 'memory': the entry the line points at. */
+  memory?: Memory
 }
 
 /** Days ahead an anniversary is mentioned on the cover. */
@@ -233,9 +333,13 @@ export function copula(word: string): string {
  *  2. the partner finished today's checks — the 'complete:' notice, and the
  *     day still complete (not on quiet days);
  *  3. the partner sent a cheer today;
- *  4. an anniversary within 7 days whose title has no health words (not on
- *     quiet days; 💍 is the only emoji, never 🎉);
- *  5. the greeting.
+ *  4. 'N년 전 오늘' (settings.memories, off by default): a diary entry from
+ *     exactly 1–3 years ago today that passes memoryFor's filters (not on
+ *     quiet days);
+ *  5. an anniversary within 7 days whose title has no health words (not on
+ *     quiet days, and not when the couple turned 기념일 알림 off —
+ *     settings.anniversaryAlerts, unset = on; 💍 is the only emoji, never 🎉);
+ *  6. the greeting.
  * No cycle, test or pregnancy words ever — whoever looks at the phone.
  */
 export function heroLine(state: AppState, today: ISODate, viewer: MemberId, hour: number): HeroLine {
@@ -273,6 +377,13 @@ export function heroLine(state: AppState, today: ISODate, viewer: MemberId, hour
   if (cheered) return { kind: 'cheer', text: `${p}님이 응원을 보냈어요`, avatar: partnerId, target: 'us' }
 
   if (!quiet) {
+    const memory = memoryFor(state, today, viewer)
+    if (memory) return { kind: 'memory', text: memoryLineText(memory), target: 'diary', memory }
+  }
+
+  // 기념일 알림 off (settings.anniversaryAlerts === false) silences the cover line
+  // too; the 우리 tab still lists the days.
+  if (!quiet && state.settings.anniversaryAlerts !== false) {
     // Every day in the next week (not just the next few events), so a skipped
     // title never hides an allowed one behind it.
     const week = anniversariesBetween(state.couple, state.anniversaries, today, addDays(today, HERO_ANNIVERSARY_DAYS))

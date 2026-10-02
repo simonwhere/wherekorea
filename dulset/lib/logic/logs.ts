@@ -5,6 +5,7 @@
 // change can be undone for a few seconds (되돌리기): `logUndo` captures what an
 // action is about to touch from the state it runs on, `undoLog` puts it back.
 
+import { diffDays } from '../dates'
 import { uid } from '../id'
 import type { LogKind } from '../logLauncher'
 import { LH_SLOTS } from '../types'
@@ -35,6 +36,7 @@ import {
   type CycleInput,
 } from './cycle'
 import { addEntry, removeEntry } from './diary'
+import { isBleedingDuringPositive, markBleeding } from './positiveBleeding'
 import { lhPrompting } from './prefs'
 import { activePositivePending, activeRest, clearPositivePending, markPositivePending, onPeriodLogged } from './ttc'
 
@@ -222,8 +224,9 @@ export function removeLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, date
  * once the cycle reaches the 'LH 테스트 시작' moment (LH_LEAD_DAYS before the
  * estimated window) and until it is answered. '나중에' puts it off to the next
  * cycle: `deferredCycle` is the start of the cycle it was deferred in (kept per
- * device, lib/persist LH_ASK_DEFERRED_KEY). Never while a rest cycle or a
- * positive test waiting for the clinic pauses the dates.
+ * device, lib/persist LH_ASK_DEFERRED_KEY). Never while a rest cycle (as of
+ * `today` — the 42-day quiet after a loss ends on its own) or a positive test
+ * waiting for the clinic pauses the dates.
  */
 export function lhAskDue(
   state: CycleInput & Pick<AppState, 'settings' | 'restCycle' | 'positivePending' | 'stage'>,
@@ -232,7 +235,7 @@ export function lhAskDue(
 ): boolean {
   const uses = state.settings.usesLH
   if (uses === true || uses === false) return false
-  if (state.stage !== 'preparing' || activeRest(state) || activePositivePending(state)) return false
+  if (state.stage !== 'preparing' || activeRest(state, today) || activePositivePending(state)) return false
   const st = fertilityStatus(state, today)
   const reached =
     (st.kind === 'before-fertile' && st.daysUntil <= LH_LEAD_DAYS) ||
@@ -322,13 +325,31 @@ export function removePregnancyTest(state: AppState, id: string): AppState {
 
 // ── Periods ─────────────────────────────────────────────────
 
+export interface PeriodStartOptions {
+  /**
+   * Record the period even while a positive test waits for the clinic — the
+   * owner settling the bleeding as her period (ttcFlow.settleBleedingAsPeriod,
+   * the home card's [생리로 기록할게요]). Without it, such a start is a bleeding
+   * mark (see below).
+   */
+  asPeriod?: boolean
+}
+
 /**
  * Log a period start. Also ends a rest cycle begun before it and quietly
  * clears an unconfirmed positive test (ttc.onPeriodLogged). An existing record
  * on the same day keeps its end date. A date after `today` is ignored.
+ *
+ * 양성 뒤 출혈 (Next B): while a positive test waits for the clinic, a start on
+ * or after the test's day is not a period yet — whichever screen logs it (the
+ * sheet, the calendar, the first-period card), it becomes the bleeding mark
+ * (positiveBleeding.markBleeding; the periods list is untouched and the home
+ * card offers 병원에 연락하기 / 생리로 기록할게요). Only `asPeriod` records it.
+ * 되돌리기 works as before: logUndo's 'period' target keeps positivePending.
  */
-export function logPeriodStart(state: AppState, date: ISODate, by?: MemberId, today?: ISODate): AppState {
+export function logPeriodStart(state: AppState, date: ISODate, by?: MemberId, today?: ISODate, opts: PeriodStartOptions = {}): AppState {
   if (today && date > today) return state
+  if (!opts.asPeriod && isBleedingDuringPositive(state, date)) return markBleeding(state, date)
   const prev = state.periods.find((p) => p.start === date)
   return onPeriodLogged(addPeriod(state, date, prev?.end, by ?? prev?.by), date)
 }
@@ -337,6 +358,19 @@ export function logPeriodStart(state: AppState, date: ISODate, by?: MemberId, to
 export function logPeriodEnd(state: AppState, start: ISODate, end: ISODate | undefined): AppState {
   if (!state.periods.some((p) => p.start === start)) return state
   return setPeriodEnd(state, start, end)
+}
+
+/**
+ * The logged period that `date` still falls in and that has no last day yet
+ * (within the expected period length of its start) — the one the sheet offers
+ * [오늘 끝났어요] for (review D-11: 생리 끝난 날 1탭). The newest such start wins.
+ * Once a last day is logged the period is closed and nothing is offered.
+ */
+export function openPeriodOn(periods: readonly PeriodLog[], date: ISODate, periodLength: number): PeriodLog | undefined {
+  const len = Math.max(1, periodLength)
+  return [...periods]
+    .filter((p) => !p.end && p.start <= date && diffDays(p.start, date) < len)
+    .sort((a, b) => (a.start < b.start ? 1 : -1))[0]
 }
 
 /** "It actually started on this day": move a logged start, keeping its end and author. */
@@ -483,7 +517,7 @@ function cycleLogKind(
 ): Exclude<LogKind, 'note'> {
   const pending = activePositivePending(state)
   if (pending && date >= pending.since) return 'ptest'
-  if (activeRest(state)) return 'period'
+  if (activeRest(state, today)) return 'period'
   if (date === today) {
     const st = fertilityStatus(state, today)
     switch (st.kind) {

@@ -78,7 +78,7 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
 
       {list.length === 0 ? (
         <EmptyState
-          icon="🔔"
+          icon="bell"
           title="새 알림이 없어요"
           body={`${partner.name}님이 콕 찌르거나 응원을 보내면 여기에 보여요.`}
         />

@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { PHASES, PHASE_LABEL } from '@/lib/logic/roadmap'
 import { useApp } from '@/lib/store'
 import { btnBrand } from './bits'
@@ -94,9 +95,9 @@ export default function PhaseList({
               </div>
             ) : null}
             {g.hint ? (
-              <p className="mb-1.5 px-1 text-[11px] text-ink-3">
-                <span aria-hidden>🗓️ </span>
-                {g.hint}
+              <p className="mb-1.5 flex items-start gap-1 px-1 text-[11px] text-ink-3">
+                <Icon name="cal" className="mt-px h-3 w-3 shrink-0" strokeWidth={2} />
+                <span>{g.hint}</span>
               </p>
             ) : null}
             {g.items.length ? (

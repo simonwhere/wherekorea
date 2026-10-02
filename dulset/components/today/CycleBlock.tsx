@@ -4,12 +4,18 @@
 // cycle ring (or the partner's week row), one sentence and one action
 // (lib/logic/ttcFlow decides all of it per viewer; the copy is used as is).
 // The card is always surface; only the quiet 'muted' moments (쉬는 주기, after
-// a loss) sit on surface-2.
+// a loss) sit on surface-2. With 잠금화면 숨김을 홈 카드까지 (moment.veiled) the
+// card shows VEIL_COPY until this person taps 내용 보기 — the ring, the vaccine
+// hint and every line wait behind it.
 
 import { useCallback, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
+import { openClinicSummary } from '@/components/clinic/openClinicSummary'
+import { openTreatments } from '@/components/clinic/openTreatments'
+import { CLINIC_SUMMARY_SHEET_TITLE } from '@/components/clinic/summaryTitle'
 import { requestOpenFeels } from '@/components/cycle/CycleHistory'
 import { Card, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { openLHHowTo, openLog } from '@/lib/logLauncher'
 import { isSurge } from '@/lib/logic/cycle'
@@ -17,15 +23,21 @@ import { ringLegend, type LegendItem } from '@/lib/logic/cycleRing'
 import type { MonthlyTask } from '@/lib/logic/partnerTrack'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { stampOn } from '@/lib/logic/today'
+import { showsTreatmentCounter } from '@/lib/logic/treatments'
 import {
+  AFTER_LOSS_CHECKED_AT,
   LH_LABEL,
+  VEIL_COPY,
   acceptVaccineRest,
   cycleStrip,
   dismissVaccineRest,
   endRestFromHome,
+  estimateMarks,
   feelLabel,
   markStillWaiting,
+  settleBleedingAsPeriod,
   skipTellPartnerPeriod,
+  tellPartnerBleeding,
   tellPartnerPeriod,
   tellPartnerPositive,
   vaccineRestHint,
@@ -34,6 +46,7 @@ import {
   type VaccineRestHint,
 } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
+import BleedingNotes from './BleedingNotes'
 import CycleRing from './CycleRing'
 import LossSupport from './LossSupport'
 import { MonthlyTaskBody } from './MonthlyTask'
@@ -82,9 +95,7 @@ function Legend({ items }: { items: LegendItem[] }) {
         <li key={i.key} className="inline-flex items-center gap-[5px]">
           {i.key === 'period' ? <span className="h-[9px] w-[9px] rounded-full bg-period" /> : null}
           {i.key === 'period-predicted' ? <span className="h-[9px] w-[9px] rounded-full bg-period/30" /> : null}
-          {i.key === 'window' ? (
-            <span className="h-[9px] w-4 rounded-full bg-gradient-to-r from-fert/[.34] to-fert/[.62]" />
-          ) : null}
+          {i.key === 'window' ? <span className="h-[9px] w-4 rounded-full bg-gradient-to-r from-fert/[.34] to-fert/[.62]" /> : null}
           {i.key === 'peak' ? <span className="h-[9px] w-[9px] rounded-full bg-fert" /> : null}
           {i.key === 'lh' ? (
             <>
@@ -120,9 +131,14 @@ export default function CycleBlock({
   // Stable, so the Sheet's open effect doesn't re-run (and refocus) on every state change.
   const closeConfirm = useCallback(() => setConfirmOpen(false), [])
   const [later, setLater] = useState(false)
+  // [생리로 기록할게요] asks once more before the bleeding day becomes a period (no window.confirm).
+  const [settleOpen, setSettleOpen] = useState(false)
+  // 잠금화면 숨김을 홈 카드까지: behind VEIL_COPY until tapped (this screen only).
+  const [revealed, setRevealed] = useState(false)
   const strip = cycleStrip(state, today, me.id)
   const hint = vaccineRestHint(state, today, me.id)
   const m = moment
+  const veiled = !!m.veiled && !revealed
   const featuredTask = m.monthlyTask ? task : undefined
   const muted = m.tone === 'muted'
   // Boxes inside the card: surface-2 on a surface card, surface on a muted one.
@@ -150,9 +166,18 @@ export default function CycleBlock({
         // itself changes ('길어지고 있어요'), so no toast over its buttons.
         if (m.cycleStart) update((s) => markStillWaiting(s, m.cycleStart!, today))
         return
+      case 'period-settle':
+        setSettleOpen(true)
+        return
       case 'confirm-pregnancy':
         setConfirmOpen(true)
     }
+  }
+
+  const settlePeriod = () => {
+    update((s) => settleBleedingAsPeriod(s, today))
+    setSettleOpen(false)
+    toast.show('생리로 기록했어요. 주기 탭에서 고칠 수 있어요')
   }
 
   const tellPeriod = (start: string) => {
@@ -164,9 +189,22 @@ export default function CycleBlock({
     update((s) => tellPartnerPositive(s, stampOn(today)))
     toast.show(`${partner.name}님에게 차분히 알렸어요`)
   }
+  const tellBleeding = () => {
+    update((s) => tellPartnerBleeding(s, stampOn(today)))
+    toast.show(`${partner.name}님에게 조용히 알렸어요`)
+  }
 
   const primary = m.primary
   const pending = m.kind === 'positive-pending' && m.role === 'owner'
+  // The clinic-mode card (owner.clinic / partner.clinic): the summary is the
+  // cycle owner's tool; the counter is for both (components/clinic).
+  const clinic = m.copy === 'owner.clinic' || m.copy === 'partner.clinic'
+  const clinicLinks = clinic
+    ? {
+        summary: canLogCycle(state, me.id),
+        treatments: showsTreatmentCounter(state),
+      }
+    : undefined
   // "달력 보기" says the same as the ring's "주기 보기".
   const secondary = m.secondary?.type === 'nav' && m.secondary.to === 'cycle' && strip ? undefined : m.secondary
   const secondaryLink = secondary?.type === 'nav' ? secondary : undefined
@@ -187,9 +225,12 @@ export default function CycleBlock({
   // 주기 보기 when the action row is full: two pills, or the 병원 확인 전 buttons).
   const headerLink = pending || (primary && secondaryPill) || howTo ? cycleLink : !primary ? (secondaryLink ?? cycleLink) : undefined
 
+  // "(예상)" at most once on this card (review D-1): when the copy carries it,
+  // the legend's labels are plain; otherwise the legend's window label keeps it.
+  const estimate = [m.eyebrow, m.title, m.body, m.note, m.partnerTip].some((t) => estimateMarks(t) > 0) ? 'none' : 'one'
   // Period days 1–3 draw only the period, which needs no legend — and on a
   // 375×667 phone the line it saves keeps the 알릴까요? buttons above the tab bar.
-  const legend = strip?.mode === 'cycle' && !quietWindow ? ringLegend(strip, { quietWindow }) : []
+  const legend = strip?.mode === 'cycle' && !quietWindow ? ringLegend(strip, { quietWindow, estimate }) : []
   // A long caveat (the vaccine rest's sources) reads as a footnote under the
   // action, so the action keeps its place on the first screen.
   const footnote = !!m.note && m.note.length > NOTE_BESIDE_MAX
@@ -211,6 +252,26 @@ export default function CycleBlock({
       ) : null}
     </>
   )
+
+  if (veiled) {
+    return (
+      <div className={cx('space-y-3', className)}>
+        <section
+          aria-label="오늘의 주기"
+          className="rounded-card border border-transparent bg-surface px-[18px] pb-[18px] pt-4 shadow-warm dark:border-line/70 dark:shadow-none forced-colors:border-line [@media(max-height:700px)]:pt-3.5"
+        >
+          <p className="min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em] text-ink-2">{VEIL_COPY.eyebrow}</p>
+          <h2 className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">{VEIL_COPY.title}</h2>
+          <p className="mt-1 text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{VEIL_COPY.body}</p>
+          <div data-fold="" className="mt-4 [@media(max-height:700px)]:mt-3.5">
+            <PillButton variant="outline" full onClick={() => setRevealed(true)}>
+              {VEIL_COPY.action}
+            </PillButton>
+          </div>
+        </section>
+      </div>
+    )
+  }
 
   return (
     <div className={cx('space-y-3', className)}>
@@ -248,10 +309,7 @@ export default function CycleBlock({
           ) : null}
         </div>
         {/* data-fold: what must stay above the tab bar on the first screen (useFoldFit). */}
-        <h2
-          data-fold={foldOnTitle ? '' : undefined}
-          className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink"
-        >
+        <h2 data-fold={foldOnTitle ? '' : undefined} className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">
           <Title text={m.title} />
         </h2>
 
@@ -267,7 +325,7 @@ export default function CycleBlock({
         ) : (
           <>
             <div className="mt-1">{text}</div>
-            {strip?.mode === 'weeks' ? <WeekRow strip={strip} /> : null}
+            {strip?.mode === 'weeks' ? <WeekRow strip={strip} estimate={estimate} /> : null}
           </>
         )}
 
@@ -291,14 +349,34 @@ export default function CycleBlock({
               <PillButton size="md" className="min-w-0 flex-1" onClick={() => tellPeriod(m.askTell!.start)}>
                 알리기
               </PillButton>
-              <PillButton size="md" variant={muted ? 'soft' : 'surface'} className="min-w-0 flex-1" onClick={() => skipPeriod(m.askTell!.start)}>
+              <PillButton
+                size="md"
+                variant={muted ? 'soft' : 'surface'}
+                className="min-w-0 flex-1"
+                onClick={() => skipPeriod(m.askTell!.start)}
+              >
                 괜찮아요
               </PillButton>
             </div>
           </div>
         ) : null}
 
-        {m.support ? <LossSupport heading={false} className={cx('mt-3.5 rounded-[18px] px-3.5 pb-3 pt-1', muted ? 'bg-surface' : 'bg-surface-2')} /> : null}
+        {/* After a loss, the owner's one body-guidance line with its source (ttcFlow.afterLossGuidance — never the partner's). */}
+        {m.guidance ? (
+          <div className={cx(inner, 'text-[13px] leading-[1.55] text-ink-2')}>
+            <p>
+              <b className="font-bold text-ink">몸 안내</b> · {m.guidance.text}
+            </p>
+            <p className="mt-1 text-[11.5px] text-ink-3">
+              <ExternalLink href={m.guidance.source.url}>{m.guidance.source.name}</ExternalLink>
+              <span className="ml-2">확인 {AFTER_LOSS_CHECKED_AT} · 병원마다 달라요</span>
+            </p>
+          </div>
+        ) : null}
+
+        {m.support ? (
+          <LossSupport heading={false} className={cx('mt-3.5 rounded-[18px] px-3.5 pb-3 pt-1', muted ? 'bg-surface' : 'bg-surface-2')} />
+        ) : null}
 
         {pending ? (
           later ? (
@@ -312,7 +390,8 @@ export default function CycleBlock({
               <div className="mt-4 space-y-2 [@media(max-height:700px)]:mt-3">
                 {primary ? (
                   <div data-fold="">
-                    <PillButton full onClick={() => run(primary)}>
+                    {/* 46px on a 375×667 phone: the long 병원 확인 전 body leaves the pill 2px under the tab bar at 50px. */}
+                    <PillButton full onClick={() => run(primary)} className="[@media(max-height:700px)]:h-[46px]">
                       {primary.label}
                     </PillButton>
                   </div>
@@ -343,7 +422,10 @@ export default function CycleBlock({
             </>
           )
         ) : primary ? (
-          <div data-fold="" className="mt-4 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-1 [@media(max-height:700px)]:mt-3.5">
+          <div
+            data-fold=""
+            className="mt-4 flex flex-wrap items-center justify-between gap-x-2.5 gap-y-1 [@media(max-height:700px)]:mt-3.5"
+          >
             {secondaryPill ? (
               <>
                 <PillButton size="split" onClick={() => run(primary)}>
@@ -378,6 +460,51 @@ export default function CycleBlock({
           </div>
         ) : null}
 
+        {/* [생리로 기록할게요]: one more look before the bleeding day becomes this period's first day. */}
+        {m.bleeding && settleOpen ? (
+          <div className={inner}>
+            <h3 className="text-[14.5px] font-extrabold tracking-[-0.02em] text-ink">
+              {formatKo(m.bleeding.since, { weekday: false })}부터 생리로 기록할까요?
+            </h3>
+            <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">병원 확인 전 상태는 끝나고, 평소처럼 주기를 이어 가요.</p>
+            <div className="mt-3 flex gap-2">
+              <PillButton size="md" className="min-w-0 flex-1" onClick={settlePeriod}>
+                네, 기록할게요
+              </PillButton>
+              <PillButton size="md" variant={muted ? 'soft' : 'surface'} className="min-w-0 flex-1" onClick={() => setSettleOpen(false)}>
+                아니요
+              </PillButton>
+            </div>
+          </div>
+        ) : null}
+
+        {m.offerTellBleeding ? (
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-line/75 pt-1">
+            <p className="text-[12.5px] text-ink-2">{partner.name}님에게도 알릴까요?</p>
+            <LinkButton size="md" onClick={tellBleeding} className="shrink-0">
+              조용히 알리기
+            </LinkButton>
+          </div>
+        ) : null}
+
+        {m.bleeding ? <BleedingNotes bleeding={m.bleeding} className="mt-3.5 border-t border-line/75 pt-3.5" /> : null}
+
+        {/* 병원과 함께 준비 중: the owner's one-page summary (B1) and the 시술 · 지원 counter (B2) are one tap away. */}
+        {clinicLinks ? (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 border-t border-line/75 pt-0.5">
+            {clinicLinks.summary ? (
+              <LinkButton size="md" arrow onClick={openClinicSummary} className="-ml-1 px-1">
+                {CLINIC_SUMMARY_SHEET_TITLE}
+              </LinkButton>
+            ) : null}
+            {clinicLinks.treatments ? (
+              <LinkButton size="md" arrow onClick={openTreatments} className={clinicLinks.summary ? 'px-1' : '-ml-1 px-1'}>
+                시술 · 지원 보기
+              </LinkButton>
+            ) : null}
+          </div>
+        ) : null}
+
         {footnote ? <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-3">{m.note}</p> : null}
       </section>
 
@@ -397,12 +524,13 @@ function VaccineRestCard({ hint }: { hint: VaccineRestHint }) {
   const dismiss = () => update((s) => dismissVaccineRest(s, hint, stampOn(today)))
   return (
     <Card tone="warn" className="rounded-card">
-      <p className="text-[12.5px] font-bold text-warn">
-        <span aria-hidden>💉 </span>최근 {hint.label} 항목을 챙겼어요
+      <p className="flex items-center gap-1.5 text-[12.5px] font-bold text-warn">
+        <Icon name="syringe" className="h-4 w-4 shrink-0" strokeWidth={2} />
+        최근 {hint.label} 항목을 챙겼어요
       </p>
       <p className="mt-1 text-sm leading-relaxed text-ink">
-        접종했다면, 생백신이라 접종 뒤 {hint.wait}({formatKo(hint.until, { weekday: false })} 무렵까지)는 임신을 미루도록
-        안내해요. 이번 주기는 쉬어 갈까요?
+        접종했다면, 생백신이라 접종 뒤 {hint.wait}({formatKo(hint.until, { weekday: false })} 무렵까지)는 임신을 미루도록 안내해요. 이번
+        주기는 쉬어 갈까요?
       </p>
       <div data-fold="" className="mt-3 flex gap-2">
         <PillButton size="md" className="min-w-0 flex-1" onClick={accept}>

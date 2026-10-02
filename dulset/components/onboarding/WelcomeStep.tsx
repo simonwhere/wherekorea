@@ -5,21 +5,25 @@ import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
 import Polaroid from '@/components/cover/Polaroid'
 import WelcomeRestore from '@/components/onboarding/WelcomeRestore'
 import { Button } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui/icons'
 import type { Stage } from '@/lib/types'
 
 // Preparing comes first (founder direction); pregnancy / baby / 기록장 follow later.
 // One-line bodies so the start button stays on the first screen.
-const VALUE_PROPS = [
-  { emoji: '✅', tile: 'bg-ok-soft', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 하루 1~2개만, 서로 응원해요' },
-  { emoji: '💞', tile: 'bg-fert-soft', title: '가임기 예상을 두 사람에게', body: '‘우리의 주간’처럼 각자 편한 말투로 받아요' },
-  { emoji: '🏥', tile: 'bg-brand-soft', title: '검사·신청 기한까지 함께', body: '가임력 검사 신청부터 청구까지 둘이 봐요' },
-  { emoji: '🔒', tile: 'bg-him-soft', title: '자세한 기록은 허용할 때만', body: '생리일·테스트 결과는 기록하는 사람이 정해요' },
-] as const
+const VALUE_PROPS: ReadonlyArray<{ icon: IconName; tile: string; title: string; body: string }> = [
+  { icon: 'check', tile: 'bg-ok-soft', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 하루 1~2개만, 서로 응원해요' },
+  { icon: 'heart', tile: 'bg-fert-soft', title: '가임기 예상을 두 사람에게', body: '‘우리의 주간’처럼 각자 편한 말투로 받아요' },
+  { icon: 'hospital', tile: 'bg-brand-soft', title: '검사·신청 기한까지 함께', body: '가임력 검사 신청부터 청구까지 둘이 봐요' },
+  { icon: 'lock', tile: 'bg-him-soft', title: '자세한 기록은 허용할 때만', body: '생리일·테스트 결과는 기록하는 사람이 정해요' },
+]
 
-const DEMOS: Array<{ stage: Stage; emoji: string; label: string }> = [
-  { stage: 'preparing', emoji: '🌱', label: '준비 중' },
-  { stage: 'pregnant', emoji: '🤰', label: '임신 중' },
-  { stage: 'parenting', emoji: '👶', label: '육아 중' },
+/** The fifth promise (review G11), one short line so 시작하기 still sits above the fold at 375×667. */
+const NO_ADS_LINE = '광고도, 추적 SDK도 없어요 · 기록은 이 폰에만'
+
+const DEMOS: Array<{ stage: Stage; icon: IconName; label: string }> = [
+  { stage: 'preparing', icon: 'sprout', label: '준비 중' },
+  { stage: 'pregnant', icon: 'bump', label: '임신 중' },
+  { stage: 'parenting', icon: 'baby', label: '육아 중' },
 ]
 
 /** Two overlapping circles and a small glow dot — "둘이 셋이 되기까지". The app's only 둘→셋 symbol. */
@@ -60,9 +64,7 @@ export default function WelcomeStep({
             caption={
               <>
                 <span className="text-[13px] font-semibold text-ink-2">여기에 우리 사진을 걸 수 있어요</span>
-                <span aria-hidden className="text-[12.5px]">
-                  📷
-                </span>
+                <Icon name="cam" className="h-4 w-4 text-ink-3" />
               </>
             }
           >
@@ -85,11 +87,8 @@ export default function WelcomeStep({
         <ul className="mt-[22px]">
           {VALUE_PROPS.map((v) => (
             <li key={v.title} className="flex items-center gap-3 py-[9px]">
-              <span
-                aria-hidden
-                className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] text-[19px] ${v.tile}`}
-              >
-                {v.emoji}
+              <span aria-hidden className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] text-ink-2 ${v.tile}`}>
+                <Icon name={v.icon} className="h-[22px] w-[22px]" strokeWidth={2} />
               </span>
               <div className="min-w-0">
                 <p className="text-[15px] font-bold leading-[1.35] tracking-[-0.025em] text-ink">{v.title}</p>
@@ -98,13 +97,19 @@ export default function WelcomeStep({
             </li>
           ))}
         </ul>
+        <p className="mt-1 flex items-center gap-2 pl-[2px] text-[12.5px] font-semibold leading-[1.45] text-ink-2">
+          <span aria-hidden className="flex w-[42px] shrink-0 justify-center text-ink-3">
+            <Icon name="ban" className="h-[18px] w-[18px]" strokeWidth={2} />
+          </span>
+          {NO_ADS_LINE}
+        </p>
 
         <Button
           size="lg"
           full
           onClick={onStart}
           // ! because Button's own radius/type classes can sort later in the CSS.
-          className="mt-[18px] h-[54px] !rounded-full !text-[17px] !font-extrabold tracking-[-0.02em]"
+          className="mt-3.5 h-[54px] !rounded-full !text-[17px] !font-extrabold tracking-[-0.02em]"
         >
           시작하기
         </Button>
@@ -129,7 +134,7 @@ export default function WelcomeStep({
                 onClick={() => onDemo(d.stage)}
                 className="flex h-[46px] items-center justify-center gap-1 rounded-[14px] bg-surface px-2 text-sm font-bold text-ink-2 hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand forced-colors:border forced-colors:border-line"
               >
-                <span aria-hidden>{d.emoji}</span>
+                <Icon name={d.icon} className="h-[18px] w-[18px] text-ink-3" />
                 {d.label}
                 <span className="sr-only"> 예시 보기</span>
               </button>

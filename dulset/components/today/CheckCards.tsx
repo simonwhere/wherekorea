@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { Icon } from '@/components/ui/icons'
 import { Avatar, Button, Card, cx, useToast } from '@/components/ui'
 import {
   activeItems,
@@ -13,10 +14,11 @@ import {
   weeklyDone,
 } from '@/lib/logic/checks'
 import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
+import { acceptNudgesFor } from '@/lib/logic/settings'
 import { rowProgress, stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { AppState, CheckItem, ISODate, MemberId } from '@/lib/types'
-import { Badge, KIND_ICON, KIND_LABEL, ProgressBar } from './bits'
+import { Badge, KIND_LABEL, KindIcon, ProgressBar } from './bits'
 import CheckEditor from './CheckEditor'
 
 /** Daily items: checked today. Weekly check-ins: checked any day this week. */
@@ -121,11 +123,9 @@ function CheckRow({ item, checked, onToggle }: { item: CheckItem; checked: boole
           checked ? 'border-ok bg-ok text-white' : 'border-line bg-surface text-transparent',
         )}
       >
-        ✓
+        <Icon name="check" className="h-4 w-4" strokeWidth={3} />
       </span>
-      <span aria-hidden className="text-lg">
-        {KIND_ICON[item.kind]}
-      </span>
+      <KindIcon kind={item.kind} className="text-ink-2" />
       <span className="min-w-0 flex-1">
         <span className={cx('block truncate text-[15px] font-semibold', checked ? 'text-ink-2' : 'text-ink')}>
           {item.label}
@@ -157,11 +157,13 @@ export function PartnerChecks() {
   const items = activeItems(state, partner.id)
   const done = doneIds(state, partner.id, today)
   const prog = rowProgress(state, partner.id, today)
-  const sent = nudgesSentToday(state, me.id, today)
-  const left = Math.max(0, NUDGES_PER_DAY - sent)
-  // A 콕 only ever points at an unchecked daily item — never a weekly check-in.
+  const left = Math.max(0, NUDGES_PER_DAY - nudgesSentToday(state, me.id, today))
+  // A 콕 only ever points at an unchecked daily item — never a weekly check-in —
+  // and the button is not there at all for a partner who turned 콕 받기 off
+  // (settings.acceptNudgesFor; sendNudge drops it too).
   const target = nudgeableItem(state, partner.id, today)
-  const canNudge = !!target && left > 0
+  const accepts = acceptNudgesFor(state.settings, partner.id)
+  const canNudge = !!target && left > 0 && accepts
   const tone = partner.tracksCycle ? 'her' : 'him'
 
   const nudge = () => {
@@ -210,7 +212,7 @@ export function PartnerChecks() {
                     isDone ? 'border-ok/30 bg-ok-soft font-semibold text-ok' : 'border-line bg-surface text-ink-3',
                   )}
                 >
-                  <span aria-hidden>{isDone ? '✓' : KIND_ICON[item.kind]}</span>
+                  {isDone ? <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> : <KindIcon kind={item.kind} className="h-3.5 w-3.5" />}
                   {item.label}
                   {isWeekly(item) ? <span className="text-[11px] font-normal text-ink-3">· 주 1회</span> : null}
                   <span className="sr-only">{isDone ? ' 완료' : ' 아직'}</span>
@@ -222,9 +224,11 @@ export function PartnerChecks() {
       )}
 
       <div className="mt-3 flex gap-2">
-        <Button variant="secondary" className="flex-1" onClick={nudge} disabled={!canNudge}>
-          👉 콕 찌르기
-        </Button>
+        {accepts ? (
+          <Button variant="secondary" className="flex-1" onClick={nudge} disabled={!canNudge}>
+            👉 콕 찌르기
+          </Button>
+        ) : null}
         <Button variant="secondary" className="flex-1" onClick={cheer}>
           👏 응원
         </Button>
@@ -234,9 +238,11 @@ export function PartnerChecks() {
           ? `${partner.name}님은 오늘 체크를 모두 마쳤어요. 응원 한마디 어때요?`
           : items.length === 0
             ? '응원은 언제든 보낼 수 있어요.'
-            : left === 0
-              ? `콕은 하루 ${NUDGES_PER_DAY}번까지예요. 내일 다시 보낼 수 있어요.`
-              : `콕은 오늘 ${left}번 더 보낼 수 있어요.`}
+            : !accepts
+              ? `${partner.name}님은 콕을 받지 않기로 했어요. 응원은 언제든 보낼 수 있어요.`
+              : left === 0
+                ? `콕은 하루 ${NUDGES_PER_DAY}번까지예요. 내일 다시 보낼 수 있어요.`
+                : `콕은 오늘 ${left}번 더 보낼 수 있어요.`}
       </p>
     </Card>
   )
@@ -251,7 +257,7 @@ export function CoupleStreak() {
   if (n === 0) return null
   return (
     <p className="flex items-center justify-center gap-1.5 rounded-xl bg-ok-soft px-3 py-2.5 text-sm font-semibold text-ok">
-      <span aria-hidden>💑</span> 둘 다 마친 날 · <span className="tabular-nums">{weekCountLabel(n)}</span>
+      <Icon name="users" className="h-4 w-4 shrink-0" strokeWidth={2} /> 둘 다 마친 날 · <span className="tabular-nums">{weekCountLabel(n)}</span>
     </p>
   )
 }

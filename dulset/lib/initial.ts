@@ -1,7 +1,7 @@
 import { todayISO } from './dates'
 import { inviteCode, uid } from './id'
 import { localNowISO } from './logic/notifications'
-import type { AppState, CheckItem, ISODate, Member, MemberId, Role } from './types'
+import type { AppState, CheckItem, ISODate, Member, MemberId, PersonalPrefs, Role, Settings } from './types'
 
 export const DEFAULT_CYCLE_LENGTH = 28
 export const DEFAULT_PERIOD_LENGTH = 5
@@ -18,6 +18,27 @@ export const CYCLE_RANGE_LONG = { min: 15, max: 90 } as const
 export function cycleLengthRange(longCycles: boolean | undefined): { min: number; max: number } {
   return longCycles ? CYCLE_RANGE_LONG : CYCLE_RANGE_DEFAULT
 }
+
+/**
+ * Defaults for the optional couple-wide switches added in Next B. They are
+ * NOT written into a new state (an unset field means the default, so an older
+ * save loads unchanged); read them through lib/logic/settings.ts memoriesOn /
+ * anniversaryAlertsOn / showTryCountOn.
+ */
+export const SETTINGS_DEFAULTS: Required<Pick<Settings, 'memories' | 'anniversaryAlerts' | 'showTryCount'>> = {
+  memories: false,
+  anniversaryAlerts: true,
+  showTryCount: false,
+} as const
+
+/**
+ * Defaults for the per-person switches (settings.personal[member]). Same
+ * rule: unset = default. `homeDiscreet` has no fixed default — it follows that
+ * person's `discreet` (lib/logic/settings.ts homeDiscreetFor).
+ */
+export const PERSONAL_DEFAULTS: Required<Pick<PersonalPrefs, 'acceptNudges'>> = {
+  acceptNudges: true,
+} as const
 
 export const ROLE_LABEL: Record<Role, string> = {
   wife: '아내',
@@ -175,6 +196,9 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       ttcStart: input.ttcStart ?? today,
       // Privacy by default: the partner sees the shared 우리의 주간, not the details.
       shareCycleDetails: false,
+      // memories / anniversaryAlerts / showTryCount stay unset (SETTINGS_DEFAULTS);
+      // so do treatments, leaveDays and intimacy at the root — nothing until the
+      // couple adds one (lib/logic/treatments.ts, lib/logic/intimacy.ts).
     },
   }
 }

@@ -63,7 +63,8 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - `Sheet`는 포털로 뜨고 뒤 배경을 `inert`로 막아요. `onClose`는 `useCallback`으로 고정된 함수를 넘겨요.
 - 스타일은 테마 토큰만 써요: `bg-bg bg-surface bg-surface-2 border-line text-ink text-ink-2 text-ink-3 brand brand-soft brand-ink him her ok warn fert period (+ -soft)`. `gray-*`나 hex 색은 쓰지 않아요. 다크 모드는 `app/globals.css`의 CSS 변수로 바뀌고, 명도 대비는 4.5:1 이상으로 맞춰 뒀어요.
 - 터치 영역은 44px 이상이에요. 아이콘만 있는 버튼에는 `aria-label`을 붙여요.
-- **import 순환 주의**: `lib/logic/pregnancyView.ts` → `notifications.ts`로 이어지고, `lib/content/roadmap.ts`는 모듈 최상위에서 `prenatalKey` 같은 `const`를 호출해요. 그래서 `notifications.ts`, `appointments.ts`, `pregnancyView.ts`, `babyView.ts`에서 `content/roadmap`이나 `logic/plan`을 import하지 마세요. 로드맵이 필요한 알림은 `planNotices.ts`에 둬요.
+- **import 순환 주의**: `lib/logic/pregnancyView.ts` → `notifications.ts`로 이어지고, `lib/content/roadmap.ts`는 모듈 최상위에서 `prenatalKey` 같은 `const`를 호출해요. 그래서 `notifications.ts`, `appointments.ts`, `pregnancyView.ts`, `babyView.ts`에서 `content/roadmap`이나 `logic/plan`을 import하지 마세요. 로드맵이 필요한 알림은 `planNotices.ts`에 둬요. `lib/logic/settings.ts`는 다른 로직 파일을 많이 불러오니 `notifications.ts`, `anniversary.ts`, `cover.ts`, `pregnancy.ts`, `ttc.ts`, `prefs.ts`, `cycle.ts`, `positiveBleeding.ts`, `intimacy.ts`, `treatments.ts`, `logs.ts`에서 `settings.ts`를 import하지 마세요. `tests/integrationNextB.test.ts`가 `lib/logic` 안의 값 import 순환이 0개인지 검사해요.
+- 코드 서식은 `.prettierrc`(세미콜론 없음 · 작은따옴표 · 끝 쉼표 · 140칸)를 따라요. 설정 없이 `prettier --write`를 돌리면 파일 전체가 큰따옴표·세미콜론·80칸으로 바뀌니 하지 마세요.
 - 서버 호출, 분석·광고 SDK, 외부 폰트를 추가하지 않아요. 건강 데이터는 기기 밖으로 나가지 않아요(프로토타입 원칙).
 
 ## 제품·문구 규칙 (꼭 지켜요)

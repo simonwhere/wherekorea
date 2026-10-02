@@ -14,6 +14,8 @@ import type { TabKey } from '@/components/AppShell'
 import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
 import CoverSheet from '@/components/cover/CoverSheet'
 import Polaroid from '@/components/cover/Polaroid'
+import { requestOpenEntry } from '@/components/diary/openEntry'
+import { goToAlbum } from '@/components/tabs/UsTab'
 import { cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { usePhotoURL } from '@/components/us/usePhotoURL'
@@ -27,10 +29,12 @@ function goToUsLine() {
   const section = document.getElementById('us-line')
   if (!section) return
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  section.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  section.scrollIntoView({
+    behavior: reduce ? 'auto' : 'smooth',
+    block: 'start',
+  })
   const target =
-    section.querySelector<HTMLElement>('[data-reply]:not([disabled])') ??
-    section.querySelector<HTMLElement>('button:not([disabled])')
+    section.querySelector<HTMLElement>('[data-reply]:not([disabled])') ?? section.querySelector<HTMLElement>('button:not([disabled])')
   target?.focus({ preventScroll: true })
 }
 
@@ -54,12 +58,9 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
   // Fade the photo in once it has decoded; an unreadable file counts as missing.
   const [loadedURL, setLoadedURL] = useState<string | null>(null)
   const [brokenURL, setBrokenURL] = useState<string | null>(null)
-  const imgRef = useCallback(
-    (img: HTMLImageElement | null) => {
-      if (img?.complete && img.naturalWidth > 0) setLoadedURL(img.currentSrc || img.src)
-    },
-    [],
-  )
+  const imgRef = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalWidth > 0) setLoadedURL(img.currentSrc || img.src)
+  }, [])
   const url = photo.status === 'ready' && photo.url !== brokenURL ? photo.url : null
   const missing = view.mode === 'photo' && (photo.status === 'missing' || (!!photo.url && photo.url === brokenURL))
   const shown = url !== null && loadedURL === url
@@ -75,7 +76,11 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
 
   const onLine = () => {
     if (line.target === 'us') goToUsLine()
-    else if (line.target === 'diary') onNavigate('diary')
+    else if (line.target === 'diary') {
+      // 'N년 전 오늘': land on that entry's card, not the top of 우리.
+      if (line.memory) requestOpenEntry(line.memory.entryId)
+      onNavigate('diary')
+    }
   }
 
   // The caption's right side, first match.
@@ -91,11 +96,7 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
     // choice ('잠시 가리기' or the sheet's toggle) — always a way back. In the
     // quiet weeks "show it" is explicit (false); later it returns to automatic.
     right = (
-      <button
-        type="button"
-        className={captionButton}
-        onClick={() => update((s) => setHideCover(s, me.id, view.quiet ? false : undefined))}
-      >
+      <button type="button" className={captionButton} onClick={() => update((s) => setHideCover(s, me.id, view.quiet ? false : undefined))}>
         사진 다시 보기
       </button>
     )
@@ -105,8 +106,19 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
         사진을 다시 골라 주세요
       </button>
     )
-  } else if (view.mode === 'photo' && view.photo?.caption) {
-    right = <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">{view.photo.caption}</span>
+  } else if (hasCover && view.mode === 'photo') {
+    // A hung photo leads to the album (우리 › 앨범); its caption, when there is one, sits before the link.
+    right = (
+      <>
+        {view.photo?.caption ? (
+          <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">{view.photo.caption}</span>
+        ) : null}
+        <button type="button" className={cx(captionButton, 'gap-px')} onClick={goToAlbum}>
+          앨범
+          <Icon name="right" className="h-[14px] w-[14px]" strokeWidth={2.2} />
+        </button>
+      </>
+    )
   } else {
     right = <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">사진은 이 폰에만 저장돼요</span>
   }
@@ -114,9 +126,7 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
   const names = view.decorate ? (
     <span className="min-w-0 truncate text-[14.5px] font-bold tracking-[-0.02em] text-ink">
       {me.name}
-      <span aria-hidden className="mx-[3px] text-[13px] text-glow">
-        ♥
-      </span>
+      <Icon name="heart" className="mx-[3px] inline-block h-[13px] w-[13px] fill-current align-[-1px] text-glow" strokeWidth={1.5} />
       <span className="sr-only">{andParticle(me.name)} </span>
       {partner.name}
     </span>
@@ -172,7 +182,17 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
         </div>
       </div>
 
-      <Polaroid className="mt-3.5" decorated={view.decorate} quiet={view.quiet} caption={<>{names}{right}</>}>
+      <Polaroid
+        className="mt-3.5"
+        decorated={view.decorate}
+        quiet={view.quiet}
+        caption={
+          <>
+            {names}
+            {right}
+          </>
+        }
+      >
         {/* The drawing shows until the photo has loaded (and whenever there is none). */}
         {!shown ? <CoverArt tod={tod} quiet={view.quiet} className="absolute inset-0" /> : null}
         {url ? (

@@ -139,9 +139,16 @@ export function removeAnniversary(state: AppState, id: string): AppState {
 // ── Notices ─────────────────────────────────────────────────
 
 
-/** A week before and on the day of each anniversary, to both. */
+/**
+ * A week before and on the day of each anniversary, to both — unless the
+ * couple turned 기념일 알림 off (settings.anniversaryAlerts, Next B). Unset
+ * means on (lib/initial.ts SETTINGS_DEFAULTS; the same rule as
+ * lib/logic/settings.ts anniversaryAlertsOn, read inline here because
+ * settings.ts imports notifications.ts, which imports this file).
+ */
 export function anniversaryNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
+  if (state.settings.anniversaryAlerts === false) return out
   const events = anniversariesBetween(state.couple, state.anniversaries, today, addDays(today, 7))
   for (const e of events) {
     const until = diffDays(today, e.date)

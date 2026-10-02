@@ -1,8 +1,17 @@
 'use client'
 
 import { cx } from '@/components/ui'
-import { dateBanner } from '@/lib/logic/dateIdeas'
+import { IconTile, type IconName } from '@/components/ui/icons'
+import { dateBanner, type DateBanner as Banner } from '@/lib/logic/dateIdeas'
 import { useApp } from '@/lib/store'
+
+/** The banner's line icon per kind (the logic's `emoji` stays for text surfaces). */
+const KIND_ICON: Record<Exclude<Banner['kind'], 'our-week'>, IconName> = {
+  'low-pressure': 'sprout',
+  preparing: 'heart',
+  pregnant: 'bump',
+  parenting: 'moon',
+}
 
 /** One gentle line of context at the top of the date tab. */
 export default function DateBanner() {
@@ -18,11 +27,7 @@ export default function DateBanner() {
       )}
     >
       <div className="flex items-start gap-3">
-        {ourWeek ? null : (
-          <span aria-hidden className="text-2xl leading-none">
-            {b.emoji}
-          </span>
-        )}
+        {b.kind === 'our-week' ? null : <IconTile name={KIND_ICON[b.kind]} tone="bg-surface/70" />}
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-bold leading-snug text-ink">{b.title}</p>
           <p className="mt-1 text-xs leading-relaxed text-ink-2">{b.body}</p>

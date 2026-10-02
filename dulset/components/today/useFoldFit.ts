@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
 
 /** The cover photo never gets shorter than this to make room (a strip still reads as a photo). */
 export const COVER_MIN_FIT = 88
@@ -100,6 +100,28 @@ export function useFoldFit(key: string) {
   }, [fit])
 
   return ref
+}
+
+/**
+ * A short phone (375×667 and the like): the viewport is under 700px tall. The
+ * same cut as the `[@media(max-height:700px)]` spacing in the home's cards. A
+ * leading 이번 달 할 일 card folds to one row there (MonthlyTaskCard). Rendered
+ * as `false` on the server, so hydration never mismatches.
+ */
+const SHORT_VIEWPORT = '(max-height: 699px)'
+
+function subscribeShort(onChange: () => void): () => void {
+  const mq = window.matchMedia(SHORT_VIEWPORT)
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}
+
+export function useShortViewport(): boolean {
+  return useSyncExternalStore(
+    subscribeShort,
+    () => window.matchMedia(SHORT_VIEWPORT).matches,
+    () => false,
+  )
 }
 
 /** 100svh in px (the viewport with the browser's toolbars shown), else innerHeight. */

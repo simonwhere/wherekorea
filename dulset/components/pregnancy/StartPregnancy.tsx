@@ -17,7 +17,7 @@ export default function StartPregnancy() {
   return (
     <>
       <EmptyState
-        icon="🤰"
+        icon="bump"
         title="임신 주수를 계산해 볼까요?"
         body="마지막 생리 시작일을 알려 주면 주수와 예정일을 예상해 드려요."
         action={<Button onClick={() => setOpen(true)}>날짜 입력하기</Button>}

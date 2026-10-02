@@ -1,6 +1,9 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { takeOpenClinicSummary } from '@/components/clinic/openClinicSummary'
+import { CLINIC_SUMMARY_SHEET_TITLE } from '@/components/clinic/summaryTitle'
 import CycleHistory, { takeOpenFeels } from '@/components/cycle/CycleHistory'
 import CycleSummary from '@/components/cycle/CycleSummary'
 import DaySheet from '@/components/cycle/DaySheet'
@@ -10,7 +13,8 @@ import IcsExport from '@/components/cycle/IcsExport'
 import MonthCalendar from '@/components/cycle/MonthCalendar'
 import SettingsLink from '@/components/cycle/SettingsLink'
 import { Badge } from '@/components/today/bits'
-import { Avatar, Card, SectionTitle, Toggle, useToast } from '@/components/ui'
+import { Avatar, Button, Card, SectionTitle, Toggle, useToast } from '@/components/ui'
+import { Icon, IconTile, type IconName } from '@/components/ui/icons'
 import { startOfMonth } from '@/lib/dates'
 import type { CycleInput } from '@/lib/logic/cycle'
 import {
@@ -25,14 +29,26 @@ import {
   viewNotice,
 } from '@/lib/logic/calendarView'
 import { endClinicMode, isClinicMode, setClinicMode } from '@/lib/logic/clinic'
+import { intimacyDays } from '@/lib/logic/intimacy'
 import { ageFromBirthYear, ttcClockStart } from '@/lib/logic/notifications'
 import { canLogCycle, canSeeCycleDetails, discreetFor, settingsFor } from '@/lib/logic/prefs'
+import { showTryCountOn } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { startRestCycle } from '@/lib/logic/ttc'
 import { endRestFromHome } from '@/lib/logic/ttcFlow'
 import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import type { ISODate, PregnancyTestResult } from '@/lib/types'
+
+/** calendarView.viewNotice keeps an emoji for text surfaces; the screen draws a line icon. */
+const NOTICE_ICON: Record<string, IconName> = {
+  '💞': 'heart',
+  '🌿': 'sprout',
+  '🔕': 'ban',
+}
+
+// The summary sheet (B1) walks every record; it loads when the owner first opens it.
+const ClinicSummarySheet = dynamic(() => import('@/components/clinic/ClinicSummarySheet'), { ssr: false })
 
 /**
  * 주기 — the cycle owner's calendar. Only the owner logs (tapping a past day
@@ -44,21 +60,28 @@ export default function CycleTab() {
   const toast = useToast()
   const mine = settingsFor(state.settings, viewer)
   const { couple, settings, restCycle, positivePending, periods, stage } = state
+  // `today` lets the loss quiet (restCycle.until) end on its last day here too.
   const lens = useMemo(
-    () => cycleLens({ couple, settings, restCycle, positivePending, periods, stage }, viewer),
-    [couple, settings, restCycle, positivePending, periods, stage, viewer],
+    () => cycleLens({ couple, settings, restCycle, positivePending, periods, stage }, viewer, today),
+    [couple, settings, restCycle, positivePending, periods, stage, viewer, today],
   )
   const [month, setMonth] = useState<ISODate>(() => startOfMonth(today))
   const [selected, setSelected] = useState<ISODate | null>(null)
   const closeSheet = useCallback(() => setSelected(null), [])
   // The home's '지난 주기 컨디션 N개 · 보기' opens that row's list once.
   const [openFeels, setOpenFeels] = useState<ISODate | undefined>(undefined)
+  // '병원에 보여 줄 요약' (B1): the owner's sheet; the clinic-mode home card asks for it the same way.
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const closeSummary = useCallback(() => setSummaryOpen(false), [])
   useEffect(() => {
     const v = takeOpenFeels()
     if (v) setOpenFeels(v)
+    if (takeOpenClinicSummary()) setSummaryOpen(true)
   }, [])
 
-  const { lhTests, cycle, pregnancy, pregnancyTests, cycleNotes, personalLog } = state
+  const { lhTests, cycle, pregnancy, pregnancyTests, cycleNotes, personalLog, intimacy } = state
+  // 관계한 날 (Next B): a plain dot on the holder's own calendar only — intimacyDays is [] for anyone else.
+  const privateDays = useMemo(() => new Set(intimacyDays({ intimacy }, viewer)), [intimacy, viewer])
   // The pregnancy record lets predictions pause after a pregnancy ended (see
   // cycle.forecastLimit); cycleNotes carries '아직 안 왔어요' for a long-late cycle.
   const input = useMemo<CycleInput>(
@@ -76,10 +99,7 @@ export default function CycleTab() {
   const hasData = periods.length > 0
   const summary = useMemo(() => (hasData ? cycleSummary(input, today, lens.view, lens) : null), [hasData, input, today, lens])
   const ttcStart = ttcClockStart(state)
-  const history = useMemo(
-    () => (lens.details ? cycleHistory(input, today, ttcStart) : null),
-    [lens.details, input, today, ttcStart],
-  )
+  const history = useMemo(() => (lens.details ? cycleHistory(input, today, ttcStart) : null), [lens.details, input, today, ttcStart])
   // Her own 오늘 컨디션 chips per cycle — the owner's phone only, whatever she shares.
   const feels = useMemo(
     () => (lens.owner && history ? cycleFeels({ personalLog }, viewer, history.rows, today) : undefined),
@@ -157,8 +177,8 @@ export default function CycleTab() {
 
       {notice ? (
         <p className="mb-3 flex items-center justify-between gap-2 rounded-xl bg-surface-2 py-0.5 pl-3 pr-2 text-xs text-ink-2">
-          <span className="min-w-0">
-            <span aria-hidden>{notice.icon} </span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Icon name={NOTICE_ICON[notice.icon] ?? 'info'} className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             {notice.text}
           </span>
           <SettingsLink className="px-1" anchor="alerts">
@@ -223,7 +243,16 @@ export default function CycleTab() {
           >
             달력
           </SectionTitle>
-          <MonthCalendar input={input} tests={tests} month={month} onMonthChange={setMonth} today={today} lens={lens} onSelect={select} />
+          <MonthCalendar
+            input={input}
+            tests={tests}
+            month={month}
+            onMonthChange={setMonth}
+            today={today}
+            lens={lens}
+            privateDays={privateDays}
+            onSelect={select}
+          />
         </>
       ) : null}
 
@@ -232,21 +261,42 @@ export default function CycleTab() {
           history={history}
           today={today}
           showLH={showsLH(lens)}
+          showTryCount={showTryCountOn(settings)}
           feels={feels}
           openFeels={openFeels}
           onSelect={canLog ? (date) => openLog({ date, kind: 'period' }) : undefined}
         />
       ) : null}
 
+      {/* The owner's one-page summary for a clinic visit (B1): records only, made on this phone. */}
+      {lens.owner ? (
+        <Card className="mt-6 flex items-center gap-3">
+          <IconTile name="hospital" size="sm" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{CLINIC_SUMMARY_SHEET_TITLE}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-3">주기 표·검사·일정·시술 기록을 한 장으로 모아요. 해석은 없어요.</p>
+          </div>
+          <Button variant="secondary" onClick={() => setSummaryOpen(true)} className="shrink-0">
+            만들기
+          </Button>
+        </Card>
+      ) : null}
+
       {ics ? (
-        <div className="mt-6">
-          <IcsExport availability={ics} view={lens.view} discreet={discreetFor(state.settings, viewer)} coupleId={state.couple.inviteCode} />
+        <div className="mt-3">
+          <IcsExport
+            availability={ics}
+            view={lens.view}
+            discreet={discreetFor(state.settings, viewer)}
+            coupleId={state.couple.inviteCode}
+          />
         </div>
       ) : null}
 
       <FertilityGuide view={lens.view} ownerName={cycleOwner.name} ownerAge={ageFromBirthYear(cycleOwner.birthYear, today)} />
 
       <DaySheet date={selected} onClose={closeSheet} lens={lens} />
+      {lens.owner ? <ClinicSummarySheet open={summaryOpen} onClose={closeSummary} /> : null}
     </div>
   )
 }

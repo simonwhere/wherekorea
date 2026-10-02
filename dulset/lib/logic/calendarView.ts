@@ -6,7 +6,7 @@
 // can be unit-tested; tailwind.config scans lib/** so they are compiled.
 
 import { addDays, addMonths, diffDays, dLabel, formatKo, formatShort, parts, startOfMonth } from '../dates'
-import type { AppState, ISODate, LHResult, MemberId, PeriodLog, PregnancyTestResult, Settings } from '../types'
+import type { AppState, ISODate, LHResult, MemberId, PeriodLog, PregnancyTestResult, RestCycle, Settings } from '../types'
 import {
   LONG_LATE_DAYS,
   MAX_CYCLE,
@@ -101,12 +101,23 @@ export type CyclePause = 'rest' | 'positive' | 'clinic'
 /** '병원과 함께 준비 중' — the badge, the toggle and the eyebrow all say it this way. */
 export const CLINIC_LABEL = '병원과 함께 준비 중'
 
-/** Uses ttc.activeRest / activePositivePending, so a period logged anywhere settles both. */
-export function cyclePause(state: PauseState): CyclePause | undefined {
+/**
+ * Uses ttc.activeRest / activePositivePending, so a period logged anywhere
+ * settles both. With `today`, a 'loss' quiet that has run its course
+ * (restCycle.until passed) is over too; without it the calendar errs on the
+ * quiet side until a period after `until` is logged.
+ */
+export function cyclePause(state: PauseState, today?: ISODate): CyclePause | undefined {
   if (activePositivePending(state)) return 'positive'
-  const rest = activeRest(state)
+  const rest = activeRest(state, today)
   if (rest) return rest.reason === 'clinic' ? 'clinic' : 'rest'
   return undefined
+}
+
+/** The rest behind a 'rest' pause (its reason and, for a 'loss' quiet, its last day). */
+export function pauseRest(state: PauseState, today?: ISODate): Pick<RestCycle, 'reason' | 'until'> | undefined {
+  const rest = activeRest(state, today)
+  return rest && rest.reason !== 'clinic' ? { reason: rest.reason, ...(rest.until ? { until: rest.until } : {}) } : undefined
 }
 
 type PauseState = Pick<AppState, 'restCycle' | 'positivePending' | 'periods' | 'stage'>
@@ -137,17 +148,21 @@ export interface Lens {
   pause?: CyclePause
   /** When the positive test awaiting the clinic was logged. */
   pendingSince?: ISODate
+  /** Behind a 'rest' pause: why, and (a 'loss' quiet) its last day — for the headline. */
+  rest?: Pick<RestCycle, 'reason' | 'until'>
 }
 
 export const OWNER_LENS = (view: FertilityView): Lens => ({ view, details: true, owner: true })
 
-export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseState, viewer: MemberId): Lens {
+/** `today` lets a 'loss' quiet end on its last day (cyclePause); screens that have it pass it. */
+export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseState, viewer: MemberId, today?: ISODate): Lens {
   const ownerId = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
   const details = canSeeCycleDetails(state, viewer)
   const own = fertilityView(settingsFor(state.settings, viewer), viewer, ownerId)
   const view: FertilityView = !details && own === 'explicit' ? 'soft' : own
-  const pause = cyclePause(state)
+  const pause = cyclePause(state, today)
   const pending = activePositivePending(state)
+  const rest = pause === 'rest' ? pauseRest(state, today) : undefined
   return {
     view,
     details,
@@ -156,6 +171,7 @@ export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseSt
     lh: details && view === 'explicit' && fertilityVoice(state.settings, viewer, viewer === ownerId) === 'explicit',
     ...(pause ? { pause } : {}),
     ...(pending ? { pendingSince: pending.since } : {}),
+    ...(rest ? { rest } : {}),
   }
 }
 
@@ -587,8 +603,9 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
         sub: `${formatKo(status.fertileEnd)}까지 · 매일이 아니어도 괜찮아요. 일주일에 2~3번도 거의 비슷해요.`,
       }
     case 'after-fertile':
+      // One "(예상)" per headline: the sub line carries it (periodDue.ts), the title stays plain.
       return status.dueNow
-        ? { title: `${PERIOD_DUE_COPY.dueNow.title} (예상)`, sub: PERIOD_DUE_COPY.dueNow.body(status.due) }
+        ? { title: PERIOD_DUE_COPY.dueNow.title, sub: PERIOD_DUE_COPY.dueNow.body(status.due) }
         : {
             title: `다음 생리까지 ${status.daysUntilPeriod}일 (예상)`,
             sub: view === 'hidden' ? NICE_LINE : `${dueRange(status.due)} 무렵이에요.`,
@@ -635,8 +652,22 @@ export function sharedHeadline(status: FertilityStatus, view: FertilityView, pau
   return { title: '편안한 날들이에요', sub: '우리의 주간이 가까워지면 여기에 보여요.' }
 }
 
-/** Headline while fertile display is paused (the viewer can see details). */
-export function pauseHeadline(pause: CyclePause, view: FertilityView, owner: boolean): Headline {
+/** The owner's calendar headline through the quiet after a pregnancy ended (a 'loss' rest with its last day). */
+export function lossPauseHeadline(until: ISODate | undefined): Headline {
+  return {
+    title: '천천히 괜찮아요',
+    sub: until
+      ? `${formatKo(until, { weekday: false })}까지 날짜 예상과 알림을 쉬어요. 생리가 시작되면 기록해 두세요 — 그 뒤에 다시 예상해 드릴게요.`
+      : '날짜 예상과 알림을 쉬어요. 생리가 시작되면 기록해 두세요 — 그 뒤에 다시 예상해 드릴게요.',
+  }
+}
+
+/**
+ * Headline while fertile display is paused (the viewer can see details).
+ * `rest` (Lens.rest) tells a 'loss' quiet from an ordinary rest for the owner;
+ * the partner reads the same calm line either way.
+ */
+export function pauseHeadline(pause: CyclePause, view: FertilityView, owner: boolean, rest?: Pick<RestCycle, 'reason' | 'until'>): Headline {
   if (pause === 'positive')
     return owner
       ? {
@@ -656,6 +687,7 @@ export function pauseHeadline(pause: CyclePause, view: FertilityView, owner: boo
     }
   }
   if (!owner) return { title: '이번 주기는 쉬어 가요', sub: '평소처럼 편하게 지내요.' }
+  if (rest?.reason === 'loss') return lossPauseHeadline(rest.until)
   return {
     title: '이번 주기는 쉬어요',
     sub:
@@ -677,7 +709,7 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
   const owner = opts.owner ?? true
   const pause = opts.pause
   const status = fertilityStatus(input, today)
-  const stats = cycleStats(input.periods, input.cycle)
+  const stats = cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy)
   const starts = sortedStarts(input.periods)
   const last = starts[starts.length - 1]
 
@@ -745,13 +777,15 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
     }
   }
   if (pause === 'rest') {
+    // Through a 'loss' quiet nothing is projected: no 생리 예정 row, the average only.
+    const loss = opts.rest?.reason === 'loss'
     return {
       status,
       stats,
-      headline: pauseHeadline(pause, view, owner),
+      headline: pauseHeadline(pause, view, owner, opts.rest),
       cycleDay,
-      nextPeriod,
-      rows: [...(periodRow ? [periodRow] : []), avgRow],
+      ...(loss ? {} : { nextPeriod }),
+      rows: loss ? [avgRow] : [...(periodRow ? [periodRow] : []), avgRow],
     }
   }
   // With a clinic the next period is the clinic's call: logged data only, no 생리 예정 row.
@@ -1104,8 +1138,8 @@ export interface CycleHistory {
  * is #1) and each cycle's first LH surge. Unlogged cycles are filled in with
  * the average length and flagged as estimated.
  */
-export function cycleHistory(input: Pick<CycleInput, 'periods' | 'lhTests' | 'cycle'>, today: ISODate, ttcStart?: ISODate): CycleHistory {
-  const avg = cycleStats(input.periods, input.cycle).average
+export function cycleHistory(input: Pick<CycleInput, 'periods' | 'lhTests' | 'cycle' | 'pregnancy'>, today: ISODate, ttcStart?: ISODate): CycleHistory {
+  const avg = cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy).average
   const MAX = maxCycleLength(input.cycle)
   const base = periodHistory(input.periods, { maxCycle: MAX, average: avg }).reverse() // oldest first
   const attempts = new Map<ISODate, number>()

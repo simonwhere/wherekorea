@@ -18,7 +18,7 @@ export type SaveLog = (
   opts?: { keepOpen?: boolean },
 ) => void
 
-export const KIND_LABEL: Record<LogKind, string> = { period: '생리', lh: 'LH', ptest: '임테기', note: '메모' }
+export const KIND_LABEL: Record<LogKind, string> = { period: '생리', lh: 'LH', ptest: '임테기', note: '메모', intimacy: '관계' }
 
 /** '(으)로' after a Korean word: 음성으로 · 희미로 · 가장 진함으로. */
 export function ro(word: string): string {

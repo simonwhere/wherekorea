@@ -7,7 +7,7 @@
 
 import { useId } from 'react'
 import { Button, Field, cx, inputClass } from '@/components/ui'
-import { COUPLE_DATE_MIN, NAME_MAX, draftNames, draftOwner, draftRoles, roParticle, type OnboardingDraft } from '@/lib/demo'
+import { COUPLE_DATE_MIN, NAME_MAX, draftNames, draftOwner, draftRoles, roParticle, type OnboardingDraft } from '@/lib/onboardingDraft'
 import { ROLE_EMOJI, ROLE_LABEL } from '@/lib/initial'
 import type { ISODate, MemberId, Role } from '@/lib/types'
 import { ChoiceGroup, Group, type Option } from './parts'

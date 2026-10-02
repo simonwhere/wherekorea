@@ -4,7 +4,8 @@
 // (only the cycle owner logs). The owner's past days open the "+ 기록" sheet.
 
 import { useMemo } from 'react'
-import { Button, Sheet, cx } from '@/components/ui'
+import { Button, Sheet, Toggle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { cycleAt, dayInfo } from '@/lib/logic/cycle'
 import {
   CHANCE_LABEL,
@@ -22,7 +23,9 @@ import {
   showsTests,
   type Lens,
 } from '@/lib/logic/calendarView'
+import { canSeeIntimacy, isIntimacyDay, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { lhKey, lhTestsOn, lhWhen, pregnancyTestsOn } from '@/lib/logic/logs'
+import { canLogCycle } from '@/lib/logic/prefs'
 import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
@@ -52,7 +55,15 @@ export default function DaySheet({ date, onClose, lens }: { date: ISODate | null
 }
 
 function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: () => void }) {
-  const { state, today, cycleOwner } = useApp()
+  const { state, update, today, viewer, cycleOwner } = useApp()
+  const toast = useToast()
+  // 관계한 날 (Next B): the consent holder's own record, never the partner's
+  // screen (canSeeIntimacy is false for anyone else). The owner's past days
+  // open the log sheet instead, so this row mostly serves a holder who no
+  // longer logs the cycle — then it shows the day but cannot change it.
+  const privateRow = date <= today && canSeeIntimacy(state, viewer)
+  const privateOn = privateRow && isIntimacyDay(state, viewer, date)
+  const canTogglePrivate = privateRow && canLogCycle(state, viewer)
   // `today` stops projections past a missed period / an ended pregnancy, like the grid.
   const info = useMemo(() => dayInfo(state, date, today), [state, date, today])
   const cycle = useMemo(() => cycleAt(state, date), [state, date])
@@ -68,7 +79,10 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
     <div className="space-y-5">
       <section aria-label="예상">
         <div className="flex items-start gap-3">
-          <span className={cx('mt-0.5 h-5 w-5 shrink-0 rounded-full', phase === 'none' ? 'bg-surface-2' : PHASE_CLASS[phase])} aria-hidden />
+          <span
+            className={cx('mt-0.5 h-5 w-5 shrink-0 rounded-full', phase === 'none' ? 'bg-surface-2' : PHASE_CLASS[phase])}
+            aria-hidden
+          />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink">
               {label || (cycleDay !== undefined ? `주기 ${cycleDay}일째` : lens.details ? '예상 없음' : '평범한 날')}
@@ -76,8 +90,9 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
             </p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{explainDayFor(info, lens, date < today)}</p>
             {star ? (
-              <p className="mt-2 text-[13px] font-medium text-fert">
-                <span aria-hidden>⭐ </span>배란 예상일 ·{' '}
+              <p className="mt-2 flex items-center gap-1 text-[13px] font-medium text-fert">
+                <Icon name="star" className="h-3.5 w-3.5 shrink-0 fill-fert" strokeWidth={1.5} />
+                배란 예상일 ·{' '}
                 {cycle.basis !== 'lh' ? '달력으로 계산했어요' : showsLH(lens) ? 'LH 양성 다음 날로 계산했어요' : '기록으로 계산했어요'}
               </p>
             ) : null}
@@ -85,7 +100,10 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs text-ink-2">
                 임신 가능성(예상):
                 <strong
-                  className={cx('font-bold', chance === CHANCE_LABEL.high ? 'text-fert' : chance === CHANCE_LABEL.low ? 'text-ink-3' : 'text-ink')}
+                  className={cx(
+                    'font-bold',
+                    chance === CHANCE_LABEL.high ? 'text-fert' : chance === CHANCE_LABEL.low ? 'text-ink-3' : 'text-ink',
+                  )}
                 >
                   {chance}
                 </strong>
@@ -119,9 +137,7 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
         ) : null
       ) : (
         <div className="space-y-2">
-          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
-            주기 기록은 {cycleOwner.name}님이 해요.
-          </p>
+          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">주기 기록은 {cycleOwner.name}님이 해요.</p>
           {date <= today ? (
             <Button
               full
@@ -136,6 +152,29 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
           ) : null}
         </div>
       )}
+
+      {privateRow ? (
+        <section aria-label="나만 보는 기록" className="rounded-xl bg-surface-2 px-3 py-0.5">
+          <Toggle
+            checked={privateOn}
+            onChange={(next) => {
+              if (!canTogglePrivate) return
+              update((s) => toggleIntimacyDay(s, viewer, date, today))
+              toast.show(next ? '이 날에 표시했어요 · 나만 볼 수 있어요' : '이 날 표시를 지웠어요')
+            }}
+            label={
+              <>
+                관계한 날 <span className="text-xs font-normal text-ink-3">(나만 보기)</span>
+              </>
+            }
+            description={
+              canTogglePrivate
+                ? '이 폰에만 남고, 아무것도 예상하지 않아요.'
+                : '주기 기록을 넘긴 뒤라 바꿀 수 없어요. 설정 › 공유 범위에서 지울 수 있어요.'
+            }
+          />
+        </section>
+      ) : null}
 
       <p className="text-[11px] leading-relaxed text-ink-3">모든 날짜는 참고용 예상이며 피임 목적으로 쓰면 안 돼요.</p>
     </div>

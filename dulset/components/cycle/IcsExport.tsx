@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Card, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { buildIcs, downloadText, fertileWindowEvents } from '@/lib/logic/ics'
 import { windowRangeShort, type FertilityView, type IcsAvailability } from '@/lib/logic/calendarView'
 
@@ -37,13 +38,9 @@ export default function IcsExport({
     <Card className="px-0 py-0">
       <details className="group">
         <summary className="flex min-h-[52px] cursor-pointer list-none items-center gap-3 px-4 py-2 [&::-webkit-details-marker]:hidden">
-          <span aria-hidden className="text-lg">
-            🗓️
-          </span>
+          <Icon name="cal" className="h-5 w-5 shrink-0 text-ink-2" />
           <span className="min-w-0 flex-1 text-sm font-semibold text-ink">휴대폰 캘린더에 추가</span>
-          <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">
-            ⌄
-          </span>
+          <Icon name="chev" className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" strokeWidth={2.2} />
         </summary>
         <div className="px-4 pb-4">
           <p className="text-[13px] leading-relaxed text-ink-2">

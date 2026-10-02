@@ -97,10 +97,25 @@ export function recentlyEnded(state: Pick<AppState, 'stage' | 'pregnancy'>, toda
 }
 
 /**
+ * The last day of the quiet after a pregnancy ended on `endedAt`: the 42nd day
+ * counted the Korean way (the day it ended is day 1) — the same day
+ * recentlyEnded stops and the cover's quiet weeks end. ttc.lossRestUntil is
+ * this (a test keeps them equal; ttc.ts imports this file, so it lives here).
+ */
+export function quietEndsOn(endedAt: ISODate): ISODate {
+  return addDays(endedAt, QUIET_DAYS_AFTER_END - 1)
+}
+
+/**
  * Go back to preparing (e.g. after a loss). Keeps all history, records when the
- * pregnancy ended (cycle predictions pause until a new period is logged, and the
- * "trying" clock restarts), and settles the notices about that pregnancy for
- * both members — kept as dismissed stubs so they aren't delivered again.
+ * pregnancy ended (the "trying" clock restarts), and settles the notices about
+ * that pregnancy for both members — kept as dismissed stubs so they aren't
+ * delivered again. The quiet starts on its own (Next B, review P-11): a 'loss'
+ * rest cycle from today to quietEndsOn(today), so no date estimate, LH prompt
+ * or cycle notice comes for QUIET_DAYS_AFTER_END days — a period logged inside
+ * it is kept but does not end it (ttc.periodEndsRest) — and the home shows the
+ * support card first. She can turn it off from the home (ttcFlow.endRestFromHome).
+ * today.endPregnancy is the same transition by its product name.
  */
 export function backToPreparing(state: AppState, today: ISODate): AppState {
   if (state.stage !== 'pregnant') return state
@@ -111,6 +126,7 @@ export function backToPreparing(state: AppState, today: ISODate): AppState {
     ...state,
     stage: 'preparing',
     pregnancy: { ...p, endedAt: today },
+    restCycle: { since: today, reason: 'loss', until: quietEndsOn(today) },
     notifications: state.notifications.map((n) => (tied(n.key) ? { ...n, read: true, dismissed: true } : n)),
   }
 }

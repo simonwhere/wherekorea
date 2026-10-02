@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { Button, Card, Disclaimer, Field, SectionTitle, Sheet, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { MILESTONE_NOTE } from '@/lib/content/baby'
 import { formatKo } from '@/lib/dates'
 import { setMilestone } from '@/lib/logic/baby'
@@ -53,8 +54,8 @@ export default function Milestones({ baby }: { baby: Baby }) {
                   </span>
                 </span>
                 {r.date ? (
-                  <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ok text-xs font-bold text-white">
-                    ✓
+                  <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ok text-white">
+                    <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
                   </span>
                 ) : (
                   <span aria-hidden className="shrink-0 text-xs font-semibold text-brand-ink">

@@ -2,6 +2,7 @@
 
 import type { TabKey } from '@/components/AppShell'
 import { Button, Card, Disclaimer } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { programById } from '@/lib/content/programs'
 import { DIARY_NAME, promptFor } from '@/lib/logic/diary'
 import { PERIOD_DUE_COPY } from '@/lib/logic/periodDue'
@@ -23,13 +24,11 @@ export function DateCard({ onNavigate }: { onNavigate: Nav }) {
       onClick={() => onNavigate('date')}
       className="flex min-h-[52px] w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5 text-left transition-colors hover:bg-line/50"
     >
-      <span aria-hidden>💞</span>
+      <Icon name="heart" className="h-[18px] w-[18px] shrink-0 text-ink-2" />
       <span className="min-w-0 flex-1 text-xs text-ink-2">
         <b className="font-semibold text-ink">{copy.title}</b> · {copy.body}
       </span>
-      <span aria-hidden className="text-ink-3">
-        →
-      </span>
+      <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
     </button>
   )
 }
@@ -40,8 +39,8 @@ export function DiaryPromptCard({ onNavigate }: { onNavigate: Nav }) {
   const { state, today } = useApp()
   return (
     <Card>
-      <p className="text-xs font-semibold text-ink-3">
-        <span aria-hidden>📔 </span>
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-3">
+        <Icon name="book" className="h-4 w-4 shrink-0" />
         {DIARY_NAME[state.stage]} · 오늘의 질문
       </p>
       <p className="mt-1.5 text-[15px] font-semibold leading-snug text-ink">“{promptFor(state.stage, today)}”</p>
@@ -78,8 +77,9 @@ export function DoctorCard() {
   if (advice.reasons.includes('amenorrhea')) lines.push(PERIOD_DUE_COPY.stillWaiting.advice)
   return (
     <Card>
-      <p className="text-xs font-semibold text-brand-ink">
-        <span aria-hidden>🩺 </span>함께 확인해 봐요
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-brand-ink">
+        <Icon name="steth" className="h-4 w-4 shrink-0" strokeWidth={2} />
+        함께 확인해 봐요
       </p>
       <h3 className="mt-1 text-base font-bold leading-snug text-ink">혼자 고민하지 말고 두 사람 모두 검사를 받아 보세요</h3>
       <ul className="mt-2 space-y-1 text-sm leading-relaxed text-ink-2">

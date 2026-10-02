@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, SectionTitle } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { ONE_STOP } from '@/lib/content/pregnancy'
 import { PROGRAMS_CHECKED_AT, programsFor } from '@/lib/content/programs'
 import { parts } from '@/lib/dates'
@@ -22,7 +23,9 @@ export default function SupportPrograms() {
             <p className="text-sm font-bold text-ink">{o.title}</p>
             <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{o.body}</p>
             <a href={o.url} target="_blank" rel="noopener noreferrer" className={linkClass}>
-              정부24에서 보기 ↗<span className="sr-only"> — {o.title} (새 창)</span>
+              정부24에서 보기
+              <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
+              <span className="sr-only"> — {o.title} (새 창)</span>
             </a>
           </Card>
         ))}
@@ -40,24 +43,21 @@ export default function SupportPrograms() {
                 aria-label={`${p.title} — ${p.urlLabel}에서 보기 (새 창)`}
                 className="-my-2.5 -mr-2 inline-flex h-11 shrink-0 items-center px-2 text-xs font-semibold text-brand-ink underline-offset-2 hover:underline"
               >
-                {p.urlLabel} ↗
+                {p.urlLabel}
+                <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
               </a>
             </div>
             <p className="mt-1 text-sm leading-relaxed text-ink-2">{p.benefit}</p>
             {p.deadline ? (
-              <p className="mt-1.5 inline-flex rounded-lg bg-warn-soft px-2 py-1 text-[11px] font-medium text-ink-2">
-                <span aria-hidden className="mr-1">
-                  ⏰
-                </span>
+              <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg bg-warn-soft px-2 py-1 text-[11px] font-medium text-ink-2">
+                <Icon name="clock" className="h-3.5 w-3.5" strokeWidth={2.2} />
                 {p.deadline}
               </p>
             ) : null}
             <details className="group">
               <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-ink-3 [&::-webkit-details-marker]:hidden">
                 누가, 어떻게 신청해요?
-                <span aria-hidden className="ml-1 transition-transform group-open:rotate-180">
-                  ▾
-                </span>
+                <Icon name="chev" className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={2.2} />
               </summary>
               <dl className="space-y-1 pb-1 text-xs leading-relaxed text-ink-2">
                 <div>

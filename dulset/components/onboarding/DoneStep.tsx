@@ -7,6 +7,7 @@
 // without a visit, a home-screen app keeps it (lib/persist INSTALL_STEPS).
 
 import { useEffect, useState } from 'react'
+import { Icon } from '@/components/ui/icons'
 import { INSTALL_STEPS, currentInstallPlatform, isStandalone, type InstallPlatform } from '@/lib/persist'
 
 /** A phone whose share sheet adds 둘셋 to the home screen (decorative; the steps are text). */
@@ -62,8 +63,8 @@ export default function DoneStep({ code, partner }: { code: string; partner: str
   return (
     <div className="space-y-4">
       <section aria-label={`${partner}님 초대`} className="rounded-xl2 border border-brand/20 bg-brand-soft p-4 shadow-card">
-        <p className="text-sm font-bold text-ink">
-          <span aria-hidden>💌 </span>
+        <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+          <Icon name="mail" className="h-[18px] w-[18px] text-ink-2" />
           {partner}님 초대하기
         </p>
         <p className="mt-1 text-xs leading-relaxed text-ink-2">

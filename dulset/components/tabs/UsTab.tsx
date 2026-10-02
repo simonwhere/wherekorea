@@ -1,8 +1,8 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useId, useState } from 'react'
 import DiaryTab from '@/components/tabs/DiaryTab'
-import AlbumPanel from '@/components/us/AlbumPanel'
 import AnniversaryPanel from '@/components/us/AnniversaryPanel'
 import CoupleDatesSheet from '@/components/us/CoupleDatesSheet'
 import KeepCard from '@/components/us/KeepCard'
@@ -12,11 +12,35 @@ import { useApp } from '@/lib/store'
 
 type Segment = 'story' | 'album' | 'days'
 
+// The photo feed (viewer, reactions, lazy photos) is its own local chunk, fetched the first time 앨범 opens.
+const AlbumPanel = dynamic(() => import('@/components/us/AlbumPanel'), {
+  ssr: false,
+  loading: () => <div className="min-h-[40vh]" aria-busy="true" />,
+})
+
 const SEGMENTS: ReadonlyArray<SegmentOption<Segment>> = [
   { key: 'story', label: '이야기' },
   { key: 'album', label: '앨범' },
   { key: 'days', label: '기념일' },
 ]
+
+/** Hashes that open 우리 on one segment (AppShell routes them to this tab). */
+const SEGMENT_HASH: Readonly<Record<string, Segment>> = { '#days': 'days', '#album': 'album' }
+
+function segmentFromHash(): Segment | undefined {
+  return typeof window === 'undefined' ? undefined : SEGMENT_HASH[window.location.hash]
+}
+
+/**
+ * Open 우리 › 앨범 from anywhere (the home cover's '앨범 →'). Setting the hash
+ * switches the tab; the same hash again only switches the segment.
+ */
+export function goToAlbum(): void {
+  if (typeof window === 'undefined') return
+  if (window.location.hash === '#album') window.dispatchEvent(new HashChangeEvent('hashchange'))
+  else window.location.hash = 'album'
+  window.scrollTo({ top: 0 })
+}
 
 /**
  * 우리 — the couple's record book (Between-style): how long we've been
@@ -25,13 +49,12 @@ const SEGMENTS: ReadonlyArray<SegmentOption<Segment>> = [
  */
 export default function UsTab() {
   const { state } = useApp()
-  // #days opens straight on 기념일 (links from 설정 and the home banner).
-  const [segment, setSegment] = useState<Segment>(() =>
-    typeof window !== 'undefined' && window.location.hash === '#days' ? 'days' : 'story',
-  )
+  // #days opens straight on 기념일 (links from 설정 and the home banner), #album on 앨범 (the home cover).
+  const [segment, setSegment] = useState<Segment>(() => segmentFromHash() ?? 'story')
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash === '#days') setSegment('days')
+      const next = segmentFromHash()
+      if (next) setSegment(next)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)

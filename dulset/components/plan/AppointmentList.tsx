@@ -2,9 +2,10 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Card, EmptyState, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { dLabel, formatKo, parts, weekdayKo } from '@/lib/dates'
 import {
-  APPOINTMENT_KIND_EMOJI,
   APPOINTMENT_KIND_LABEL,
   appointmentIcsEvent,
   pastAppointments,
@@ -59,7 +60,7 @@ export default function AppointmentList({
 
       {upcoming.length === 0 ? (
         <EmptyState
-          icon="🗓️"
+          icon="cal"
           title="잡아 둔 병원·검사 일정이 없어요"
           body="아래 목록의 ‘일정 잡기’나 ‘일정 추가’로 잡아 두면, 전날과 당일에 가는 사람에게 알림이 가요."
         />
@@ -83,9 +84,7 @@ export default function AppointmentList({
             className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-xl px-2 text-left text-xs font-medium text-ink-3 hover:bg-surface-2"
           >
             <span>{showPast ? '지난 일정 접기' : `지난·다녀온 일정 ${past.length}개 보기`}</span>
-            <span aria-hidden className={cx('transition-transform', showPast && 'rotate-180')}>
-              ▾
-            </span>
+            <Icon name="chev" className={cx('h-4 w-4 shrink-0 transition-transform', showPast && 'rotate-180')} strokeWidth={2.2} />
           </button>
           <div id={pastId} hidden={!showPast}>
             <Card tone="muted" className="py-1">
@@ -193,14 +192,17 @@ function AppointmentRow({
           className="-my-1.5 flex min-h-[44px] w-full items-center text-left text-sm font-semibold text-ink hover:underline hover:underline-offset-2"
           aria-label={`${appt.title} 일정 고치기`}
         >
-          <span aria-hidden className="mr-1">
-            {APPOINTMENT_KIND_EMOJI[appt.kind]}
-          </span>
+          <Icon name={APPOINTMENT_KIND_ICON[appt.kind]} className="mr-1.5 h-4 w-4 shrink-0 text-ink-2" />
           <span className={cx('min-w-0', past && 'text-ink-2')}>{appt.title}</span>
         </button>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <Owners owners={owners} members={members} label={ownerText(owners, members)} />
-          {appt.place ? <span className="min-w-0 truncate text-xs text-ink-2">📍 {appt.place}</span> : null}
+          {appt.place ? (
+            <span className="inline-flex min-w-0 items-center gap-0.5 text-xs text-ink-2">
+              <Icon name="pin" className="h-3 w-3 shrink-0" strokeWidth={2} />
+              <span className="truncate">{appt.place}</span>
+            </span>
+          ) : null}
         </div>
         {appt.note ? <p className="mt-0.5 text-xs text-ink-3">“{appt.note}”</p> : null}
 
@@ -233,7 +235,7 @@ function AppointmentRow({
           <div className="mt-2 flex flex-wrap gap-1.5">
             {!past ? (
               <button type="button" className={btnSecondary} onClick={addToCalendar}>
-                <span aria-hidden>📅</span> 캘린더에 추가
+                <Icon name="cal" className="h-3.5 w-3.5" strokeWidth={2} /> 캘린더에 추가
               </button>
             ) : null}
             <button

@@ -12,6 +12,7 @@
 // visibleEntries decide who sees them, setEntryPrivacy flips it (author only).
 
 import { isISODate } from '../dates'
+import { stripIntimacy } from './intimacy'
 import {
   MEMBER_IDS,
   PERSONAL_FEELS,
@@ -200,13 +201,15 @@ export function setEntryPrivacy(state: AppState, id: string, by: MemberId, priva
 
 /**
  * The state as the other phone (or anything shared with `viewer` — a link, an
- * export) may hold it: only `viewer`'s own personal log and none of the other
- * member's '나만 보기' entries. Cycle details are a separate question
- * (lib/logic/calendarView.ts cycleLens) — this covers the private log only.
+ * export) may hold it: only `viewer`'s own personal log, none of the other
+ * member's '나만 보기' entries, and the 관계일 record only for its holder
+ * (lib/logic/intimacy.ts stripIntimacy). Cycle details are a separate
+ * question (lib/logic/calendarView.ts cycleLens) — this covers what is
+ * owner-only by design.
  */
 export function stateForViewer(state: AppState, viewer: MemberId): AppState {
   const own = state.personalLog?.[viewer]
-  const { personalLog: _all, ...rest } = state
+  const { personalLog: _all, ...rest } = stripIntimacy(state, viewer)
   return {
     ...rest,
     ...(own && Object.keys(own).length ? { personalLog: { [viewer]: own } } : {}),

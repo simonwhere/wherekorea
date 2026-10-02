@@ -13,8 +13,19 @@
 //     shared details gets "우리의 주간" wording even if he chose explicit
 //     (homeVoice — the calendar's cycleLens rule)
 //   • a rest cycle and a positive test awaiting the clinic pause every fertile
-//     display; an ended pregnancy gets a quiet support card instead
+//     display; an ended pregnancy gets a quiet support card instead — and the
+//     42-day 'loss' quiet (ttc.startLossRest) keeps it first, with one
+//     body-guidance line from docs/research/after-loss.json for the owner
+//   • bleeding after a positive test (positivePending.bleedingSince, Next B)
+//     is its own card: the lines come from docs/research/early-pregnancy-
+//     bleeding.json (positiveBleeding.bleedingAdvice), the partner hears of it
+//     only when she tells him, and nothing here says what it means
+//   • 잠금화면 숨김을 홈 카드까지 (homeDiscreetFor): the card is veiled behind
+//     '오늘의 우리' until that person taps it (VEIL_COPY)
 // Predictions are always "예상"; nothing here is contraception or diagnosis.
+// The marker "(예상)" appears at most ONCE per card (review D-1): the eyebrow
+// carries it when it names a date or range; otherwise the title or the body
+// does, once — never twice on one card (estimateMarks / oneEstimate).
 
 import { FEEL_CHIPS, waitingWeekLine } from '../content/fertility'
 import { addDays, addMonths, diffDays, formatKo, formatShort, isBetween, isISODate } from '../dates'
@@ -47,6 +58,7 @@ import {
 } from './calendarView'
 import { mondayOf } from './checks'
 import { fertileHintsAllowed } from './dateIdeas'
+import { logPeriodStart } from './logs'
 import {
   LH_LEAD_DAYS,
   LONG_LATE_DAYS,
@@ -70,8 +82,10 @@ import { PROMPTS } from './diary'
 import { mergeNotices } from './notifications'
 import { LATE_TEST_DAYS, PERIOD_DUE_COPY, dueRange } from './periodDue'
 import { FEEL_LABEL, lastCycleFeels, personalDay } from './personalLog'
+import { bleedingAdvice, isBleedingDuringPositive, type BleedingLineId } from './positiveBleeding'
 import { canLogCycle, canSeeCycleDetails, lhPrompting, lowPressureFor, settingsFor } from './prefs'
 import { recentlyEnded } from './pregnancy'
+import { homeDiscreetFor } from './settings'
 import { fertilityVoice, type FertilityVoice } from './today'
 import { LIVE_VACCINE_REST_DAYS, activePositivePending, activeRest, endRestCycle, startRestCycle } from './ttc'
 
@@ -86,7 +100,10 @@ export type MomentKind =
   | 'tww'
   | 'late'
   | 'positive-pending'
+  /** A positive test waiting for the clinic, and bleeding has started (positivePending.bleedingSince). */
+  | 'positive-bleeding'
   | 'rest'
+  /** A pregnancy ended: the quiet days (pregnancy.recentlyEnded) and/or the 'loss' rest (ttc.startLossRest). */
   | 'after-loss'
 
 /** Period days 1–3: "수고했어요" first, next-window talk only from day 4. */
@@ -184,11 +201,16 @@ export function ttcPhase(state: AppState, today: ISODate): TtcPhase | null {
   const cycleDay = cycleStart ? diffDays(cycleStart, today) + 1 : undefined
   const todayLH = strongestLH(state.lhTests.filter((t) => t.date === today).map((t) => t.result))
   const recentSurge = state.lhTests.some((t) => isSurge(t.result) && (t.date === today || t.date === addDays(today, -1)))
-  const stats = cycleStats(state.periods, state.cycle, state.lhTests, today)
+  const stats = cycleStats(state.periods, state.cycle, state.lhTests, today, state.pregnancy)
   const base = { status, cycleStart, cycleDay, todayLH, recentSurge, confidence: stats.confidence, basis: confidenceLabel(stats.confidence, stats.count) }
 
   const pending = activePositivePending(state)
-  if (pending) return { ...base, kind: 'positive-pending', pending }
+  if (pending) return { ...base, kind: pending.bleedingSince ? 'positive-bleeding' : 'positive-pending', pending }
+  // The quiet after a pregnancy ended (a 'loss' rest with its last day, ttc.ts):
+  // the support card stays first for the whole of it, a period logged inside
+  // it included — and it ends on its own after `until`, or when she turns it off.
+  const rest = activeRest(state, today)
+  if (rest?.reason === 'loss') return { ...base, kind: 'after-loss', rest }
   if (status.kind === 'after-pregnancy') {
     return recentlyEnded(state, today) ? { ...base, kind: 'after-loss' } : { ...base, kind: 'no-data', paused: true }
   }
@@ -202,7 +224,6 @@ export function ttcPhase(state: AppState, today: ISODate): TtcPhase | null {
   const lastTest = latestTest(state.pregnancyTests ?? [], testsFrom, today)
   // A rest cycle pauses every date, the late day included: no "예정일이 지났어요"
   // (and no late / period-due notice — notifications.ts) until she logs a period.
-  const rest = activeRest(state)
   if (rest) return { ...base, kind: 'rest', rest }
   if (status.kind === 'late') {
     return {
@@ -286,12 +307,15 @@ export type MomentAction =
   | { type: 'confirm-pregnancy'; label: string }
   /** [아직 안 왔어요] on the long-late card (markStillWaiting). */
   | { type: 'still-waiting'; label: string }
+  /** [생리로 기록할게요] on the bleeding card: the bleeding day becomes a period start (settleBleedingAsPeriod). */
+  | { type: 'period-settle'; label: string }
 
 export type MomentCopyKey =
   | 'owner.no-data'
   | 'owner.paused'
   | 'owner.after-loss'
   | 'owner.positive-pending'
+  | 'owner.positive-bleeding'
   | 'owner.late'
   | 'owner.late-long'
   | 'owner.late-waiting'
@@ -312,6 +336,7 @@ export type MomentCopyKey =
   | 'partner.neutral'
   | 'partner.after-loss'
   | 'partner.positive-told'
+  | 'partner.bleeding-told'
   | 'partner.period-told'
   | 'partner.period-shared'
   | 'partner.our-week-soon'
@@ -353,6 +378,25 @@ export interface Moment {
   askTell?: { start: ISODate }
   /** positive-pending, owner: offer to tell the partner until told. */
   offerTellPositive?: { since: ISODate }
+  /** positive-bleeding, owner: offer to tell the partner bleeding started, until told (tellPartnerBleeding). */
+  offerTellBleeding?: { since: ISODate }
+  /**
+   * positive-bleeding, owner: the day bleeding started and the rest of the
+   * evidence lines after the body (positiveBleeding.bleedingAdvice without
+   * signs; the card re-reads it with the signs she ticks). Never set for the partner.
+   */
+  bleeding?: { since: ISODate; days: number; lines: string[]; lineIds: BleedingLineId[] }
+  /** period-early, owner: this period settled a positive test that never reached the clinic (settledPositive). */
+  afterPositive?: boolean
+  /** after-loss, owner: the one body-guidance line with its source (afterLossGuidance). Never for the partner. */
+  guidance?: AfterLossGuidance
+  /** after-loss: the quiet's last day (restCycle.until) while the 'loss' rest is on. */
+  restUntil?: ISODate
+  /**
+   * 잠금화면 숨김을 홈 카드까지 (settings.homeDiscreetFor): this person's card
+   * shows VEIL_COPY until they tap it — everything else here is what sits behind.
+   */
+  veiled?: boolean
   /** Partner's "우리의 주간" card: show 2–3 date ideas inside it. */
   dateIdeas?: boolean
   /** Partner: the card may feature "이번 달 할 일" (lib/logic/partnerTrack). */
@@ -422,6 +466,52 @@ const TO_CYCLE: MomentAction = { type: 'nav', to: 'cycle', label: '달력 보기
 /** '10월 14일' */
 const day = (d: ISODate) => formatKo(d, { weekday: false })
 
+// ── "(예상)" once per card ───────────────────────────────────
+
+/** The marker and its variants: '(예상)', '(예상 범위)', '(예상 범위, 넓음)'. */
+export const ESTIMATE_MARK = /\s?\(예상[^)]*\)/g
+
+/** How many "(예상)" markers a text carries. */
+export function estimateMarks(text: string | undefined): number {
+  return text ? (text.match(ESTIMATE_MARK) ?? []).length : 0
+}
+
+/** The text without its "(예상)" markers ('9월 29일 무렵이에요 (예상).' → '9월 29일 무렵이에요.'). */
+export function withoutEstimate(text: string): string {
+  return text.replace(ESTIMATE_MARK, '')
+}
+
+/** Every line a card shows, in reading order. */
+const CARD_LINES = ['eyebrow', 'title', 'body', 'note', 'partnerTip'] as const
+
+/**
+ * Keep the first "(예상)" on the card (eyebrow → title → body → note → tip)
+ * and drop the rest. The copy below is written to need no stripping; this is
+ * the guard that keeps the rule when a shared line (periodDue.ts) carries
+ * its own marker.
+ */
+function oneEstimate<M extends Partial<Pick<Moment, (typeof CARD_LINES)[number]>>>(m: M): M {
+  let seen = 0
+  let out: M | undefined
+  for (const key of CARD_LINES) {
+    const text = m[key]
+    if (typeof text !== 'string') continue
+    const n = estimateMarks(text)
+    if (!n) continue
+    if (seen === 0 && n === 1) {
+      seen = 1
+      continue
+    }
+    // A second marker (or two in one line): keep the first one only.
+    const keep = seen === 0 ? 1 : 0
+    let left = keep
+    const stripped = text.replace(ESTIMATE_MARK, (mark) => (left-- > 0 ? mark : ''))
+    seen = 1
+    out = { ...(out ?? m), [key]: stripped }
+  }
+  return out ?? m
+}
+
 /** '10월 14일' or '10월 14일~15일'. */
 export function retestRange(r: Pick<RetestHint, 'from' | 'to'>): string {
   if (r.from === r.to) return day(r.from)
@@ -476,10 +566,15 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId): Mo
   // The "우리의 주간" teaser and its date ideas follow the 둘만의 시간 rule too
   // (dateIdeas.fertileHintsAllowed: not in low-pressure mode or with alerts
   // off, not while resting or waiting for the clinic).
-  if (!fertileHintsAllowed(state, viewer)) {
+  if (!fertileHintsAllowed(state, viewer, today)) {
     if (m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') m = partnerNeutral()
     else if (m.dateIdeas) m = { ...m, dateIdeas: false }
   }
+  // 잠금화면 숨김을 홈 카드까지: the card waits behind VEIL_COPY for this person
+  // (owner or partner), so the partner's month task goes to 우리 한 줄 instead.
+  const veiled = homeDiscreetFor(state.settings, viewer)
+  if (veiled && m.monthlyTask) m = { ...m, monthlyTask: false }
+  m = oneEstimate(m)
   return {
     kind: phase.kind,
     voice,
@@ -488,8 +583,21 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId): Mo
     cycleStart: phase.cycleStart,
     confidence: phase.confidence,
     ...m,
+    ...(veiled ? { veiled: true } : {}),
   }
 }
+
+/**
+ * What a veiled card shows (homeDiscreetFor): nothing about the cycle, the
+ * test or the clinic — the same line for every moment, and one tap to see
+ * what is behind it. Shared by both people's phones.
+ */
+export const VEIL_COPY = {
+  eyebrow: '오늘의 우리',
+  title: '오늘도 둘이 함께해요',
+  body: '내용은 한 번 눌러서 볼 수 있어요.',
+  action: '내용 보기',
+} as const
 
 interface Ctx {
   state: AppState
@@ -536,17 +644,33 @@ function ownerMoment(c: Ctx): MomentBody {
             secondary: { type: 'nav', to: 'cycle', label: '달력에서 고르기' },
           }
 
-    case 'after-loss':
+    case 'after-loss': {
+      // The support list first, one body-guidance line (owner only), and the
+      // quiet's last day while the 'loss' rest is on — a period logged inside
+      // it is kept, the dates come back after `until` (or when she turns it off).
+      const rest = p.rest?.reason === 'loss' ? p.rest : undefined
+      const until = rest?.until
+      const endedAt = lossEndedAt(c.state)
+      const periodSince = !!endedAt && c.state.periods.some((x) => x.start > endedAt)
+      const guidance = afterLossGuidance(c.state, today)
       return {
         role,
         copy: 'owner.after-loss',
         tone: 'muted',
         eyebrow: '천천히 괜찮아요',
         title: '몸과 마음을 먼저 챙겨요',
-        body: '생리가 다시 시작되면 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
-        secondary: LOG_PERIOD,
+        body: until
+          ? periodSince
+            ? `생리를 기록해 뒀어요. ${day(until)}까지는 날짜 예상과 알림을 쉬고, 그 뒤에 다시 예상해 드릴게요.`
+            : `생리가 시작되면 기록해 주세요. ${day(until)}까지는 날짜 예상과 알림을 쉬어요.`
+          : '생리가 다시 시작되면 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
+        note: until ? '먼저 켜고 싶으면 더 보기의 쉬어요 스위치로 끌 수 있어요.' : undefined,
+        secondary: periodSince ? TO_CYCLE : LOG_PERIOD,
         support: true,
+        ...(guidance ? { guidance } : {}),
+        ...(rest ? { restReason: 'loss' as const, restUntil: until } : {}),
       }
+    }
 
     case 'positive-pending': {
       const since = p.pending!.since
@@ -567,6 +691,29 @@ function ownerMoment(c: Ctx): MomentBody {
         primary: { type: 'nav', to: 'plan', label: '병원 일정 넣기' },
         secondary: { type: 'confirm-pregnancy', label: '병원에서 확인했어요' },
         ...(told ? {} : { offerTellPositive: { since } }),
+      }
+    }
+
+    case 'positive-bleeding': {
+      // Bleeding after the positive test, before the clinic: every line is an
+      // evidence line (early-pregnancy-bleeding.json) — the first one the body,
+      // the rest under the actions, where she can also tick the 응급 signs.
+      // No 🎉, no 유산: the clinic is the one to say what it means.
+      const pending = p.pending!
+      const since = pending.bleedingSince!
+      const advice = bleedingAdvice(c.state, today)
+      const told = hasKey(c.state, bleedingToldKey(pending.since))
+      return {
+        role,
+        copy: 'owner.positive-bleeding',
+        tone: 'brand',
+        eyebrow: '병원 확인 전',
+        title: '출혈이 시작됐어요',
+        body: advice.lines[0] ?? '',
+        primary: { type: 'nav', to: 'plan', label: '병원에 연락하기' },
+        secondary: { type: 'period-settle', label: '생리로 기록할게요' },
+        bleeding: { since, days: advice.days ?? 0, lines: advice.lines.slice(1), lineIds: advice.lineIds.slice(1) },
+        ...(told ? {} : { offerTellBleeding: { since: pending.since } }),
       }
     }
 
@@ -657,14 +804,12 @@ function ownerMoment(c: Ctx): MomentBody {
         role,
         copy: 'owner.rest',
         tone: 'muted',
-        eyebrow: reason === 'vaccine' ? '접종 뒤 쉬어 가요' : reason === 'loss' ? '천천히 괜찮아요' : '쉬어 가는 주기',
+        eyebrow: reason === 'vaccine' ? '접종 뒤 쉬어 가요' : '쉬어 가는 주기',
         title: '이번 주기는 쉬어요',
         body:
           reason === 'vaccine'
             ? '생백신을 맞은 뒤에는 MMR은 4주, 수두는 접종마다 1개월 동안 임신을 미루도록 안내해요.'
-            : reason === 'loss'
-              ? '몸과 마음을 먼저 챙겨요. 다음 생리를 기록하면 다시 켜져요.'
-              : '날짜 예상과 알림을 잠시 쉬어요. 다음 생리를 기록하면 다시 켜져요.',
+            : '날짜 예상과 알림을 잠시 쉬어요. 다음 생리를 기록하면 다시 켜져요.',
         note:
           reason === 'vaccine'
             ? `질병관리청·CDC 안내예요. ${backOn} 이후 첫 생리를 기록하면 다시 켜져요. 자세한 건 담당의와 확인하세요.`
@@ -678,15 +823,21 @@ function ownerMoment(c: Ctx): MomentBody {
       const start = p.cycleStart!
       // Her own chips from the cycle that just ended: a look back, no reading of them.
       const lastFeels = lastFeelsFor(c.state, cycleOwnerId(c.state), start)
+      // This period settled a positive test that never reached the clinic
+      // (settledPositive): a gentler line and the clinic as a place to ask —
+      // no reading of what happened, no 유산.
+      const afterPositive = !!settledPositive(c.state, start)
       return {
         role,
         copy: 'owner.period-early',
         tone: 'default',
         eyebrow: `생리 ${d}일째`,
         title: '이번 주기도 수고했어요',
-        body: '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
+        body: afterPositive ? '양성 뒤에 시작된 생리라 마음이 복잡할 수 있어요. 오늘은 몸을 따뜻하게 하고 푹 쉬어요.' : '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
+        note: afterPositive ? '궁금하거나 걱정되는 게 있으면 다니는 병원에 물어봐도 돼요.' : undefined,
         ...(periodTellState(c.state, start) === 'ask' ? { askTell: { start } } : {}),
         ...(lastFeels ? { lastFeels } : {}),
+        ...(afterPositive ? { afterPositive } : {}),
       }
     }
 
@@ -752,11 +903,10 @@ function ownerMoment(c: Ctx): MomentBody {
             role,
             copy: 'owner.before-fertile',
             tone: 'default',
-            eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기',
+            // The eyebrow carries the one "(예상)" (low confidence names the basis instead, and the body's range says it).
+            eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
             title: low ? `가임기 무렵까지 D-${n}` : `가임기까지 D-${n}`,
-            body: low
-              ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.`
-              : `${day(start)}부터예요 (예상). 달력 기준 예상이에요.`,
+            body: low ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.` : `${day(start)}부터예요. 달력 기준 예상이에요.`,
             ...nearAction,
           }
         }
@@ -765,9 +915,9 @@ function ownerMoment(c: Ctx): MomentBody {
           copy: testing ? 'owner.lh-start' : 'owner.before-fertile',
           tone: testing ? 'fert' : 'default',
           // Low confidence names what the estimate rests on ('달력 기준 · 기록 2주기').
-          eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기',
+          eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
           title: testing ? '오늘 LH 테스트해 봐요' : `LH 테스트 시작 D-${toLh}`,
-          body: low ? `가임기는 ${day(start)} 무렵부터예요 (예상 범위, 넓음).` : `가임기는 ${day(start)}부터예요 (예상).`,
+          body: low ? `가임기는 ${day(start)} 무렵부터예요 (예상 범위, 넓음).` : `가임기는 ${day(start)}부터예요.`,
           note: testing ? (low ? '결과를 기록하면 범위가 좁아져요.' : '결과를 기록하면 예상을 다시 계산해요.') : undefined,
           ...(testing ? { primary: { type: 'log', kind: 'lh', label: 'LH 기록' } as MomentAction } : { secondary: TO_CYCLE }),
           todayLH: p.todayLH,
@@ -779,8 +929,8 @@ function ownerMoment(c: Ctx): MomentBody {
           role,
           copy: 'owner.before-fertile',
           tone: 'default',
-          eyebrow: '다가오는 우리의 주간',
-          title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요 (예상)`,
+          eyebrow: '다가오는 우리의 주간 (예상)',
+          title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요`,
           body: '둘만의 시간을 미리 계획해 볼까요? 달력 기준 예상이에요.',
           ...nearAction,
         }
@@ -789,8 +939,8 @@ function ownerMoment(c: Ctx): MomentBody {
         role,
         copy: testing ? 'owner.lh-start' : 'owner.before-fertile',
         tone: testing ? 'fert' : 'default',
-        eyebrow: '다가오는 우리의 주간',
-        title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요 (예상)`,
+        eyebrow: '다가오는 우리의 주간 (예상)',
+        title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요`,
         body: testing ? '테스트를 시작해 볼까요? 결과를 기록하면 예상을 다시 계산해요.' : '둘만의 시간을 미리 계획해 볼까요?',
         ...(testing ? { primary: { type: 'log', kind: 'lh', label: '오늘 기록' } as MomentAction } : { secondary: TO_CYCLE }),
         todayLH: p.todayLH,
@@ -809,27 +959,22 @@ function ownerMoment(c: Ctx): MomentBody {
           role,
           copy: 'owner.fertile',
           tone: 'fert',
-          // The eyebrow names the basis: 'LH 기준' once a surge pinned it, '달력
-          // 기준 · 기록 N주기' when the calendar alone is all there is.
+          // The eyebrow names the basis — 'LH 기준' once a surge pinned it, '달력
+          // 기준 · 기록 N주기' when the calendar alone is all there is — and the
+          // window's last day; it carries the card's one "(예상)".
           eyebrow:
             p.confidence === 'lh'
-              ? `LH 기준 · ${day(end)}까지`
+              ? `LH 기준 · ${day(end)}까지 (예상)`
               : low
-                ? `${p.basis} · ${day(end)}까지`
-                : `가임기 (예상) · ${day(end)}까지`,
-          title: p.recentSurge
-            ? 'LH 양성이 나왔어요'
-            : low
-              ? '가임기 예상 범위예요 (넓음)'
-              : p.peak
-                ? '가능성 높은 날이에요 (예상)'
-                : '가임기예요 (예상)',
+                ? `${p.basis} · ${day(end)}까지 (예상)`
+                : `가임기 · ${day(end)}까지 (예상)`,
+          title: p.recentSurge ? 'LH 양성이 나왔어요' : low ? '가임기 범위예요 (넓음)' : p.peak ? '가능성 높은 날이에요' : '가임기예요',
           body: p.recentSurge
             ? '처음 양성이 나온 날과 그다음 날이 가장 좋은 때예요.'
             : low
               ? lhOn
-                ? '달력으로만 계산한 범위라 넓게 잡았어요 (예상). 오늘 LH 결과를 기록하면 범위가 좁아져요.'
-                : '달력으로만 계산한 범위라 넓게 잡았어요 (예상). 달력 기준 예상이에요.'
+                ? '달력으로만 계산한 범위라 넓게 잡았어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.'
+                : '달력으로만 계산한 범위라 넓게 잡았어요. 달력 기준 예상이에요.'
               : lhOn
                 ? '오늘 LH 결과를 기록하면 예상을 다시 계산해요.'
                 : '달력 기준 예상이에요. 오늘 컨디션을 남겨 둬도 좋아요.',
@@ -860,6 +1005,8 @@ function ownerMoment(c: Ctx): MomentBody {
       // Low confidence (one period, long cycles) names no ovulation day anywhere (N12).
       const sinceOv = p.ovulation && p.confidence !== 'low' && today > p.ovulation ? diffDays(p.ovulation, today) : undefined
       const eyebrow = voice === 'explicit' && sinceOv !== undefined ? `배란 뒤 ${sinceOv}일째 (예상)` : '기다리는 주'
+      // The eyebrow's count carries the card's one "(예상)"; without it the body (or the title) does.
+      const marked = estimateMarks(eyebrow) > 0
       const feel = personalDay(c.state, cycleOwnerId(c.state), today)?.feel
       const own = { testDate: p.testDate, due, ...(feel ? { todayFeel: feel } : {}) }
       if (r) {
@@ -909,7 +1056,7 @@ function ownerMoment(c: Ctx): MomentBody {
           tone: 'default',
           eyebrow,
           title: `테스트까지 D-${diffDays(today, due.from)}`,
-          body: `생리 예정은 ${dueRange(due)} 무렵이에요 (예상). ${waitingWeekLine(sinceOv ?? d)}`,
+          body: `생리 예정은 ${dueRange(due)} 무렵이에요${marked ? '' : ' (예상)'}. ${waitingWeekLine(sinceOv ?? d)}`,
           note: '너무 이르면 음성일 수 있어요.',
           primary: LOG_FEEL,
           secondary: LOG_TEST,
@@ -924,8 +1071,8 @@ function ownerMoment(c: Ctx): MomentBody {
         copy: 'owner.period-due',
         tone: 'default',
         eyebrow,
-        title: `${PERIOD_DUE_COPY.dueNow.title} (예상)`,
-        body: PERIOD_DUE_COPY.dueNow.body(due),
+        title: PERIOD_DUE_COPY.dueNow.title,
+        body: marked ? withoutEstimate(PERIOD_DUE_COPY.dueNow.body(due)) : PERIOD_DUE_COPY.dueNow.body(due),
         primary: LOG_TEST,
         secondary: LOG_PERIOD,
         early: false,
@@ -1039,8 +1186,23 @@ function partnerMoment(c: Ctx): MomentBody {
       }
 
     case 'positive-pending':
-      // The partner hears about a positive test only when she tells them.
-      return hasKey(c.state, positiveToldKey(p.pending!.since))
+    case 'positive-bleeding': {
+      // The partner hears about a positive test only when she tells them — and
+      // about bleeding only when she tells them that too (never through shared
+      // details: it is hers to say). Without either, the ordinary card.
+      const since = p.pending!.since
+      if (p.kind === 'positive-bleeding' && hasKey(c.state, bleedingToldKey(since))) {
+        return {
+          role,
+          copy: 'partner.bleeding-told',
+          tone: 'brand',
+          eyebrow: `${owner}님이 알려 줬어요`,
+          title: '병원에 같이 가 줄 수 있어요',
+          body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요. 결과가 어떻든 한 팀이에요.',
+          primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
+        }
+      }
+      return hasKey(c.state, positiveToldKey(since))
         ? {
             role,
             copy: 'partner.positive-told',
@@ -1051,6 +1213,7 @@ function partnerMoment(c: Ctx): MomentBody {
             primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
           }
         : partnerNeutral()
+    }
 
     case 'rest':
       return p.rest?.reason === 'clinic' ? clinicMoment(c, role) : partnerNeutral()
@@ -1107,14 +1270,15 @@ function partnerMoment(c: Ctx): MomentBody {
         role,
         copy: 'partner.our-week',
         tone: 'fert',
-        eyebrow: voice === 'explicit' ? `가임기 (예상) · ${day(end)}까지` : `${day(end)}까지 (예상)`,
+        // The eyebrow carries the one "(예상)"; the peak line below doesn't repeat it.
+        eyebrow: voice === 'explicit' ? `가임기 · ${day(end)}까지 (예상)` : `${day(end)}까지 (예상)`,
         title: '이번 주는 우리의 주간이에요',
         body: peak
           ? voice === 'explicit'
-            ? '특히 오늘은 가능성 높은 날이에요 (예상). 부담은 내려놓아요.'
+            ? '특히 오늘은 가능성 높은 날이에요. 부담은 내려놓아요.'
             : lastDay
-              ? '오늘까지예요 (예상). 부담은 내려놓아요.'
-              : '특히 오늘·내일이에요 (예상). 부담은 내려놓아요.'
+              ? '오늘까지예요. 부담은 내려놓아요.'
+              : '특히 오늘·내일이에요. 부담은 내려놓아요.'
           : '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
         dateIdeas: true,
         secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
@@ -1165,6 +1329,8 @@ function hasKey(state: Pick<AppState, 'notifications'>, key: string): boolean {
 export const periodToldKey = (start: ISODate) => `period-told:${start}`
 const periodSkipKey = (start: ISODate) => `period-told:${start}:skip`
 export const positiveToldKey = (since: ISODate) => `positive-told:${since}`
+/** The quiet notice about bleeding after that positive test (tellPartnerBleeding) — keyed by the test's day. */
+export const bleedingToldKey = (since: ISODate) => `bleeding-told:${since}`
 export const vaccineHintKey = (hint: Pick<VaccineRestHint, 'itemId' | 'at'>) => `rest-suggest:${hint.itemId}:${hint.at}`
 
 /** 'ask' until she answers "{partner}님에게 알릴까요?" once for this period. */
@@ -1235,6 +1401,143 @@ export function tellPartnerPositive(state: AppState, nowISO: string): AppState {
   ).state
 }
 
+// ── 양성 뒤 출혈 (Next B) ────────────────────────────────────
+
+/**
+ * Is a period start on `date` really a bleeding mark? While a positive test
+ * waits for the clinic, bleeding from that day on is not yet a period
+ * (positiveBleeding.isBleedingDuringPositive): the log layer marks it and the
+ * home card asks what to do with it. A screen may use it for its toast.
+ */
+export function periodStartDuringPositive(state: Pick<AppState, 'positivePending' | 'periods' | 'stage'>, date: ISODate): boolean {
+  return isBleedingDuringPositive(state, date)
+}
+
+/**
+ * A period start from any screen: logs.logPeriodStart itself marks bleeding
+ * during a pending positive test (the card then offers 병원에 연락하기 /
+ * 생리로 기록할게요) and logs the period otherwise (settling rests and the
+ * test). Kept as the name the home flow reads by.
+ */
+export function logPeriodOrBleeding(state: AppState, date: ISODate, by?: MemberId, today?: ISODate): AppState {
+  return logPeriodStart(state, date, by, today)
+}
+
+/**
+ * [생리로 기록할게요]: the bleeding day becomes this period's first day and
+ * the positive test is settled quietly (logs.logPeriodStart with `asPeriod` →
+ * ttc.onPeriodLogged clears positivePending). Nothing to settle → the same state.
+ */
+export function settleBleedingAsPeriod(state: AppState, today: ISODate): AppState {
+  const pending = activePositivePending(state)
+  if (!pending?.bleedingSince) return state
+  return logPeriodStart(state, pending.bleedingSince, cycleOwnerId(state), today, { asPeriod: true })
+}
+
+/**
+ * A quiet note to the partner that bleeding started (only when she chooses
+ * to): what to do (be there, go together), nothing about what it means. Also
+ * counts as having told him about the positive test, so the two cards agree.
+ */
+export function tellPartnerBleeding(state: AppState, nowISO: string): AppState {
+  const p = activePositivePending(state)
+  if (!p?.bleedingSince) return state
+  const owner = cycleOwnerId(state)
+  const told = mergeNotices(
+    state,
+    [
+      {
+        key: bleedingToldKey(p.since),
+        to: otherOf(owner),
+        from: owner,
+        kind: 'system',
+        title: `${nameOf(state, owner)}님이 알려 왔어요`,
+        body: '병원 확인 전에 출혈이 시작됐어요. 병원에 같이 갈 수 있는지 이야기해 봐요. 결과가 어떻든 한 팀이에요.',
+      },
+    ],
+    nowISO,
+  ).state
+  return withStub(told, positiveToldKey(p.since), otherOf(owner), nowISO)
+}
+
+/**
+ * The positive home test this period (starting on `cycleStart`) settled: the
+ * latest positive before it with no period start in between — so the
+ * period-day card can be gentler. Undefined when the period followed nothing.
+ */
+export function settledPositive(state: Pick<AppState, 'pregnancyTests' | 'periods'>, cycleStart: ISODate): PregnancyTest | undefined {
+  const last = latestTest(
+    (state.pregnancyTests ?? []).filter((t) => t.result === 'positive'),
+    undefined,
+    addDays(cycleStart, -1),
+  )
+  if (!last) return undefined
+  return sortedStarts(state.periods).some((d) => d >= last.date && d < cycleStart) ? undefined : last
+}
+
+// ── 임신이 끝난 뒤: 몸 안내 한 줄 (Next B) ───────────────────
+
+/** When the lines below were last checked against docs/research/after-loss.json. */
+export const AFTER_LOSS_CHECKED_AT = '2026-10-02'
+
+/**
+ * docs/research/after-loss.json → findings[id].ui, character for character
+ * (tests/ttcFlow.test.ts compares them). Owner only; the partner gets
+ * LOSS_SUPPORT, never a line about her body. 'ovulation-2-weeks' is left out
+ * on purpose (it reads as a warning), as are the lines with study numbers.
+ */
+export const AFTER_LOSS_LINES = {
+  'see-doctor-after-loss': '열이 나거나 오한이 있거나, 통증이 심하거나 출혈이 많으면 바로 병원에 연락해요.',
+  'period-return': '임신이 끝난 뒤 첫 생리는 보통 4~6주 뒤에 와요. 몇 달은 주기가 들쭉날쭉할 수 있어요.',
+  'emotional-readiness': '몸보다 마음이 먼저예요. 준비됐다고 느낄 때까지 쉬어도 괜찮고, 상담센터의 도움을 받아도 돼요.',
+} as const
+
+export type AfterLossLineId = keyof typeof AFTER_LOSS_LINES
+
+/** Each line's source (one of the finding's URLs in after-loss.json). */
+export const AFTER_LOSS_SOURCES: Record<AfterLossLineId, SupportSource> = {
+  'see-doctor-after-loss': { name: 'ACOG', url: 'https://www.acog.org/womens-health/faqs/early-pregnancy-loss' },
+  'period-return': {
+    name: "Tommy's",
+    url: 'https://www.tommys.org/baby-loss-support/miscarriage-information-and-support/pregnancy-after-miscarriage/getting-pregnant-after-miscarriage',
+  },
+  'emotional-readiness': {
+    name: "Tommy's",
+    url: 'https://www.tommys.org/baby-loss-support/miscarriage-information-and-support/pregnancy-after-miscarriage/getting-pregnant-after-miscarriage',
+  },
+}
+
+/** The first days: the 'call right away' signs (ACOG's 1–2 weeks of infection care, after-loss.json 'no-medical-wait'). */
+export const AFTER_LOSS_CALL_DAYS = 14
+
+export interface AfterLossGuidance {
+  id: AfterLossLineId
+  text: string
+  source: SupportSource
+}
+
+/** The day the pregnancy ended: the record's endedAt, else the 'loss' rest's first day. */
+export function lossEndedAt(state: Pick<AppState, 'stage' | 'pregnancy' | 'restCycle'>): ISODate | undefined {
+  const p = state.pregnancy
+  if (state.stage === 'preparing' && p?.endedAt && p.endedAt > p.confirmedAt) return p.endedAt
+  return state.restCycle?.reason === 'loss' ? state.restCycle.since : undefined
+}
+
+/**
+ * ONE line for the owner's after-loss card, by where she is: the first two
+ * weeks say when to call the clinic; until the first period, when it usually
+ * comes; after it, that the heart comes first. Undefined without an ended
+ * pregnancy to count from.
+ */
+export function afterLossGuidance(state: Pick<AppState, 'stage' | 'pregnancy' | 'restCycle' | 'periods'>, today: ISODate): AfterLossGuidance | undefined {
+  const endedAt = lossEndedAt(state)
+  if (!endedAt || !isISODate(today) || today < endedAt) return undefined
+  const periodSince = state.periods.some((x) => x.start > endedAt)
+  const id: AfterLossLineId =
+    diffDays(endedAt, today) < AFTER_LOSS_CALL_DAYS ? 'see-doctor-after-loss' : periodSince ? 'emotional-readiness' : 'period-return'
+  return { id, text: AFTER_LOSS_LINES[id], source: AFTER_LOSS_SOURCES[id] }
+}
+
 // ── Live vaccine → suggest a rest cycle ─────────────────────
 
 /** 챙길 것 items for live vaccines (lib/content/roadmap.ts) and how long to wait. */
@@ -1259,7 +1562,7 @@ export interface VaccineRestHint {
  * isn't resting yet: suggest "이번 주기는 쉬어요" (reason 'vaccine').
  */
 export function vaccineRestHint(state: AppState, today: ISODate, viewer: MemberId): VaccineRestHint | null {
-  if (state.stage !== 'preparing' || !canLogCycle(state, viewer) || activeRest(state)) return null
+  if (state.stage !== 'preparing' || !canLogCycle(state, viewer) || activeRest(state, today)) return null
   let best: VaccineRestHint | null = null
   for (const [itemId, v] of Object.entries(LIVE_VACCINE_ITEMS)) {
     const dates = [
@@ -1351,15 +1654,16 @@ function windowTone(date: ISODate, w: CycleWindow, withPeak: boolean): Pick<Stri
 export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): CycleStrip | null {
   const phase = ttcPhase(state, today)
   if (!phase || phase.kind === 'no-data' || phase.kind === 'after-loss') return null
-  const lens = cycleLens(state, viewer)
+  const lens = cycleLens(state, viewer, today)
   // The calendar's view (hidden for low-pressure / a partner who turned it off),
   // worded like the moment card: an owner with alerts off and a partner without
   // shared details see only "우리의 주간" — no 가임기, no LH marks.
   const view: FertilityView = lens.view === 'hidden' ? 'hidden' : homeVoice(state, viewer) === 'explicit' ? 'explicit' : 'soft'
   const details = lens.details
-  const paused = phase.kind === 'rest' || phase.kind === 'positive-pending'
+  const positive = phase.kind === 'positive-pending' || phase.kind === 'positive-bleeding'
+  const paused = phase.kind === 'rest' || positive
   // With a clinic (or a positive test waiting) no period is projected — logged data only, like the calendar.
-  const noProjection = phase.kind === 'positive-pending' || (phase.kind === 'rest' && phase.rest?.reason === 'clinic')
+  const noProjection = positive || (phase.kind === 'rest' && phase.rest?.reason === 'clinic')
   // Period days 1–3 are for "수고했어요" — the next window shows from day 4.
   // (The partner without details keeps the shared band, so its absence says
   // nothing — except once she has told him: then his strip rests for those
@@ -1458,7 +1762,7 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
 export function homeDiaryPrompt(state: AppState, today: ISODate): string | null {
   const phase = ttcPhase(state, today)
   if (phase?.kind === 'after-loss' || (state.stage === 'preparing' && recentlyEnded(state, today))) return null
-  const avoidBaby = phase?.kind === 'period-early' || phase?.kind === 'positive-pending'
+  const avoidBaby = phase?.kind === 'period-early' || phase?.kind === 'positive-pending' || phase?.kind === 'positive-bleeding'
   const list = PROMPTS[state.stage].filter((q) => !avoidBaby || !/아이|아기|태교/.test(q))
   if (list.length === 0) return null
   return list[Number(today.replace(/-/g, '')) % list.length]!

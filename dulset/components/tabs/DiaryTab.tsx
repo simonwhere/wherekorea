@@ -1,11 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Composer from '@/components/diary/Composer'
 import DeleteEntrySheet from '@/components/diary/DeleteEntrySheet'
 import EditEntrySheet from '@/components/diary/EditEntrySheet'
 import EntryCard from '@/components/diary/EntryCard'
+import { entryDomId, takeOpenEntry } from '@/components/diary/openEntry'
 import { Button, Chip, EmptyState, useToast } from '@/components/ui'
+import type { IconName } from '@/components/ui/icons'
 import { groupByMonth } from '@/lib/logic/diary'
 import { monthLabel } from '@/lib/logic/diaryExport'
 import { visibleEntries } from '@/lib/logic/personalLog'
@@ -29,19 +31,19 @@ type AuthorFilter = 'all' | 'me' | 'partner'
 
 type OpenSheet = { kind: 'edit' | 'delete'; id: string } | null
 
-const EMPTY: Record<Stage, { icon: string; title: string; body: string }> = {
+const EMPTY: Record<Stage, { icon: IconName; title: string; body: string }> = {
   preparing: {
-    icon: '📔',
+    icon: 'book',
     title: '우리 둘의 첫 기록을 남겨 볼까요?',
     body: '오늘 있었던 작은 일 하나면 충분해요. 날짜를 예전으로 바꾸면 연애 시절 이야기도 ‘우리 둘’로 남길 수 있어요.',
   },
   pregnant: {
-    icon: '🌱',
+    icon: 'sprout',
     title: '아기에게 첫 편지를 써 볼까요?',
     body: '짧은 한 줄도 좋아요. 두 사람이 번갈아 쓰다 보면 그대로 태교일기가 돼요.',
   },
   parenting: {
-    icon: '👶',
+    icon: 'baby',
     title: '아기와의 오늘을 남겨 볼까요?',
     body: '사진 한 장, 한 줄이면 충분해요. 금방 지나가는 하루들을 둘이 함께 모아 봐요.',
   },
@@ -76,6 +78,16 @@ function DiaryView() {
 
   // Never the other member's '나만 보기' entries (DiaryEntry.privateTo).
   const entries = useMemo(() => visibleEntries(state.diary, me.id), [state.diary, me.id])
+  // Opened for one entry (the cover's 'N년 전 오늘' line): scroll its card into view once.
+  useEffect(() => {
+    const id = takeOpenEntry()
+    if (!id) return
+    const el = document.getElementById(entryDomId(id))
+    if (!el) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+    el.focus({ preventScroll: true })
+  }, [])
   const { settings, pregnancy, baby, createdAt } = state
   const ctx = useMemo(
     () => chapterContext({ settings, pregnancy, baby, createdAt }),
@@ -170,7 +182,7 @@ function DiaryView() {
         <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />
       ) : !groups.length ? (
         <EmptyState
-          icon="🔍"
+          icon="search"
           title="고른 조건에 맞는 기록이 없어요"
           action={
             <Button variant="secondary" onClick={resetFilters}>
@@ -199,7 +211,7 @@ function DiaryView() {
                         })
                       : []
                     return (
-                      <li key={e.id}>
+                      <li key={e.id} id={entryDomId(e.id)} tabIndex={-1} className="rounded-xl2 outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand">
                         <EntryCard
                           entry={e}
                           author={writer}

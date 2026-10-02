@@ -3,6 +3,7 @@
 import { useDiaryExport } from '@/components/diary/useDiaryExport'
 import { goToSettings } from '@/components/settings/anchors'
 import { Button, Card } from '@/components/ui'
+import { IconTile } from '@/components/ui/icons'
 
 /** 설정 › 데이터와 개인정보, where the full backup is. */
 const openSettings = () => goToSettings('data')
@@ -18,9 +19,7 @@ export default function KeepCard() {
   return (
     <Card>
       <div className="flex items-start gap-3">
-        <span className="text-2xl leading-none" aria-hidden>
-          🔒
-        </span>
+        <IconTile name="lock" size="sm" />
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-bold text-ink">우리 기록은 이 기기에 저장돼요</h2>
           <p className="mt-1 text-xs leading-relaxed text-ink-2">

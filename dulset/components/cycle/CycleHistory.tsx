@@ -33,11 +33,16 @@ export function takeOpenFeels(): ISODate | undefined {
   }
 }
 
-/** Logged cycles, newest first: 시도 N번째, length, first LH surge (or strips without one), her own feel chips. */
+/**
+ * Logged cycles, newest first: length, first LH surge (or strips without one),
+ * her own feel chips — and, only when the couple turned it on
+ * (settings.showTryCount, Next B), a neutral '주기 N' count since they started.
+ */
 export default function CycleHistory({
   history,
   today,
   showLH,
+  showTryCount = false,
   feels,
   openFeels,
   onSelect,
@@ -46,6 +51,8 @@ export default function CycleHistory({
   today: ISODate
   /** Whether this viewer may see LH results. */
   showLH: boolean
+  /** '주기 N' since the couple started trying — off by default (lib/logic/settings.ts showTryCountOn); never '시도'. */
+  showTryCount?: boolean
   /** Owner only: her 오늘 컨디션 chips per cycle start (calendarView.cycleFeels). Never passed for the partner. */
   feels?: Record<ISODate, PersonalDayEntry[]>
   /** The cycle whose feel list starts open (from the home's '지난 주기 컨디션 N개 · 보기'). */
@@ -63,8 +70,8 @@ export default function CycleHistory({
     <>
       <SectionTitle
         sub={
-          current !== undefined
-            ? `지금은 시도 ${current}번째 주기예요${estimated ? ' (기록이 빈 기간은 어림했어요)' : ''}`
+          showTryCount && current !== undefined
+            ? `함께 준비한 뒤 ${estimated ? '약 ' : ''}${current}번째 주기예요${estimated ? ' (기록이 빈 기간은 어림했어요)' : ''}`
             : onSelect
               ? '눌러서 고치거나 지울 수 있어요'
               : undefined
@@ -82,11 +89,11 @@ export default function CycleHistory({
                   onClick={() => onSelect(r.start)}
                   className="flex min-h-[60px] w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
                 >
-                  <Row r={r} today={today} withYear={r.start.slice(0, 4) !== thisYear} showLH={showLH} maxCycle={maxCycle} />
+                  <Row r={r} today={today} withYear={r.start.slice(0, 4) !== thisYear} showLH={showLH} showTryCount={showTryCount} maxCycle={maxCycle} />
                 </button>
               ) : (
                 <div className="flex min-h-[60px] items-center gap-3 px-4 py-2">
-                  <Row r={r} today={today} withYear={r.start.slice(0, 4) !== thisYear} showLH={showLH} maxCycle={maxCycle} />
+                  <Row r={r} today={today} withYear={r.start.slice(0, 4) !== thisYear} showLH={showLH} showTryCount={showTryCount} maxCycle={maxCycle} />
                 </div>
               )}
               {feels?.[r.start]?.length ? <FeelList entries={feels[r.start]!} open={openFeels === r.start} /> : null}
@@ -119,12 +126,14 @@ function Row({
   today,
   withYear,
   showLH,
+  showTryCount,
   maxCycle,
 }: {
   r: CycleHistoryRow
   today: ISODate
   withYear: boolean
   showLH: boolean
+  showTryCount: boolean
   /** The longest plausible cycle for these settings (cycleHistory.maxCycle). */
   maxCycle: number
 }) {
@@ -141,7 +150,7 @@ function Row({
           {r.end ? <span className="font-medium text-ink-2">~ {formatKo(r.end, { weekday: false })}</span> : null}
         </span>
         <span className="block text-xs text-ink-3">
-          {r.attempt !== undefined ? <span className="font-semibold text-ink-2">시도 {r.attempt}번째 · </span> : null}
+          {showTryCount && r.attempt !== undefined ? <span className="font-semibold text-ink-2">주기 {r.attempt} · </span> : null}
           {details.join(' · ')}
         </span>
       </span>

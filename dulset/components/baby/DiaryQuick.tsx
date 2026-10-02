@@ -1,6 +1,7 @@
 'use client'
 
 import { Card } from '@/components/ui'
+import { Icon, IconTile } from '@/components/ui/icons'
 import { promptFor } from '@/lib/logic/diary'
 import { useApp } from '@/lib/store'
 import { goDiary } from './bits'
@@ -24,16 +25,12 @@ export default function DiaryQuick() {
   return (
     <Card as="div" className="py-3">
       <button type="button" onClick={goDiary} className="flex min-h-[48px] w-full items-center gap-3 text-left">
-        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-xl">
-          📷
-        </span>
+        <IconTile name="cam" tone="bg-brand-soft" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-ink">{title}</span>
           <span className="block truncate text-xs text-ink-3">{prompt}</span>
         </span>
-        <span aria-hidden className="shrink-0 text-ink-3">
-          ›
-        </span>
+        <Icon name="right" className="h-5 w-5 text-ink-3" />
       </button>
     </Card>
   )

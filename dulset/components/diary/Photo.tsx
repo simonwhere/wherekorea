@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { getPhotoURL } from '@/lib/photos'
 
 type Status = 'waiting' | 'loading' | 'ready' | 'missing' | 'broken'
@@ -78,8 +79,8 @@ export default function DiaryPhoto({ photoId, alt }: { photoId: string; alt: str
 
   if (status !== 'ready' || !url) {
     return (
-      <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-ink-3">
-        <span aria-hidden>📷 </span>
+      <p className="mt-3 flex items-center gap-1.5 rounded-xl bg-surface-2 px-3 py-2.5 text-xs text-ink-3">
+        <Icon name="cam" className="h-4 w-4 shrink-0" />
         {status === 'broken' ? '이 사진은 이 브라우저에서 보여 줄 수 없어요.' : '이 기기에서 사진을 찾을 수 없어요.'}
       </p>
     )

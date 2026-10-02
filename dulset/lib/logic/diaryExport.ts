@@ -8,6 +8,7 @@
 import { formatKo, isISODate } from '../dates'
 import type { Baby, DiaryEntry, ISODate, Member, MemberId, Pregnancy, Stage } from '../types'
 import { dayOfLife } from './baby'
+import { groupByMonth } from './diary'
 import { canSeeEntry, visibleEntries } from './personalLog'
 import { gestationalAge } from './pregnancy'
 
@@ -206,6 +207,28 @@ export function storyOrder(entries: DiaryEntry[]): DiaryEntry[] {
   })
 }
 
+// ── Album (우리 › 앨범 and the export's last chapter) ───────
+
+/** How many characters of the story the album shows under a photo. */
+export const ALBUM_CAPTION_MAX = 140
+
+/** First `max` characters (by code point) of a text, with '…' when cut. */
+export function excerpt(text: string, max = ALBUM_CAPTION_MAX): string {
+  const chars = Array.from(text.trim())
+  if (chars.length <= max) return chars.join('')
+  return `${chars.slice(0, max).join('').trimEnd()}…`
+}
+
+/**
+ * The album's order: every photo `viewer` may see, newest first (same day:
+ * the later one first), as the 앨범 feed shows them. Diary entries only — and
+ * the other member's '나만 보기' entries stay out, like everywhere else.
+ */
+export function albumOrder(entries: DiaryEntry[], viewer?: MemberId): DiaryEntry[] {
+  const mine = viewer === undefined ? entries : visibleEntries(entries, viewer)
+  return groupByMonth(mine.filter((e) => typeof e.photoId === 'string' && e.photoId.length > 0)).flatMap((g) => g.entries)
+}
+
 // ── HTML export ─────────────────────────────────────────────
 
 const HTML_ESCAPES: Record<string, string> = {
@@ -270,6 +293,14 @@ h3{margin:24px 0 10px;font-size:14px;font-weight:700;color:var(--ink3)}
 figure{margin:12px 0 0}
 img{display:block;max-width:100%;max-height:520px;margin:0 auto;border-radius:12px;object-fit:contain}
 .photo-missing{margin:10px 0 0;font-size:12px;color:var(--ink3)}
+.album-note{margin:0 0 12px;font-size:13px;color:var(--ink3)}
+.album{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 20px;padding:0;list-style:none}
+.album li{margin:0}
+.album figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.album img{display:block;width:100%;aspect-ratio:1/1;max-height:none;margin:0;border-radius:0;object-fit:cover}
+.album figcaption{padding:8px 10px 10px;font-size:12px;color:var(--ink2)}
+.album .when{display:block;font-weight:700;color:var(--ink)}
+.album .caption{display:block;margin-top:2px;white-space:pre-wrap}
 .empty{text-align:center;color:var(--ink3);padding:48px 0}
 footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--ink3)}
 @page{size:A4;margin:16mm 14mm}
@@ -282,6 +313,8 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-al
   h2,h3{break-after:avoid;page-break-after:avoid}
   .entry{break-inside:avoid;page-break-inside:avoid;border-color:#ddd}
   img{max-height:110mm}
+  .album li{break-inside:avoid;page-break-inside:avoid}
+  .album figure{border-color:#ddd}
 }
 `.trim()
 
@@ -319,10 +352,56 @@ function renderEntry(e: DiaryEntry, input: DiaryExportInput, byId: Map<MemberId,
   return out.join('')
 }
 
+/** Heading of the export's last chapter: the photos again, newest first, as the 앨범 shows them. */
+export const ALBUM_SECTION = '앨범'
+
+/**
+ * The album chapter: a grid of every photo in the story (newest first, with
+ * its day, who took it and a bit of the words), after the story itself. Only
+ * photos that exist on this device go in; the story's cards already say when
+ * one is missing. The same data: URL as in the story, so the file grows by
+ * the photo bytes once more — a known cost (see the hand-off).
+ */
+function renderAlbum(entries: DiaryEntry[], input: DiaryExportInput, byId: Map<MemberId, Member>): string {
+  const items = albumOrder(entries, input.viewer).filter((e) => e.photoId && isSafeImageDataURL(input.photos[e.photoId]))
+  if (!items.length) return ''
+  const out: string[] = []
+  out.push('<section class="stage stage-album">')
+  out.push(`<h2>${escapeHtml(ALBUM_SECTION)}</h2>`)
+  out.push(`<p class="album-note">${escapeHtml(`사진 ${items.length}장 · 최근 것부터`)}</p>`)
+  let month: string | null = null
+  let open = false
+  for (const e of items) {
+    const m = e.date.slice(0, 7)
+    if (m !== month) {
+      if (open) out.push('</ul>')
+      month = m
+      out.push(`<h3>${escapeHtml(monthLabel(m))}</h3>`)
+      out.push('<ul class="album">')
+      open = true
+    }
+    const author = byId.get(e.author)
+    const src = input.photos[e.photoId!]!
+    const alt = `${author?.name ?? ''}의 사진 · ${formatKo(e.date, { year: true, weekday: false })}`
+    const caption = excerpt(e.text.replace(/\r\n?/g, '\n'))
+    out.push('<li><figure>')
+    out.push(`<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy">`)
+    out.push('<figcaption>')
+    out.push(`<span class="when">${escapeHtml(formatKo(e.date, { year: true, weekday: false }))} · ${escapeHtml(author?.name ?? '?')}</span>`)
+    if (caption) out.push(`<span class="caption">${escapeHtml(caption)}</span>`)
+    out.push('</figcaption>')
+    out.push('</figure></li>')
+  }
+  if (open) out.push('</ul>')
+  out.push('</section>')
+  return out.join('')
+}
+
 /**
  * A complete, standalone HTML document telling the diary oldest → newest,
  * with a section heading each time the stage changes (준비 → 임신 → 육아, or
- * back again) and a month heading inside each section.
+ * back again) and a month heading inside each section, then the album as the
+ * last chapter (every photo again, newest first).
  */
 export function buildDiaryHtml(input: DiaryExportInput): string {
   const byId = new Map<MemberId, Member>(input.members.map((m) => [m.id, m]))
@@ -371,6 +450,10 @@ export function buildDiaryHtml(input: DiaryExportInput): string {
     body.push(renderEntry(e, input, byId))
   }
   if (stage !== null) body.push('</section>')
+
+  // The album comes last in the export order: the story first, then the photos again.
+  const album = renderAlbum(entries, input, byId)
+  if (album) body.push(album)
 
   const made = input.generatedOn ? `${formatKo(input.generatedOn, { year: true, weekday: false })}, ` : ''
   body.push(`<footer>${escapeHtml(made)}둘셋에서 두 사람이 함께 남긴 기록을 모았어요.</footer>`)

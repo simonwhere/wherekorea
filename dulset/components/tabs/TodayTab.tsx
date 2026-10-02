@@ -14,8 +14,11 @@
 // (`top`: a live 검사·청구 deadline, or the owner is 35+), else inside the
 // moment card when that has nothing else to say, else in 우리 한 줄.
 // The moment's title and action stay above the tab bar on a 375×667 phone
-// (useFoldFit trims the photo a little when a moment runs long).
-// Pregnant / parenting keep their existing home (+ 기록 지키기 at the bottom).
+// (useFoldFit trims the photo a little when a moment runs long; a leading
+// 이번 달 할 일 card folds to one row there — MonthlyTaskCard compactOnShort).
+// Pregnant / parenting open with the same cover (the line over it is the
+// greeting or the partner's doings — never the week count or anything about
+// health, lib/logic/cover.heroLine), then their stage hero (+ 기록 지키기 at the bottom).
 
 import { useMemo } from 'react'
 import type { TabKey } from '@/components/AppShell'
@@ -31,7 +34,6 @@ import { CoupleStreak, MyChecks, PartnerChecks } from '@/components/today/CheckC
 import CoverHero from '@/components/today/CoverHero'
 import CycleBlock from '@/components/today/CycleBlock'
 import { DateCard, DiaryPromptCard } from '@/components/today/ExtraCards'
-import Greeting from '@/components/today/Greeting'
 import MoreSection from '@/components/today/MoreSection'
 import SetupCard from '@/components/today/SetupCard'
 import { MonthlyTaskCard, useMonthlyTaskDone } from '@/components/today/MonthlyTask'
@@ -63,7 +65,9 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
   // to say, else in 우리 한 줄.
   const where = !task ? null : task.top ? (moment?.primary ? 'after' : 'top') : moment?.monthlyTask ? 'card' : 'us'
   // The photo gives way (a little) when a long moment would push its action under the tab bar.
-  const foldKey = moment ? `${moment.copy}|${moment.title}|${moment.body}|${moment.note}|${moment.todayLH}|${!!moment.askTell}|${where}` : `none|${where}`
+  const foldKey = moment
+    ? `${moment.copy}|${moment.title}|${moment.body}|${moment.note}|${moment.todayLH}|${!!moment.askTell}|${!!moment.veiled}|${where}`
+    : `none|${where}`
   const fitRef = useFoldFit(foldKey)
 
   return (
@@ -72,8 +76,9 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       className="[&_.cover-photo-h-quiet]:max-h-[var(--cover-fit,none)] [&_.cover-photo-h]:max-h-[var(--cover-fit,none)]"
     >
       <CoverHero onNavigate={onNavigate} />
-      {/* Leading card: its [받았어요]/[신청했어요] row is what stays above the tab bar on a 375×667 phone. */}
-      {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} fold className="mt-[18px]" /> : null}
+      {/* Leading card: its [받았어요]/[신청했어요] row is what stays above the tab bar — and on a
+          375×667 phone it folds to one row (title · due ›) so the moment's title stays there too. */}
+      {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} fold compactOnShort className="mt-[18px]" /> : null}
       {moment ? (
         <CycleBlock
           moment={moment}
@@ -100,9 +105,11 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
 function StageHome({ onNavigate }: { onNavigate: Nav }) {
   return (
     <div>
-      <Greeting onNavigate={onNavigate} />
+      {/* 우리 표지: date · 함께한 지 D+N, one line, the photo — the same cover as the preparing home.
+          The line never says 임신 N주 or anything about health (cover.heroLine); the hero card below does the counting. */}
+      <CoverHero onNavigate={onNavigate} />
 
-      <div className="mt-3 space-y-3">
+      <div className="mt-[18px] space-y-3">
         <AnniversaryBanner onNavigate={onNavigate} />
         <StageHero onNavigate={onNavigate} />
         <UpcomingCard onNavigate={onNavigate} />

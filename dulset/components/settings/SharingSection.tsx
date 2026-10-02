@@ -4,9 +4,13 @@
 // cycle it is can change it; the partner sees the current choice, read-only.
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { Card, cx, useToast } from '@/components/ui'
+import { Button, Card, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { SHARE_OPTIONS, ShareConsentNotice, type ShareChoice } from '@/components/onboarding/consentCopy'
+import { formatKo } from '@/lib/dates'
+import { giveIntimacyConsent, hasIntimacyConsent, intimacyDays, intimacyHolder, revokeIntimacy } from '@/lib/logic/intimacy'
 import { canLogCycle, canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import { ConfirmActions, Pill, RadioCard, SettingsSection } from './bits'
 
@@ -19,8 +23,118 @@ export default function SharingSection() {
       title="공유 범위"
       sub={isOwner ? `${partner.name}님에게 보여 줄 것 · ${cycleOwner.name}님만 바꿀 수 있어요` : `${cycleOwner.name}님이 정해요`}
     >
-      {isOwner ? <OwnerChoice /> : <PartnerView />}
+      {isOwner ? (
+        <div className="grid gap-2">
+          <OwnerChoice />
+          {/* The partner's screen never mentions this record exists (PartnerView says nothing). */}
+          <IntimacyCard />
+        </div>
+      ) : (
+        <PartnerView />
+      )}
     </SettingsSection>
+  )
+}
+
+// ── 관계한 날 기록 (나만 보기) — a separate consent, owner only (Next B) ──
+
+/** What the record promises; shown before the consent and again while it is on. */
+const INTIMACY_PROMISES: ReadonlyArray<string> = [
+  '이 폰에만 저장돼요 (연결 뒤에도 서버에 올라가지 않아요)',
+  '주기를 기록하는 사람만 남기고, 그 사람만 봐요',
+  '상대 화면·알림·우리 탭 어디에도 나오지 않아요',
+  '병원 요약, 내보내기, 공유 상태에 들어가지 않아요',
+  '아무것도 예상하거나 권하지 않아요 — 그냥 기록이에요',
+  '한 번에 모두 지울 수 있어요',
+]
+
+/**
+ * '관계한 날 기록 (나만 보기)': a consent-first card. The record exists only
+ * after the cycle owner says yes here (lib/logic/intimacy.ts giveIntimacyConsent);
+ * then the "+ 기록" sheet gets a 관계 chip for them alone, and one tap here
+ * deletes the consent and every day with it (revokeIntimacy).
+ */
+function IntimacyCard() {
+  const { state, update, today, viewer, partner } = useApp()
+  const toast = useToast()
+  const on = hasIntimacyConsent(state)
+  const mine = intimacyHolder(state) === viewer
+  const days = mine ? intimacyDays(state, viewer) : []
+  const listId = useId()
+
+  const consent = () => {
+    update((s) => giveIntimacyConsent(s, viewer, today))
+    toast.show('관계한 날 기록을 켰어요 · ‘+ 기록’에 관계 칩이 생겼어요')
+  }
+  const revoke = () => {
+    update(revokeIntimacy)
+    toast.show('관계한 날 기록을 모두 지우고 껐어요')
+  }
+
+  // A consent that belongs to a previous cycle owner: nothing to add, only to delete.
+  if (on && !mine) {
+    return (
+      <Card>
+        <h3 className="text-sm font-bold text-ink">관계한 날 기록 (나만 보기)</h3>
+        <p className="mt-1 text-xs leading-relaxed text-ink-2">
+          예전에 주기를 기록하던 사람의 기록이 남아 있어요. 그 사람만 볼 수 있고, 여기서 한 번에 지울 수 있어요.
+        </p>
+        <Button full variant="danger" className="mt-3" onClick={revoke}>
+          기록 모두 지우고 끄기
+        </Button>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+            <Icon name="lock" className="h-[18px] w-[18px] text-ink-2" />
+            <span>
+              관계한 날 기록 <span className="font-medium text-ink-3">(나만 보기)</span>
+            </span>
+          </h3>
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
+            {on
+              ? `켜 둔 날 ${formatKo(state.intimacy!.consentAt, { year: true, weekday: false })} · 기록 ${days.length}일`
+              : '원하면 따로 동의한 뒤에만 켜져요. 기본은 꺼짐이에요.'}
+          </p>
+        </div>
+        <Pill tone={on ? 'brand' : 'muted'}>{on ? '켜짐' : '꺼짐'}</Pill>
+      </div>
+
+      <ul id={listId} aria-label="이 기록이 지키는 것" className="mt-3 space-y-1.5">
+        {INTIMACY_PROMISES.map((line) => (
+          <li key={line} className="flex gap-2 text-xs leading-relaxed text-ink-2">
+            <Icon name="check" className="mt-0.5 h-4 w-4 shrink-0 text-ok" strokeWidth={2.4} />
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+
+      {on ? (
+        <>
+          <p className="mt-3 text-xs leading-relaxed text-ink-2">
+            ‘+ 기록’의 <b className="font-semibold text-ink">관계</b> 칩에서 날짜를 표시해요. {partner.name}님 화면에는 이 설정도, 칩도 보이지
+            않아요.
+          </p>
+          <div className="mt-3 grid gap-2">
+            <Button full variant="secondary" onClick={() => openLog({ kind: 'intimacy' })}>
+              오늘 기록하기
+            </Button>
+            <Button full variant="danger" onClick={revoke}>
+              기록 모두 지우고 끄기
+            </Button>
+          </div>
+        </>
+      ) : (
+        <Button full className="mt-3" onClick={consent} ariaLabel="관계한 날 기록에 동의하고 켜기">
+          동의하고 켜기
+        </Button>
+      )}
+    </Card>
   )
 }
 
@@ -100,9 +214,7 @@ function OwnerChoice() {
         <details className="group mt-2">
           <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-brand-ink [&::-webkit-details-marker]:hidden">
             자세한 기록을 공유하면
-            <span aria-hidden className="ml-1 transition-transform group-open:rotate-180">
-              ▾
-            </span>
+            <Icon name="chev" className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={2.2} />
           </summary>
           <div className="pb-1">
             <ShareConsentNotice partner={partner.name} />

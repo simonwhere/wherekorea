@@ -1,10 +1,20 @@
 'use client'
 
 import { Card, SectionTitle } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui/icons'
 import { GUIDE_CHECKED_AT, doctorAgeLine, guideSections, guideSources } from '@/lib/content/fertility'
 import { formatKo } from '@/lib/dates'
 import { openLHHowTo } from '@/lib/logLauncher'
 import type { FertilityView } from '@/lib/logic/calendarView'
+
+/** lib/content/fertility keeps an emoji per section for text; the screen draws a line icon. */
+const GUIDE_ICON: Record<string, IconName> = {
+  'calendar-limits': 'ruler',
+  lh: 'flask',
+  frequency: 'heart',
+  signs: 'drop',
+  doctor: 'steth',
+}
 
 export default function FertilityGuide({
   view,
@@ -32,8 +42,8 @@ export default function FertilityGuide({
             <li key={s.id}>
               <details className="group">
                 <summary className="flex min-h-[56px] cursor-pointer list-none items-center gap-3 px-4 py-2.5 [&::-webkit-details-marker]:hidden">
-                  <span aria-hidden className="text-lg">
-                    {s.icon}
+                  <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2">
+                    <Icon name={GUIDE_ICON[s.id] ?? 'info'} className="h-[18px] w-[18px]" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-ink">
@@ -41,9 +51,7 @@ export default function FertilityGuide({
                     </span>
                     <span className="block text-xs text-ink-3">{s.summary}</span>
                   </span>
-                  <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">
-                    ⌄
-                  </span>
+                  <Icon name="chev" className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" strokeWidth={2.2} />
                 </summary>
                 <div className="px-4 pb-4">
                   <ul className="space-y-1.5 pl-1">
@@ -68,7 +76,8 @@ export default function FertilityGuide({
                       onClick={openLHHowTo}
                       className="mt-1 inline-flex min-h-[44px] items-center gap-0.5 text-[13px] font-bold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
                     >
-                      어떻게 해요? <span aria-hidden>→</span>
+                      어떻게 해요?
+                      <Icon name="right" className="h-3.5 w-3.5" strokeWidth={2.2} />
                     </button>
                   ) : null}
                   {/* Each source is a 44px-tall link in its own row of the wrap (the same list, in full, sits under 근거 보기). */}
@@ -96,9 +105,7 @@ export default function FertilityGuide({
             <details className="group">
               <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between px-4 text-xs font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
                 근거 보기 ({sources.length})
-                <span aria-hidden className="text-ink-3 transition-transform group-open:rotate-180">
-                  ⌄
-                </span>
+                <Icon name="chev" className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" strokeWidth={2.2} />
               </summary>
               <ol className="px-4 pb-4">
                 {sources.map((src) => (

@@ -6,10 +6,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { programById } from '@/lib/content/programs'
 import { templateById } from '@/lib/content/roadmap'
 import { range } from '@/lib/dates'
-import { createInitialState } from '@/lib/initial'
+import { SETTINGS_DEFAULTS, createInitialState } from '@/lib/initial'
+import { addAnniversary, setCoupleDates } from '@/lib/logic/anniversary'
 import { addPeriod, cycleAt, setLHTest } from '@/lib/logic/cycle'
 import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
 import {
+  canNudge,
   clearNotifications,
   deliveredUnderOldKey,
   doctorKey,
@@ -20,9 +22,14 @@ import {
   peakKey,
   scheduledNotices,
   sendCheer,
+  sendNudge,
   softFertileBody,
   type Notice,
 } from '@/lib/logic/notifications'
+import { PERSONAL_DEFAULTS } from '@/lib/initial'
+import { startPregnancy } from '@/lib/logic/pregnancy'
+import { setPersonalPref } from '@/lib/logic/prefs'
+import { endPregnancy } from '@/lib/logic/today'
 import { alertPreview, sanitizeBackup } from '@/lib/logic/settings'
 import { noticeTarget } from '@/lib/logic/today'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
@@ -635,5 +642,61 @@ describe('on-device record: 주 1회 백업', () => {
     // Without a browser it quietly does nothing.
     expect(lastBackupAt()).toBeNull()
     expect(() => markBackedUp('2026-09-28')).not.toThrow()
+  })
+})
+
+describe('Next B: the quiet after a pregnancy ended, and 콕 받기', () => {
+  /** Ended 09-20 → quiet to 10-31; the first period inside it on 10-25. */
+  const lost = () => endPregnancy(startPregnancy(fresh(), '2026-08-01', '2026-09-01'), '2026-09-20')
+  const dated = (s: AppState, d: string) =>
+    scheduledNotices(s, d).filter((x) => ['fertile-start', 'peak', 'period-due', 'doctor'].includes(x.kind))
+
+  it('holds every date notice and the 🩺 through the quiet, a period logged inside it included', () => {
+    const s = addPeriod(lost(), '2026-10-25', undefined, 'b')
+    for (const d of ['2026-09-21', '2026-10-10', '2026-10-26', '2026-10-31']) expect(dated(s, d), d).toEqual([])
+    // Day 43: the quiet ended on its own (restCycle still in the save) — the rules read `today`.
+    expect(s.restCycle?.reason).toBe('loss')
+    const after = run(s, Array.from({ length: 40 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`).filter((d) => Number(d.slice(8)) <= 30))
+    expect(after.added.some((x) => x.kind === 'fertile-start')).toBe(true)
+    // The 🩺 notice too: quiet for 42 days, then by the usual months rule.
+    const trying = { ...lost(), settings: { ...lost().settings, ttcStart: '2024-01-01' } }
+    expect(dated(trying, '2026-10-31').filter((x) => x.kind === 'doctor')).toEqual([])
+  })
+
+  it('a 콕 to someone who turned 콕 받기 off is dropped; the default is PERSONAL_DEFAULTS.acceptNudges', () => {
+    const s = fresh()
+    expect(PERSONAL_DEFAULTS.acceptNudges).toBe(true)
+    expect(canNudge(s, 'a', 'b', '2026-09-10')).toBe(true)
+    const no = setPersonalPref(s, 'b', 'acceptNudges', false)
+    expect(canNudge(no, 'a', 'b', '2026-09-10')).toBe(false)
+    expect(sendNudge(no, 'a', 'b', '2026-09-10', at('2026-09-10'), '엽산')).toBe(no)
+    expect(canNudge(no, 'b', 'a', '2026-09-10')).toBe(true)
+    const yes = setPersonalPref(no, 'b', 'acceptNudges', true)
+    expect(inbox(sendNudge(yes, 'a', 'b', '2026-09-10', at('2026-09-10'), '엽산'), 'b').filter((n) => n.kind === 'nudge')).toHaveLength(1)
+  })
+
+  it('기념일 알림 off: no anniv: notice from the engine on D-7 or the day, for either person; unset = on', () => {
+    expect(SETTINGS_DEFAULTS.anniversaryAlerts).toBe(true)
+    let s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' })
+    s = addAnniversary(s, { title: '첫 여행', date: '2026-09-10', yearly: false })
+    const anniv = (state: AppState, d: string) => scheduledNotices(state, d).filter((n) => n.key.startsWith('anniv:'))
+    expect(anniv(s, '2026-09-07').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:7:a', 'anniv:married-year:2:2026-09-14:7:b'])
+    expect(anniv(s, '2026-09-10')).toHaveLength(2)
+    const off: AppState = { ...s, settings: { ...s.settings, anniversaryAlerts: false } }
+    for (const d of ['2026-09-03', '2026-09-07', '2026-09-10', '2026-09-14']) expect(anniv(off, d), d).toEqual([])
+    // The rest of the engine is untouched by the switch.
+    expect(scheduledNotices(off, '2026-09-10').filter((n) => n.kind === 'fertile-start').length).toBe(
+      scheduledNotices(s, '2026-09-10').filter((n) => n.kind === 'fertile-start').length,
+    )
+    expect(noticeTarget('milestone', 'preparing', 'anniv:married-year:2:2026-09-14:0:a')).toBe('diary')
+  })
+
+  it('the bleeding-told record outlives the inbox cap, like the other things she chose to tell', () => {
+    let s = fresh()
+    const stub: Notice = { key: 'bleeding-told:2026-09-26', to: 'a', from: 'b', kind: 'system', title: 't', body: 'b' }
+    s = mergeNotices(s, [stub], at('2026-09-01')).state
+    const filler: Notice[] = Array.from({ length: 260 }, (_, i) => ({ key: `x:${i}`, to: 'a', kind: 'system', title: 't', body: 'b' }))
+    s = mergeNotices(s, filler, at('2026-09-02')).state
+    expect(s.notifications.some((n) => n.key === 'bleeding-told:2026-09-26')).toBe(true)
   })
 })

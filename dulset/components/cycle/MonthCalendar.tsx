@@ -2,17 +2,10 @@
 
 import { useMemo } from 'react'
 import { Card, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { monthGrid, startOfMonth } from '@/lib/dates'
 import { dayInfo, type CycleInput } from '@/lib/logic/cycle'
-import {
-  canShiftMonth,
-  cellView,
-  legendItems,
-  monthConfidence,
-  monthTitle,
-  shiftMonth,
-  type Lens,
-} from '@/lib/logic/calendarView'
+import { canShiftMonth, cellView, legendItems, monthConfidence, monthTitle, shiftMonth, type Lens } from '@/lib/logic/calendarView'
 import type { ISODate, PregnancyTestResult } from '@/lib/types'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const
@@ -24,6 +17,7 @@ export default function MonthCalendar({
   onMonthChange,
   today,
   lens,
+  privateDays,
   onSelect,
 }: {
   input: CycleInput
@@ -34,14 +28,30 @@ export default function MonthCalendar({
   today: ISODate
   /** What this viewer may see (details, wording, pause). */
   lens: Lens
+  /**
+   * Days that get a plain 4px dot and nothing else — no legend entry, no
+   * word (관계한 날: the holder's own calendar only, lib/logic/intimacy intimacyDays).
+   */
+  privateDays?: ReadonlySet<ISODate>
   onSelect: (date: ISODate) => void
 }) {
   const cells = useMemo(
-    () => monthGrid(month).map((d) => cellView(dayInfo(input, d, today), { month, today, view: lens.view, lens, ptest: tests[d] })),
+    () =>
+      monthGrid(month).map((d) =>
+        cellView(dayInfo(input, d, today), {
+          month,
+          today,
+          view: lens.view,
+          lens,
+          ptest: tests[d],
+        }),
+      ),
     [input, tests, month, today, lens],
   )
   // No 가능성 높음 / ⭐ item when the month's windows are low-confidence (none is drawn).
-  const legend = legendItems(lens.view, lens, { confidence: monthConfidence(cells) })
+  const legend = legendItems(lens.view, lens, {
+    confidence: monthConfidence(cells),
+  })
   // LH badges only reach explicit wording (calendarView.showsLH), so name LH only then.
   const lhMarks = cells.some((c) => c.lhBadge)
   const testMarks = cells.some((c) => c.ptestBadge)
@@ -119,7 +129,13 @@ export default function MonthCalendar({
                 >
                   <span className={c.className} aria-hidden>
                     {c.day}
-                    {c.star ? <span className="absolute -right-1 -top-1 text-[10px] leading-none">⭐</span> : null}
+                    {c.star ? (
+                      <Icon name="star" className="absolute -right-1.5 -top-1.5 h-3 w-3 fill-fert text-fert" strokeWidth={1.5} />
+                    ) : null}
+                    {/* Bottom-right: bottom-centre belongs to the LH mark, the corners above to 임테기 and the star. */}
+                    {privateDays?.has(c.date) ? (
+                      <span className="absolute -bottom-[2px] -right-[2px] h-1 w-1 rounded-full bg-ink-3" />
+                    ) : null}
                     {c.ptestBadge ? (
                       <span className={cx('absolute -left-1 -top-1', c.ptestBadge.className)}>{c.ptestBadge.text}</span>
                     ) : null}
@@ -145,9 +161,13 @@ export default function MonthCalendar({
           {legend.map((l) => (
             <li key={l.key} className="flex items-center gap-1.5 text-[11px] text-ink-2">
               {l.mark ? (
-                <span aria-hidden className="text-[11px] leading-none">
-                  {l.mark}
-                </span>
+                l.mark === '⭐' ? (
+                  <Icon name="star" className="h-3.5 w-3.5 fill-fert text-fert" strokeWidth={1.5} aria-hidden />
+                ) : (
+                  <span aria-hidden className="text-[11px] leading-none">
+                    {l.mark}
+                  </span>
+                )
               ) : (
                 <span className={cx('inline-block h-3.5 w-3.5 rounded-full', l.swatch)} aria-hidden />
               )}

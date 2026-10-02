@@ -11,7 +11,7 @@ import type { AppState, Baby, CustomAnniversary, DiaryEntry, ISODate, MemberId, 
 import { anniversariesBetween, daysSince, type AnniversaryEvent } from './anniversary'
 import { dayOfLife } from './baby'
 import { DIARY_NAME, groupByMonth, removeEntry } from './diary'
-import { STAGE_SHORT, entryStageLabel } from './diaryExport'
+import { ALBUM_CAPTION_MAX, STAGE_SHORT, entryStageLabel, excerpt } from './diaryExport'
 import { mergeNotices, ttcClockStart } from './notifications'
 import { canSeeEntry, visibleEntries } from './personalLog'
 import { PREGNANCY_DAYS, gestationalAge, recentlyEnded } from './pregnancy'
@@ -383,9 +383,27 @@ export function albumGroups(entries: DiaryEntry[], viewer?: MemberId): Array<{ m
   return groupByMonth(mine.filter((e) => typeof e.photoId === 'string' && e.photoId.length > 0))
 }
 
-/** First `max` characters (by code point) of a text, with '…' when cut. */
-export function excerpt(text: string, max = 140): string {
-  const chars = Array.from(text.trim())
-  if (chars.length <= max) return chars.join('')
-  return `${chars.slice(0, max).join('').trimEnd()}…`
+// The caption length and the cut live with the export (lib/logic/diaryExport.ts),
+// which renders the same album as its last chapter; re-exported for the feed's callers.
+export { ALBUM_CAPTION_MAX, excerpt }
+
+/** One card of the 앨범 feed (우리 › 앨범): a photo, its day and a bit of the story. */
+export interface AlbumItem {
+  entry: DiaryEntry
+  /** 'YYYY-MM' — the feed puts a small month line where it changes. */
+  month: string
+  /** The first line(s) of the story, cut to ALBUM_CAPTION_MAX; '' for a photo without words. */
+  caption: string
+}
+
+/**
+ * The 앨범 feed: every photo `viewer` may see, newest first (same day: the
+ * later one first), flat — one card per photo. Built from the diary only:
+ * nothing from the cycle, the health records or the stage ever goes in here,
+ * and the other member's '나만 보기' entries stay out (albumGroups).
+ */
+export function albumFeed(entries: DiaryEntry[], viewer?: MemberId): AlbumItem[] {
+  return albumGroups(entries, viewer).flatMap((g) =>
+    g.entries.map((entry) => ({ entry, month: g.month, caption: excerpt(entry.text, ALBUM_CAPTION_MAX) })),
+  )
 }

@@ -3,6 +3,7 @@
 import { useId, useState } from 'react'
 import { withTicked } from '@/components/today/model'
 import { Card, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { useApp } from '@/lib/store'
 import ItemRow, { type ItemActions } from './ItemRow'
@@ -84,9 +85,7 @@ export default function FocusCard({ items, actions }: { items: PlanItem[]; actio
             className="flex min-h-[44px] w-full items-center justify-center gap-1 rounded-xl text-xs font-semibold text-ink-2 hover:bg-surface/60"
           >
             {more ? '접기' : `${extra}개 더 보기`}
-            <span aria-hidden className={cx('transition-transform', more && 'rotate-180')}>
-              ▾
-            </span>
+            <Icon name="chev" className={cx('h-3.5 w-3.5 transition-transform', more && 'rotate-180')} strokeWidth={2.2} />
           </button>
         </>
       ) : null}

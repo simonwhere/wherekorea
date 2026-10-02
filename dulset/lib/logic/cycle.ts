@@ -108,15 +108,41 @@ function logConfidence(recent: number[], settings: CycleSettings): Exclude<Cycle
   return Math.max(...recent) - Math.min(...recent) <= CONFIDENCE_SPREAD ? 'cycles' : 'low'
 }
 
+/** The pregnancy record as the cycle logic reads it (AppState passes the whole record through). */
+export type PregnancySpan = Pick<Pregnancy, 'confirmedAt' | 'endedAt'> & Partial<Pick<Pregnancy, 'lmp'>>
+
+/**
+ * Did the gap between two logged starts hold a pregnancy that ended? That gap
+ * — the last period before it to the first period after the loss — is not a
+ * cycle: it never enters the average, the range or 'irregular' (review P-11:
+ * cycles are not mixed across a loss). A pregnancy still going on, or one that
+ * ended with a birth, has no `endedAt` and excludes nothing (the gap to the
+ * first postpartum period is longer than any cycle anyway).
+ */
+export function spansEndedPregnancy(from: ISODate, to: ISODate, pregnancy: PregnancySpan | undefined): boolean {
+  if (!pregnancy?.endedAt) return false
+  const begin = pregnancy.lmp ?? pregnancy.confirmedAt
+  return from <= pregnancy.endedAt && to > begin
+}
+
 /**
  * Average cycle length and how much to trust it. Pass `lhTests` and `today` to
- * learn whether this cycle's LH surge pins the estimate (confidence 'lh').
+ * learn whether this cycle's LH surge pins the estimate (confidence 'lh'), and
+ * `pregnancy` so the gap that held an ended pregnancy is left out
+ * (spansEndedPregnancy).
  */
-export function cycleStats(periods: PeriodLog[], settings: CycleSettings, lhTests?: LHTest[], today?: ISODate): CycleStats {
+export function cycleStats(
+  periods: PeriodLog[],
+  settings: CycleSettings,
+  lhTests?: LHTest[],
+  today?: ISODate,
+  pregnancy?: PregnancySpan,
+): CycleStats {
   const starts = sortedStarts(periods)
   const maxLen = maxCycleLength(settings)
   const lengths: number[] = []
   for (let i = 1; i < starts.length; i++) {
+    if (spansEndedPregnancy(starts[i - 1]!, starts[i]!, pregnancy)) continue
     const len = diffDays(starts[i - 1]!, starts[i]!)
     if (len >= MIN_CYCLE && len <= maxLen) lengths.push(len)
   }
@@ -141,7 +167,7 @@ export function cycleStats(periods: PeriodLog[], settings: CycleSettings, lhTest
 
 /** The current cycle's confidence as of `today` (cycleStats with the LH tests). */
 export function cycleConfidence(input: CycleInput, today: ISODate): CycleConfidence {
-  return cycleStats(input.periods, input.cycle, input.lhTests, today).confidence
+  return cycleStats(input.periods, input.cycle, input.lhTests, today, input.pregnancy).confidence
 }
 
 function clampCycle(n: number, settings: CycleSettings): number {
@@ -302,9 +328,10 @@ export interface CycleInput {
   /**
    * The couple's pregnancy record, if any (AppState passes it through). Once it
    * has ended (back to preparing), predictions pause until a period is logged
-   * after `endedAt` — the old cycle says nothing about what comes next.
+   * after `endedAt` — the old cycle says nothing about what comes next — and
+   * the gap that held it never enters the average (spansEndedPregnancy).
    */
-  pregnancy?: Pick<Pregnancy, 'confirmedAt' | 'endedAt'>
+  pregnancy?: PregnancySpan
   /** Per-cycle notes ('아직 안 왔어요' …), passed through by AppState. */
   cycleNotes?: CycleNotes
 }
@@ -354,7 +381,7 @@ function dueFor(stats: CycleStats, cycleStart: ISODate, lhTests: LHTest[]): Expe
 
 /** The expected period of the cycle starting on `cycleStart` (see ExpectedPeriod). */
 export function expectedPeriod(input: CycleInput, cycleStart: ISODate): ExpectedPeriod {
-  return dueFor(cycleStats(input.periods, input.cycle), cycleStart, input.lhTests)
+  return dueFor(cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy), cycleStart, input.lhTests)
 }
 
 /** The first day that counts as late: the day after the range. */
@@ -426,7 +453,7 @@ export function forecastLimit(input: CycleInput, today: ISODate): ForecastLimit 
 export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   const starts = sortedStarts(input.periods)
   if (starts.length === 0) return null
-  const stats = cycleStats(input.periods, input.cycle)
+  const stats = cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy)
   const maxLen = maxCycleLength(input.cycle)
 
   // Latest logged start on/before date.
@@ -525,7 +552,7 @@ export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayI
   const starts = sortedStarts(input.periods)
   // The open cycle's expected range (a finished cycle shows only what was logged).
   const open = w.startLogged && !starts.some((s) => s > w.start)
-  const due = open ? dueFor(cycleStats(input.periods, input.cycle), w.start, input.lhTests) : undefined
+  const due = open ? dueFor(cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy), w.start, input.lhTests) : undefined
   const inRange = !!due && date >= due.from && date <= due.to
   // A projected cycle's first days: its period, plus the tail of the range before it.
   const head = Math.max(input.cycle.periodLength, DUE_CLIP_DAYS + 1)
@@ -597,7 +624,7 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
   const starts = sortedStarts(input.periods)
   const cur = [...starts].reverse().find((d) => d <= today)
   if (!cur) return { kind: 'no-data' }
-  const stats = cycleStats(input.periods, input.cycle)
+  const stats = cycleStats(input.periods, input.cycle, undefined, undefined, input.pregnancy)
   const due = dueFor(stats, cur, input.lhTests)
   if (today > due.to) return { kind: 'late', daysLate: diffDays(due.to, today), due }
   // Inside the expected range we stay in the current cycle (never the projected next one).

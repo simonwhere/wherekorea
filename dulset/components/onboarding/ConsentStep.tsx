@@ -6,7 +6,8 @@
 // checkboxes sit on one screen. Copy and the legal notes live in ./consentCopy.
 
 import { cx } from '@/components/ui'
-import { draftNames, draftOwner, type OnboardingDraft } from '@/lib/demo'
+import { Icon, type IconName } from '@/components/ui/icons'
+import { draftNames, draftOwner, type OnboardingDraft } from '@/lib/onboardingDraft'
 import {
   GeneralConsentNotice,
   SHARE_OPTIONS,
@@ -37,20 +38,18 @@ export default function ConsentStep({
   const owner = draftOwner(draft)
   const iAmOwner = owner === 'a'
   const partner = names.b
-  const points = [
-    { emoji: '📱', text: '지금은 이 기기에만 저장해요. 서버가 없고, 동의하기 전에는 아무것도 저장하지 않았어요.' },
-    { emoji: '👫', text: `‘우리의 주간’, 체크 현황, 병원 일정, 우리 기록은 함께 봐요. 생리일·배테기·임테기는 ${names[owner]}님이 허용할 때만요.` },
-    { emoji: '🗑️', text: '기록은 직접 지울 때까지만 보관해요. 설정에서 한 번에 지울 수 있어요.' },
+  const points: Array<{ icon: IconName; text: string }> = [
+    { icon: 'phone', text: '지금은 이 기기에만 저장해요. 서버가 없고, 동의하기 전에는 아무것도 저장하지 않았어요.' },
+    { icon: 'users', text: `‘우리의 주간’, 체크 현황, 병원 일정, 우리 기록은 함께 봐요. 생리일·배테기·임테기는 ${names[owner]}님이 허용할 때만요.` },
+    { icon: 'trash', text: '기록은 직접 지울 때까지만 보관해요. 설정에서 한 번에 지울 수 있어요.' },
   ]
 
   return (
     <div className="space-y-4">
       <ul className="space-y-2 rounded-xl2 border border-line bg-surface p-3.5 shadow-card">
         {points.map((p) => (
-          <li key={p.emoji} className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-2">
-            <span aria-hidden className="shrink-0 text-base leading-5">
-              {p.emoji}
-            </span>
+          <li key={p.icon} className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-2">
+            <Icon name={p.icon} className="mt-px h-[18px] w-[18px] shrink-0 text-ink-2" />
             <span>{p.text}</span>
           </li>
         ))}

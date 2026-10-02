@@ -4,14 +4,15 @@
 // earlier starts ("최근 시작일 더 넣기" — one tap per cycle, so a record kept in
 // another app moves over in a minute), the average cycle with the "45일 이상·
 // 들쭉날쭉" switch (N12 longCycles), and "배란테스트기 써요?" (N17 usesLH).
-// The earlier starts and the LH answer live outside the draft (lib/demo) and
+// The earlier starts and the LH answer live outside the draft (lib/onboardingDraft) and
 // become periods / settings.usesLH through lib/logic/onboarding.
 
 import { useId, useState } from 'react'
 import { Button, Disclaimer, NumberStepper, Toggle, cx, inputClass } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { ESTIMATE_DISCLAIMER } from '@/lib/content/fertility'
 import { addDays, formatKo, formatShort } from '@/lib/dates'
-import { CYCLE_RANGE, PERIOD_MAX_AGE_DAYS, PERIOD_RANGE, draftNames, draftOwner, periodDateNote, type OnboardingDraft } from '@/lib/demo'
+import { CYCLE_RANGE, PERIOD_MAX_AGE_DAYS, PERIOD_RANGE, draftNames, draftOwner, periodDateNote, type OnboardingDraft } from '@/lib/onboardingDraft'
 import { cycleLengthRange } from '@/lib/initial'
 import {
   PAST_STARTS_MAX,
@@ -246,9 +247,7 @@ function PastStarts({
                 className="inline-flex h-11 items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft px-3.5 text-sm font-semibold text-brand-ink hover:bg-brand/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 {formatShort(d)}
-                <span aria-hidden className="text-ink-3">
-                  ✕
-                </span>
+                <Icon name="x" className="h-3.5 w-3.5 text-ink-3" strokeWidth={2.4} />
               </button>
             </li>
           ))}

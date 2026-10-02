@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import CoverSheet from '@/components/cover/CoverSheet'
 import { Avatar, Button, Card, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { dLabel, formatKo, isISODate } from '@/lib/dates'
 import { daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
 import { marriedLine, ourDaysChain } from '@/lib/logic/usView'
@@ -28,7 +29,9 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
       <div className="flex items-center gap-2">
         <div className="flex shrink-0 items-center" aria-hidden>
           <Avatar member={me} />
-          <span className="-mx-1 z-10 text-sm">💗</span>
+          <span className="-mx-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-surface text-her">
+            <Icon name="heart" className="h-3 w-3" strokeWidth={2.6} />
+          </span>
           <Avatar member={partner} />
         </div>
         <p className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
@@ -79,8 +82,8 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
       )}
 
       {married ? (
-        <p className="mt-2 text-xs font-medium text-ink-2">
-          <span aria-hidden>💍 </span>
+        <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-ink-2">
+          <Icon name="ring" className="h-4 w-4 text-ink-3" />
           {marriedLine(married, today)}
         </p>
       ) : null}

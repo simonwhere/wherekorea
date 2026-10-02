@@ -134,3 +134,42 @@ describe('normalize: fields added for Now 2 ride along', () => {
     expect('cycleNotes' in out).toBe(false)
   })
 })
+
+describe('normalize: Next B fields (switches · 콕 받기 · 홈 카드 숨김 · 시술 · 휴가 · 관계일)', () => {
+  it('keeps the couple-wide switches and per-person prefs only as a yes/no, and lets the new lists ride along', () => {
+    const s = fresh()
+    const saved = {
+      ...s,
+      settings: {
+        ...s.settings,
+        memories: true,
+        anniversaryAlerts: false,
+        showTryCount: 'yes',
+        personal: { a: { acceptNudges: false, homeDiscreet: 'always' }, b: { homeDiscreet: true, acceptNudges: 1 } },
+      },
+      treatments: [{ id: 't1', kind: 'iui', startDate: '2026-08-10', supported: true }],
+      leaveDays: { a: [{ date: '2026-08-11', kind: 'infertility' }] },
+      intimacy: { consentAt: '2026-09-01', by: 'b', days: ['2026-09-03'] },
+      restCycle: { since: '2026-08-20', reason: 'loss', until: '2026-10-01' },
+      positivePending: { since: '2026-09-28', bleedingSince: '2026-09-30' },
+    }
+    const out = normalize(JSON.parse(JSON.stringify(saved)))
+    expect(out.settings.memories).toBe(true)
+    expect(out.settings.anniversaryAlerts).toBe(false)
+    expect('showTryCount' in out.settings).toBe(false)
+    expect(out.settings.personal).toEqual({ a: { acceptNudges: false }, b: { homeDiscreet: true } })
+    expect(out.treatments).toEqual(saved.treatments)
+    expect(out.leaveDays).toEqual(saved.leaveDays)
+    expect(out.intimacy).toEqual(saved.intimacy)
+    expect(out.restCycle).toEqual(saved.restCycle)
+    expect(out.positivePending).toEqual(saved.positivePending)
+  })
+
+  it('never fills the switches in: an older save keeps its exact shape (unset = the default)', () => {
+    const s = fresh()
+    const out = normalize(JSON.parse(JSON.stringify(s)))
+    expect(out).toEqual(JSON.parse(JSON.stringify(s)))
+    for (const k of ['memories', 'anniversaryAlerts', 'showTryCount']) expect(k in out.settings).toBe(false)
+    for (const k of ['treatments', 'leaveDays', 'intimacy']) expect(k in out).toBe(false)
+  })
+})

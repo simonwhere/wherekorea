@@ -217,17 +217,21 @@ export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, v
 /**
  * May the 둘만의 시간 screen mention the fertile window (as "우리의 주간") to this
  * viewer? Not in low-pressure mode or with alerts off, and not while the cycle
- * rests ("이번 주기는 쉬어요") or a positive test waits for the clinic.
+ * rests ("이번 주기는 쉬어요") or a positive test waits for the clinic. With
+ * `today`, a rest whose last day has passed (the 42-day quiet after a loss,
+ * ttc.activeRest) no longer counts; without it the quiet lasts until a period
+ * after it is logged — the quiet side.
  */
 export function fertileHintsAllowed(
   state: Pick<AppState, 'stage' | 'settings' | 'couple'> &
     Partial<Pick<AppState, 'periods' | 'restCycle' | 'positivePending'>>,
   viewer: MemberId,
+  today?: ISODate,
 ): boolean {
   if (state.stage !== 'preparing') return false
   if (lowPressureFor(state.settings, viewer) || viewerAlertStyle(state, viewer) === 'off') return false
   const periods = state.periods ?? []
-  if (activeRest({ restCycle: state.restCycle, periods })) return false
+  if (activeRest({ restCycle: state.restCycle, periods }, today)) return false
   if (activePositivePending({ positivePending: state.positivePending, periods, stage: state.stage })) return false
   return true
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { Button, Card, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { HAPPY_BIRTH } from '@/lib/content/baby'
 import { PROGRAMS_CHECKED_AT, programsFor } from '@/lib/content/programs'
 import { formatKo, parts } from '@/lib/dates'
@@ -104,9 +105,7 @@ export default function SupportCards({ baby }: { baby: Baby }) {
             <details className="group">
               <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-ink-3 [&::-webkit-details-marker]:hidden">
                 누가, 어떻게 신청해요?
-                <span aria-hidden className="ml-1 transition-transform group-open:rotate-180">
-                  ▾
-                </span>
+                <Icon name="chev" className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={2.2} />
               </summary>
               <dl className="space-y-1 pb-1 text-xs leading-relaxed text-ink-2">
                 <div>
@@ -152,7 +151,12 @@ function DeadlineChip({ text, active, d, done }: { text: string; active: boolean
         {!active && !done ? <span className="sr-only"> (기간이 지났어요)</span> : null}
       </span>
       {d ? <span className="rounded-full bg-surface px-1.5 font-bold tabular-nums">{d}</span> : null}
-      {done ? <span className="font-semibold">✓ 신청했어요</span> : null}
+      {done ? (
+        <span className="inline-flex items-center gap-0.5 font-semibold">
+          <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} />
+          신청했어요
+        </span>
+      ) : null}
     </p>
   )
 }

@@ -28,8 +28,8 @@ export default function AnniversaryBanner({ onNavigate }: { onNavigate: (tab: Ta
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 border-t border-brand/15 pt-1">
         <p className="min-w-0 text-xs text-ink-2">오늘 이야기를 우리 기록에 남겨 볼까요?</p>
-        <LinkButton onClick={() => onNavigate('diary')} className="shrink-0">
-          기록하기 →
+        <LinkButton onClick={() => onNavigate('diary')} arrow className="shrink-0">
+          기록하기
         </LinkButton>
       </div>
     </Card>

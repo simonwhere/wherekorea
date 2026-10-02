@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button, Card, Disclaimer, SectionTitle, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { CHECKUP_KIND_LABEL, CHECKUP_LINK, CHECKUP_NOTE } from '@/lib/content/baby'
 import { dLabel } from '@/lib/dates'
 import { checkupFocus, checkupTimeline, formatSpan, shortDate, toggleCheckup, type CheckupRow } from '@/lib/logic/babyView'
@@ -54,7 +55,7 @@ export default function Checkups({ baby }: { baby: Baby }) {
               </p>
               {r.status === 'now' ? (
                 <Button size="md" variant="secondary" className="mt-2.5" onClick={() => toggle(r)} ariaLabel={`${title(r)} 받았어요`}>
-                  <span aria-hidden>✓</span> 받았어요
+                  <Icon name="check" className="h-[18px] w-[18px]" strokeWidth={2.4} /> 받았어요
                 </Button>
               ) : null}
             </Card>
@@ -75,9 +76,7 @@ export default function Checkups({ baby }: { baby: Baby }) {
         className="mt-1 flex min-h-[44px] w-full items-center justify-center gap-1 text-xs font-semibold text-ink-2 hover:text-ink"
       >
         {showAll ? '전체 일정 접기' : `전체 일정 보기 (${rows.length}회)`}
-        <span aria-hidden className={cx('transition-transform', showAll && 'rotate-180')}>
-          ▾
-        </span>
+        <Icon name="chev" className={cx('h-4 w-4 transition-transform', showAll && 'rotate-180')} strokeWidth={2.2} />
       </button>
 
       {showAll ? (

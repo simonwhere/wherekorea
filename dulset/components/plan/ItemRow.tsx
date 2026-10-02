@@ -2,13 +2,14 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
 import { formatShort, isISODate } from '@/lib/dates'
 import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Appointment, MemberId } from '@/lib/types'
 import { CheckBox, ExternalLink, Owners, Pill, btnDanger, btnGhost, btnSecondary } from './bits'
 import {
-  KIND_EMOJI,
   canSchedule,
   countdown,
   dateText,
@@ -99,15 +100,9 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
   const perPerson = item.id === FERTILITY_APPLY_ID && !item.custom && state.stage === 'preparing'
 
   return (
-    <li
-      className={cx('flex gap-3 rounded-xl px-2 py-2.5', item.status === 'overdue' && !compact && 'bg-warn-soft')}
-    >
+    <li className={cx('flex gap-3 rounded-xl px-2 py-2.5', item.status === 'overdue' && !compact && 'bg-warn-soft')}>
       <div className="pt-0.5">
-        <CheckBox
-          checked={done}
-          onToggle={() => actions.onToggle(item)}
-          label={`${item.title} 챙김`}
-        />
+        <CheckBox checked={done} onToggle={() => actions.onToggle(item)} label={`${item.title} 챙김`} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -126,11 +121,14 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
             </span>
           ) : null}
         </div>
-        <p className={cx('mt-0.5 text-sm font-semibold leading-snug', done ? 'text-ink-3 line-through' : 'text-ink')}>
-          <span aria-hidden className="mr-1">
-            {KIND_EMOJI[item.kind]}
-          </span>
-          {item.title}
+        <p
+          className={cx(
+            'mt-0.5 flex items-start gap-1.5 text-sm font-semibold leading-snug',
+            done ? 'text-ink-3 line-through' : 'text-ink',
+          )}
+        >
+          <Icon name={ROADMAP_KIND_ICON[item.kind]} className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" />
+          <span className="min-w-0">{item.title}</span>
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <Owners owners={item.owners} members={members} label={ownerText(item.owners, members)} />
@@ -142,18 +140,27 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               {doneByName ? ` ${doneByName}` : ''} 챙김
             </span>
           ) : null}
-          {t?.deadline && !done ? <span className="text-[11px] font-medium text-ink-2">📌 기한 있음</span> : null}
+          {t?.deadline && !done ? (
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-ink-2">
+              <Icon name="pin" className="h-3 w-3" strokeWidth={2} />
+              기한 있음
+            </span>
+          ) : null}
           {/* An own item with '기한 알림' on (N13): D-7 · D-1 · 당일 notices, even while preparing. */}
           {item.custom && !done && state.customTasks.find((c) => c.id === item.id)?.deadlineAlerts === true ? (
-            <span className="text-[11px] font-medium text-ink-2">🔔 기한 알림</span>
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-ink-2">
+              <Icon name="bell" className="h-3 w-3" strokeWidth={2} />
+              기한 알림
+            </span>
           ) : null}
           {appt && !done ? (
             <button
               type="button"
               onClick={() => actions.onOpenAppointment(appt)}
-              className="-my-3 inline-flex min-h-[44px] items-center text-[11px] font-semibold text-brand-ink underline-offset-2 hover:underline"
+              className="-my-3 inline-flex min-h-[44px] items-center gap-0.5 text-[11px] font-semibold text-brand-ink underline-offset-2 hover:underline"
             >
-              📅 {shortDate(appt.date, today)}
+              <Icon name="cal" className="h-3 w-3" strokeWidth={2} />
+              {shortDate(appt.date, today)}
               {appt.time ? ` ${appt.time}` : ''} 예약됨
             </button>
           ) : null}
@@ -171,14 +178,12 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
                   className={cx(btnGhost, '-ml-3')}
                 >
                   {open ? '접기' : '자세히'}
-                  <span aria-hidden className={cx('transition-transform', open && 'rotate-180')}>
-                    ▾
-                  </span>
+                  <Icon name="chev" className={cx('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} strokeWidth={2.2} />
                 </button>
               ) : null}
               {canSchedule(item) && !appt ? (
                 <button type="button" onClick={() => actions.onSchedule(item)} className={cx(btnGhost, item.detail ? '' : '-ml-3')}>
-                  <span aria-hidden>📅</span> 일정 잡기
+                  <Icon name="cal" className="h-3.5 w-3.5" strokeWidth={2} /> 일정 잡기
                 </button>
               ) : null}
               {item.custom && !confirming ? (
@@ -218,9 +223,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               <div id={detailId} hidden={!open} className="mt-2 rounded-xl bg-surface-2 px-3 py-2.5">
                 {item.start && t ? <p className="mb-1 text-[11px] font-medium text-ink-3">{t.when}</p> : null}
                 <p className="text-xs leading-relaxed text-ink-2">{item.detail}</p>
-                {isShared(item) ? (
-                  <p className="mt-1.5 text-[11px] text-ink-3">임신·아기 탭의 같은 항목과 함께 체크돼요.</p>
-                ) : null}
+                {isShared(item) ? <p className="mt-1.5 text-[11px] text-ink-3">임신·아기 탭의 같은 항목과 함께 체크돼요.</p> : null}
                 {t?.link ? (
                   <div className="-mb-1">
                     <ExternalLink href={t.link.url}>{t.link.label}에서 보기</ExternalLink>

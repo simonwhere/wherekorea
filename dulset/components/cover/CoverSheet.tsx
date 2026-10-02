@@ -480,9 +480,7 @@ function AlbumThumb({
           onError={() => setBroken(shown)}
         />
       ) : missing ? (
-        <span aria-hidden className="text-lg text-ink-3">
-          📷
-        </span>
+        <Icon name="cam" className="h-5 w-5 text-ink-3" />
       ) : null}
       {selected ? (
         <span className="absolute right-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ink text-bg">

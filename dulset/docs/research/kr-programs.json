@@ -88,13 +88,20 @@
   },
   {
    "topic": "난임부부 시술비 지원 - 회당 상한과 사실혼 인정",
-   "claim": "민간 안내 기준으로 회당 지원 상한은 신선배아 체외수정 최대 110만 원, 동결배아 50만 원, 인공수정 30만 원입니다. 신청일 기준으로 1년 이상 사실혼 관계가 확인되면 법률혼과 같은 조건으로 신청할 수 있다고 안내됩니다. 다만 둘 다 정부 1차 문서로는 확인하지 못했습니다.",
+   "claim": "민간 안내 기준으로 회당 지원 상한은 신선배아 체외수정 최대 110만 원, 동결배아 50만 원, 인공수정 30만 원입니다. 신청일 기준으로 1년 이상 사실혼 관계가 확인되면 법률혼과 같은 조건으로 신청할 수 있다고 안내됩니다. 다만 둘 다 정부 1차 문서로는 확인하지 못했습니다. 2026-10-02 재확인: 2026년 보건소·지자체 안내(관악구·동대문구 보건소 페이지, 전주시 2026 인구정책 안내문)의 검색 요약에서도 같은 금액(신선배아 최대 110만 원, 동결배아 최대 50만 원, 인공수정 최대 30만 원)과 '법률혼 또는 신청일 기준 최근 1년간 사실상 혼인관계' 조건이 보여요. 원문 페이지는 프록시 차단으로 열지 못해 여전히 검색 요약 확인이에요. 앱은 회당 금액을 쓰지 않고(카운터는 횟수만), 사실혼 조건은 링크로만 안내해요.",
    "sources": [
     "https://glasswallet.com/blog/infertility-treatment-subsidy-guide/",
     "https://sivfclinic.com/infertility-support-2026/",
-    "https://www.banksalad.com/articles/%EB%B3%B4%ED%97%98-%EC%8B%9C%ED%97%98%EA%B4%80%EC%8B%9C%EC%88%A0-%EB%B9%84%EC%9A%A9-%EC%A0%95%EB%B6%80%EC%A7%80%EC%9B%90%EA%B8%88"
+    "https://www.banksalad.com/articles/%EB%B3%B4%ED%97%98-%EC%8B%9C%ED%97%98%EA%B4%80%EC%8B%9C%EC%88%A0-%EB%B9%84%EC%9A%A9-%EC%A0%95%EB%B6%80%EC%A7%80%EC%9B%90%EA%B8%88",
+    "https://www.gwanak.go.kr/site/health/05/10502140000002016080910.jsp",
+    "https://www.ddm.go.kr/health/contents.do?key=1274",
+    "https://jeonju.go.kr/resource/www/images/download/ingu/ingu202601.pdf",
+    "https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00001&menuId=200009"
    ],
-   "confidence": "medium"
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": false
   },
   {
    "topic": "2026년 난임·임신 관련 변경사항",
@@ -103,6 +110,60 @@
     "https://www.korea.kr/news/policyNewsView.do?newsId=148956615"
    ],
    "confidence": "medium"
+  },
+  {
+   "id": "ivf-count-merged-2024-02",
+   "topic": "난임부부 시술비 지원 - 건강보험 급여 횟수 구조 (2024-02 신선·동결 통합, 카운터의 분모)",
+   "claim": "2024년 2월부터 체외수정의 신선배아·동결배아 사이 횟수 칸막이가 없어졌어요. 그 전에는 신선배아 9회 + 동결배아 7회 = 체외수정 16회였고, 지금은 체외수정 20회(신선·동결 통합) + 인공수정 5회 = 총 25회예요(2024년 11월부터는 평생이 아니라 출산당 25회). 본인부담률은 45세 미만 30%, 45세 이상 50%예요. 난자채취 실패·미성숙 난자 등 불가피한 시술 실패·중단은 급여 횟수에서 차감하지 않아요(차감 여부는 의료기관·보건소가 정해요). 배란유도(약·주사)는 이 25회에 들어가지 않아요. 앱의 카운터(lib/logic/treatments.ts SUPPORT_TOTALS)는 이 숫자만 써요: 인공수정 N/5 · 체외수정(신선+동결) N/20 · 합계 N/25. 신선·동결 각각의 상한은 더 이상 없어서 따로 분모를 두지 않아요.",
+   "sources": [
+    "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1479667&mid=a10503000000&nPage=1&tag=",
+    "https://www.nhis.or.kr/static/html/wbma/c/wbmac0227.html",
+    "https://www.seoul.co.kr/news/life/health-news/2024/06/04/20240604019002",
+    "https://mohw.go.kr/board.es?act=view&bid=0027&list_no=1490515&mid=a10503010100&nPage=1&tag=",
+    "https://www.gov.kr/portal/service/serviceInfo/SME000000100"
+   ],
+   "effective": "2024-02-01",
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "보건복지부 보도자료(2023-12, '2024년 정부지원 대폭 확대')와 국민건강보험공단 '난임 시술 급여안내' 페이지가 검색 결과에 잡혔고 요약에 같은 숫자가 나와요. 원문은 프록시(mohw.go.kr·nhis.or.kr 차단)로 열지 못했어요. 2024-02-01이 정확한 시행일인지(2월 중)는 원문으로 확인해야 해요."
+  },
+  {
+   "id": "notice-valid-6-months-2026",
+   "topic": "난임부부 시술비 지원 - 지원결정통지서 유효기간 6개월 (2026-01)",
+   "claim": "지원결정통지서 유효기간이 2026년 1월부터 3개월에서 6개월로 늘었어요(발급일 기준). 유효기간 안에 시술을 시작해야 그 회차에 지원이 적용돼요. 일부 보건소 안내 페이지에는 아직 '3개월'로 남아 있어요. 앱은 통지서 '유효기간 끝' 날짜를 사람이 직접 넣고(Treatment.noticeExpires), 발급일만 알 때는 6개월(2026-01-01 이후 발급) 또는 3개월(그 전)로 계산해 줘요(lib/logic/treatments.ts noticeValidMonths).",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148956615",
+    "https://news.nate.com/view/20260315n06791",
+    "https://sivfclinic.com/infertility-support-2026/",
+    "https://www.gwanak.go.kr/site/health/05/10502140000002016080910.jsp"
+   ],
+   "effective": "2026-01-01",
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "'2026년 보건·복지 정책 이렇게 달라집니다'(korea.kr)와 2026-03 보도(nate)가 6개월을 말해요. 정확한 시행일(1월 1일 발급분부터인지, 기존 통지서에도 적용되는지)은 원문 미확인이라 '2026-01-01'은 근사값이에요. UI에는 '보건소마다 달라요'를 붙여요."
+  },
+  {
+   "id": "infertility-leave-paid-4-days-2026-11-27",
+   "topic": "난임치료휴가 - 유급 4일 (2026-11-27 시행)",
+   "claim": "2026년 11월 27일부터 난임치료휴가 유급기간이 연 2일에서 최초 4일로 늘어요. 연 6일은 그대로이고 나머지 2일은 무급이에요. 우선지원대상기업 근로자가 받는 난임치료휴가급여 상한도 168,420원에서 336,840원으로 올라요(남녀고용평등법·고용보험법 개정). 휴가 범위는 시술 전 준비 단계까지 넓어지고, 신청 때 진단서 대신 난임부부 시술비 지원결정통지서 같은 대체서류도 인정돼요. 휴가를 썼다는 이유로 불리하게 대우하면 3년 이하 징역 또는 3천만 원 이하 벌금이에요. 앱(lib/logic/treatments.ts paidDaysFor)은 날짜가 2026-11-27 이전이면 유급 2일, 그날부터 4일로 계산해요. 남성 근로자도 쓸 수 있어요(admin-timeline.json '난임치료휴가 연 6일 활용').",
+   "sources": [
+    "https://lawl.co.kr/brand/columnView.html?idx=1032",
+    "https://asiatop.co.kr/insurance-labor/infertility-treatment-leave-paid-4days/",
+    "https://biz.sbs.co.kr/amp/article/20000330221",
+    "https://supple.kr/news/cmt595jgu000xb77nzhh7ojt9",
+    "https://eiec.kdi.re.kr/policy/materialView.do?num=285673",
+    "https://www.moel.go.kr/news/cardinfo/view.do?bbs_seq=20250201818"
+   ],
+   "effective": "2026-11-27",
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "노무 칼럼·방송·KDI 경제정보센터 자료가 같은 날짜와 금액을 말해요. 고용노동부 원문(moel.go.kr)은 프록시 차단으로 열지 못했어요. 유급 2일(2025-02-23~)은 기존 finding '난임치료휴가(고용노동부)' 참고."
   },
   {
    "topic": "난임치료휴가(고용노동부)",
@@ -264,5 +325,8 @@
   "육아일기 단계는 영유아 건강검진 8회와 구강검진 4회 시기, 국가예방접종 일정, 백일·돌에 맞춰 성장 기록을 남기게 하면 자연스럽게 이어집니다. 다만 예방접종 알림은 정부가 이미 무료로 주므로 핵심 차별점이 되기는 어렵고, 부부 공유 기록을 보조하는 기능으로 두는 것이 맞습니다.",
   "공식 아이사랑 앱과 서울시 임신·출산 정보센터에는 배란일 계산, 부부 계정 연동, 데이트 제안 기능이 확인되지 않았습니다. 이 공백이 차별화 지점일 수 있습니다. 다만 정부 서비스와 비슷한 이름을 쓰면 비공식 앱으로 오해받을 수 있으니 브랜딩에 주의해야 합니다.",
   "검사 결과(AMH, 정액검사)나 난임 시술 여부는 민감한 건강정보입니다. 부부 간에 공유할 때 항목별 동의와 공개 범위를 조절할 수 있게 해야 합니다(설계상 판단이며, 이번 조사에서 법 조항을 직접 확인하지는 않았습니다)."
+ ],
+ "updates": [
+  "2026-10-02 (Next B foundation): 난임 시술 지원 카운터용 findings 3개를 id와 함께 추가했어요(ivf-count-merged-2024-02 · notice-valid-6-months-2026 · infertility-leave-paid-4-days-2026-11-27). lib/logic/treatments.ts의 숫자(인공수정 5 · 체외수정 20 · 합계 25 · 유급 2→4일 2026-11-27 · 통지서 6개월)는 이 세 항목에서만 나와요. 회당 상한·사실혼 항목(index 9)은 2026 보건소 페이지 링크를 더했지만 여전히 검색 요약 확인(원문 미열람)이라 UI엔 링크만 둬요. 이번에도 .go.kr·nhis.or.kr·moel.go.kr은 프록시가 막아 원문을 열지 못했어요."
  ]
 }

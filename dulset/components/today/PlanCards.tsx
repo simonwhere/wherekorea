@@ -8,8 +8,10 @@ import type { TabKey } from '@/components/AppShell'
 import ItemRow, { type ItemActions } from '@/components/plan/ItemRow'
 import { calmSuggestions, planFocus, planItems, tickItem, type PlanItem } from '@/lib/logic/plan'
 import { Card, cx, useToast } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui/icons'
+import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { formatKo } from '@/lib/dates'
-import { APPOINTMENT_KIND_EMOJI, APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
+import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { useApp } from '@/lib/store'
 import { LinkButton } from './bits'
@@ -17,18 +19,18 @@ import { FOCUS_MAX, dayLabel, homeAppointments, upcomingForToday, whoLabel, with
 
 type Nav = (tab: TabKey) => void
 
-function CardHead({ icon, title, sub, onMore }: { icon: string; title: string; sub?: string; onMore: () => void }) {
+function CardHead({ icon, title, sub, onMore }: { icon: IconName; title: string; sub?: string; onMore: () => void }) {
   return (
     <div className="flex items-start justify-between gap-2 px-1">
       <div className="min-w-0 pt-1">
-        <h2 className="text-[15px] font-bold text-ink">
-          <span aria-hidden>{icon} </span>
+        <h2 className="flex items-center gap-1.5 text-[15px] font-bold text-ink">
+          <Icon name={icon} className="h-[18px] w-[18px] shrink-0 text-ink-2" />
           {title}
         </h2>
         {sub ? <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{sub}</p> : null}
       </div>
-      <LinkButton onClick={onMore} className="-mr-1 -mt-2 shrink-0">
-        전체 보기 <span aria-hidden>→</span>
+      <LinkButton onClick={onMore} arrow className="-mr-1 -mt-2 shrink-0">
+        전체 보기
         <span className="sr-only">: 챙길 것 탭에서 {title}</span>
       </LinkButton>
     </div>
@@ -47,7 +49,7 @@ export function UpcomingCard({ onNavigate }: { onNavigate: Nav }) {
 
   return (
     <Card className="px-3 pb-1.5 pt-3">
-      <CardHead icon="📅" title="다가오는 일정" onMore={openPlan} />
+      <CardHead icon="cal" title="다가오는 일정" onMore={openPlan} />
       <ul className="mt-1 divide-y divide-line/60">
         {list.map((a) => {
           const label = dayLabel(a.date, today)
@@ -59,11 +61,8 @@ export function UpcomingCard({ onNavigate }: { onNavigate: Nav }) {
                 onClick={openPlan}
                 className="flex min-h-[56px] w-full items-center gap-3 rounded-xl px-1 py-2 text-left transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
               >
-                <span
-                  aria-hidden
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-lg"
-                >
-                  {APPOINTMENT_KIND_EMOJI[a.kind]}
+                <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2">
+                  <Icon name={APPOINTMENT_KIND_ICON[a.kind]} className="h-[18px] w-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-ink">
@@ -139,13 +138,11 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
         onClick={openPlan}
         className="flex min-h-[52px] w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5 text-left transition-colors hover:bg-line/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
       >
-        <span aria-hidden>✅</span>
+        <Icon name="check" className="h-[18px] w-[18px] shrink-0 text-ok" strokeWidth={2.2} />
         <span className="min-w-0 flex-1 text-xs text-ink-2">
           <b className="font-semibold text-ink">챙길 것</b> · 급한 건 없어요. 여유 있을 때 둘이 같이 살펴봐요
         </span>
-        <span aria-hidden className="text-ink-3">
-          →
-        </span>
+        <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
       </button>
     )
   }
@@ -155,7 +152,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
   return (
     <Card className="px-3 pb-2 pt-3">
       <CardHead
-        icon="✅"
+        icon="list"
         title="이번 주 챙길 것"
         sub={
           allDone

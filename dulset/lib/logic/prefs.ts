@@ -69,12 +69,15 @@ export function discreetFor(settings: Pick<Settings, 'discreet' | 'personal'>, m
   return settings.personal?.[member]?.discreet ?? settings.discreet
 }
 
-export function setPersonalPref(
-  state: AppState,
-  member: MemberId,
-  key: 'lowPressure' | 'discreet',
-  value: boolean,
-): AppState {
+/**
+ * The per-person switches: 부담 없이 · 잠금화면 숨김, and (Next B) 콕 받기
+ * (`acceptNudges`, read with settings.acceptNudgesFor) and 잠금화면 숨김을 홈
+ * 카드까지 (`homeDiscreet`, homeDiscreetFor). Same value → the same object.
+ */
+export type PersonalSwitch = 'lowPressure' | 'discreet' | 'acceptNudges' | 'homeDiscreet'
+
+export function setPersonalPref(state: AppState, member: MemberId, key: PersonalSwitch, value: boolean): AppState {
+  if (state.settings.personal?.[member]?.[key] === value) return state
   const personal = { ...(state.settings.personal ?? {}) }
   personal[member] = { ...(personal[member] ?? {}), [key]: value }
   return { ...state, settings: { ...state.settings, personal } }

@@ -17,7 +17,7 @@ export function useNotificationEngine(): void {
   const { state, update, today, viewer } = useApp()
   const shown = useRef(new Set<string>())
 
-  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending } = state
+  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending, treatments } = state
   useEffect(() => {
     // Preview against the current state to learn what's new; the updater re-derives
     // against the latest state, and key-dedup makes repeated application harmless.
@@ -34,8 +34,10 @@ export function useNotificationEngine(): void {
     deliver(added.filter((n) => n.to === viewer))
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // customTasks: a '기한' item added today with D-7 / D-1 / 당일 falling on today (N13);
-    // cycleNotes / restCycle / positivePending: '아직 안 왔어요', a clinic cycle or a test change what goes out.
-  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, settings.usesLH, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending])
+    // cycleNotes / restCycle / positivePending: '아직 안 왔어요', a clinic cycle or a test change what goes out;
+    // treatments: a 지원결정통지서 written today that already sits at D-30 / D-7 / D-1 (Next B);
+    // settings.anniversaryAlerts / shareCycleDetails: the anniversary gate and the partner's cycle notices.
+  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, settings.usesLH, settings.anniversaryAlerts, settings.shareCycleDetails, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending, treatments])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
   // Whatever is already unread when the app opens isn't re-announced.

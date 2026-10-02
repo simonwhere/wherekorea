@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import CoupleDatesSheet from '@/components/us/CoupleDatesSheet'
 import { Button, Card } from '@/components/ui'
+import { IconTile, type IconName } from '@/components/ui/icons'
 import { dLabel, formatKo, isISODate } from '@/lib/dates'
 import { daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
 import { useApp } from '@/lib/store'
@@ -16,12 +17,10 @@ function openDays() {
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 
-function Row({ icon, label, date, sub }: { icon: string; label: string; date?: string; sub?: string }) {
+function Row({ icon, label, date, sub }: { icon: IconName; label: string; date?: string; sub?: string }) {
   return (
     <li className="flex items-center gap-3 py-3 first:pt-0">
-      <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-lg">
-        {icon}
-      </span>
+      <IconTile name={icon} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-ink-3">{label}</p>
         <p className="text-sm font-bold text-ink">
@@ -48,22 +47,22 @@ export default function CoupleDaysSection() {
   const long = (d: string) => formatKo(d, { year: true, weekday: false })
 
   return (
-    <SettingsSection title="우리 둘의 날" sub="함께한 날수와 100일·주년 기념일을 챙기는 기준이에요">
+    <SettingsSection id="ourdays" title="우리 둘의 날" sub="함께한 날수와 100일·주년 기념일을 챙기는 기준이에요">
       <Card>
         <ul className="divide-y divide-line">
           <Row
-            icon="💞"
+            icon="heart"
             label="처음 만난 날"
             date={met ? long(met) : undefined}
             sub={met && met <= today ? `함께한 지 D+${fmt(daysSince(met, today))}` : undefined}
           />
           <Row
-            icon="💍"
+            icon="ring"
             label="결혼한 날"
             date={married ? long(married) : undefined}
             sub={married ? (married <= today ? `결혼한 지 ${fmt(daysSince(married, today))}일` : '결혼 예정') : undefined}
           />
-          <Row icon="⭐" label="직접 추가한 기념일" date={custom ? `${fmt(custom)}개` : undefined} />
+          <Row icon="star" label="직접 추가한 기념일" date={custom ? `${fmt(custom)}개` : undefined} />
         </ul>
 
         {next ? (

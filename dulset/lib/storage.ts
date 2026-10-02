@@ -57,24 +57,34 @@ export function normalize(state: AppState): AppState {
   const cover = cleanCover(couple.cover)
   if (cover) couple.cover = cover
   else delete couple.cover
-  // Per-person prefs: hideCover is a yes/no or unset (automatic); lhTestTime is 'HH:MM' or unset.
+  // Per-person prefs: hideCover / acceptNudges / homeDiscreet are a yes/no or
+  // unset (automatic / default); lhTestTime is 'HH:MM' or unset.
   const personal = settings.personal
     ? Object.fromEntries(
         Object.entries(settings.personal).map(([id, p]) => {
           if (!p || typeof p !== 'object') return [id, p]
-          const { hideCover, lhTestTime, ...rest } = p as Record<string, unknown>
+          const { hideCover, lhTestTime, acceptNudges, homeDiscreet, ...rest } = p as Record<string, unknown>
           return [
             id,
             {
               ...rest,
               ...(typeof hideCover === 'boolean' ? { hideCover } : {}),
               ...(typeof lhTestTime === 'string' && TIME_RE.test(lhTestTime) ? { lhTestTime } : {}),
+              ...(typeof acceptNudges === 'boolean' ? { acceptNudges } : {}),
+              ...(typeof homeDiscreet === 'boolean' ? { homeDiscreet } : {}),
             },
           ]
         }),
       )
     : undefined
   const usesLH = settings.usesLH
+  // Couple-wide switches added in Next B: a yes/no, or unset = the default
+  // (lib/initial.ts SETTINGS_DEFAULTS) — never written in, so an older save
+  // keeps its exact shape.
+  const flag = (v: unknown) => (typeof v === 'boolean' ? v : undefined)
+  const memories = flag(settings.memories)
+  const anniversaryAlerts = flag(settings.anniversaryAlerts)
+  const showTryCount = flag(settings.showTryCount)
   return {
     ...s,
     couple,
@@ -109,9 +119,14 @@ export function normalize(state: AppState): AppState {
       shareCycleDetails: settings.shareCycleDetails ?? false,
       // 써요 / 안 써요 / 나중에 — unset means not asked yet (N17).
       ...(typeof usesLH === 'boolean' || usesLH === 'later' ? { usesLH } : {}),
+      ...(memories !== undefined ? { memories } : {}),
+      ...(anniversaryAlerts !== undefined ? { anniversaryAlerts } : {}),
+      ...(showTryCount !== undefined ? { showTryCount } : {}),
     },
-    // personalLog, cycleNotes, restCycle, diary[].privateTo, lhTests[].slot and
-    // customTasks[].deadlineAlerts ride along in `...s`; sanitizeBackup checks them.
+    // personalLog, cycleNotes, restCycle (+ until), positivePending
+    // (+ bleedingSince), treatments, leaveDays, intimacy, diary[].privateTo,
+    // lhTests[].slot and customTasks[].deadlineAlerts ride along in `...s`;
+    // sanitizeBackup checks them (parseState always runs both).
   }
 }
 

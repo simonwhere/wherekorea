@@ -3,6 +3,7 @@
 // Small building blocks shared by the 아기 tab sections.
 
 import { cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 
 export const linkClass =
   'inline-flex min-h-[44px] items-center text-xs font-semibold text-brand-ink underline-offset-2 hover:underline'
@@ -24,7 +25,7 @@ export function ExternalLink({
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} className={className ?? linkClass}>
       {children}
-      <span aria-hidden> ↗</span>
+      <Icon name="ext" className="ml-0.5 h-3.5 w-3.5" strokeWidth={2.2} />
       {ariaLabel ? null : <span className="sr-only"> (새 창)</span>}
     </a>
   )
@@ -52,11 +53,11 @@ export function TickButton({
       <span
         aria-hidden
         className={cx(
-          'flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors',
+          'flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors',
           checked ? 'border-ok bg-ok text-white' : 'border-line bg-surface text-transparent',
         )}
       >
-        ✓
+        <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
       </span>
     </button>
   )
