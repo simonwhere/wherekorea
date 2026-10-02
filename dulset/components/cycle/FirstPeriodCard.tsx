@@ -20,7 +20,7 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
 
   const save = () => {
     if (!valid) return
-    update((s) => logPeriodStart(s, date, viewer))
+    update((s) => logPeriodStart(s, date, viewer, today))
     toast.show(`${formatKo(date, { weekday: false })} 생리 시작으로 기록했어요`)
   }
 

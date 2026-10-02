@@ -4,12 +4,12 @@
 // bottom-bar button, the home screen and calendar days (lib/logLauncher).
 // Tapping a choice saves right away (no save button) and offers 되돌리기.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LHPanel from '@/components/log/LHPanel'
 import NotePanel from '@/components/log/NotePanel'
 import PeriodPanel from '@/components/log/PeriodPanel'
 import PTestPanel from '@/components/log/PTestPanel'
-import UndoToast, { type UndoMessage } from '@/components/log/UndoToast'
+import UndoToast, { UNDO_MS, type UndoMessage } from '@/components/log/UndoToast'
 import { DateStepper, KindChips, type SaveLog } from '@/components/log/parts'
 import { Sheet, useToast } from '@/components/ui'
 import { isISODate } from '@/lib/dates'
@@ -21,11 +21,35 @@ import type { LogRequest } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
 
+/** body[data-toast-top]: toasts sit at the top (app/globals.css), as while a sheet is open. */
+const TOAST_TOP_ATTR = 'data-toast-top'
+
 export default function LogSheet({ request, onClose }: { request: LogRequest | null; onClose: () => void }) {
   const { update } = useApp()
   const toast = useToast()
   const [undo, setUndo] = useState<(UndoMessage & { change: LogUndo }) | null>(null)
-  const expire = useCallback(() => setUndo(null), [])
+  // Where the open sheet came from (the save callback stays stable across requests).
+  const from = useRef<LogRequest['from']>(undefined)
+  if (request) from.current = request.from
+
+  // From 오늘, the toast keeps the top spot for as long as 되돌리기 lasts, so
+  // the card's new buttons (알리기 · 병원 일정 넣기) under it stay reachable.
+  const toastTop = useRef(0)
+  const clearToastTop = useCallback(() => {
+    window.clearTimeout(toastTop.current)
+    document.body.removeAttribute(TOAST_TOP_ATTR)
+  }, [])
+  const holdToastTop = useCallback(() => {
+    clearToastTop()
+    document.body.setAttribute(TOAST_TOP_ATTR, '')
+    toastTop.current = window.setTimeout(() => document.body.removeAttribute(TOAST_TOP_ATTR), UNDO_MS)
+  }, [clearToastTop])
+  useEffect(() => clearToastTop, [clearToastTop])
+
+  const expire = useCallback(() => {
+    setUndo(null)
+    clearToastTop()
+  }, [clearToastTop])
 
   const save = useCallback<SaveLog>(
     (change, target, message, opts) => {
@@ -35,9 +59,10 @@ export default function LogSheet({ request, onClose }: { request: LogRequest | n
         return change(s)
       })
       if (captured) setUndo({ id: Date.now(), text: message, change: captured })
+      if (captured && from.current === 'today') holdToastTop()
       if (!opts?.keepOpen) onClose()
     },
-    [update, onClose],
+    [update, onClose, holdToastTop],
   )
 
   const revert = useCallback(() => {
@@ -45,8 +70,9 @@ export default function LogSheet({ request, onClose }: { request: LogRequest | n
     const change = undo.change
     update((s) => undoLog(s, change))
     setUndo(null)
+    clearToastTop()
     toast.show('되돌렸어요')
-  }, [undo, update, toast])
+  }, [undo, update, toast, clearToastTop])
 
   // Each openLog() call starts fresh (date, chip, panel state), even if the
   // sheet happens to be open already.

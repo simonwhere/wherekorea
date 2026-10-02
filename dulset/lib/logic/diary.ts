@@ -9,15 +9,20 @@ export const DIARY_NAME: Record<Stage, string> = {
   parenting: '육아일기',
 }
 
+/**
+ * Add an entry. Pass a stable `id` from the caller so the same change applied
+ * twice (the two-tab sync may re-apply it) adds one entry, not two.
+ */
 export function addEntry(
   state: AppState,
-  entry: { date: ISODate; author: MemberId; text: string; mood?: string; photoId?: string; stage?: Stage },
+  entry: { id?: string; date: ISODate; author: MemberId; text: string; mood?: string; photoId?: string; stage?: Stage },
   nowISO: string,
 ): AppState {
+  if (entry.id && state.diary.some((e) => e.id === entry.id)) return state
   const text = entry.text.trim()
   if (!text && !entry.photoId) return state
   const e: DiaryEntry = {
-    id: uid(),
+    id: entry.id ?? uid(),
     date: entry.date,
     author: entry.author,
     stage: entry.stage ?? state.stage,

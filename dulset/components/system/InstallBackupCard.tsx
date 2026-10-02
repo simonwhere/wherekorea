@@ -115,7 +115,7 @@ export default function InstallBackupCard() {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-ink">홈 화면에 추가해 두세요</p>
             <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-              홈 화면에 추가하면 기록이 더 안전하게 남고 알림도 받을 수 있어요.
+              홈 화면에 추가하면 사파리의 7일 삭제를 피할 수 있어요. 알림은 앱이 열려 있을 때만 와요.
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-ink-3">{INSTALL_STEPS[device.platform]}</p>
             {device.canPrompt ? (

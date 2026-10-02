@@ -1,7 +1,8 @@
 'use client'
 
 import { Card, SectionTitle } from '@/components/ui'
-import { doctorAgeLine, guideSections, guideSources } from '@/lib/content/fertility'
+import { GUIDE_CHECKED_AT, doctorAgeLine, guideSections, guideSources } from '@/lib/content/fertility'
+import { formatKo } from '@/lib/dates'
 import type { FertilityView } from '@/lib/logic/calendarView'
 
 export default function FertilityGuide({
@@ -97,7 +98,8 @@ export default function FertilityGuide({
                   </li>
                 ))}
                 <li className="pt-1 text-[11px] leading-relaxed text-ink-3">
-                  수치는 논문·가이드라인 요약을 옮긴 거예요. 둘셋은 의료기기가 아니며 진단이나 피임에 쓸 수 없어요.
+                  수치는 논문·가이드라인 요약을 옮긴 거예요. 둘셋은 의료기기가 아니며 진단이나 피임에 쓸 수 없어요. 확인일{' '}
+                  {formatKo(GUIDE_CHECKED_AT, { weekday: false, year: true })}.
                 </li>
               </ol>
             </details>

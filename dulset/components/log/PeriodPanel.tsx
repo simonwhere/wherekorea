@@ -4,6 +4,7 @@ import { BigAction, dayWord, type SaveLog } from '@/components/log/parts'
 import { addDays, diffDays, formatKo } from '@/lib/dates'
 import { dayActions, periodCovering } from '@/lib/logic/calendarView'
 import { logPeriodEnd, logPeriodStart, movePeriodStart, removePeriodLog } from '@/lib/logic/logs'
+import { PERIOD_ASK_DAYS } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
 
@@ -16,9 +17,10 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
   const day = formatKo(date, { weekday: false })
 
   const start = (d: ISODate) => {
-    const recent = diffDays(d, today) <= 2
+    // The same days the home card says 수고했어요 for a start logged late (ttcFlow.PERIOD_ASK_DAYS).
+    const recent = diffDays(d, today) < PERIOD_ASK_DAYS
     const word = dayWord(d, today)
-    save((s) => logPeriodStart(s, d, viewer), { kind: 'period' }, recent ? `이번 주기도 수고했어요 · ${word} 시작으로 남겼어요` : `${word} 생리 시작으로 남겼어요`)
+    save((s) => logPeriodStart(s, d, viewer, today), { kind: 'period' }, recent ? `이번 주기도 수고했어요 · ${word} 시작으로 남겼어요` : `${word} 생리 시작으로 남겼어요`)
   }
 
   if (covering) {

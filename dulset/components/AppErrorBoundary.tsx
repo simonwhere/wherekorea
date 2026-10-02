@@ -2,7 +2,9 @@
 
 // Last line of defence: if saved data still manages to break a screen, show a
 // way out (keep the data as a file, restore a backup, or start over) instead of
-// a blank "Application error" on every load.
+// a blank "Application error" on every load. Only those choices (and 다시 시도)
+// leave the recovery screen: a state change from elsewhere (the other tab
+// saving) must not re-render the broken screen and flicker back here.
 
 import { Component, useState } from 'react'
 import RestoreBackup from '@/components/RestoreBackup'
@@ -13,25 +15,18 @@ import { useStore } from '@/lib/store'
 import { clearDeviceData, rawStoredState } from '@/lib/storage'
 
 interface Props {
-  /** A new value (e.g. the state after a restore) clears the error and tries again. */
-  resetKey: unknown
   children: React.ReactNode
 }
 
 interface State {
   failed: boolean
-  key: unknown
 }
 
 export default class AppErrorBoundary extends Component<Props, State> {
-  state: State = { failed: false, key: this.props.resetKey }
+  state: State = { failed: false }
 
   static getDerivedStateFromError(): Partial<State> {
     return { failed: true }
-  }
-
-  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
-    return props.resetKey !== state.key ? { failed: false, key: props.resetKey } : null
   }
 
   componentDidCatch(error: unknown) {
@@ -72,7 +67,7 @@ function RecoveryScreen({ onRetry }: { onRetry: () => void }) {
             지금 기록을 파일로 받기
           </Button>
         ) : null}
-        <RestoreBackup label="백업 파일로 복원하기" variant="primary" />
+        <RestoreBackup label="백업 파일로 복원하기" variant="primary" onRestored={onRetry} />
         <Button full variant="ghost" onClick={onRetry}>
           다시 시도하기
         </Button>

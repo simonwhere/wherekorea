@@ -534,6 +534,6 @@ export function linkedAppointment(list: Appointment[], itemId: string, today: IS
     .sort((a, b) => (a.date === b.date ? (a.time ?? '').localeCompare(b.time ?? '') : a.date < b.date ? -1 : 1))[0]
 }
 
-export const CUSTOM_TITLE_MAX = 40
+export { CUSTOM_TITLE_MAX } from '@/lib/logic/roadmap'
 export const APPT_TITLE_MAX = 60
 export const APPT_TEXT_MAX = 80

@@ -320,9 +320,12 @@ describe('doctor advice', () => {
     })
     expect(doctorAdvice(irregular, '2026-08-01')).toMatchObject({ irregularBy: 'variation' })
     expect(doctorAdvice(irregular, '2026-08-01')?.reasons).toContain('irregular')
-    // Only an entered 40-day cycle (nothing measured yet) → "short or long", not "varies a lot".
+    // Only an entered 40-day cycle (nothing measured yet): no 🩺 card from a guess.
     const longCycle = fresh({ cycle: { cycleLength: 40, periodLength: 5 } })
-    expect(doctorAdvice(longCycle, '2026-09-20')).toMatchObject({ reasons: ['irregular'], irregularBy: 'length' })
+    expect(doctorAdvice(longCycle, '2026-09-20')).toBeNull()
+    // Two measured 40-day cycles → "short or long", not "varies a lot".
+    const measuredLong = fresh({ periods: [{ start: '2026-06-01' }, { start: '2026-07-11' }, { start: '2026-08-20' }] })
+    expect(doctorAdvice(measuredLong, '2026-09-01')).toMatchObject({ reasons: ['irregular'], irregularBy: 'length' })
     expect(doctorAdvice(fresh(), '2026-09-20')?.irregularBy).toBeUndefined()
     // 40+ → right away, even on day one.
     const forty = fresh({

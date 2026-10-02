@@ -36,7 +36,7 @@ export default function PTestPanel({
     const id = uid()
     const time = date === today ? hhmm(nowOn(today)) : undefined
     save(
-      (s) => addPregnancyTest(s, { id, date, time, result, by: viewer }).state,
+      (s) => addPregnancyTest(s, { id, date, time, result, by: viewer }, today).state,
       { kind: 'ptest', id },
       `임테기 ${ro(PTEST_LABEL[result])} 남겼어요`,
       { keepOpen: true },

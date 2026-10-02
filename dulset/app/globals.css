@@ -194,8 +194,11 @@ html {
 }
 
 /* While a sheet (modal dialog) is open, toasts move to the top so they never
-   cover the sheet's action buttons. */
-body:has([aria-modal='true']) [data-live-region] {
+   cover the sheet's action buttons. The same while a log made from 오늘 can
+   still be undone (body[data-toast-top], components/log/LogSheet): the moment
+   card's new buttons sit right where the bottom toast would be. */
+body:has([aria-modal='true']) [data-live-region],
+body[data-toast-top] [data-live-region] {
   top: calc(env(safe-area-inset-top) + 1rem);
   bottom: auto;
 }

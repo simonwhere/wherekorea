@@ -8,6 +8,8 @@ import type { AppState, MemberId } from './types'
 
 export const STORAGE_KEY = 'dulset:state:v1'
 export const VIEWER_KEY = 'dulset:viewer'
+/** Where an unreadable saved state is kept (one copy, the first one — never overwritten). */
+export const CORRUPT_KEY = `${STORAGE_KEY}:corrupt`
 
 function safeLocal(): Storage | null {
   try {
@@ -115,9 +117,11 @@ export function loadState(): AppState | null {
   const raw = ls.getItem(STORAGE_KEY)
   const state = parseState(raw)
   if (raw && !state) {
-    // Keep the unreadable blob instead of silently destroying it.
+    // Keep the unreadable blob instead of silently destroying it — one copy:
+    // every load of the same broken state would otherwise add another (and the
+    // first copy is the one closest to the last good save).
     try {
-      ls.setItem(`${STORAGE_KEY}:corrupt:${Date.now()}`, raw)
+      if (ls.getItem(CORRUPT_KEY) === null) ls.setItem(CORRUPT_KEY, raw)
     } catch {
       /* quota — nothing else to do */
     }
@@ -131,10 +135,16 @@ export function saveState(state: AppState | null): boolean {
   try {
     if (state) ls.setItem(STORAGE_KEY, JSON.stringify(state))
     else ls.removeItem(STORAGE_KEY)
-    return true
   } catch {
     return false
   }
+  // A good save means the data is readable again: the kept copy has done its job.
+  try {
+    ls.removeItem(CORRUPT_KEY)
+  } catch {
+    /* ignore */
+  }
+  return true
 }
 
 /** Per-tab "whose phone is this" — lets two browser tabs act as two phones. */

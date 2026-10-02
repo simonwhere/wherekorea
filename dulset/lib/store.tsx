@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { isISODate, todayISO } from './dates'
 import { otherMember } from './initial'
+import { baseForUpdate } from './logic/sync'
 import { STORAGE_KEY, loadState, loadViewer, parseState, saveState, saveViewer } from './storage'
 import type { AppState, ISODate, Member, MemberId } from './types'
 
@@ -20,6 +21,8 @@ interface StoreValue {
   viewer: MemberId
   setViewer: (id: MemberId) => void
   today: ISODate
+  /** The last save to this device failed (storage full or blocked) — until one succeeds. */
+  saveFailed: boolean
 }
 
 const StoreContext = createContext<StoreValue | null>(null)
@@ -53,6 +56,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState | null>(null)
   const [viewer, setViewerState] = useState<MemberId>('a')
   const [today, setToday] = useState<ISODate>(() => todayISO())
+  const [saveFailed, setSaveFailed] = useState(false)
   /** The state this tab last read from / wrote to storage — no need to save it again. */
   const persisted = useRef<AppState | null | undefined>(undefined)
   /** Latest state, including updates not rendered yet (for update's fallback). */
@@ -92,15 +96,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const seen = remote?.sync?.[t.id] ?? 0
       t.pending = t.pending.filter((p) => p.seq > seen && now - p.at < REBASE_WINDOW_MS)
       let next = remote
+      // What storage holds after this handler: the rebased state if it saved, else what we read.
+      let saved = remote
       if (remote && t.pending.length > 0) {
         let rebased = remote
         for (const p of t.pending) rebased = p.fn(rebased)
         next = withSync(rebased, t.id, t.seq)
-        saveState(next)
+        const ok = saveState(next)
+        if (ok) saved = next
+        setSaveFailed(!ok)
       } else if (!remote) {
         t.pending = []
       }
-      persisted.current = next
+      persisted.current = saved
       latest.current = next
       setState(next)
     }
@@ -121,8 +129,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // replace() (onboarding, backup import, wipe) is saved here; update() saves itself.
   useEffect(() => {
     if (!hydrated || state === persisted.current) return
-    saveState(state)
-    persisted.current = state
+    const ok = saveState(state)
+    if (ok) persisted.current = state
+    setSaveFailed(!ok)
   }, [state, hydrated])
 
   /**
@@ -138,14 +147,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch {
       stored = null
     }
-    const base = stored ?? latest.current
+    // After a failed save, memory is ahead of storage: build on it (logic/sync).
+    const base = baseForUpdate(stored, latest.current, persisted.current)
     if (!base) return
     const t = tab.current
     t.seq += 1
     t.pending.push({ seq: t.seq, at: Date.now(), fn })
     const next = withSync(fn(base), t.id, t.seq)
     latest.current = next
-    if (saveState(next)) persisted.current = next
+    const ok = saveState(next)
+    if (ok) persisted.current = next
+    setSaveFailed(!ok)
     setState(next)
   }, [])
 
@@ -160,8 +172,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const value = useMemo<StoreValue>(
-    () => ({ hydrated, state, update, replace, viewer, setViewer, today }),
-    [hydrated, state, update, replace, viewer, setViewer, today],
+    () => ({ hydrated, state, update, replace, viewer, setViewer, today, saveFailed }),
+    [hydrated, state, update, replace, viewer, setViewer, today, saveFailed],
   )
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

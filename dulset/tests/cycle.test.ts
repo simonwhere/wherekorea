@@ -49,8 +49,13 @@ describe('cycleStats', () => {
     expect(s.irregular).toBe(true)
   })
 
-  it('flags averages outside 21–35', () => {
-    expect(cycleStats([], { cycleLength: 40, periodLength: 5 }).irregular).toBe(true)
+  it('flags averages outside 21–35 only from logged cycles, never from the settings value alone', () => {
+    // An onboarding guess (36 or 40 days, nothing measured) is not a record of irregular cycles.
+    expect(cycleStats([], { cycleLength: 40, periodLength: 5 }).irregular).toBe(false)
+    expect(cycleStats([{ start: '2026-09-01' }], { cycleLength: 36, periodLength: 5 })).toMatchObject({ source: 'settings', irregular: false })
+    // Two measured 40-day cycles do flag it.
+    const logged = cycleStats([{ start: '2026-01-01' }, { start: '2026-02-10' }, { start: '2026-03-22' }], { cycleLength: 28, periodLength: 5 })
+    expect(logged).toMatchObject({ source: 'logs', average: 40, irregular: true })
   })
 })
 

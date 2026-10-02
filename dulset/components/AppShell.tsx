@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import AppErrorBoundary from '@/components/AppErrorBoundary'
 import LogSheet from '@/components/log/LogSheet'
 import Onboarding from '@/components/Onboarding'
-import { isSettingsAnchor } from '@/components/settings/anchors'
+import { goToSettings, isSettingsAnchor } from '@/components/settings/anchors'
 import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
 import CycleTab from '@/components/tabs/CycleTab'
@@ -79,16 +79,17 @@ export default function AppShell() {
       </div>
     )
   }
-  // A new state (restore, the other tab's change) retries after an error.
+  // (The two branches are different trees, so a wipe or a first onboarding
+  // remounts the boundary; a restore resets it from the recovery screen.)
   if (!state || !state.onboarded)
     return (
-      <AppErrorBoundary resetKey={state}>
+      <AppErrorBoundary>
         <Onboarding />
       </AppErrorBoundary>
     )
   return (
     <ToastProvider>
-      <AppErrorBoundary resetKey={state}>
+      <AppErrorBoundary>
         <MainApp />
       </AppErrorBoundary>
     </ToastProvider>
@@ -97,6 +98,7 @@ export default function AppShell() {
 
 function MainApp() {
   const { state, me, partner, setViewer } = useApp()
+  const { saveFailed } = useStore()
   const tabs = TAB_SETS[state.stage]
   const [tab, setTab] = useState<TabKey>('today')
   const [notifOpen, setNotifOpen] = useState(false)
@@ -236,6 +238,19 @@ function MainApp() {
             <Icon name="gear" className="h-[22px] w-[22px] text-ink-2" />
           </button>
         </div>
+        {/* Storage full or blocked: say so until a save succeeds (nothing is lost while the tab stays open). */}
+        {saveFailed ? (
+          <p role="alert" className="flex items-center justify-between gap-3 border-t border-warn/30 bg-warn-soft px-4 py-2 text-[12.5px] leading-snug text-ink">
+            <span>지금 기록이 저장되지 않고 있어요</span>
+            <button
+              type="button"
+              onClick={() => goToSettings('data')}
+              className="-my-1 h-9 shrink-0 rounded-full px-2 text-[12.5px] font-bold text-brand-ink underline underline-offset-2 hover:bg-bg/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              백업 받기
+            </button>
+          </p>
+        ) : null}
       </header>
 
       <main className="flex-1 px-4 pb-28 pt-4">{content}</main>

@@ -14,7 +14,8 @@ import { useApp } from '@/lib/store'
 export default function OurWeekIdeas({ count = 2, className = 'mt-3.5 bg-surface-2' }: { count?: number; className?: string }) {
   const { state, today, me } = useApp()
   if (!fertileHintsAllowed(state, me.id)) return null
-  const picks = pickIdeas(DATE_IDEAS, {
+  // Inside the week's card only same-day ideas: an overnight trip (1박) is a plan, not a nudge.
+  const picks = pickIdeas(DATE_IDEAS.filter((i) => !/박/.test(i.duration)), {
     today,
     stage: state.stage,
     excludeIds: recentlyPlannedIdeaIds(state.datePlans, today),

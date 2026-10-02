@@ -113,6 +113,21 @@ export function deliveredUnderOldKey(
   })
 }
 
+/** 'doctor:<ttc start>' (toBoth appends ':<member>'). */
+export function doctorKey(ttcStart: ISODate): string {
+  return `doctor:${ttcStart}`
+}
+
+const DOCTOR_KEY = /^doctor:(\d{4}-\d{2}-\d{2})(?::\d+)?:[ab]$/
+
+/** Was the 🩺 notice for this trying period already sent (under the current or an old threshold-bearing key)? */
+export function doctorTold(state: Pick<AppState, 'notifications'>, ttcStart: ISODate): boolean {
+  return state.notifications.some((n) => {
+    const m = n.key ? DOCTOR_KEY.exec(n.key) : null
+    return !!m && m[1] === ttcStart
+  })
+}
+
 /** The soft "우리의 주간" heads-up — no health words (설정's preview shows the same). */
 export const SOFT_FERTILE_TITLE = '💞 이번 주는 우리의 주간이에요'
 
@@ -134,8 +149,11 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
   if (state.stage === 'preparing') {
     const status = fertilityStatus(state, today)
     // A positive test awaiting the clinic already answers "late?" — no test prompt.
+    // A rest cycle pauses every date (ttcFlow.ttcPhase shows 쉬는 주기 even on
+    // late days), so neither the late nor the period-due notice goes out.
     const pending = activePositivePending(state)
-    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending) {
+    const resting = !!activeRest(state)
+    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending && !resting) {
       out.push({
         key: `late:${status.expected}:${owner.id}`,
         to: owner.id,
@@ -150,7 +168,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       status.kind !== 'late' &&
       status.kind !== 'no-data' &&
       status.kind !== 'after-pregnancy' &&
-      !activeRest(state) &&
+      !resting &&
       !pending
     ) {
       const [w] = upcomingWindows(state, today, 1)
@@ -201,7 +219,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     // While a positive test waits for the clinic, "tomorrow is your period" and
     // "time to see a fertility doctor" are the wrong messages; they wait until
     // a period settles it (then still apply) or the pregnancy is confirmed.
-    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1 && !pending) {
+    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1 && !pending && !resting) {
       out.push({
         key: `period-due:${status.nextPeriod}:${owner.id}`,
         to: owner.id,
@@ -218,10 +236,16 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       const ownerAge = ageFromBirthYear(owner.birthYear, today)
       const threshold = doctorThresholdMonths(ownerAge)
       const months = monthsBetween(ttcStart, today)
-      if (threshold > 0 && months >= threshold) {
+      // One doctor notice per trying period: the key carries only its start, so a
+      // threshold that changes with her age on 1 January (12 → 6 months) doesn't
+      // send the same 🩺 again. Notices sent under the old threshold-bearing key
+      // still count (doctorTold).
+      if (doctorTold(state, ttcStart)) {
+        /* already told */
+      } else if (threshold > 0 && months >= threshold) {
         out.push(
           ...toBoth({
-            key: `doctor:${ttcStart}:${threshold}`,
+            key: doctorKey(ttcStart),
             kind: 'doctor',
             title: '🩺 전문의 상담을 고려해 볼 때예요',
             body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아보길 권해요. 보건소 '임신 사전건강관리' 지원도 확인해 보세요.`,
@@ -230,7 +254,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       } else if (threshold === 0) {
         out.push(
           ...toBoth({
-            key: `doctor:${ttcStart}:40`,
+            key: doctorKey(ttcStart),
             kind: 'doctor',
             title: '🩺 준비 초기에 검사를 받아 보세요',
             body: '40세 이상이라면 시작하면서 바로 전문의 상담을 받는 게 좋아요. 보건소 임신 사전건강관리 지원도 확인해 보세요.',

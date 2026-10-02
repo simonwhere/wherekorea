@@ -12,6 +12,8 @@ import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
 import {
   clearNotifications,
   deliveredUnderOldKey,
+  doctorKey,
+  doctorTold,
   fertileKey,
   inbox,
   mergeNotices,
@@ -323,6 +325,18 @@ describe('rest cycles and a positive test awaiting the clinic', () => {
     expect(fertileTo(scheduledNotices(after, '2026-10-07'), 'a')).toHaveLength(1)
   })
 
+  it('a rest cycle also holds back the late and period-due notices (the card rests on those days too)', () => {
+    const rest = startRestCycle(fresh(), '2026-09-05')
+    // 09-28: the day before the expected period; 10-02: three days late.
+    expect(scheduledNotices(rest, '2026-09-28').filter((x) => x.key.startsWith('period-due:'))).toEqual([])
+    expect(scheduledNotices(rest, '2026-10-02').filter((x) => x.key.startsWith('late:'))).toEqual([])
+    expect(scheduledNotices(rest, '2026-10-02').filter((x) => x.kind === 'period-due')).toEqual([])
+    expect(scheduledNotices(fresh(), '2026-09-28').filter((x) => x.key.startsWith('period-due:'))).toHaveLength(1)
+    // The next period ends the rest: the cycle after it gets its notices again.
+    const after = addPeriod(rest, '2026-09-29', undefined, 'b')
+    expect(scheduledNotices(after, '2026-10-26').filter((x) => x.key.startsWith('period-due:'))).toHaveLength(1)
+  })
+
   it('send no fertile notice and no "take a test" prompt while a positive test awaits the clinic', () => {
     const pending = markPositivePending(fresh(), '2026-09-26')
     expect(scheduledNotices(pending, '2026-09-13').some((x) => x.kind === 'fertile-start')).toBe(false)
@@ -346,6 +360,48 @@ describe('rest cycles and a positive test awaiting the clinic', () => {
     // A period after the test settles it: the notice comes back.
     const settled = addPeriod(waiting, '2026-09-19', undefined, 'b')
     expect(doctor(settled).map((x) => x.to).sort()).toEqual(['a', 'b'])
+  })
+})
+
+describe('the 🩺 notice is keyed by the trying period, not the age threshold', () => {
+  const born = (s: AppState, year: number): AppState => ({
+    ...s,
+    couple: { ...s.couple, members: [s.couple.members[0], { ...s.couple.members[1], birthYear: year }] as AppState['couple']['members'] },
+  })
+  const doctor = (s: AppState, today: string) => scheduledNotices(s, today).filter((x) => x.kind === 'doctor')
+
+  it('keeps the same key when the threshold changes with her age (and at 40+)', () => {
+    const long = fresh({ ttcStart: '2025-01-01' })
+    expect(doctorKey('2025-01-01')).toBe('doctor:2025-01-01')
+    // 34 in 2026 (12 months) → 35 in 2027 (6 months): the same notice, not a second one.
+    const keys34 = doctor(born(long, 1992), '2026-09-20').map((x) => x.key).sort()
+    const keys35 = doctor(born(long, 1992), '2027-01-02').map((x) => x.key).sort()
+    expect(keys34).toEqual(['doctor:2025-01-01:a', 'doctor:2025-01-01:b'])
+    expect(keys35).toEqual(keys34)
+    // 40+: "준비 초기에" wording, same key.
+    const forty = doctor(born(fresh({ ttcStart: '2026-09-01' }), 1986), '2026-09-02')
+    expect(forty.map((x) => x.key).sort()).toEqual(['doctor:2026-09-01:a', 'doctor:2026-09-01:b'])
+    expect(forty[0]!.title).toContain('준비 초기에')
+  })
+
+  it('counts a notice sent under the old threshold-bearing key as delivered', () => {
+    const long = fresh({ ttcStart: '2025-01-01' })
+    expect(doctorTold(long, '2025-01-01')).toBe(false)
+    const old: AppNotification = {
+      id: 'o',
+      to: 'a',
+      kind: 'doctor',
+      title: '',
+      body: '',
+      createdAt: '2026-01-02T09:00:00+09:00',
+      key: 'doctor:2025-01-01:12:a',
+      read: true,
+    }
+    const told = { ...long, notifications: [old] }
+    expect(doctorTold(told, '2025-01-01')).toBe(true)
+    expect(doctor(told, '2026-09-20')).toEqual([])
+    // A new trying period (after a loss) gets its own.
+    expect(doctorTold(told, '2026-03-01')).toBe(false)
   })
 })
 

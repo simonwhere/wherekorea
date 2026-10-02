@@ -21,6 +21,7 @@ import type {
 } from '../types'
 import {
   FERTILE_DAYS_BEFORE,
+  LH_LEAD_DAYS,
   addPeriod,
   cycleAt,
   dayInfo,
@@ -80,9 +81,11 @@ export interface LHInput {
  * Log an LH result, keeping at most MAX_LH_PER_DAY a day. A test at the same
  * time (or both untimed) replaces that one; when the day is full, the new test
  * replaces the one closest in time (untimed ones count as farthest; ties go to
- * the later one).
+ * the later one). A date after `today` is ignored (the sheet never offers one,
+ * but a re-applied change or a pinned date must not log the future either).
  */
-export function addLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, input: LHInput): S {
+export function addLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, input: LHInput, today?: ISODate): S {
+  if (today && input.date > today) return state
   const test: LHTest = {
     date: input.date,
     result: input.result,
@@ -154,9 +157,15 @@ function settledByPeriod(state: Pick<AppState, 'periods'>, date: ISODate): boole
 /**
  * Log a home pregnancy test. A positive one while preparing starts the calm
  * "병원 확인 전" state (ttc.markPositivePending) — no celebration yet — unless
- * a period was logged on or after its date.
+ * a period was logged on or after its date. A date after `today` is ignored
+ * (`test` is then undefined and the state comes back as it was).
  */
-export function addPregnancyTest(state: AppState, input: PregnancyTestInput): { state: AppState; test: PregnancyTest } {
+export function addPregnancyTest(
+  state: AppState,
+  input: PregnancyTestInput,
+  today?: ISODate,
+): { state: AppState; test?: PregnancyTest } {
+  if (today && input.date > today) return { state }
   const test: PregnancyTest = {
     id: input.id ?? uid(),
     date: input.date,
@@ -195,9 +204,10 @@ export function removePregnancyTest(state: AppState, id: string): AppState {
 /**
  * Log a period start. Also ends a rest cycle begun before it and quietly
  * clears an unconfirmed positive test (ttc.onPeriodLogged). An existing record
- * on the same day keeps its end date.
+ * on the same day keeps its end date. A date after `today` is ignored.
  */
-export function logPeriodStart(state: AppState, date: ISODate, by?: MemberId): AppState {
+export function logPeriodStart(state: AppState, date: ISODate, by?: MemberId, today?: ISODate): AppState {
+  if (today && date > today) return state
   const prev = state.periods.find((p) => p.start === date)
   return onPeriodLogged(addPeriod(state, date, prev?.end, by ?? prev?.by), date)
 }
@@ -229,13 +239,9 @@ export function addNote(
   note: { date: ISODate; author: MemberId; text: string; id?: string },
   nowISO: string,
 ): AppState {
-  // Re-applied with the same id (two-tab sync rebase): already there.
-  if (note.id && state.diary.some((e) => e.id === note.id)) return state
+  // Re-applied with the same id (two-tab sync rebase): addEntry keeps the first.
   const text = note.text.trim().slice(0, NOTE_MAX_LENGTH)
-  const next = addEntry(state, { date: note.date, author: note.author, text }, nowISO)
-  if (next === state || !note.id) return next
-  const added = next.diary[next.diary.length - 1]!
-  return { ...next, diary: [...next.diary.slice(0, -1), { ...added, id: note.id }] }
+  return addEntry(state, { id: note.id, date: note.date, author: note.author, text }, nowISO)
 }
 
 // ── 되돌리기 ────────────────────────────────────────────────
@@ -328,8 +334,8 @@ export function undoLog(state: AppState, undo: LogUndo): AppState {
 
 export type { LogKind }
 
-/** How many days before the estimated window LH testing is suggested. */
-export const LH_LEAD_DAYS = 3
+/** How many days before the estimated window LH testing is suggested (cycle.LH_LEAD_DAYS, shared with the home card). */
+export { LH_LEAD_DAYS }
 
 /**
  * The chip the sheet opens on for `date`, from where the cycle is: bleeding or

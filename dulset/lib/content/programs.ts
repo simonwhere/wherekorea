@@ -34,8 +34,9 @@ export const PROGRAMS: Program[] = [
     how: 'e보건소 또는 주소지 보건소에서 먼저 신청 → 검사의뢰서 받기 → 참여 의료기관에서 검사',
     deadline: '신청 후 3개월 안에 검사, 검사 후 1개월 안에 청구',
     effective: '2025-01-01',
-    url: 'https://www.e-health.go.kr',
-    urlLabel: 'e보건소',
+    // The programme's own page (the same link as the 달력 guide, fertility.ts SOURCES.eHealth).
+    url: 'https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097',
+    urlLabel: 'e보건소 임신 사전건강관리',
   },
   {
     id: 'folic-acid',
@@ -53,7 +54,8 @@ export const PROGRAMS: Program[] = [
     stages: ['preparing'],
     title: '난임부부 시술비 지원',
     benefit: '건강보험 본인부담금·비급여의 상당 부분 지원 (출산당 25회: 인공수정 5 · 체외수정 20)',
-    who: '난임 진단을 받은 부부 (소득 기준 없음). 45세 미만 본인부담률 30%',
+    // kr-programs.json (사실혼 인정): private guides say a 1-year de facto marriage qualifies; not confirmed in a government document, so only "ask".
+    who: '난임 진단을 받은 부부 (소득 기준 없음). 45세 미만 본인부담률 30%. 사실혼 부부는 지자체·보건소에 확인해요',
     how: '주소지 보건소 또는 정부24 신청 → 지원결정통지서 발급',
     deadline: '지원결정통지서 유효기간 6개월 (2026년부터)',
     effective: '2024-11 (출산당 25회), 2026 (통지서 6개월)',
@@ -71,8 +73,9 @@ export const PROGRAMS: Program[] = [
     who: '난임 치료를 받는 근로자 (남성도 쓸 수 있어요)',
     how: '회사에 신청해요. 우선지원대상기업(중소기업)은 유급분을 정부가 지원해요 (2026-11-27부터 최초 4일분). 회사마다 절차가 달라요',
     effective: '2025-02-23 (연 6일), 2026-11-27 (유급 4일)',
-    url: 'https://www.moel.go.kr',
-    urlLabel: '고용노동부',
+    // 고용노동부's own 난임치료휴가 card news (kr-programs.json 난임치료휴가 sources).
+    url: 'https://www.moel.go.kr/news/cardinfo/view.do?bbs_seq=20250201818',
+    urlLabel: '고용노동부 안내',
   },
   {
     id: 'pregnancy-voucher',

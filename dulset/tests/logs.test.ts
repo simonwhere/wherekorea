@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '@/lib/initial'
 import {
+  LH_LEAD_DAYS,
   MAX_LH_PER_DAY,
   addLHTest,
   addNote,
@@ -21,7 +22,9 @@ import {
   undoLog,
   type LogTarget,
 } from '@/lib/logic/logs'
+import { addEntry } from '@/lib/logic/diary'
 import { mergeNotices, scheduledNotices } from '@/lib/logic/notifications'
+import { LH_LEAD_DAYS as HOME_LH_LEAD_DAYS } from '@/lib/logic/ttcFlow'
 import { startRestCycle } from '@/lib/logic/ttc'
 import type { AppState } from '@/lib/types'
 
@@ -132,7 +135,7 @@ describe('pregnancy tests', () => {
 
   it('a positive test while preparing waits for the clinic (no stage change)', () => {
     const { state, test } = addPregnancyTest(preparing(), { date: '2026-09-28', result: 'positive', by: 'b' })
-    expect(state.positivePending).toEqual({ since: '2026-09-28', testId: test.id })
+    expect(state.positivePending).toEqual({ since: '2026-09-28', testId: test!.id })
     expect(state.stage).toBe('preparing')
     // A faint line does not start it.
     expect(addPregnancyTest(preparing(), { date: '2026-09-28', result: 'faint' }).state.positivePending).toBeUndefined()
@@ -228,6 +231,27 @@ describe('periods', () => {
   })
 })
 
+describe('nothing is logged in the future', () => {
+  // The sheet never offers a day after today, but a change re-applied by the
+  // two-tab sync or a pinned ?today must not slip one in either.
+  it('period, LH and test logs dated after today leave the state as it is', () => {
+    const s = preparing()
+    expect(logPeriodStart(s, '2026-09-29', 'b', '2026-09-28')).toBe(s)
+    expect(logPeriodStart(s, '2026-09-28', 'b', '2026-09-28').periods.map((p) => p.start)).toContain('2026-09-28')
+    expect(addLHTest(s, { date: '2026-09-29', time: '08:00', result: 'positive', by: 'b' }, '2026-09-28')).toBe(s)
+    expect(addLHTest(s, { date: '2026-09-28', time: '08:00', result: 'positive', by: 'b' }, '2026-09-28').lhTests).toHaveLength(1)
+    const future = addPregnancyTest(s, { id: 'f', date: '2026-09-29', result: 'positive', by: 'b' }, '2026-09-28')
+    expect(future).toEqual({ state: s })
+    expect(future.state.positivePending).toBeUndefined()
+    expect(addPregnancyTest(s, { id: 'f', date: '2026-09-28', result: 'positive', by: 'b' }, '2026-09-28').test?.id).toBe('f')
+  })
+
+  it('the home card and the sheet count LH lead days from the same constant', () => {
+    expect(LH_LEAD_DAYS).toBe(HOME_LH_LEAD_DAYS)
+    expect(LH_LEAD_DAYS).toBe(3)
+  })
+})
+
 describe('notes', () => {
   it('saves one line as a diary entry of the current stage', () => {
     const s = addNote(preparing(), { date: '2026-09-28', author: 'a', text: '  오늘은 푹 쉬었어요  ', id: 'n1' }, NOW)
@@ -239,6 +263,15 @@ describe('notes', () => {
   it('is applied once per id (the two-tab sync may re-apply a change)', () => {
     const once = addNote(preparing(), { date: '2026-09-28', author: 'a', text: '메모', id: 'n1' }, NOW)
     expect(addNote(once, { date: '2026-09-28', author: 'a', text: '메모', id: 'n1' }, NOW)).toBe(once)
+    // Same for a diary entry written with the composer's own id.
+    const entry = { id: 'd1', date: '2026-09-28', author: 'b' as const, text: '오늘의 기록', mood: '🥰' }
+    const one = addEntry(preparing(), entry, NOW)
+    expect(one.diary).toHaveLength(1)
+    expect(one.diary[0]).toMatchObject({ id: 'd1', text: '오늘의 기록', mood: '🥰' })
+    expect(addEntry(one, entry, NOW)).toBe(one)
+    // Without an id each call still adds (demo data, older callers).
+    const { id: _id, ...noId } = entry
+    expect(addEntry(addEntry(preparing(), noId, NOW), noId, NOW).diary).toHaveLength(2)
   })
 })
 

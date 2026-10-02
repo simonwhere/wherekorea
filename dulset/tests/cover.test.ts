@@ -421,7 +421,7 @@ describe('heroLine', () => {
       out.push({ name: 'surge', state: lh, day: '2026-09-13' })
       out.push({ name: 'rest', state: startRestCycle(fresh(), '2026-09-05'), day: '2026-09-11' })
       const positive = addPregnancyTest(fresh(), { date: '2026-09-27', result: 'positive', time: '06:30', by: OWNER })
-      out.push({ name: 'positive-pending', state: markPositivePending(positive.state, '2026-09-27', positive.test.id), day: '2026-09-28' })
+      out.push({ name: 'positive-pending', state: markPositivePending(positive.state, '2026-09-27', positive.test!.id), day: '2026-09-28' })
       out.push({ name: 'no-data', state: fresh({ periods: [] }), day: TODAY })
       out.push({ name: 'after-loss', state: afterLoss('2026-09-01'), day: '2026-09-11' })
       return out

@@ -39,7 +39,7 @@ export default function LHPanel({
     // Only when the estimate really moved (the cycle's first surge), and only where dates are shown.
     const moved = !paused && lhChangesEstimate(state, input)
     const again = moved ? (view === 'explicit' ? ' · 배란 예상일을 다시 계산했어요' : ' · 예상 날짜를 다시 계산했어요') : ''
-    save((s) => addLHTest(s, input), { kind: 'lh', date }, `LH ${ro(label)} 남겼어요${again}`)
+    save((s) => addLHTest(s, input, today), { kind: 'lh', date }, `LH ${ro(label)} 남겼어요${again}`)
   }
 
   return (

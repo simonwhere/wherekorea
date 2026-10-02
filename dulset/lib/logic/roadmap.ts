@@ -244,12 +244,15 @@ export function setTemplateDone(
   return { ...state, planDone }
 }
 
+/** A custom 챙길 것 title (the sheet's maxLength; sanitizeBackup clamps imported ones too). */
+export const CUSTOM_TITLE_MAX = 40
+
 export function addCustomTask(
   state: AppState,
   input: { title: string; phase: RoadmapPhase; who: MemberId | 'both'; due?: ISODate },
   createdBy: MemberId,
 ): AppState {
-  const title = input.title.trim()
+  const title = input.title.trim().slice(0, CUSTOM_TITLE_MAX)
   if (!title) return state
   const task: CustomTask = { id: uid(), title, phase: input.phase, who: input.who, createdBy, ...(input.due ? { due: input.due } : {}) }
   return { ...state, customTasks: [...state.customTasks, task] }

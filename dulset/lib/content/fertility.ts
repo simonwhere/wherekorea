@@ -32,6 +32,9 @@ export interface GuideSection {
   showWhenHidden: boolean
 }
 
+/** When the numbers and links below were last checked against their sources. */
+export const GUIDE_CHECKED_AT = '2026-09-26'
+
 export const SOURCES = {
   wilcox1995: { name: 'Wilcox 외, NEJM 1995 (가임기 6일)', url: 'https://www.nejm.org/doi/full/10.1056/NEJM199512073332301' },
   wilcox2000: { name: 'Wilcox 외, BMJ 2000 (달력 예측의 한계)', url: 'https://pubmed.ncbi.nlm.nih.gov/11082086/' },
@@ -125,13 +128,13 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     points: [
       '예상 가임기엔 하루나 이틀에 한 번이 가장 좋고, 일주일에 2~3번도 거의 비슷해요 (ASRM).',
       '영국 NICE(2026)는 날짜를 맞추기보다 주기 전체에 걸쳐 2~3일에 한 번을 권해요.',
-      '규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요 (NICE).',
+      '40세 미만 여성 기준, 규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요 (NICE).',
       '날짜 알림이 부담되면 설정에서 ‘부담 없이 모드’를 켜 보세요.',
     ],
     hiddenPoints: [
       '영국 NICE(2026)는 날짜를 맞추기보다 주기 전체에 걸쳐 2~3일에 한 번을 권해요.',
       '미국 ASRM도 일주일에 2~3번이면 날짜를 맞춘 경우와 거의 비슷하다고 봐요.',
-      '규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요 (NICE).',
+      '40세 미만 여성 기준, 규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요 (NICE).',
     ],
     sources: [SOURCES.asrm2022, SOURCES.nice2026],
     showWhenHidden: true,
@@ -209,7 +212,7 @@ export function doctorAgeLine(name: string, age: number): string {
 /** NICE framing shown instead of fertile-day estimates in the hidden view. */
 export const NICE_GUIDANCE = {
   title: '날짜 대신, 우리 리듬대로',
-  body: '특정 날을 맞추지 않아도 괜찮아요. 주기 전체에 걸쳐 2~3일에 한 번 편하게 함께하는 게 좋고, 규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요.',
+  body: '특정 날을 맞추지 않아도 괜찮아요. 주기 전체에 걸쳐 2~3일에 한 번 편하게 함께하는 게 좋고, 40세 미만 여성 기준으로 규칙적으로 함께하는 커플의 80% 이상이 1년 안에 임신해요.',
   source: SOURCES.nice2026,
 } as const
 

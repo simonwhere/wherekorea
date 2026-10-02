@@ -38,6 +38,7 @@ import {
 } from '@/lib/logic/settings'
 import { FERTILITY_CLAIM_ID, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
 import { canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import { CUSTOM_TITLE_MAX } from '@/lib/logic/roadmap'
 import { setCover, setHideCover } from '@/lib/logic/cover'
 import { normalize } from '@/lib/storage'
 import { parseState } from '@/lib/storage'
@@ -462,6 +463,64 @@ describe('sanitizeBackup', () => {
     expect(out.baby).toEqual({ name: '아기', birthDate: '2026-09-01', sex: 'unknown' })
     expect(out.diary).toEqual([])
     expect(() => backupSummary(out)).not.toThrow()
+  })
+
+  it('rebuilds appointments field by field: a non-text place/note is dropped, the appointment kept', () => {
+    const s = clone(fresh())
+    s.appointments = [
+      {
+        id: 'a1',
+        date: '2026-10-10',
+        time: '10:30',
+        title: '산부인과',
+        place: {} as never,
+        note: 7 as never,
+        who: 'both',
+        kind: 'hospital',
+        taskId: 'pre-checkup',
+        createdBy: 'zz' as never,
+        done: 'yes' as never,
+        extra: 1,
+      } as never,
+      { id: 'a2', date: '2026-10-11', title: '검사', place: '보건소', who: 'b', kind: 'test', createdBy: 'b', done: true },
+    ]
+    const out = sanitizeBackup(s)!
+    expect(out.appointments).toEqual([
+      { id: 'a1', date: '2026-10-10', title: '산부인과', who: 'both', kind: 'hospital', createdBy: 'b', time: '10:30', taskId: 'pre-checkup' },
+      { id: 'a2', date: '2026-10-11', title: '검사', who: 'b', kind: 'test', createdBy: 'b', done: true, place: '보건소' },
+    ])
+  })
+
+  it('clamps names and custom task titles to what the sheets allow', () => {
+    const s = clone(fresh())
+    s.couple.members = [{ ...s.couple.members[0], name: '  아주아주아주아주긴이름이에요정말  ' }, s.couple.members[1]]
+    s.customTasks = [
+      { id: 'c1', title: ` ${'가'.repeat(60)} `, phase: 'preconception', who: 'both', createdBy: 'x' as never, doneAt: 'soon' as never, doneBy: 'q' as never },
+    ]
+    const out = sanitizeBackup(s)!
+    expect(out.couple.members[0].name).toBe('아주아주아주아주긴이름이')
+    expect(out.couple.members[0].name.length).toBe(NAME_MAX)
+    expect(out.customTasks).toEqual([{ id: 'c1', title: '가'.repeat(CUSTOM_TITLE_MAX), phase: 'preconception', who: 'both', createdBy: 'b' }])
+  })
+
+  it('turns a UTC createdAt into the local form, so 시작한 날 is the day the couple started', () => {
+    const s = clone(fresh())
+    // 2026-10-02 08:30 KST saved as UTC by an older version.
+    s.createdAt = '2026-10-01T23:30:00.000Z'
+    const out = sanitizeBackup(s)!
+    expect(out.createdAt).toBe('2026-10-02T08:30:00+09:00')
+    expect(backupSummary(out).createdAt).toBe('2026-10-02')
+    // Already local: untouched.
+    expect(sanitizeBackup({ ...clone(fresh()), createdAt: '2026-03-01T00:30:00+09:00' })!.createdAt).toBe('2026-03-01T00:30:00+09:00')
+  })
+
+  it('a new couple gets a local createdAt (08:30 KST on 10-02 is 10-02, not 10-01)', () => {
+    const s = createInitialState(
+      { me: { name: '민수', role: 'husband' }, partner: { name: '지은', role: 'wife' }, cycleOwner: 'b' },
+      new Date(2026, 9, 2, 8, 30),
+    )
+    expect(s.createdAt).toBe('2026-10-02T08:30:00+09:00')
+    expect(backupSummary(s).createdAt).toBe('2026-10-02')
   })
 
   it('keeps a pregnancy with a valid LMP and drops a bad due date', () => {

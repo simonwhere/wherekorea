@@ -5,14 +5,17 @@
 // plausible range, and nothing touches history (periods, diary, checks).
 
 import { addMonths, formatKo, isISODate, parts } from '../dates'
+import { CUSTOM_TITLE_MAX } from './roadmap'
 import {
   MEMBER_IDS,
   type AlertStyle,
   type AppNotification,
   type AppState,
+  type Appointment,
   type BabySex,
   type CheckItem,
   type CheckKind,
+  type CustomTask,
   type CycleSettings,
   type DatePlan,
   type DiaryEntry,
@@ -30,7 +33,7 @@ import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, ot
 import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
 import { cleanCover } from './cover'
 import type { CycleStats } from './cycle'
-import { SOFT_FERTILE_TITLE, softFertileBody } from './notifications'
+import { SOFT_FERTILE_TITLE, localNowISO, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
 import { canStartPregnancy, updatePregnancy } from './pregnancy'
 
@@ -213,7 +216,7 @@ export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: 
 export const ALERT_STYLE_OPTIONS: ReadonlyArray<{ value: AlertStyle; label: string; hint: string }> = [
   { value: 'explicit', label: '가임기라고 알려 주세요', hint: '예상 날짜와 함께 알려 드려요' },
   { value: 'soft', label: '‘우리의 주간’처럼 은근하게', hint: '건강 용어 없이, 둘만의 시간으로' },
-  { value: 'off', label: '받지 않을래요', hint: '가임기 알림만 쉬어요' },
+  { value: 'off', label: '받지 않을래요', hint: '가임기 알림만 쉬어요 · 생리 예정·병원 일정 알림은 그대로 와요' },
 ]
 
 export function alertStyleLabel(style: AlertStyle): string {
@@ -367,7 +370,7 @@ function cleanMember(raw: Loose, id: MemberId): Member {
   const m = { ...raw } as unknown as Member
   m.id = id
   m.role = role
-  m.name = isStr(raw.name) && raw.name.trim() ? raw.name : ROLE_LABEL[role]
+  m.name = isStr(raw.name) && raw.name.trim() ? raw.name.trim().slice(0, NAME_MAX) : ROLE_LABEL[role]
   m.emoji = isStr(raw.emoji) && raw.emoji.trim() && raw.emoji.length <= 16 ? raw.emoji : ROLE_EMOJI[role]
   m.tracksCycle = raw.tracksCycle === true
   const y = raw.birthYear
@@ -586,7 +589,9 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (!(isStr(a.emoji) && a.emoji.length <= 8)) delete out.emoji
       return out
     }),
-    appointments: list(
+    // Rebuilt field by field (the list screen renders place/note as text and
+    // reads done/createdBy): a bad optional field is dropped, unknown ones too.
+    appointments: list<Loose>(
       input.appointments,
       (a) =>
         isStr(a.id) &&
@@ -595,7 +600,20 @@ export function sanitizeBackup(input: AppState): AppState | null {
         (a.who === 'both' || isMemberId(a.who)) &&
         ['hospital', 'test', 'vaccine', 'admin', 'other'].includes(a.kind as string) &&
         (a.time === undefined || (isStr(a.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))),
-    ),
+    ).map((raw) => {
+      const a: Loose = {
+        id: raw.id,
+        date: raw.date,
+        title: raw.title,
+        who: raw.who,
+        kind: raw.kind,
+        createdBy: isMemberId(raw.createdBy) ? raw.createdBy : ownerId,
+      }
+      if (raw.time !== undefined) a.time = raw.time
+      if (raw.done === true) a.done = true
+      for (const k of ['place', 'note', 'taskId']) if (isStr(raw[k])) a[k] = raw[k]
+      return a as unknown as Appointment
+    }),
     planDone: isObj(input.planDone)
       ? Object.fromEntries(
           Object.entries(input.planDone).filter(
@@ -603,7 +621,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
           ),
         )
       : {},
-    customTasks: list(
+    customTasks: list<Loose>(
       input.customTasks,
       (c) =>
         isStr(c.id) &&
@@ -611,7 +629,20 @@ export function sanitizeBackup(input: AppState): AppState | null {
         ['preconception', 'pregnancy-1st', 'pregnancy-2nd', 'pregnancy-3rd', 'birth', 'postpartum'].includes(c.phase as string) &&
         (c.who === 'both' || isMemberId(c.who)) &&
         (c.due === undefined || isISODate(c.due)),
-    ),
+    ).map((raw) => {
+      const c: Loose = { ...raw, title: (raw.title as string).trim().slice(0, CUSTOM_TITLE_MAX) }
+      if (!isISODate(raw.doneAt)) delete c.doneAt
+      if (!isMemberId(raw.doneBy)) delete c.doneBy
+      if (!isMemberId(raw.createdBy)) c.createdBy = ownerId
+      return c as unknown as CustomTask
+    }),
+  }
+
+  // A createdAt saved as UTC ('…Z', from an older version) reads as the day
+  // before in Korea until 9am; the local form is what every screen expects.
+  if (isStr(input.createdAt) && input.createdAt.endsWith('Z')) {
+    const d = new Date(input.createdAt)
+    if (!Number.isNaN(d.getTime())) next.createdAt = localNowISO(d)
   }
 
   if (isObj(input.sync)) {

@@ -1,5 +1,6 @@
 import { todayISO } from './dates'
 import { inviteCode, uid } from './id'
+import { localNowISO } from './logic/notifications'
 import type { AppState, CheckItem, ISODate, Member, MemberId, Role } from './types'
 
 export const DEFAULT_CYCLE_LENGTH = 28
@@ -124,7 +125,9 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
   ]
   return {
     version: 1,
-    createdAt: now.toISOString(),
+    // Local-date-prefixed like every other timestamp, so createdAt.slice(0, 10)
+    // is the day the couple started (a UTC string reads as yesterday before 9am in Korea).
+    createdAt: localNowISO(now),
     onboarded: true,
     // No cover photo yet (couple.cover): the home shows the default art until
     // one of them hangs a photo (components/cover/CoverSheet).

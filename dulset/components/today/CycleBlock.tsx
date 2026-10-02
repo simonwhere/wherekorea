@@ -131,7 +131,7 @@ export default function CycleBlock({
     switch (a.type) {
       case 'log':
         // Only the person whose cycle it is logs periods, LH and tests.
-        if (canLogCycle(state, me.id)) openLog({ kind: a.kind })
+        if (canLogCycle(state, me.id)) openLog({ kind: a.kind, from: 'today' })
         return
       case 'nav':
         onNavigate(a.to)
@@ -161,6 +161,9 @@ export default function CycleBlock({
   const secondary = m.secondary?.type === 'nav' && m.secondary.to === 'cycle' && strip ? undefined : m.secondary
   const secondaryLink = secondary?.type === 'nav' ? secondary : undefined
   const secondaryPill = secondary && secondary.type !== 'nav' && !pending ? secondary : undefined
+  // The fold rule (useFoldFit) keeps the card's action on the first screen: the
+  // primary, else the 알릴까요? buttons or the lone secondary pill, else the title.
+  const foldOnTitle = !primary && !m.askTell && !secondaryPill
   // With a ring or week row there is always a way to the calendar.
   const cycleLink = strip ? TO_CYCLE : undefined
   // Right of the primary: a link (the moment's own, else 주기 보기), unless a second pill takes the row.
@@ -208,7 +211,7 @@ export default function CycleBlock({
         </div>
         {/* data-fold: what must stay above the tab bar on the first screen (useFoldFit). */}
         <h2
-          data-fold={primary ? undefined : ''}
+          data-fold={foldOnTitle ? '' : undefined}
           className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink"
         >
           <Title text={m.title} />
@@ -246,7 +249,7 @@ export default function CycleBlock({
           <div className={inner}>
             <h3 className="text-[14.5px] font-extrabold tracking-[-0.02em] text-ink">{partner.name}님에게 알릴까요?</h3>
             <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">‘이번 달은 쉬어 가요’라고 조용히 알려 드려요.</p>
-            <div className="mt-3 flex gap-2">
+            <div data-fold="" className="mt-3 flex gap-2">
               <PillButton size="md" className="min-w-0 flex-1" onClick={() => tellPeriod(m.askTell!.start)}>
                 알리기
               </PillButton>
@@ -326,9 +329,11 @@ export default function CycleBlock({
             )}
           </div>
         ) : secondaryPill ? (
-          <PillButton variant="outline" full className="mt-3.5" onClick={() => run(secondaryPill)}>
-            {secondaryPill.label}
-          </PillButton>
+          <div data-fold="" className="mt-3.5">
+            <PillButton variant="outline" full onClick={() => run(secondaryPill)}>
+              {secondaryPill.label}
+            </PillButton>
+          </div>
         ) : null}
 
         {footnote ? <p className="mt-3 text-[12.5px] leading-[1.5] text-ink-3">{m.note}</p> : null}

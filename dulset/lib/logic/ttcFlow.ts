@@ -34,6 +34,7 @@ import { LH_LABEL, cycleLens, peakLabel, showsLH, showsPeak, type FertilityView 
 import { mondayOf } from './checks'
 import { fertileHintsAllowed } from './dateIdeas'
 import {
+  LH_LEAD_DAYS,
   LONG_LATE_DAYS,
   cycleAt,
   dayInfo,
@@ -69,8 +70,13 @@ export type MomentKind =
 
 /** Period days 1–3: "수고했어요" first, next-window talk only from day 4. */
 export const PERIOD_EARLY_DAYS = 3
-/** LH testing starts this many days before the estimated window ("며칠 전부터"). */
-export const LH_LEAD_DAYS = 2
+/**
+ * A period logged late (up to this day) still gets "수고했어요" and the one
+ * question about telling the partner, until she answers it.
+ */
+export const PERIOD_ASK_DAYS = 7
+/** The same lead as the log sheet's default chip (cycle.LH_LEAD_DAYS). */
+export { LH_LEAD_DAYS }
 /** After a negative test, try again 2–3 days later. */
 export const RETEST_AFTER_DAYS: readonly [number, number] = [2, 3]
 
@@ -160,6 +166,10 @@ export function ttcPhase(state: AppState, today: ISODate): TtcPhase | null {
   const current = cycleStart ? cycleAt(state, cycleStart) : null
   const testsFrom = current ? addDays(current.ovulation, 1) : cycleStart
   const lastTest = latestTest(state.pregnancyTests ?? [], testsFrom, today)
+  // A rest cycle pauses every date, the late day included: no "예정일이 지났어요"
+  // (and no late / period-due notice — notifications.ts) until she logs a period.
+  const rest = activeRest(state)
+  if (rest) return { ...base, kind: 'rest', rest }
   if (status.kind === 'late') {
     return {
       ...base,
@@ -171,19 +181,22 @@ export function ttcPhase(state: AppState, today: ISODate): TtcPhase | null {
       retest: retestHint(lastTest, status.expected, today),
     }
   }
-  const rest = activeRest(state)
-  if (rest) return { ...base, kind: 'rest', rest }
 
   switch (status.kind) {
-    case 'period':
+    case 'period': {
+      // Days 1–3, and a start logged late (up to day 7) while "알릴까요?" is unanswered.
+      const early =
+        status.cycleDay <= PERIOD_EARLY_DAYS ||
+        (status.cycleDay <= PERIOD_ASK_DAYS && !!cycleStart && periodTellState(state, cycleStart) === 'ask')
       return {
         ...base,
-        kind: status.cycleDay <= PERIOD_EARLY_DAYS ? 'period-early' : 'period',
+        kind: early ? 'period-early' : 'period',
         cycleDay: status.cycleDay,
         fertileStart: status.nextFertileStart,
         fertileEnd: status.fertileEnd,
         daysUntilFertile: status.daysUntilFertile,
       }
+    }
     case 'before-fertile':
       return {
         ...base,
@@ -280,6 +293,9 @@ export interface Moment {
   /** One thing the partner can do today. */
   partnerTip?: string
 }
+
+/** The first ultrasound is usually from about 5 weeks after the last period's first day. */
+export const ULTRASOUND_FROM_DAYS = 35
 
 const LOG_PERIOD: MomentAction = { type: 'log', kind: 'period', label: '생리 시작 기록' }
 const LOG_TEST: MomentAction = { type: 'log', kind: 'ptest', label: '테스트 결과 기록' }
@@ -415,13 +431,19 @@ function ownerMoment(c: Ctx): MomentBody {
     case 'positive-pending': {
       const since = p.pending!.since
       const told = hasKey(c.state, positiveToldKey(since))
+      // Where to stand next: the first scan is usually around 5–6 weeks from the
+      // last period's first day (docs/research/medical-checklist.json, 첫 산부인과
+      // 방문), and folic acid continues (medical.json, Folic acid).
+      const scanFrom = p.cycleStart ? day(addDays(p.cycleStart, ULTRASOUND_FROM_DAYS)) : undefined
       return {
         role,
         copy: 'owner.positive-pending',
         tone: 'brand',
         eyebrow: '테스트 양성 · 병원 확인 전',
         title: '병원에서 확인해 봐요',
-        body: '확인 전까지는 조심스럽게 기다려요. 병원 일정을 넣어 두면 둘이 함께 챙길 수 있어요.',
+        body: scanFrom
+          ? `확인 전까지는 조심스럽게 기다려요. 보통 마지막 생리 시작일로부터 5~6주 무렵(${scanFrom}부터) 초음파로 확인해요 — 병원마다 달라요. 엽산은 그대로 이어 가요.`
+          : '확인 전까지는 조심스럽게 기다려요. 보통 마지막 생리 시작일로부터 5~6주 무렵 초음파로 확인해요 — 병원마다 달라요. 엽산은 그대로 이어 가요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 넣기' },
         secondary: { type: 'confirm-pregnancy', label: '병원에서 확인했어요' },
         ...(told ? {} : { offerTellPositive: { since } }),
@@ -621,16 +643,32 @@ function ownerMoment(c: Ctx): MomentBody {
           retest: r,
         }
       }
+      if (p.early) {
+        // Too early for a test to say much: a countdown, and the log stays a
+        // quiet second choice (the sheet logs a test any day regardless). The
+        // date sits in the eyebrow so the title stays one line on a 375px phone.
+        return {
+          role,
+          copy: 'owner.tww',
+          tone: 'default',
+          eyebrow: `${eyebrow} · ${day(p.testDate!)}부터 (예상)`,
+          title: `테스트까지 D-${diffDays(today, p.testDate!)}`,
+          body: '너무 이르면 음성일 수 있어요. 평소처럼 보내요.',
+          secondary: LOG_TEST,
+          testDate: p.testDate,
+          early: true,
+        }
+      }
       return {
         role,
         copy: 'owner.tww',
         tone: 'default',
         eyebrow,
-        title: p.early ? `테스트해 볼 수 있는 날: ${day(p.testDate!)} (예상)` : '오늘부터 테스트해 볼 수 있어요',
-        body: p.early ? '너무 이르면 음성일 수 있어요.' : '생리 예정일이에요 (예상). 결과를 기록해 두면 다음 할 일을 알려 드려요.',
+        title: '오늘부터 테스트해 볼 수 있어요',
+        body: '생리 예정일이에요 (예상). 결과를 기록해 두면 다음 할 일을 알려 드려요.',
         primary: LOG_TEST,
         testDate: p.testDate,
-        early: p.early,
+        early: false,
       }
     }
   }
@@ -1019,8 +1057,16 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
   const details = lens.details
   const paused = phase.kind === 'rest' || phase.kind === 'positive-pending'
   // Period days 1–3 are for "수고했어요" — the next window shows from day 4.
-  // (The partner without details keeps the shared band, so its absence says nothing.)
-  const showWindow = view !== 'hidden' && !paused && !(details && phase.kind === 'period-early')
+  // (The partner without details keeps the shared band, so its absence says
+  // nothing — except once she has told him: then his strip rests for those
+  // days too, and "no band" gives nothing away he wasn't told.)
+  const toldQuiet =
+    viewer !== cycleOwnerId(state) &&
+    (phase.kind === 'period-early' || phase.kind === 'period') &&
+    !!phase.cycleStart &&
+    (phase.cycleDay ?? 0) <= PERIOD_EARLY_DAYS &&
+    periodTellState(state, phase.cycleStart) === 'told'
+  const showWindow = view !== 'hidden' && !paused && !(details && phase.kind === 'period-early') && !toldQuiet
   const windowLabel = showWindow ? (view === 'explicit' ? '가임기 (예상)' : '우리의 주간 (예상)') : undefined
   const withPeak = showWindow && showsPeak(lens)
   const withLH = showsLH(lens) && view === 'explicit'
@@ -1029,7 +1075,9 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
     let start: ISODate
     let length: number
     let w: CycleWindow | null
-    if (phase.kind === 'late' || phase.kind === 'positive-pending') {
+    // A rest cycle past the expected day counts the real days too (the rest
+    // card wins over the late card, but the ring must not start a projected cycle).
+    if (phase.kind === 'late' || phase.kind === 'positive-pending' || (phase.kind === 'rest' && phase.status.kind === 'late')) {
       if (!phase.cycleStart) return null
       start = phase.cycleStart
       w = cycleAt(state, start)
@@ -1143,9 +1191,10 @@ export const LOSS_SUPPORT: readonly SupportItem[] = [
     id: 'spouse-leave',
     title: '배우자 유산·사산휴가 5일',
     body: '처음 3일은 유급이고, 유산·사산일부터 20일 안에 회사에 청구해요(2026-09-18 시행).',
+    // Official source first, press second.
     sources: [
-      { name: '인사이드피플 보도', url: 'https://www.insidepeople.co.kr/news/article.html?no=773455' },
       { name: '고용노동부', url: 'https://www.moel.go.kr' },
+      { name: '인사이드피플 보도', url: 'https://www.insidepeople.co.kr/news/article.html?no=773455' },
     ],
   },
   {

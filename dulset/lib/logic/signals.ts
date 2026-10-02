@@ -9,6 +9,7 @@
 // guilt-free "not today": a rest signal in every list, and a rest / not-today
 // reply under every signal (둘셋의 설계 판단 — docs/review-preconception.md).
 
+import { addDays } from '../dates'
 import { uid } from '../id'
 import type { AppNotification, AppState, ISODate, MemberId, Stage } from '../types'
 
@@ -152,17 +153,29 @@ export function sendSignal(
     key: `signal:${s.id}:${today}:${from}:${sent}`,
     read: false,
   }
-  // A reply answers today's signals from the partner, so they're no longer unread
-  // for the one replying (like answering a date proposal).
+  // A reply answers the partner's recent signals (the same window the home
+  // offers a reply for), so they're no longer unread for the one replying.
   const answered = (m: AppNotification) =>
-    s.tone === 'reply' && isSignal(m) && m.to === from && m.createdAt.startsWith(today) && !m.read
+    s.tone === 'reply' && isSignal(m) && m.to === from && withinReplyWindow(m, today) && !m.read
   return { ...state, notifications: [n, ...state.notifications.map((m) => (answered(m) ? { ...m, read: true } : m))] }
 }
 
-/** Latest signal the viewer received today that they haven't replied to yet. */
+/**
+ * A signal can be answered with one tap for this many days after the day it
+ * was sent (a 23:50 signal is still answerable next morning): today and the
+ * two days before — about 72 hours.
+ */
+export const SIGNAL_REPLY_DAYS = 2
+
+function withinReplyWindow(n: Pick<AppNotification, 'createdAt'>, today: ISODate): boolean {
+  const day = n.createdAt.slice(0, 10)
+  return day >= addDays(today, -SIGNAL_REPLY_DAYS) && day <= today
+}
+
+/** Latest signal the viewer received in the last few days that they haven't replied to yet. */
 export function pendingSignal(state: AppState, me: MemberId, today: ISODate): AppNotification | undefined {
   const received = state.notifications
-    .filter((n) => isSignal(n) && n.to === me && n.createdAt.startsWith(today) && signalById(signalIdOf(n) ?? '')?.tone !== 'reply')
+    .filter((n) => isSignal(n) && n.to === me && withinReplyWindow(n, today) && signalById(signalIdOf(n) ?? '')?.tone !== 'reply')
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0]
   if (!received) return undefined
   const replied = state.notifications.some(

@@ -38,6 +38,11 @@ export const FERTILE_DAYS_BEFORE = 5
 export const FERTILE_DAYS_AFTER = 0
 /** Peak = ovulation − 2 … ovulation. */
 export const PEAK_DAYS_BEFORE = 2
+/**
+ * LH testing starts this many days before the estimated window ("며칠 전부터").
+ * The one value the home card's countdown and the log sheet's default chip share.
+ */
+export const LH_LEAD_DAYS = 3
 
 /** Plausible range for a single measured cycle; gaps outside it are likely missed logs. */
 export const MIN_CYCLE = 15
@@ -55,7 +60,8 @@ export interface CycleStats {
   max?: number
   /**
    * True when logs suggest irregular cycles: average outside 21–35 days, or the
-   * shortest and longest recent cycles differ by more than 7 days.
+   * shortest and longest recent cycles differ by more than 7 days. Never from
+   * the settings value alone (an onboarding guess is not a record).
    */
   irregular: boolean
 }
@@ -74,7 +80,7 @@ export function cycleStats(periods: PeriodLog[], settings: CycleSettings): Cycle
   const recent = lengths.slice(-RECENT_CYCLES)
   if (recent.length === 0) {
     const average = clampCycle(settings.cycleLength)
-    return { lengths, average, source: 'settings', irregular: average < 21 || average > 35 }
+    return { lengths, average, source: 'settings', irregular: false }
   }
   const average = clampCycle(Math.round(recent.reduce((a, b) => a + b, 0) / recent.length))
   const min = Math.min(...recent)

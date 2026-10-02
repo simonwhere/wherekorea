@@ -17,7 +17,9 @@ import {
 } from '@/lib/logic/ttc'
 import {
   LOSS_SUPPORT,
+  PERIOD_ASK_DAYS,
   PERIOD_PARTNER_TIP,
+  ULTRASOUND_FROM_DAYS,
   acceptVaccineRest,
   cycleStrip,
   dismissVaccineRest,
@@ -64,6 +66,8 @@ function withStyle(s: AppState, member: 'a' | 'b', style: AlertStyle): AppState 
 }
 
 const share = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, shareCycleDetails: true } })
+/** She answered "알릴까요?" for the 09-01 period with 괜찮아요. */
+const answered = (s: AppState): AppState => skipTellPartnerPeriod(s, '2026-09-01', NOW)
 
 function test(date: ISODate, result: PregnancyTest['result'], time?: string): PregnancyTest {
   return { id: `${date}-${time ?? ''}`, date, result, ...(time ? { time } : {}), by: OWNER }
@@ -95,7 +99,9 @@ describe('ttcPhase', () => {
     const s = fresh()
     expect(ttcPhase(s, DAYS.periodEarly)?.kind).toBe('period-early')
     expect(ttcPhase(s, '2026-09-03')?.kind).toBe('period-early')
-    expect(ttcPhase(s, DAYS.period)?.kind).toBe('period')
+    // Day 4 stays 수고했어요 until she answers 알릴까요? (a start logged late).
+    expect(ttcPhase(s, DAYS.period)?.kind).toBe('period-early')
+    expect(ttcPhase(answered(s), DAYS.period)?.kind).toBe('period')
     expect(ttcPhase(s, DAYS.beforeLh)).toMatchObject({ kind: 'before-fertile', fertileStart: '2026-09-10', daysUntilFertile: 2 })
     expect(ttcPhase(s, DAYS.fertile)).toMatchObject({ kind: 'fertile', peak: false })
     expect(ttcPhase(s, DAYS.peak)).toMatchObject({ kind: 'fertile', peak: true })
@@ -134,14 +140,25 @@ describe('owner moments (explicit)', () => {
     expect(e.askTell).toEqual({ start: '2026-09-01' })
   })
 
-  it('from day 4 the next window shows (예상)', () => {
-    const e = m(DAYS.period)
+  it('a start logged late still gets 수고했어요 and 알릴까요? (to day 7); answered, the next window shows (예상)', () => {
+    // Day 4, unanswered: as if she had logged it on day 1.
+    const late = m(DAYS.period)
+    expect(late).toMatchObject({ kind: 'period-early', title: '이번 주기도 수고했어요', askTell: { start: '2026-09-01' } })
+    expect(words(late)).not.toMatch(/가임기|우리의 주간/)
+    // Answered (either way): straight on to the window talk.
+    const e = m(DAYS.period, answered(s))
     expect(e.title).toBe('다음 가임기는 9월 10일부터예요 (예상)')
     expect(e.askTell).toBeUndefined()
+    expect(m(DAYS.period, tellPartnerPeriod(s, '2026-09-01', NOW)).copy).toBe('owner.period')
+    // Past day 7 the question is gone even unanswered (an 8-day period here).
+    const long = fresh({ cycle: { cycleLength: 28, periodLength: 8 } })
+    expect(m('2026-09-07', long).kind).toBe('period-early')
+    expect(m(addDays('2026-09-01', PERIOD_ASK_DAYS), long)).toMatchObject({ kind: 'period', copy: 'owner.period' })
   })
 
   it('before the window: LH countdown, then [LH 기록]', () => {
-    expect(m(DAYS.beforeFar)).toMatchObject({ copy: 'owner.before-fertile', title: 'LH 테스트 시작 D-2' })
+    // Window from 09-10, LH lead 3 days (cycle.LH_LEAD_DAYS, shared with the sheet): testing from 09-07.
+    expect(m(DAYS.beforeFar)).toMatchObject({ copy: 'owner.before-fertile', title: 'LH 테스트 시작 D-1' })
     expect(m(DAYS.beforeFar).primary).toBeUndefined()
     const lh = m(DAYS.beforeLh)
     expect(lh).toMatchObject({ copy: 'owner.lh-start', title: '오늘 LH 테스트해 봐요' })
@@ -156,14 +173,19 @@ describe('owner moments (explicit)', () => {
     expect(m('2026-09-12', surge).title).toBe('LH 양성이 나왔어요')
   })
 
-  it('waiting weeks: testable day (예상) + "too early" line, [테스트 결과 기록]', () => {
+  it('waiting weeks: a countdown to the testable day (예상), the log a quiet second choice until then', () => {
     const e = m(DAYS.tww)
     expect(e).toMatchObject({ kind: 'tww', copy: 'owner.tww', testDate: '2026-09-29', early: true })
-    expect(e.title).toBe('테스트해 볼 수 있는 날: 9월 29일 (예상)')
-    expect(e.body).toBe('너무 이르면 음성일 수 있어요.')
+    expect(e.eyebrow).toBe('기다리는 주 · 9월 29일부터 (예상)')
+    expect(e.title).toBe('테스트까지 D-9')
+    expect(e.body).toBe('너무 이르면 음성일 수 있어요. 평소처럼 보내요.')
     expect(e.body).not.toMatch(/\d+%/)
-    expect(e.primary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
-    expect(m(DAYS.expected).title).toBe('오늘부터 테스트해 볼 수 있어요')
+    expect(e.primary).toBeUndefined()
+    expect(e.secondary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
+    expect(m('2026-09-28').title).toBe('테스트까지 D-1')
+    const due = m(DAYS.expected)
+    expect(due.title).toBe('오늘부터 테스트해 볼 수 있어요')
+    expect(due.primary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
   })
 
   it('a negative test → 다시 해 볼 날 (2–3 days later, or the expected day if sooner)', () => {
@@ -217,7 +239,7 @@ describe('owner wording follows her own alert style', () => {
     const s = setPersonalPref(fresh(), OWNER, 'lowPressure', true)
     for (const d of Object.values(DAYS)) expect(words(ttcMoment(s, d, OWNER)!), d).not.toMatch(FERTILE_WORDS)
     expect(ttcMoment(s, DAYS.fertile, OWNER)).toMatchObject({ copy: 'owner.calm', title: '날짜는 신경 쓰지 않아도 괜찮아요' })
-    expect(ttcMoment(s, DAYS.period, OWNER)).toMatchObject({ copy: 'owner.period', title: '생리 4일째예요' })
+    expect(ttcMoment(answered(s), DAYS.period, OWNER)).toMatchObject({ copy: 'owner.period', title: '생리 4일째예요' })
     // Only her own switch counts: the partner's low-pressure doesn't change her screen.
     const his = setPersonalPref(fresh(), PARTNER, 'lowPressure', true)
     expect(ttcMoment(his, DAYS.fertile, OWNER)!.copy).toBe('owner.fertile')
@@ -260,7 +282,7 @@ describe('partner moments', () => {
   it('with shared details: period care, peak days and a late period', () => {
     const s = share(fresh())
     expect(p(s, DAYS.periodEarly)).toMatchObject({ copy: 'partner.period-shared', partnerTip: PERIOD_PARTNER_TIP })
-    expect(p(s, DAYS.period).partnerTip).toBeUndefined()
+    expect(p(answered(s), DAYS.period).partnerTip).toBeUndefined()
     expect(p(s, DAYS.peak)).toMatchObject({ peak: true, body: '특히 오늘·내일이에요 (예상). 부담은 내려놓아요.' })
     expect(p(s, '2026-09-15').body).toBe('오늘까지예요 (예상). 부담은 내려놓아요.')
     expect(p(s, DAYS.late).copy).toBe('partner.late-shared')
@@ -360,6 +382,19 @@ describe('positive test, before the clinic', () => {
     expect(ttcMoment(told, '2026-09-28', OWNER)!.offerTellPositive).toBeUndefined()
   })
 
+  it('says where to stand next: the first scan from LMP + 5 weeks, folic acid continues', () => {
+    const m = ttcMoment(pending, '2026-09-28', OWNER)!
+    expect(ULTRASOUND_FROM_DAYS).toBe(35)
+    // Last period 09-01 → 10-06.
+    expect(m.body).toContain('5~6주 무렵(10월 6일부터)')
+    expect(m.body).toContain('병원마다 달라요')
+    expect(m.body).toContain('엽산은 그대로 이어 가요')
+    expect(m.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 넣기' })
+    // Without a logged period there is no date to count from.
+    const noLmp = markPositivePending(fresh({ periods: [] }), '2026-09-26')
+    expect(ttcMoment(noLmp, '2026-09-28', OWNER)!.body).toMatch(/5~6주 무렵 초음파/)
+  })
+
   it('pauses the window and settles quietly when a period comes', () => {
     expect(cycleStrip(pending, '2026-09-28', OWNER)!.hasWindow).toBe(false)
     const later = { ...pending, periods: [...pending.periods, { start: '2026-09-30' }] }
@@ -380,12 +415,18 @@ describe('rest cycle', () => {
     expect(words(m)).not.toMatch(FERTILE_WORDS)
   })
 
-  it('ends with the next period (the late check still comes first)', () => {
+  it('rest wins over late, and ends with the next period', () => {
     const s = startRestCycle(fresh(), '2026-09-05', 'rest')
-    expect(ttcPhase(s, DAYS.late)?.kind).toBe('late')
+    // Past the expected day the card still rests — no "예정일이 지났어요", no test prompt.
+    expect(ttcPhase(s, DAYS.late)?.kind).toBe('rest')
+    expect(ttcMoment(s, DAYS.late, OWNER)).toMatchObject({ copy: 'owner.rest', title: '이번 주기는 쉬어요' })
+    expect(ttcMoment(s, DAYS.lateLong, OWNER)!.copy).toBe('owner.rest')
+    // The ring keeps counting the real cycle (day 32), with no window.
+    expect(cycleStrip(s, DAYS.late, OWNER)).toMatchObject({ mode: 'cycle', cycleDay: 32, length: 32, hasWindow: false })
     const next = { ...s, periods: [...s.periods, { start: '2026-09-29' }] }
     expect(activeRest(next)).toBeUndefined()
     expect(onPeriodLogged(next, '2026-09-29').restCycle).toBeUndefined()
+    expect(ttcPhase(next, '2026-10-01')?.kind).toBe('period-early')
   })
 
   it('a vaccine rest lasts until a period at least a month after the shot', () => {
@@ -494,7 +535,19 @@ describe('cycle strip', () => {
     // …but the partner without details keeps the same two-week band (nothing to infer from).
     expect(cycleStrip(fresh(), DAYS.periodEarly, PARTNER)!.mode).toBe('weeks')
     expect(cycleStrip(share(fresh()), DAYS.periodEarly, PARTNER)!.hasWindow).toBe(false)
-    expect(cycleStrip(fresh(), DAYS.period, OWNER)!.hasWindow).toBe(true)
+    expect(cycleStrip(answered(fresh()), DAYS.period, OWNER)!.hasWindow).toBe(true)
+  })
+
+  it('once she told him, his strip rests on period days 1–3 too (and only then)', () => {
+    const told = tellPartnerPeriod(fresh(), '2026-09-01', NOW)
+    expect(ttcMoment(told, DAYS.periodEarly, PARTNER)!.copy).toBe('partner.period-told')
+    expect(cycleStrip(told, DAYS.periodEarly, PARTNER)).toBeNull()
+    expect(cycleStrip(told, '2026-09-03', PARTNER)).toBeNull()
+    // Day 4: the shared band is back; 괜찮아요 (not told) never hides it.
+    expect(cycleStrip(told, DAYS.period, PARTNER)!.mode).toBe('weeks')
+    expect(cycleStrip(answered(fresh()), DAYS.periodEarly, PARTNER)!.mode).toBe('weeks')
+    // Her own strip is unchanged by the answer.
+    expect(cycleStrip(told, DAYS.periodEarly, OWNER)!.hasWindow).toBe(false)
   })
 
   it('marks LH for the owner', () => {
@@ -564,7 +617,7 @@ describe('review fixes', () => {
   it('a test taken before this cycle’s ovulation doesn’t make 다시 해 볼 날 due', () => {
     const s = fresh({ pregnancyTests: [test('2026-09-02', 'negative')] })
     expect(ttcPhase(s, DAYS.tww)?.retest).toBeUndefined()
-    expect(ttcMoment(s, DAYS.tww, OWNER)).toMatchObject({ copy: 'owner.tww', title: '테스트해 볼 수 있는 날: 9월 29일 (예상)' })
+    expect(ttcMoment(s, DAYS.tww, OWNER)).toMatchObject({ copy: 'owner.tww', title: '테스트까지 D-9', eyebrow: '기다리는 주 · 9월 29일부터 (예상)' })
     expect(ttcPhase(s, DAYS.late)?.retest).toBeUndefined()
     // …while one after it still does.
     const after = fresh({ pregnancyTests: [test('2026-09-02', 'negative'), test('2026-09-22', 'negative')] })

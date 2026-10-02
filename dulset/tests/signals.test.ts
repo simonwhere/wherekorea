@@ -7,6 +7,7 @@ import {
   REPLIES,
   SIGNALS,
   SIGNALS_PER_DAY,
+  SIGNAL_REPLY_DAYS,
   pendingSignal,
   repliesFor,
   sendSignal,
@@ -40,9 +41,24 @@ describe('signals', () => {
     expect(pendingSignal(s, 'b', '2026-09-02')).toBeUndefined()
   })
 
-  it('does not carry yesterday’s signal into today', () => {
+  it('can be answered for about 72 hours (today and the two days before), not longer', () => {
     const s = sendSignal(base(), 'b', 'a', 'miss', '2026-09-02', '2026-09-02T18:00:00+09:00')
+    expect(SIGNAL_REPLY_DAYS).toBe(2)
+    expect(pendingSignal(s, 'a', '2026-09-03')).toBeDefined()
+    expect(pendingSignal(s, 'a', '2026-09-04')).toBeDefined()
+    expect(pendingSignal(s, 'a', '2026-09-05')).toBeUndefined()
+    // Never a signal from the future (a pinned ?today before it was sent).
+    expect(pendingSignal(s, 'a', '2026-09-01')).toBeUndefined()
+  })
+
+  it('a signal sent at 23:50 is still answered with one tap the next morning — and then it is done', () => {
+    let s = sendSignal(base(), 'b', 'a', 'miss', '2026-09-02', '2026-09-02T23:50:00+09:00')
+    const [n] = inbox(s, 'a')
+    expect(pendingSignal(s, 'a', '2026-09-03')?.id).toBe(n!.id)
+    s = sendSignal(s, 'a', 'b', 'yes', '2026-09-03', '2026-09-03T08:00:00+09:00')
     expect(pendingSignal(s, 'a', '2026-09-03')).toBeUndefined()
+    // The answered signal is no longer unread for the one who replied.
+    expect(s.notifications.find((x) => x.id === n!.id)?.read).toBe(true)
   })
 
   it('limits signals per day and ignores unknown ids', () => {

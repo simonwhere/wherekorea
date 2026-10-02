@@ -54,7 +54,7 @@ export const SUGGESTIONS: Suggestion[] = [
     audience: 'cycle-owner',
     evidence: 'strong',
     summary:
-      '임신 최소 1개월 전(한국은 보통 3개월 전)부터 임신 12주까지 하루 400µg. 신경관 결손 예방 효과가 가장 확실한 영양제예요.',
+      '임신 최소 1개월 전(한국은 보통 3개월 전)부터 임신 12주까지 하루 400µg. 신경관 결손 예방 효과가 가장 확실한 영양제예요. 이전 임신에서 신경관 결손이 있었다면 용량이 달라요 — 의사와 상의해요.',
     source: {
       name: 'USPSTF 2023 (A등급) · CDC · WHO · 질병관리청',
       url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/folic-acid-for-the-prevention-of-neural-tube-defects-preventive-medication',
@@ -192,7 +192,7 @@ export const SUGGESTIONS: Suggestion[] = [
     audience: 'partner',
     evidence: 'not-recommended',
     summary:
-      '난임 치료를 준비하는 남성 2,370명이 6개월 동안 아연·엽산 또는 위약을 먹은 무작위 연구에서 정액 질·출생률은 나아지지 않았고, 정자 DNA 손상은 오히려 늘었어요. 생활습관이 더 중요해요.',
+      '난임 치료를 준비하는 남성 2,370명이 고용량(엽산 5mg·아연 30mg)을 6개월 먹은 무작위 연구에서 정액 질·출생률은 나아지지 않았고, 정자 DNA 손상은 오히려 늘었어요. 생활습관이 더 중요해요. 먹던 종합비타민은 의사와 확인해요.',
     source: { name: 'FAZST, JAMA 2020', url: 'https://jamanetwork.com/journals/jama/fullarticle/2758450' },
     infoOnly: true,
   },
