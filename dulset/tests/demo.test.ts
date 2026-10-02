@@ -12,8 +12,10 @@ import { DATE_IDEAS } from '@/lib/content/dateIdeas'
 import { ROADMAP } from '@/lib/content/roadmap'
 import { addDays, addMonths, diffDays, isISODate, weekdayIndex } from '@/lib/dates'
 import {
+  CYCLE_RANGE,
   DEMO_COUPLE_DAYS,
   DEMO_COVER,
+  DEMO_FEEL_DAYS,
   DEMO_START_VIEWER,
   PREP_APPLIED_DAYS_AGO,
   PREP_APPOINTMENTS,
@@ -50,6 +52,7 @@ import { CLAIM_KEY } from '@/lib/logic/babyView'
 import { activeItems, coupleStreak, firstCheckedDate, isDone, itemsFor, progress, streak } from '@/lib/logic/checks'
 import { cycleAt, cycleStats, dayInfo, fertilityStatus, isSurge, sortedStarts } from '@/lib/logic/cycle'
 import { lhTestsOn } from '@/lib/logic/logs'
+import { lastCycleFeels, personalDays, stateForViewer } from '@/lib/logic/personalLog'
 import { FERTILITY_TEST_ID, completeMonthlyTask, fertilityChain, monthlyTask } from '@/lib/logic/partnerTrack'
 import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor } from '@/lib/logic/prefs'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
@@ -508,7 +511,13 @@ describe('onboarding helpers', () => {
     expect(isAppState(s)).toBe(true)
     expect(s.couple.members[0]).toMatchObject({ name: '남편', tracksCycle: false, birthYear: 1990 })
     expect(s.couple.members[1]).toMatchObject({ name: '지은', tracksCycle: true, birthYear: undefined })
-    expect(s.cycle).toEqual({ cycleLength: 45, periodLength: 2 })
+    // 99 is clamped to the shared range (lib/initial.ts CYCLE_RANGE_DEFAULT: 60; 90 with longCycles).
+    expect(s.cycle).toEqual({ cycleLength: CYCLE_RANGE.max, periodLength: 2 })
+    expect(CYCLE_RANGE.max).toBe(60)
+    const long = stateFromOnboarding({ ...choices, cycleLength: 75, longCycles: true }, '2026-09-26', NOW, 'ABC234')
+    expect(long.cycle).toEqual({ cycleLength: 75, periodLength: 2, longCycles: true })
+    expect(stateFromOnboarding({ ...choices, cycleLength: 120, longCycles: true }, '2026-09-26', NOW).cycle.cycleLength).toBe(90)
+    expect(stateFromOnboarding({ ...choices, cycleLength: 75 }, '2026-09-26', NOW).cycle.cycleLength).toBe(60)
     expect(s.periods).toEqual([{ start: '2026-09-10' }])
     expect(s.settings.ttcStart).toBe('2026-09-26') // future → today
     expect(s.settings.alertStyle).toEqual({ a: 'off', b: 'explicit' })
@@ -616,11 +625,12 @@ describe('onboarding helpers', () => {
     expect(periodDateNote('', 28, today)).toBeNull()
     expect(periodDateNote('2026-10-01', 28, today)).toBeNull()
     expect(periodDateNote(addDays(today, -28), 28, today)).toBeNull() // today is the expected day
-    expect(periodDateNote(addDays(today, -29), 28, today)).toContain('29일 전')
+    expect(periodDateNote(addDays(today, -30), 28, today)).toBeNull() // still inside the expected range (average ± 2)
+    expect(periodDateNote(addDays(today, -31), 28, today)).toContain('31일 전')
     expect(periodDateNote(addDays(today, -40), 45, today)).toBeNull()
     expect(periodDateNote(addDays(today, -400), 28, today)).toBeNull() // blocked by stepProblem instead
     // The note appears exactly when the app would call the period late.
-    for (const ago of [28, 29, 35]) {
+    for (const ago of [28, 29, 30, 31, 35]) {
       const s = stateFromOnboarding(
         {
           me: { name: '지은', role: 'wife' },
@@ -1066,5 +1076,57 @@ describe('demo cover photo (built-in pictures)', () => {
     await expect(deletePhoto('builtin:hangang')).resolves.toBeUndefined()
     expect(await getPhotoBlob('builtin:hangang')).not.toBeNull()
     expect(isBuiltinPhoto('3f2a-uuid')).toBe(false)
+  })
+})
+
+describe('preparing demo: 지은’s own log (본인만 보기) and the LH question', () => {
+  for (const day of TODAYS) {
+    it(`has a few feel chips in last cycle’s 기다리는 주, one 살짝 비침, nothing for 민수 (today=${day})`, () => {
+      const s = createDemoState(day, NOW, 'preparing')
+      const [, , prev, last] = sortedStarts(s.periods)
+      const ovulation = cycleAt(s, prev!)!.ovulation
+      const feels = lastCycleFeels(s, 'b', prev!, addDays(last!, -1))
+      expect(feels.length).toBe(DEMO_FEEL_DAYS.length)
+      expect(feels.length).toBeGreaterThanOrEqual(4)
+      for (const f of feels) expect(f.date > ovulation && f.date < last!).toBe(true)
+      expect(feels.filter((f) => f.feel === 'spotting')).toHaveLength(1)
+      expect(feels.map((f) => f.feel)).toEqual(DEMO_FEEL_DAYS.map(([, feel]) => feel))
+      // One private line, on the day of the early test.
+      const notes = personalDays(s, 'b', prev!, last!).filter((d) => d.note)
+      expect(notes).toHaveLength(1)
+      expect(notes[0]!.date).toBe(s.pregnancyTests[0]!.date)
+      expect(notes[0]!.note!.length).toBeLessThanOrEqual(140)
+      // Nothing this cycle yet, nothing of 민수's, nothing in the future.
+      expect(personalDays(s, 'b', last!, day)).toEqual([])
+      expect(s.personalLog!.a).toBeUndefined()
+      expect(Object.keys(s.personalLog!.b!).every((d) => d <= day)).toBe(true)
+    })
+  }
+
+  it('never reaches 민수: what his phone may hold has no personal log of hers', () => {
+    const today = '2026-09-26'
+    const s = createDemoState(today, NOW, 'preparing')
+    const his = stateForViewer(s, 'a')
+    expect('personalLog' in his).toBe(false)
+    expect(JSON.stringify(his)).not.toContain('spotting')
+    expect(JSON.stringify(his)).not.toContain('기다려 보기로')
+    // Her own phone keeps it; so do a reload and a backup.
+    expect(stateForViewer(s, 'b').personalLog).toEqual(s.personalLog)
+    expect(parseState(JSON.stringify(s))!.personalLog).toEqual(s.personalLog)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.personalLog).toEqual(s.personalLog)
+  })
+
+  it('has answered the LH question (써요), with no slots, long cycles, clinic mode or 나만 보기 entries', () => {
+    const today = '2026-09-26'
+    for (const stage of STAGES) {
+      const s = createDemoState(today, NOW, stage)
+      expect(s.settings.usesLH).toBe(true)
+      expect(s.cycle.longCycles).toBeUndefined()
+      expect(s.cycleNotes).toBeUndefined()
+      expect(s.lhTests.every((t) => t.slot === undefined)).toBe(true)
+      expect(s.diary.every((e) => e.privateTo === undefined)).toBe(true)
+      expect(s.customTasks.every((c) => c.deadlineAlerts === undefined)).toBe(true)
+      if (stage !== 'preparing') expect(s.personalLog).toBeUndefined()
+    }
   })
 })

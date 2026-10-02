@@ -247,15 +247,46 @@ export function setTemplateDone(
 /** A custom 챙길 것 title (the sheet's maxLength; sanitizeBackup clamps imported ones too). */
 export const CUSTOM_TITLE_MAX = 40
 
+/**
+ * Add the couple's own item. `deadlineAlerts` ('기한', N13) is kept only with a
+ * due date — it is what lib/logic/planNotices customDeadlineTasks reads for the
+ * D-7 · D-1 · 당일 notices; off by default so a shopping item never nags.
+ */
 export function addCustomTask(
   state: AppState,
-  input: { title: string; phase: RoadmapPhase; who: MemberId | 'both'; due?: ISODate },
+  input: { title: string; phase: RoadmapPhase; who: MemberId | 'both'; due?: ISODate; deadlineAlerts?: boolean },
   createdBy: MemberId,
 ): AppState {
   const title = input.title.trim().slice(0, CUSTOM_TITLE_MAX)
   if (!title) return state
-  const task: CustomTask = { id: uid(), title, phase: input.phase, who: input.who, createdBy, ...(input.due ? { due: input.due } : {}) }
+  const task: CustomTask = {
+    id: uid(),
+    title,
+    phase: input.phase,
+    who: input.who,
+    createdBy,
+    ...(input.due ? { due: input.due } : {}),
+    ...(input.due && input.deadlineAlerts === true ? { deadlineAlerts: true } : {}),
+  }
   return { ...state, customTasks: [...state.customTasks, task] }
+}
+
+/** Turn the '기한' notices of one own item on or off (on needs a due date; off removes the field). */
+export function setCustomTaskDeadlineAlerts(state: AppState, id: string, on: boolean): AppState {
+  let changed = false
+  const customTasks = state.customTasks.map((c) => {
+    if (c.id !== id) return c
+    if (on) {
+      if (c.deadlineAlerts === true || !c.due) return c
+      changed = true
+      return { ...c, deadlineAlerts: true }
+    }
+    if (c.deadlineAlerts === undefined) return c
+    changed = true
+    const { deadlineAlerts: _off, ...rest } = c
+    return rest
+  })
+  return changed ? { ...state, customTasks } : state
 }
 
 export function setCustomTaskDone(state: AppState, id: string, done: boolean, today: ISODate, by: MemberId): AppState {

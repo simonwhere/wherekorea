@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, Field, NumberStepper, cx, inputClass } from '@/components/ui'
+import { Card, Field, NumberStepper, Toggle, cx, inputClass, useToast } from '@/components/ui'
 import { formatKo, isISODate } from '@/lib/dates'
+import { cycleLengthRange } from '@/lib/initial'
 import { cycleStats } from '@/lib/logic/cycle'
 import {
-  CYCLE_LENGTH_RANGE,
   PERIOD_LENGTH_RANGE,
   cycleSourceNote,
   setCycle,
@@ -60,7 +60,7 @@ function CycleStatsNote() {
   const { state } = useApp()
   const stats = cycleStats(state.periods, state.cycle)
   const fromLogs = stats.source === 'logs'
-  const note = cycleSourceNote(stats, state.periods.length)
+  const note = cycleSourceNote(stats, state.periods.length, state.cycle)
   return (
     <div className={cx('rounded-xl p-3', fromLogs ? 'bg-ok-soft' : 'bg-surface-2')} role="status">
       {fromLogs ? (
@@ -82,25 +82,40 @@ function CycleStatsNote() {
 /** The owner's own numbers (read by the estimates until enough periods are logged). */
 function CycleNumbers() {
   const { state, update } = useApp()
+  const toast = useToast()
   const fromLogs = cycleStats(state.periods, state.cycle).source === 'logs'
+  const longCycles = state.cycle.longCycles === true
+  // "45일 이상이거나 들쭉날쭉해요" (N12): the stepper goes to 90 and the
+  // calendar shows a wide band without a peak day (lib/initial cycleLengthRange).
+  const range = cycleLengthRange(longCycles)
+  const setLong = (next: boolean) => {
+    update((s) => setCycle(s, { longCycles: next, cycleLength: Math.min(s.cycle.cycleLength, cycleLengthRange(next).max) }))
+    toast.show(next ? '넓은 범위로 예상할게요. LH 기록이 있으면 그걸 먼저 봐요' : '보통 범위로 예상할게요')
+  }
   return (
     <>
       <CycleStatsNote />
       <div className="mt-2 divide-y divide-line">
         <StepperRow
           label="평균 주기 길이"
-          hint={fromLogs ? '지금은 기록 평균을 쓰고 있어요' : '생리 시작일부터 다음 시작일 전날까지'}
+          hint={fromLogs ? '지금은 기록 평균을 쓰고 있어요' : `생리 시작일부터 다음 시작일 전날까지 · ${range.min}~${range.max}일`}
           muted={fromLogs}
         >
           <NumberStepper
             label="평균 주기 길이"
             value={state.cycle.cycleLength}
-            min={CYCLE_LENGTH_RANGE.min}
-            max={CYCLE_LENGTH_RANGE.max}
+            min={range.min}
+            max={range.max}
             unit="일"
             onChange={(n) => update((s) => setCycle(s, { cycleLength: n }))}
           />
         </StepperRow>
+        <Toggle
+          checked={longCycles}
+          onChange={setLong}
+          label="주기가 45일 이상이거나 들쭉날쭉해요"
+          description="예상을 넓은 범위로만 보여 주고, 긴 주기도 ‘기록 누락’으로 보지 않아요."
+        />
         <StepperRow label="생리 기간" hint="끝나는 날을 기록하지 않았을 때 써요">
           <NumberStepper
             label="생리 기간"

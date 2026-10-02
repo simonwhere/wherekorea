@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useId, useState } from 'react'
+import WhosePhoneSheet from '@/components/onboarding/WhosePhoneSheet'
+import { rememberDeviceViewer } from '@/components/onboarding/deviceViewer'
 import { Avatar, Button, Card, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
 import { ROLE_LABEL } from '@/lib/initial'
 import {
@@ -18,13 +20,24 @@ import type { Member, MemberId, Role } from '@/lib/types'
 import { ConfirmActions, Pill, RadioCard, Segmented, SettingsSection } from './bits'
 
 export default function MembersSection() {
-  const { state, viewer, cycleOwner } = useApp()
+  const { state, viewer, cycleOwner, me, setViewer } = useApp()
+  const toast = useToast()
   const [editing, setEditing] = useState<MemberId | null>(null)
   const [ownerTo, setOwnerTo] = useState<MemberId | null>(null)
+  const [askingPhone, setAskingPhone] = useState(false)
   // Stable callbacks: Sheet re-runs its focus effect whenever onClose changes,
   // which would pull focus out of the form each time the other tab syncs.
   const closeEdit = useCallback(() => setEditing(null), [])
   const closeOwner = useCallback(() => setOwnerTo(null), [])
+  const closePhone = useCallback(() => setAskingPhone(false), [])
+  // "이 폰은 누구 거예요?" — remembered on this device (onboarding/deviceViewer), not just this tab.
+  const pickPhone = (id: MemberId) => {
+    setAskingPhone(false)
+    setViewer(id)
+    rememberDeviceViewer(id)
+    const name = state.couple.members.find((m) => m.id === id)?.name ?? ''
+    toast.show(`이 폰은 ${name}님 폰으로 기억할게요`)
+  }
   const ownerLabelId = useId()
   const ownerGroup = useId()
   const members = membersViewerFirst(state, viewer)
@@ -55,6 +68,15 @@ export default function MembersSection() {
             </li>
           ))}
         </ul>
+
+        <div className="mb-2 flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-3 py-2">
+          <p className="min-w-0 text-xs leading-relaxed text-ink-2">
+            <span aria-hidden>📱 </span>이 폰은 <span className="font-semibold text-ink">{me.name}</span>님 폰이에요
+          </p>
+          <Button variant="ghost" size="sm" className="min-h-[44px] shrink-0 text-brand-ink" onClick={() => setAskingPhone(true)}>
+            바꾸기
+          </Button>
+        </div>
 
         <div className="mt-1 rounded-xl bg-surface-2 p-3">
           <p id={ownerLabelId} className="text-xs font-semibold text-ink-2">
@@ -95,6 +117,8 @@ export default function MembersSection() {
       <Sheet open={!!ownerCandidate} onClose={closeOwner} title="주기 기록하는 사람 바꾸기">
         {ownerCandidate ? <OwnerConfirm member={ownerCandidate} onDone={closeOwner} /> : null}
       </Sheet>
+
+      <WhosePhoneSheet open={askingPhone} onClose={closePhone} members={state.couple.members} current={viewer} onPick={pickPhone} />
     </SettingsSection>
   )
 }

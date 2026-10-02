@@ -4,6 +4,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 
 /** The cover photo never gets shorter than this to make room (a strip still reads as a photo). */
 export const COVER_MIN_FIT = 88
+/**
+ * When even that leaves the moment's action under the tab bar (a 375×667 phone
+ * with the 알릴까요? buttons or a long card), the cover collapses to this strip —
+ * names and caption stay, the picture becomes a sliver (QF5).
+ */
+export const COVER_STRIP = 56
 /** Room kept between the moment's action and the tab bar, so the raised "+" button never covers it. */
 const FAB_CLEARANCE = 22
 
@@ -27,19 +33,34 @@ export function useFoldFit(key: string) {
     const root = ref.current
     if (!root) return
     const photo = root.querySelector<HTMLElement>('.cover-photo-h, .cover-photo-h-quiet')
-    const target = root.querySelector<HTMLElement>('[data-fold]')
+    // Fold targets in page order: a leading 이번 달 할 일 card's action row, then
+    // the moment card's action or title. The last one that the cover can make
+    // room for wins — so both show when they can, and the leading card's
+    // action alone when the moment's title would need more than the strip.
+    const targets = [...root.querySelectorAll<HTMLElement>('[data-fold]')]
     const nav = document.querySelector<HTMLElement>('nav[aria-label="주요 메뉴"]')
-    if (!photo || !target) {
+    if (!photo || targets.length === 0) {
       root.style.removeProperty('--cover-fit')
+      root.removeAttribute('data-cover-strip')
       return
     }
     const viewport = smallViewportHeight()
     const limit = viewport - (nav?.offsetHeight ?? 0) - FAB_CLEARANCE
-    // Document coordinates: the fold is the first screen, wherever the page is scrolled now.
-    const bottom = target.getBoundingClientRect().bottom + window.scrollY
-    // Layout height (the frame's tilt doesn't change it); shrinking the photo by x lifts the target by x.
-    const next = Math.max(COVER_MIN_FIT, Math.floor(photo.offsetHeight + (limit - bottom)))
+    let next = COVER_STRIP
+    for (let i = targets.length - 1; i >= 0; i--) {
+      // Document coordinates: the fold is the first screen, wherever the page is scrolled now.
+      const bottom = targets[i]!.getBoundingClientRect().bottom + window.scrollY
+      // Layout height (the frame's tilt doesn't change it); shrinking the photo by x lifts the target by x.
+      const ideal = Math.floor(photo.offsetHeight + (limit - bottom))
+      // Down to COVER_MIN_FIT it is still a photo; past that, snap to the strip rather than a random sliver.
+      if (ideal >= COVER_MIN_FIT) {
+        next = ideal
+        break
+      }
+      if (ideal >= COVER_STRIP) break
+    }
     root.style.setProperty('--cover-fit', `${next}px`)
+    root.toggleAttribute('data-cover-strip', next === COVER_STRIP)
   }, [])
 
   useLayoutEffect(() => {

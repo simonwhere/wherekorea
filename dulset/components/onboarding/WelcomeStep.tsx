@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
 import Polaroid from '@/components/cover/Polaroid'
-import RestoreBackup from '@/components/RestoreBackup'
+import WelcomeRestore from '@/components/onboarding/WelcomeRestore'
 import { Button } from '@/components/ui'
 import type { Stage } from '@/lib/types'
 
@@ -36,13 +36,10 @@ function Mark() {
 export default function WelcomeStep({
   onStart,
   onDemo,
-  onRestored,
   focusTitle,
 }: {
   onStart: () => void
   onDemo: (stage: Stage) => void
-  /** After a backup was restored from here (e.g. after a wipe or cleared browser data). */
-  onRestored: () => void
   /** Move focus here when coming back from step 1 (the 뒤로 button is gone). */
   focusTitle?: boolean
 }) {
@@ -111,9 +108,9 @@ export default function WelcomeStep({
         >
           시작하기
         </Button>
-        {/* Restoring shouldn't need a demo or a whole new onboarding first. */}
+        {/* Restoring shouldn't need a demo or a whole new onboarding first; it ends with "이 폰은 누구 거예요?". */}
         <div className="mt-1 [&>button]:h-12 [&>button]:rounded-full [&>button]:text-[14.5px] [&>button]:font-bold">
-          <RestoreBackup label="백업 파일로 복원하기" variant="ghost" onRestored={onRestored} />
+          <WelcomeRestore label="백업 파일로 복원하기" />
         </div>
 
         <section aria-labelledby="demo-title" className="mt-[18px] rounded-[22px] bg-surface-2 p-4">

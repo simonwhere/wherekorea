@@ -128,18 +128,42 @@ describe('preparing signals', () => {
     expect(SIGNALS.map((x) => x.id)).not.toContain('not-this-month')
   })
 
-  it('answers every signal with a fitting reply set that includes a no-pressure option', () => {
-    const noPressure = new Set(['later', 'hug'])
+  it('answers every signal with a fitting reply set; anything that asks for something keeps a no-pressure option', () => {
+    const noPressure = new Set(['later', 'hug', 'slow'])
     for (const sig of ALL_SIGNALS.filter((x) => x.tone !== 'reply')) {
       const replies = repliesFor(sig.id)
       expect(replies.length).toBeGreaterThanOrEqual(2)
       expect(replies.every((r) => r.tone === 'reply')).toBe(true)
-      expect(replies.some((r) => noPressure.has(r.id))).toBe(true)
+      expect(new Set(replies.map((r) => r.id)).size).toBe(replies.length)
+      // A kind word asks for nothing, so it needs no "not today".
+      if (sig.tone !== 'warm') expect(replies.some((r) => noPressure.has(r.id))).toBe(true)
     }
     // Comfort isn't answered with "좋아요!".
     expect(texts(repliesFor('not-this-month'))).toEqual(['옆에 있을게요', '알겠어요, 푹 쉬어요'])
     expect(texts(repliesFor('clinic'))).toEqual(['좋아요!', '다음에 해요, 괜찮아요'])
     expect(repliesFor(undefined)).toEqual([...REPLIES])
+  })
+
+  it('pairs replies with what was said (B6): no "푹 쉬어요" to a thank-you, no "좋아요!" to "피곤해요"', () => {
+    // '오늘 고마웠어요' → a kind word back, never "알겠어요, 푹 쉬어요".
+    expect(texts(repliesFor('thanks'))).toEqual(['나도요', '덕분에 힘이 나요'])
+    expect(texts(repliesFor('thanks'))).not.toContain('알겠어요, 푹 쉬어요')
+    // '보고 싶어요' → "나도요" and "얼른 갈게요".
+    expect(texts(repliesFor('miss'))).toEqual(['나도요', '얼른 갈게요'])
+    // A "not today" (피곤해요 / 푹 쉬어요 / 임신 얘기 말고) gets an easy okay, never "좋아요!".
+    for (const id of ['tired', 'rest', 'no-baby-talk']) {
+      expect(texts(repliesFor(id))).toEqual(['알겠어요, 푹 쉬어요', '그래요, 천천히 해요'])
+      expect(texts(repliesFor(id))).not.toContain('좋아요!')
+    }
+    // An invite still gets a yes and a no-pressure "다음에".
+    expect(texts(repliesFor('dinner'))).toEqual(['좋아요!', '다음에 해요, 괜찮아요'])
+    // The new replies are replies: sending one answers the signal.
+    let s = sendSignal(base(), 'a', 'b', 'thanks', '2026-09-02', '2026-09-02T20:00:00+09:00')
+    expect(pendingSignal(s, 'b', '2026-09-02')).toBeDefined()
+    s = sendSignal(s, 'b', 'a', 'glad', '2026-09-02', '2026-09-02T20:05:00+09:00')
+    expect(pendingSignal(s, 'b', '2026-09-02')).toBeUndefined()
+    expect(pendingSignal(s, 'a', '2026-09-02')).toBeUndefined()
+    expect(inbox(s, 'a')[0]!.title).toBe('😊 지은님: 덕분에 힘이 나요')
   })
 
   it('keeps the SIGNALS + REPLIES fallback free of comfort signals ("다음에 해요" never answers "위로가 필요해요")', () => {

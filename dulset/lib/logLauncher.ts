@@ -24,3 +24,16 @@ export function openLog(req: LogRequest = {}): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent<LogRequest>(OPEN_LOG_EVENT, { detail: req }))
 }
+
+export const OPEN_LH_HOWTO_EVENT = 'dulset:open-lh-howto'
+
+/**
+ * Open the one '배란테스트기, 이렇게 해요' sheet (components/log/LHHowTo, mounted
+ * in AppShell) from anywhere: the LH panel's '어떻게 해요?', the fertility
+ * guide's LH section, the home's 'LH 테스트 시작 D-N' card. It sits on top of
+ * an open log sheet and hands focus back when closed.
+ */
+export function openLHHowTo(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(OPEN_LH_HOWTO_EVENT))
+}

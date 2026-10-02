@@ -7,10 +7,12 @@
 
 import { uid } from '../id'
 import type { LogKind } from '../logLauncher'
+import { LH_SLOTS } from '../types'
 import type {
   AppState,
   ISODate,
   LHResult,
+  LHSlot,
   LHTest,
   MemberId,
   PeriodLog,
@@ -26,11 +28,14 @@ import {
   cycleAt,
   dayInfo,
   fertilityStatus,
+  noSurgeWait,
   removePeriod,
   setPeriodEnd,
+  sortedStarts,
   type CycleInput,
 } from './cycle'
 import { addEntry, removeEntry } from './diary'
+import { lhPrompting } from './prefs'
 import { activePositivePending, activeRest, clearPositivePending, markPositivePending, onPeriodLogged } from './ttc'
 
 // ── Time ────────────────────────────────────────────────────
@@ -46,15 +51,61 @@ function minutesOf(time: string | undefined): number | undefined {
   return isTime(time) ? Number(time.slice(0, 2)) * 60 + Number(time.slice(3)) : undefined
 }
 
-/** Untimed first, then by time. */
-function byTime<T extends { time?: string }>(a: T, b: T): number {
-  return (minutesOf(a.time) ?? -1) - (minutesOf(b.time) ?? -1)
+const NOON = 12 * 60
+
+/** Where a slot sits among the day's times: 아침 before any clock time, 저녁 after. */
+const SLOT_ORDER: Record<LHSlot, number> = { morning: 0, evening: 24 * 60 }
+
+function orderOf(t: { time?: string; slot?: LHSlot }): number {
+  return minutesOf(t.time) ?? (t.slot ? SLOT_ORDER[t.slot] : -1)
+}
+
+/** Untimed first, then 아침, clock times, 저녁. */
+function byTime<T extends { time?: string; slot?: LHSlot }>(a: T, b: T): number {
+  return orderOf(a) - orderOf(b)
 }
 
 // ── LH (배테기) ─────────────────────────────────────────────
 
 /** Morning and evening — more than two a day adds little and clutters the record. */
 export const MAX_LH_PER_DAY = 2
+
+export const LH_SLOT_LABEL: Record<LHSlot, string> = { morning: '아침', evening: '저녁' }
+
+export function isLHSlot(value: unknown): value is LHSlot {
+  return typeof value === 'string' && (LH_SLOTS as readonly string[]).includes(value)
+}
+
+/**
+ * What tells one of a day's tests from the other: the clock time ('08:10') of
+ * a test logged on the day itself, the slot ('morning' / 'evening') of one
+ * entered for a past day, or '' for an untimed test from before slots existed.
+ * removeLHTest and the sheet's rows go by it.
+ */
+export function lhKey(test: Pick<LHTest, 'time' | 'slot'>): string {
+  return test.time ?? test.slot ?? ''
+}
+
+/** '08:10' · '아침' · '시각 없음' — when the test was taken, in the record's own words. */
+export function lhWhen(test: Pick<LHTest, 'time' | 'slot'>): string {
+  return test.time ?? (test.slot ? LH_SLOT_LABEL[test.slot] : '시각 없음')
+}
+
+/**
+ * The half of the day a test belongs to: its slot, or — for a timed test — 아침
+ * before noon and 저녁 from noon. A past day's slot chips show the test taken in
+ * that half, whichever way it was logged; an untimed legacy test has none.
+ */
+export function lhSlotOf(test: Pick<LHTest, 'time' | 'slot'>): LHSlot | undefined {
+  if (test.slot) return test.slot
+  const m = minutesOf(test.time)
+  return m === undefined ? undefined : m < NOON ? 'morning' : 'evening'
+}
+
+/** The first of 아침 / 저녁 with no test yet on the day (undefined when both have one). */
+export function freeLHSlot(day: readonly LHTest[]): LHSlot | undefined {
+  return LH_SLOTS.find((slot) => !day.some((t) => lhSlotOf(t) === slot))
+}
 
 /** The day's LH tests in time order. */
 export function lhTestsOn(tests: LHTest[], date: ISODate): LHTest[] {
@@ -72,58 +123,128 @@ export function replaceLHDay<S extends Pick<AppState, 'lhTests'>>(state: S, date
 
 export interface LHInput {
   date: ISODate
+  /** 'HH:MM' — a test logged on the day itself (the sheet's clock). */
   time?: string
+  /** 아침 / 저녁 — a test entered for a past day (no clock). Ignored when `time` is valid. */
+  slot?: LHSlot
   result: LHResult
   by?: MemberId
 }
 
+/** Where a result goes on its day: a new row, or in place of one already there (the sheet asks first). */
+export type LHPlan = { action: 'add'; test: LHTest } | { action: 'replace'; test: LHTest; target: LHTest }
+
 /**
- * Log an LH result, keeping at most MAX_LH_PER_DAY a day. A test at the same
- * time (or both untimed) replaces that one; when the day is full, the new test
- * replaces the one closest in time (untimed ones count as farthest; ties go to
- * the later one). A date after `today` is ignored (the sheet never offers one,
- * but a re-applied change or a pinned date must not log the future either).
+ * Where a new result goes among the day's tests (at most MAX_LH_PER_DAY):
+ *   • a test with the same key (time / slot) → in its place;
+ *   • for a slot (a past day), the test already in that half of the day — a
+ *     timed '08:10' counts as 아침 — → in its place ("08:10 기록을 바꿀까요?"),
+ *     keeping its clock time;
+ *   • otherwise a free row → added. Without a time or a slot, the first free
+ *     half of the day is taken (아침, then 저녁);
+ *   • a full day → in place of the closest one: by clock time for a timed test
+ *     (untimed ones count as farthest, ties go to the later one), the first row
+ *     for 아침 and the last for 저녁.
+ * Only the 'add' case is silent — addLHTest refuses a 'replace' unless told so.
  */
-export function addLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, input: LHInput, today?: ISODate): S {
-  if (today && input.date > today) return state
+export function planLHTest(day: readonly LHTest[], input: LHInput): LHPlan {
+  const time = isTime(input.time) ? input.time : undefined
+  const slot: LHSlot | undefined = time ? undefined : isLHSlot(input.slot) ? input.slot : (freeLHSlot(day) ?? 'morning')
   const test: LHTest = {
     date: input.date,
     result: input.result,
-    ...(isTime(input.time) ? { time: input.time } : {}),
+    ...(time ? { time } : slot ? { slot } : {}),
     ...(input.by ? { by: input.by } : {}),
   }
-  const day = lhTestsOn(state.lhTests, input.date)
-  const same = day.find((t) => (t.time ?? '') === (test.time ?? ''))
-  let keep = day
-  if (same) keep = day.filter((t) => t !== same)
-  else if (day.length >= MAX_LH_PER_DAY) {
-    const m = minutesOf(test.time)
+  const same = day.find((t) => lhKey(t) === lhKey(test)) ?? (slot ? day.find((t) => lhSlotOf(t) === slot) : undefined)
+  if (same) {
+    // A slot in place of a timed test keeps that clock time: '08:10 희미' becomes '08:10 양성'.
+    if (slot && same.time)
+      return { action: 'replace', test: { date: test.date, result: test.result, time: same.time, ...(test.by ? { by: test.by } : {}) }, target: same }
+    return { action: 'replace', test, target: same }
+  }
+  if (day.length < MAX_LH_PER_DAY) return { action: 'add', test }
+  const sorted = [...day].sort(byTime)
+  if (time) {
+    const m = minutesOf(time)!
     const distance = (t: LHTest) => {
       const n = minutesOf(t.time)
-      return m === undefined || n === undefined ? Number.POSITIVE_INFINITY : Math.abs(n - m)
+      return n === undefined ? Number.POSITIVE_INFINITY : Math.abs(n - m)
     }
-    const closest = [...day].reverse().reduce((best, t) => (distance(t) < distance(best) ? t : best))
-    keep = day.filter((t) => t !== closest)
+    const target = [...sorted].reverse().reduce((best, t) => (distance(t) < distance(best) ? t : best))
+    return { action: 'replace', test, target }
   }
-  return replaceLHDay(state, input.date, [...keep, test])
+  return { action: 'replace', test, target: slot === 'evening' ? sorted[sorted.length - 1]! : sorted[0]! }
+}
+
+/**
+ * Log an LH result (planLHTest). A result that would take another test's
+ * place is a no-op unless `opts.replace` says the person agreed — the sheet
+ * asks "…기록을 바꿀까요?" first, so nothing is ever overwritten quietly. A
+ * date after `today` is ignored (the sheet never offers one, but a re-applied
+ * change or a pinned date must not log the future either).
+ */
+export function addLHTest<S extends Pick<AppState, 'lhTests'>>(
+  state: S,
+  input: LHInput,
+  today?: ISODate,
+  opts?: { replace?: boolean },
+): S {
+  if (today && input.date > today) return state
+  const day = lhTestsOn(state.lhTests, input.date)
+  const plan = planLHTest(day, input)
+  if (plan.action === 'replace' && !opts?.replace) return state
+  const keep = plan.action === 'replace' ? day.filter((t) => t !== plan.target) : day
+  return replaceLHDay(state, input.date, [...keep, plan.test])
 }
 
 /**
  * Does logging this result move the estimated ovulation of that day's cycle?
  * (Only the cycle's first surge does — the sheet says "다시 계산했어요" then.)
+ * Judged as if the person agreed to replace, so the answer fits either path.
  */
 export function lhChangesEstimate(state: CycleInput, input: LHInput): boolean {
   const before = cycleAt(state, input.date)
-  const after = cycleAt(addLHTest(state, input), input.date)
+  const after = cycleAt(addLHTest(state, input, undefined, { replace: true }), input.date)
   return !!before && !!after && before.ovulation !== after.ovulation
 }
 
-/** Remove the LH test on `date` at `time` (omit `time` for an untimed test). */
-export function removeLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, date: ISODate, time?: string): S {
+/** Remove the LH test on `date` with key `at` (lhKey: its time or slot; omit for an untimed test). */
+export function removeLHTest<S extends Pick<AppState, 'lhTests'>>(state: S, date: ISODate, at?: string): S {
   return {
     ...state,
-    lhTests: state.lhTests.filter((t) => !(t.date === date && (t.time ?? '') === (time ?? ''))),
+    lhTests: state.lhTests.filter((t) => !(t.date === date && lhKey(t) === (at ?? ''))),
   }
+}
+
+/**
+ * 배란테스트기 써요? — the one question (settings.usesLH), asked in the LH panel
+ * once the cycle reaches the 'LH 테스트 시작' moment (LH_LEAD_DAYS before the
+ * estimated window) and until it is answered. '나중에' puts it off to the next
+ * cycle: `deferredCycle` is the start of the cycle it was deferred in (kept per
+ * device, lib/persist LH_ASK_DEFERRED_KEY). Never while a rest cycle or a
+ * positive test waiting for the clinic pauses the dates.
+ */
+export function lhAskDue(
+  state: CycleInput & Pick<AppState, 'settings' | 'restCycle' | 'positivePending' | 'stage'>,
+  today: ISODate,
+  deferredCycle?: ISODate | null,
+): boolean {
+  const uses = state.settings.usesLH
+  if (uses === true || uses === false) return false
+  if (state.stage !== 'preparing' || activeRest(state) || activePositivePending(state)) return false
+  const st = fertilityStatus(state, today)
+  const reached =
+    (st.kind === 'before-fertile' && st.daysUntil <= LH_LEAD_DAYS) ||
+    st.kind === 'fertile' ||
+    st.kind === 'after-fertile' ||
+    st.kind === 'late'
+  if (!reached) return false
+  if (uses === 'later' && deferredCycle) {
+    const start = cycleAt(state, today)?.start
+    if (start && start === deferredCycle) return false
+  }
+  return true
 }
 
 // ── Pregnancy tests (임테기) ────────────────────────────────
@@ -340,10 +461,22 @@ export { LH_LEAD_DAYS }
 /**
  * The chip the sheet opens on for `date`, from where the cycle is: bleeding or
  * nothing logged → 생리; the estimated window or up to LH_LEAD_DAYS before it
- * → LH; after it (or late) → 임테기. A positive test waiting for the clinic →
- * 임테기; a rest cycle → 생리.
+ * → LH — and still LH while strips this cycle saw no surge yet (the week past
+ * the window, cycle.noSurgeWait: the home card asks for more tests then too);
+ * after it (or late) → 임테기. A positive test waiting for the clinic →
+ * 임테기; a rest cycle → 생리. Someone who said '안 써요' to LH strips
+ * (prefs.lhPrompting) gets 메모 where LH would have opened.
  */
 export function defaultLogKind(
+  state: CycleInput & Pick<AppState, 'restCycle' | 'positivePending' | 'stage'> & Partial<Pick<AppState, 'settings'>>,
+  date: ISODate,
+  today: ISODate,
+): LogKind {
+  const kind = cycleLogKind(state, date, today)
+  return kind === 'lh' && state.settings && !lhPrompting({ settings: state.settings }) ? 'note' : kind
+}
+
+function cycleLogKind(
   state: CycleInput & Pick<AppState, 'restCycle' | 'positivePending' | 'stage'>,
   date: ISODate,
   today: ISODate,
@@ -358,7 +491,10 @@ export function defaultLogKind(
         return 'lh'
       case 'before-fertile':
         return st.daysUntil <= LH_LEAD_DAYS ? 'lh' : 'period'
-      case 'after-fertile':
+      case 'after-fertile': {
+        const cur = [...sortedStarts(state.periods)].reverse().find((d) => d <= today)
+        return cur && noSurgeWait(state, cur, today) ? 'lh' : 'ptest'
+      }
       case 'late':
         return 'ptest'
       default:

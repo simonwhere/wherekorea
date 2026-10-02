@@ -22,7 +22,7 @@ import {
   showsTests,
   type Lens,
 } from '@/lib/logic/calendarView'
-import { lhTestsOn, pregnancyTestsOn } from '@/lib/logic/logs'
+import { lhKey, lhTestsOn, lhWhen, pregnancyTestsOn } from '@/lib/logic/logs'
 import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
@@ -98,9 +98,10 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
       {lh.length > 0 || tests.length > 0 ? (
         <section aria-label="이 날의 기록" className="space-y-1">
           {lh.map((t) => (
-            <p key={`lh-${t.time ?? ''}`} className="text-[13px] tabular-nums text-ink-2">
+            // A past day's test carries a slot (아침 · 저녁) instead of a clock time (N17).
+            <p key={`lh-${lhKey(t)}`} className="text-[13px] tabular-nums text-ink-2">
               LH {LH_LABEL[t.result]}
-              {t.time ? <span className="ml-1.5 text-xs text-ink-3">{t.time}</span> : null}
+              {t.time || t.slot ? <span className="ml-1.5 text-xs text-ink-3">{lhWhen(t)}</span> : null}
             </p>
           ))}
           {tests.map((t) => (

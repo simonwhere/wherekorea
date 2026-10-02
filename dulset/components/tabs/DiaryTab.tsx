@@ -8,6 +8,7 @@ import EntryCard from '@/components/diary/EntryCard'
 import { Button, Chip, EmptyState, useToast } from '@/components/ui'
 import { groupByMonth } from '@/lib/logic/diary'
 import { monthLabel } from '@/lib/logic/diaryExport'
+import { visibleEntries } from '@/lib/logic/personalLog'
 import { stampOn } from '@/lib/logic/today'
 import {
   CHAPTER_SHORT,
@@ -73,7 +74,8 @@ function DiaryView() {
   const onEdit = useCallback((id: string) => setSheet({ kind: 'edit', id }), [])
   const onDelete = useCallback((id: string) => setSheet({ kind: 'delete', id }), [])
 
-  const entries = state.diary
+  // Never the other member's '나만 보기' entries (DiaryEntry.privateTo).
+  const entries = useMemo(() => visibleEntries(state.diary, me.id), [state.diary, me.id])
   const { settings, pregnancy, baby, createdAt } = state
   const ctx = useMemo(
     () => chapterContext({ settings, pregnancy, baby, createdAt }),
@@ -91,8 +93,8 @@ function DiaryView() {
   const authorSel: AuthorFilter = showAuthorChips ? authorFilter : 'all'
   const author: MemberId | 'all' = authorSel === 'me' ? me.id : authorSel === 'partner' ? partner.id : 'all'
   const groups = useMemo(
-    () => groupByMonth(filterStory(entries, ctx, { chapter, author })),
-    [entries, ctx, chapter, author],
+    () => groupByMonth(filterStory(entries, ctx, { chapter, author, viewer: me.id })),
+    [entries, ctx, chapter, author, me.id],
   )
 
   const members = state.couple.members

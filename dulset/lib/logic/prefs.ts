@@ -1,8 +1,65 @@
 // Per-person preferences. `lowPressure` and `discreet` used to be couple-wide;
 // each partner now decides for their own phone. Everything reads them here.
 // (`hideCover` — the cover photo on my phone — is read and set in ./cover.ts.)
+// Also the couple's one answer about LH strips (settings.usesLH, N17).
 
 import type { AppState, MemberId, Settings } from '../types'
+
+// ── 배란테스트기 (LH) ────────────────────────────────────────
+
+export type UsesLH = NonNullable<Settings['usesLH']>
+
+/** [써요][안 써요][나중에] — the one question about 배란테스트기. */
+export const USES_LH_OPTIONS: ReadonlyArray<{ value: UsesLH; label: string }> = [
+  { value: true, label: '써요' },
+  { value: false, label: '안 써요' },
+  { value: 'later', label: '나중에' },
+]
+
+/**
+ * Should the app bring LH strips up at all — the home's 'LH 테스트 시작 D-N'
+ * card and LH as the primary action, the sheet's default chip? Only an
+ * explicit '안 써요' turns that off; unanswered and '나중에' keep it (the sheet
+ * asks at the first LH moment — logs.lhAskDue). Logging LH stays possible
+ * either way: the panel is the owner's own tool.
+ */
+export function lhPrompting(state: Pick<AppState, 'settings'>): boolean {
+  return state.settings.usesLH !== false
+}
+
+/**
+ * Answer the question (undefined clears it, so it is asked again). The cycle
+ * owner's answer is the one that counts: with `by` given, anyone else's is a no-op.
+ */
+export function setUsesLH(state: AppState, value: UsesLH | undefined, by?: MemberId): AppState {
+  if (by && !canLogCycle(state, by)) return state
+  if (state.settings.usesLH === value) return state
+  const settings = { ...state.settings }
+  if (value === undefined) delete settings.usesLH
+  else settings.usesLH = value
+  return { ...state, settings }
+}
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/** 'HH:MM' this person usually tests LH at (a note for now; local reminders come with the app). */
+export function lhTestTimeFor(settings: Pick<Settings, 'personal'>, member: MemberId): string | undefined {
+  return settings.personal?.[member]?.lhTestTime
+}
+
+/** Set (or clear, with undefined or a malformed value) the person's usual LH test time. */
+export function setLHTestTime(state: AppState, member: MemberId, time: string | undefined): AppState {
+  const valid = typeof time === 'string' && TIME_RE.test(time) ? time : undefined
+  if (lhTestTimeFor(state.settings, member) === valid) return state
+  const personal = { ...(state.settings.personal ?? {}) }
+  const mine = { ...(personal[member] ?? {}) }
+  if (valid) mine.lhTestTime = valid
+  else delete mine.lhTestTime
+  personal[member] = mine
+  return { ...state, settings: { ...state.settings, personal } }
+}
+
+// ── 부담 없이 · 잠금화면 숨김 ────────────────────────────────
 
 export function lowPressureFor(settings: Pick<Settings, 'lowPressure' | 'personal'>, member: MemberId): boolean {
   return settings.personal?.[member]?.lowPressure ?? settings.lowPressure

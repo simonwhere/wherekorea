@@ -67,11 +67,17 @@ export interface PeriodLog {
  */
 export type LHResult = 'negative' | 'faint' | 'positive' | 'peak'
 
+/** Half of the day a strip was taken, for a past day logged without a clock time (N17). */
+export type LHSlot = 'morning' | 'evening'
+export const LH_SLOTS: readonly LHSlot[] = ['morning', 'evening'] as const
+
 export interface LHTest {
   date: ISODate
   result: LHResult
   /** 'HH:MM' — up to two tests a day are kept (morning / evening). */
   time?: string
+  /** 아침 / 저녁 for a past-date entry that has no `time` (N17 slots). */
+  slot?: LHSlot
   /** Who logged it. */
   by?: MemberId
 }
@@ -88,12 +94,23 @@ export interface PregnancyTest {
 }
 
 /**
+ * Why the couple is pausing: 'rest' (이번 주기는 쉬어요), 'vaccine' (after a
+ * live vaccine), 'loss' (after a loss) end with the next logged period
+ * (lib/logic/ttc.ts periodEndsRest). 'clinic' (병원과 함께 준비 중, N13) does
+ * NOT end with a period — the clinic sets the timing and a period is logged on
+ * the way to the next cycle; only the couple turns it off (lib/logic/clinic.ts).
+ */
+export type RestReason = 'rest' | 'vaccine' | 'loss' | 'clinic'
+export const REST_REASONS: readonly RestReason[] = ['rest', 'vaccine', 'loss', 'clinic'] as const
+
+/**
  * "이번 주기는 쉬어요": fertile display and alerts off until the next period is
- * logged after `since` (also suggested after a live vaccine or a loss).
+ * logged after `since` (also suggested after a live vaccine or a loss), or —
+ * for 'clinic' — until the couple ends it.
  */
 export interface RestCycle {
   since: ISODate
-  reason: 'rest' | 'vaccine' | 'loss'
+  reason: RestReason
 }
 
 /** A positive home test, not yet confirmed at the clinic — no celebration yet. */
@@ -107,7 +124,42 @@ export interface CycleSettings {
   /** Used until at least 2 logged periods exist, then logs take over. */
   cycleLength: number
   periodLength: number
+  /**
+   * "주기가 45일 이상이거나 들쭉날쭉해요" (N12): the accepted cycle length goes
+   * up to 90 days instead of 60 (lib/initial.ts CYCLE_RANGE_LONG) and the
+   * calendar shows a possible range rather than a peak.
+   */
+  longCycles?: boolean
 }
+
+/**
+ * Per-cycle notes the owner leaves, keyed by that cycle's start date (N12):
+ * `stillWaiting` is the day she answered '아직 안 왔어요' to a late cycle, so
+ * the app keeps counting the day instead of asking for a missed log.
+ */
+export interface CycleNote {
+  stillWaiting?: ISODate
+}
+
+export type CycleNotes = Record<ISODate, CycleNote>
+
+// ── Personal log (본인만 보기) ────────────────────────────────
+
+/**
+ * How the owner felt that day — chips in the 기다리는 주 (N11). Read and set
+ * through lib/logic/personalLog.ts; never shown to the other member.
+ */
+export type PersonalFeel = 'normal' | 'tired' | 'sensitive' | 'breast' | 'cramps' | 'spotting' | 'nausea'
+export const PERSONAL_FEELS: readonly PersonalFeel[] = ['normal', 'tired', 'sensitive', 'breast', 'cramps', 'spotting', 'nausea'] as const
+
+export interface PersonalDay {
+  feel?: PersonalFeel
+  /** A private line (≤ 140 characters, lib/logic/personalLog.ts PERSONAL_NOTE_MAX). */
+  note?: string
+}
+
+/** personalLog[member][date] — each member's own days, invisible to the other. */
+export type PersonalLog = Partial<Record<MemberId, Record<ISODate, PersonalDay>>>
 
 // ── Notifications / nudges ──────────────────────────────────
 
@@ -167,6 +219,12 @@ export interface DiaryEntry {
   createdAt: ISODateTime
   /** The partner's small reaction (e.g. '❤️') — Between-style, no comments thread. */
   reactions?: Partial<Record<MemberId, string>>
+  /**
+   * '나만 보기' (N11): only this member sees the entry — nowhere on the other
+   * member's screen, never in anything shared with them. Normally the author.
+   * Read through lib/logic/personalLog.ts canSeeEntry / visibleEntries.
+   */
+  privateTo?: MemberId
 }
 
 export interface Pregnancy {
@@ -236,11 +294,18 @@ export interface Settings {
    * always visible. New couples start with false (privacy by default).
    */
   shareCycleDetails?: boolean
+  /**
+   * Does the cycle owner use LH strips (배란테스트기)? true 써요 / false 안 써요 /
+   * 'later' 나중에 — undefined means the question hasn't been asked yet (N17).
+   */
+  usesLH?: boolean | 'later'
 }
 
 export interface PersonalPrefs {
   lowPressure?: boolean
   discreet?: boolean
+  /** 'HH:MM' — when this person tests LH, for later local reminders (N17; no reminder yet). */
+  lhTestTime?: string
   /**
    * The cover photo on this person's own phone: undefined = automatic (the
    * app may show the default art for a while, e.g. a photo set during an
@@ -292,7 +357,20 @@ export interface CustomAnniversary {
   emoji?: string
 }
 
-export type AppointmentKind = 'hospital' | 'test' | 'vaccine' | 'admin' | 'other'
+/**
+ * 'injection' (주사) and 'medication' (약) are the clinic-cycle kinds (N13):
+ * a time is expected for them (the sheet asks for one).
+ */
+export type AppointmentKind = 'hospital' | 'test' | 'vaccine' | 'admin' | 'other' | 'injection' | 'medication'
+export const APPOINTMENT_KINDS: readonly AppointmentKind[] = [
+  'hospital',
+  'test',
+  'vaccine',
+  'admin',
+  'other',
+  'injection',
+  'medication',
+] as const
 
 export interface Appointment {
   id: string
@@ -322,6 +400,12 @@ export interface CustomTask {
   doneAt?: ISODate
   doneBy?: MemberId
   createdBy: MemberId
+  /**
+   * '기한' (N13): this own item has a real deadline (결정통지서 만료 …), so it
+   * gets D-7 · D-1 · 당일 notices even in the preparing stage. Off by default
+   * so a shopping item never nags.
+   */
+  deadlineAlerts?: boolean
 }
 
 export interface AppState {
@@ -356,6 +440,14 @@ export interface AppState {
   restCycle?: RestCycle
   /** Positive home test awaiting clinic confirmation. */
   positivePending?: PositivePending
+  /**
+   * Each member's own days (feel chips, private lines) — visible only to that
+   * member, never to the partner, never in anything shared with them; a backup
+   * keeps it. lib/logic/personalLog.ts.
+   */
+  personalLog?: PersonalLog
+  /** Per-cycle notes by cycle start date ('아직 안 왔어요' …). */
+  cycleNotes?: CycleNotes
   settings: Settings
   /**
    * Prototype two-tab sync bookkeeping (lib/store.tsx): for each recent browser

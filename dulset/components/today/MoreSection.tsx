@@ -2,13 +2,14 @@
 
 // "더 보기" — everything that isn't needed every day, folded under the three
 // home blocks: signals, habit timers, this week's roadmap, the doctor card,
-// a diary prompt, backup/install and the rest-cycle switch.
+// a diary prompt, backup/install and the rest-cycle / clinic switches.
 
 import type { TabKey } from '@/components/AppShell'
-import InstallBackupCard from '@/components/system/InstallBackupCard'
+import ClinicSwitch from '@/components/cycle/ClinicSwitch'
 import SignalsCard from '@/components/signals/SignalsCard'
 import { Card, Toggle, cx, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
+import { isClinicMode } from '@/lib/logic/clinic'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { doctorAdvice, stampOn } from '@/lib/logic/today'
@@ -35,6 +36,7 @@ export default function MoreSection({
   const owner = canLogCycle(state, me.id)
   const support = recentlyEnded(state, today) && moment?.kind !== 'after-loss'
   const prompt = homeDiaryPrompt(state, today)
+  const clinic = isClinicMode(state)
 
   return (
     <details className={cx('group', className)}>
@@ -45,7 +47,9 @@ export default function MoreSection({
       </summary>
 
       <div className="mt-2 space-y-3">
-        {owner ? <RestSwitch /> : null}
+        {/* While a clinic sets the timing the ordinary rest switch has nothing to add. */}
+        {owner && !clinic ? <RestSwitch /> : null}
+        {owner ? <ClinicSwitch /> : null}
         {support ? (
           <Card>
             <LossSupport />
@@ -59,7 +63,8 @@ export default function MoreSection({
 
       <HabitTimers />
 
-      {doctorAdvice(state, today) ? (
+      {/* No "see a specialist" card for a couple already preparing with one (N13). */}
+      {!clinic && doctorAdvice(state, today, me.id) ? (
         <div className="mt-6">
           <DoctorCard />
         </div>
@@ -70,7 +75,7 @@ export default function MoreSection({
           <QuietRow icon="📔" title="준비 일기" body={prompt} onClick={() => onNavigate('diary')} />
         ) : null}
         <QuietRow icon="💞" title="둘만의 시간" body="가볍게 즐길 아이디어를 모아 뒀어요" onClick={() => onNavigate('date')} />
-        <InstallBackupCard />
+        {/* 기록 지키기 moved out of here: BackupBanner sits under ③ 우리 한 줄 (N16). */}
       </div>
     </details>
   )

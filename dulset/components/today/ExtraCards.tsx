@@ -4,6 +4,7 @@ import type { TabKey } from '@/components/AppShell'
 import { Button, Card, Disclaimer } from '@/components/ui'
 import { programById } from '@/lib/content/programs'
 import { DIARY_NAME, promptFor } from '@/lib/logic/diary'
+import { PERIOD_DUE_COPY } from '@/lib/logic/periodDue'
 import { DATE_CARD_COPY, doctorAdvice } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import { ExternalLink } from './bits'
@@ -54,8 +55,9 @@ export function DiaryPromptCard({ onNavigate }: { onNavigate: Nav }) {
 // ── See a doctor (supportive) ───────────────────────────────
 
 export function DoctorCard() {
-  const { state, today } = useApp()
-  const advice = doctorAdvice(state, today)
+  const { state, today, me } = useApp()
+  // The reader's view: the 'amenorrhea' line is her period data (lib/logic/today).
+  const advice = doctorAdvice(state, today, me.id)
   const program = programById('fertility-check')
   if (!advice) return null
   const lines: string[] = []
@@ -72,6 +74,8 @@ export function DoctorCard() {
         : '주기가 짧거나 긴 편이에요. 이럴 땐 조금 일찍 상담받는 게 좋아요.',
     )
   }
+  // '아직 안 왔어요' for 15+ days (N12): the one copy table's line, no day count (NICE has none).
+  if (advice.reasons.includes('amenorrhea')) lines.push(PERIOD_DUE_COPY.stillWaiting.advice)
   return (
     <Card>
       <p className="text-xs font-semibold text-brand-ink">

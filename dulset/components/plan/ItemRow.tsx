@@ -3,8 +3,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { cx } from '@/components/ui'
 import { formatShort, isISODate } from '@/lib/dates'
+import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
-import type { Appointment } from '@/lib/types'
+import type { Appointment, MemberId } from '@/lib/types'
 import { CheckBox, ExternalLink, Owners, Pill, btnDanger, btnGhost, btnSecondary } from './bits'
 import {
   KIND_EMOJI,
@@ -24,6 +25,46 @@ export interface ItemActions {
   onSchedule: (item: PlanItem) => void
   onOpenAppointment: (a: Appointment) => void
   onDeleteCustom: (item: PlanItem) => void
+  /** One person's step of a per-person row (임신 사전건강관리 신청, N14). */
+  onToggleMember?: (item: PlanItem, member: MemberId) => void
+}
+
+/**
+ * The couple's 임신 사전건강관리 row is one row for two applications: each
+ * person's own tick sits under it (the row itself reads done once both have
+ * applied — lib/logic/partnerTrack.setFertilityApplied keeps them in step).
+ */
+function PerPerson({ item, actions }: { item: PlanItem; actions: ItemActions }) {
+  const { state } = useApp()
+  if (!actions.onToggleMember) return null
+  return (
+    <div role="group" aria-label="사람별 신청" className="-my-1 flex flex-wrap gap-x-1.5">
+      {state.couple.members.map((m) => {
+        const done = appliedInfo(state.planDone, m.id)
+        return (
+          <button
+            key={m.id}
+            type="button"
+            role="checkbox"
+            aria-checked={!!done}
+            aria-label={`${m.name} 신청`}
+            onClick={() => actions.onToggleMember!(item, m.id)}
+            className="group inline-flex h-11 items-center rounded-full focus-visible:outline-none"
+          >
+            <span
+              className={cx(
+                'inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[11px] font-semibold transition-colors',
+                'group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-brand',
+                done ? 'border-ok/40 bg-ok-soft text-ink-2' : 'border-line bg-surface text-ink-3 group-hover:bg-surface-2',
+              )}
+            >
+              {m.name} {done ? `✓ ${formatShort(done.at)}` : '신청 전'}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 /**
@@ -55,6 +96,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
   const t = item.template
   const doneByName = item.doneBy ? members.find((m) => m.id === item.doneBy)?.name : undefined
   const when = item.start ? dateText(item, today) : item.custom ? '날짜 없음' : item.when
+  const perPerson = item.id === FERTILITY_APPLY_ID && !item.custom && state.stage === 'preparing'
 
   return (
     <li
@@ -92,13 +134,19 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <Owners owners={item.owners} members={members} label={ownerText(item.owners, members)} />
-          {done && isISODate(item.doneAt) ? (
+          {perPerson ? (
+            <PerPerson item={item} actions={actions} />
+          ) : done && isISODate(item.doneAt) ? (
             <span className="text-[11px] font-medium text-ok">
               ✓ {formatShort(item.doneAt)}
               {doneByName ? ` ${doneByName}` : ''} 챙김
             </span>
           ) : null}
           {t?.deadline && !done ? <span className="text-[11px] font-medium text-ink-2">📌 기한 있음</span> : null}
+          {/* An own item with '기한 알림' on (N13): D-7 · D-1 · 당일 notices, even while preparing. */}
+          {item.custom && !done && state.customTasks.find((c) => c.id === item.id)?.deadlineAlerts === true ? (
+            <span className="text-[11px] font-medium text-ink-2">🔔 기한 알림</span>
+          ) : null}
           {appt && !done ? (
             <button
               type="button"

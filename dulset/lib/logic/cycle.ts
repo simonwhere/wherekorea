@@ -11,13 +11,19 @@
 //   • an LH surge ('positive' or 'peak' — 양성 / 가장 진함) moves ovulation to the
 //     day after the cycle's first surge day (ovulation typically follows the LH
 //     surge by ~24–36 h). 'faint' (희미) is not a surge.
+//   • the next period is a RANGE, not a day (expectedPeriod): the luteal phase
+//     varies (Bull 2019: 12.4 days on average, 95% within 7–17), and so do the
+//     couple's own cycles. "Late" only starts the day after that range ends.
+//   • how much the calendar estimate can be trusted (CycleConfidence): an LH
+//     surge this cycle, three or more regular logged cycles, or neither — with
+//     neither, no peak days / ovulation marker are shown anywhere.
 // Calendar predictions are rough: only ~30% of women have their whole fertile window
 // inside cycle days 10–17 (Wilcox 2000, BMJ), and cycle-length-only methods hit the
 // real ovulation day ≤21% of the time (Johnson 2018). The UI must present these as
 // estimates, nudge toward LH tests, and never frame them as contraception or diagnosis.
 
 import { addDays, diffDays, isBetween } from '../dates'
-import type { CycleSettings, ISODate, LHResult, LHTest, PeriodLog, Pregnancy } from '../types'
+import type { CycleNotes, CycleSettings, ISODate, LHResult, LHTest, PeriodLog, Pregnancy } from '../types'
 
 const LH_RANK: Record<LHResult, number> = { negative: 0, faint: 1, positive: 2, peak: 3 }
 
@@ -47,12 +53,33 @@ export const LH_LEAD_DAYS = 3
 /** Plausible range for a single measured cycle; gaps outside it are likely missed logs. */
 export const MIN_CYCLE = 15
 export const MAX_CYCLE = 60
+/** With CycleSettings.longCycles ("45일 이상이거나 들쭉날쭉해요"): cycles up to this long are real cycles. */
+export const MAX_CYCLE_LONG = 90
 /** How many recent cycles to average. */
-const RECENT_CYCLES = 6
+export const RECENT_CYCLES = 6
+
+/** The longest gap between two period starts that still counts as one cycle, for these settings. */
+export function maxCycleLength(settings: Partial<CycleSettings> | undefined): number {
+  return settings?.longCycles ? MAX_CYCLE_LONG : MAX_CYCLE
+}
+
+/**
+ * How far the calendar estimate can be trusted:
+ *   lh     — an LH surge was logged this cycle (ovulation pinned)
+ *   cycles — at least CONFIDENCE_MIN_CYCLES logged cycles that differ by no more
+ *            than CONFIDENCE_SPREAD days (and not a 긴 주기 setting)
+ *   low    — settings only, one or two logged cycles, irregular cycles, or
+ *            longCycles: the window is a wide range; no peak days, no ⭐, no 🌟
+ */
+export type CycleConfidence = 'lh' | 'cycles' | 'low'
+export const CONFIDENCE_MIN_CYCLES = 3
+export const CONFIDENCE_SPREAD = 7
 
 export interface CycleStats {
   /** Measured cycle lengths, oldest → newest (only the plausible ones). */
   lengths: number[]
+  /** How many of them the average uses (the most recent, up to RECENT_CYCLES). */
+  count: number
   /** Length used for predictions. */
   average: number
   source: 'logs' | 'settings'
@@ -64,34 +91,62 @@ export interface CycleStats {
    * the settings value alone (an onboarding guess is not a record).
    */
   irregular: boolean
+  /**
+   * 'lh' only when `lhTests` and `today` were given and the current cycle (the
+   * last logged start on/before today) has a surge; otherwise from the logs.
+   */
+  confidence: CycleConfidence
 }
 
 export function sortedStarts(periods: PeriodLog[]): ISODate[] {
   return Array.from(new Set(periods.map((p) => p.start))).sort()
 }
 
-export function cycleStats(periods: PeriodLog[], settings: CycleSettings): CycleStats {
+/** The confidence the logs alone give ('cycles' or 'low'). */
+function logConfidence(recent: number[], settings: CycleSettings): Exclude<CycleConfidence, 'lh'> {
+  if (settings.longCycles || recent.length < CONFIDENCE_MIN_CYCLES) return 'low'
+  return Math.max(...recent) - Math.min(...recent) <= CONFIDENCE_SPREAD ? 'cycles' : 'low'
+}
+
+/**
+ * Average cycle length and how much to trust it. Pass `lhTests` and `today` to
+ * learn whether this cycle's LH surge pins the estimate (confidence 'lh').
+ */
+export function cycleStats(periods: PeriodLog[], settings: CycleSettings, lhTests?: LHTest[], today?: ISODate): CycleStats {
   const starts = sortedStarts(periods)
+  const maxLen = maxCycleLength(settings)
   const lengths: number[] = []
   for (let i = 1; i < starts.length; i++) {
     const len = diffDays(starts[i - 1]!, starts[i]!)
-    if (len >= MIN_CYCLE && len <= MAX_CYCLE) lengths.push(len)
+    if (len >= MIN_CYCLE && len <= maxLen) lengths.push(len)
   }
   const recent = lengths.slice(-RECENT_CYCLES)
+  let stats: CycleStats
   if (recent.length === 0) {
-    const average = clampCycle(settings.cycleLength)
-    return { lengths, average, source: 'settings', irregular: false }
+    const average = clampCycle(settings.cycleLength, settings)
+    stats = { lengths, count: 0, average, source: 'settings', irregular: false, confidence: 'low' }
+  } else {
+    const average = clampCycle(Math.round(recent.reduce((a, b) => a + b, 0) / recent.length), settings)
+    const min = Math.min(...recent)
+    const max = Math.max(...recent)
+    const irregular = average < 21 || average > 35 || (recent.length >= 2 && max - min > CONFIDENCE_SPREAD)
+    stats = { lengths, count: recent.length, average, source: 'logs', min, max, irregular, confidence: logConfidence(recent, settings) }
   }
-  const average = clampCycle(Math.round(recent.reduce((a, b) => a + b, 0) / recent.length))
-  const min = Math.min(...recent)
-  const max = Math.max(...recent)
-  const irregular = average < 21 || average > 35 || (recent.length >= 2 && max - min > 7)
-  return { lengths, average, source: 'logs', min, max, irregular }
+  if (lhTests && today) {
+    const cur = [...starts].reverse().find((d) => d <= today)
+    if (cur && firstSurge(cur, stats.average, lhTests)) stats.confidence = 'lh'
+  }
+  return stats
 }
 
-function clampCycle(n: number): number {
+/** The current cycle's confidence as of `today` (cycleStats with the LH tests). */
+export function cycleConfidence(input: CycleInput, today: ISODate): CycleConfidence {
+  return cycleStats(input.periods, input.cycle, input.lhTests, today).confidence
+}
+
+function clampCycle(n: number, settings: CycleSettings): number {
   if (!Number.isFinite(n)) return 28
-  return Math.min(MAX_CYCLE, Math.max(MIN_CYCLE, Math.round(n)))
+  return Math.min(maxCycleLength(settings), Math.max(MIN_CYCLE, Math.round(n)))
 }
 
 export interface CycleWindow {
@@ -99,8 +154,13 @@ export interface CycleWindow {
   start: ISODate
   /** Whether `start` is a logged period or a projection. */
   startLogged: boolean
+  /** The length used for the estimate (the average; a finished cycle's real length). */
   length: number
-  /** Projected start of the following period. */
+  /**
+   * Projected start of the following period: start + length, or — when an LH
+   * surge pinned this cycle's ovulation — the start of the expected range
+   * (expectedPeriod: at least 12 days after ovulation).
+   */
   nextPeriod: ISODate
   ovulation: ISODate
   fertileStart: ISODate
@@ -116,6 +176,8 @@ export interface CycleWindow {
   broadStart: ISODate
   broadEnd: ISODate
   basis: 'calendar' | 'lh'
+  /** 'lh' when basis is 'lh'; otherwise what the logs give (cycleStats). */
+  confidence: CycleConfidence
 }
 
 /** Extra days of uncertainty before/after a calendar estimate. */
@@ -124,16 +186,19 @@ interface Spread {
   late: number
 }
 
-const LUTEAL_SPREAD = 2
+/** Luteal-phase variation either side of a calendar estimate. */
+export const LUTEAL_SPREAD = 2
 
 function buildWindow(
   start: ISODate,
   startLogged: boolean,
   length: number,
-  lhOvulation?: ISODate,
-  spread: Spread = { early: 0, late: 0 },
+  lhOvulation: ISODate | undefined,
+  spread: Spread,
+  confidence: CycleConfidence,
+  nextPeriodOverride?: ISODate,
 ): CycleWindow {
-  const nextPeriod = addDays(start, length)
+  const nextPeriod = nextPeriodOverride ?? addDays(start, length)
   // Never put ovulation before cycle day 8 even for very short averages.
   const calendarOvulation = addDays(start, Math.max(7, length - LUTEAL_DAYS))
   const ovulation = lhOvulation ?? calendarOvulation
@@ -162,6 +227,7 @@ function buildWindow(
     broadStart,
     broadEnd,
     basis: lhOvulation ? 'lh' : 'calendar',
+    confidence: lhOvulation ? 'lh' : confidence,
   }
 }
 
@@ -191,6 +257,44 @@ function lhOvulationFor(start: ISODate, length: number, lhTests: LHTest[], slack
   return first ? addDays(first, 1) : undefined
 }
 
+/** LH tests logged from `start` to `end` (inclusive) — one count per strip, two a day possible. */
+export function lhTestsInCycle(lhTests: readonly LHTest[], start: ISODate, end: ISODate): number {
+  return lhTests.filter((t) => t.date >= start && t.date <= end).length
+}
+
+/**
+ * A cycle that tested LH but never saw a surge keeps testing this many days
+ * past the estimated window (ovulation is often later than the calendar
+ * says — Bull 2019: the follicular phase ran 10–30 days) before the home
+ * moves on to the 기다리는 주 (N11 'tww-no-surge').
+ */
+export const NO_SURGE_WAIT_DAYS = 7
+
+export interface NoSurgeWait {
+  /** LH tests logged this cycle so far. */
+  tests: number
+  /** The estimated window's last day (the wait starts the day after). */
+  fertileEnd: ISODate
+  /** Last day of the wait (fertileEnd + NO_SURGE_WAIT_DAYS). */
+  until: ISODate
+}
+
+/**
+ * "아직 양성이 없었어요": the cycle starting on `cycleStart` has LH tests but no
+ * surge, the estimated window has passed, and `today` is within
+ * NO_SURGE_WAIT_DAYS after it. Undefined otherwise (no tests, a surge, still
+ * inside the window, or past the wait).
+ */
+export function noSurgeWait(input: CycleInput, cycleStart: ISODate, today: ISODate): NoSurgeWait | undefined {
+  const tests = lhTestsInCycle(input.lhTests, cycleStart, today)
+  if (tests === 0) return undefined
+  const w = cycleAt(input, cycleStart)
+  if (!w || w.basis === 'lh') return undefined
+  const until = addDays(w.fertileEnd, NO_SURGE_WAIT_DAYS)
+  if (today <= w.fertileEnd || today > until) return undefined
+  return { tests, fertileEnd: w.fertileEnd, until }
+}
+
 export interface CycleInput {
   periods: PeriodLog[]
   lhTests: LHTest[]
@@ -201,9 +305,69 @@ export interface CycleInput {
    * after `endedAt` — the old cycle says nothing about what comes next.
    */
   pregnancy?: Pick<Pregnancy, 'confirmedAt' | 'endedAt'>
+  /** Per-cycle notes ('아직 안 왔어요' …), passed through by AppState. */
+  cycleNotes?: CycleNotes
 }
 
-/** Past this many days late, "N일 지났어요" reads oddly — more likely a missed log. */
+// ── The expected period: a range ────────────────────────────
+
+/**
+ * When the next period is expected — a range, with what it rests on:
+ *   lh       — a surge this cycle: from = max(start + average, ovulation + 12),
+ *              to = from + 2 (the luteal phase rarely runs under 12 days;
+ *              Bull 2019 — docs/research/medical.json)
+ *   calendar — three or more logged cycles: from the shortest to the longest
+ *              recent cycle, clipped to average ± 4
+ *   settings — otherwise: average ± 2
+ * "Late" starts the day after `to` (lateFrom); the day before `from` is when
+ * "내일부터 생리 예정 무렵" goes out. Every screen reads this one function.
+ */
+export interface ExpectedPeriod {
+  from: ISODate
+  to: ISODate
+  basis: 'lh' | 'calendar' | 'settings'
+}
+
+/** Ovulation + this many days at the earliest, when an LH surge pinned ovulation. */
+export const LH_LUTEAL_MIN_DAYS = 12
+/** The measured range is clipped to average ± this (calendar basis). */
+export const DUE_CLIP_DAYS = 4
+/** Without a measured range: average ± this (settings basis). */
+export const DUE_SETTINGS_SPREAD = 2
+
+function dueFor(stats: CycleStats, cycleStart: ISODate, lhTests: LHTest[]): ExpectedPeriod {
+  const L = stats.average
+  const surge = firstSurge(cycleStart, L, lhTests)
+  if (surge) {
+    const byAverage = addDays(cycleStart, L)
+    const byLuteal = addDays(surge, 1 + LH_LUTEAL_MIN_DAYS)
+    const from = byAverage > byLuteal ? byAverage : byLuteal
+    return { from, to: addDays(from, LUTEAL_SPREAD), basis: 'lh' }
+  }
+  if (stats.source === 'logs' && stats.count >= CONFIDENCE_MIN_CYCLES && stats.min !== undefined && stats.max !== undefined) {
+    const lo = Math.max(stats.min, L - DUE_CLIP_DAYS)
+    const hi = Math.max(lo, Math.min(stats.max, L + DUE_CLIP_DAYS))
+    return { from: addDays(cycleStart, lo), to: addDays(cycleStart, hi), basis: 'calendar' }
+  }
+  return { from: addDays(cycleStart, L - DUE_SETTINGS_SPREAD), to: addDays(cycleStart, L + DUE_SETTINGS_SPREAD), basis: 'settings' }
+}
+
+/** The expected period of the cycle starting on `cycleStart` (see ExpectedPeriod). */
+export function expectedPeriod(input: CycleInput, cycleStart: ISODate): ExpectedPeriod {
+  return dueFor(cycleStats(input.periods, input.cycle), cycleStart, input.lhTests)
+}
+
+/** The first day that counts as late: the day after the range. */
+export function lateFrom(due: Pick<ExpectedPeriod, 'to'>): ISODate {
+  return addDays(due.to, 1)
+}
+
+/** Days late as of `today` (1 on lateFrom); 0 while inside or before the range. */
+export function daysLate(due: Pick<ExpectedPeriod, 'to'>, today: ISODate): number {
+  return Math.max(0, diffDays(due.to, today))
+}
+
+/** Past this many days late, "N일 지났어요" reads oddly — more likely a missed log (or a long cycle). */
 export const LONG_LATE_DAYS = 14
 
 /**
@@ -223,12 +387,14 @@ export interface ForecastLimit {
   /** No cycle projection on or after this date. */
   from: ISODate
   /**
-   * late: the expected period passed with nothing logged — what follows depends
+   * late: the expected range passed with nothing logged — what follows depends
    * on when it actually starts (or on a pregnancy). paused: after an ended pregnancy.
    */
   reason: 'late' | 'paused'
   /** Most recent logged period start. */
   lastStart?: ISODate
+  /** The range that passed (late only): its days still show as 생리 예정. */
+  due?: ExpectedPeriod
 }
 
 /**
@@ -242,24 +408,26 @@ export function forecastLimit(input: CycleInput, today: ISODate): ForecastLimit 
   const paused = pausedSince(input)
   if (paused) {
     if (!last) return { from: addDays(paused, 1), reason: 'paused' }
-    const expected = addDays(last, cycleStats(input.periods, input.cycle).average)
+    const expected = expectedPeriod(input, last).from
     const endNext = addDays(paused, 1)
     return { from: expected < endNext ? expected : endNext, reason: 'paused', lastStart: last }
   }
   if (!last || last > today) return undefined
-  const expected = addDays(last, cycleStats(input.periods, input.cycle).average)
-  return diffDays(expected, today) >= 1 ? { from: expected, reason: 'late', lastStart: last } : undefined
+  const due = expectedPeriod(input, last)
+  return today > due.to ? { from: due.from, reason: 'late', lastStart: last, due } : undefined
 }
 
 /**
  * The cycle containing `date`. Returns null until at least one period is logged.
  * Dates after the last logged period are covered by projecting forward with the
- * average length; dates before the first logged period return null.
+ * average length (from the expected range's first day when an LH surge pinned
+ * the last logged cycle); dates before the first logged period return null.
  */
 export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   const starts = sortedStarts(input.periods)
   if (starts.length === 0) return null
   const stats = cycleStats(input.periods, input.cycle)
+  const maxLen = maxCycleLength(input.cycle)
 
   // Latest logged start on/before date.
   let idx = -1
@@ -268,12 +436,13 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
 
   const loggedStart = starts[idx]!
   const nextLogged = starts[idx + 1]
+  const noSpread: Spread = { early: 0, late: 0 }
   if (nextLogged) {
     // A completed, measured cycle — use its real length (unless it was a missed log).
     const len = diffDays(loggedStart, nextLogged)
-    if (len >= MIN_CYCLE && len <= MAX_CYCLE) {
+    if (len >= MIN_CYCLE && len <= maxLen) {
       // Finished cycle: a surge after the next period began belongs to that next cycle, not this one.
-      return buildWindow(loggedStart, true, len, lhOvulationFor(loggedStart, len, input.lhTests, 0))
+      return buildWindow(loggedStart, true, len, lhOvulationFor(loggedStart, len, input.lhTests, 0), noSpread, stats.confidence)
     }
   }
 
@@ -285,13 +454,15 @@ export function cycleAt(input: CycleInput, date: ISODate): CycleWindow | null {
   const spread: Spread =
     stats.min !== undefined && stats.max !== undefined
       ? { early: Math.max(0, L - stats.min), late: Math.max(0, stats.max - L) }
-      : { early: 0, late: 0 }
-  const k = Math.floor(diffDays(loggedStart, date) / L)
-  if (k <= 0 || nextLogged) {
-    return buildWindow(loggedStart, true, L, lhOvulationFor(loggedStart, L, input.lhTests), spread)
-  }
-  const projectedStart = addDays(loggedStart, k * L)
-  return buildWindow(projectedStart, false, L, lhOvulationFor(projectedStart, L, input.lhTests), spread)
+      : noSpread
+  const lhOv = lhOvulationFor(loggedStart, L, input.lhTests)
+  // With a surge, the next period is expected from the range's first day, not start + average.
+  const nextPeriod = lhOv ? dueFor(stats, loggedStart, input.lhTests).from : undefined
+  const first = buildWindow(loggedStart, true, L, lhOv, spread, stats.confidence, nextPeriod)
+  if (date < first.nextPeriod || nextLogged) return first
+  let start = first.nextPeriod
+  for (let guard = 0; addDays(start, L) <= date && guard < 2000; guard++) start = addDays(start, L)
+  return buildWindow(start, false, L, lhOvulationFor(start, L, input.lhTests), spread, stats.confidence)
 }
 
 /** 'possible' = inside the wider uncertainty band but outside the estimated window. */
@@ -309,6 +480,8 @@ export interface DayInfo {
   hasLH?: LHResult
   /** Past the forecast limit (late period / after a pregnancy): nothing is predicted here. */
   unpredicted?: 'late' | 'paused'
+  /** The cycle's confidence (days inside a known/projected cycle). */
+  confidence?: CycleConfidence
 }
 
 function loggedPeriodCovers(periods: PeriodLog[], date: ISODate, periodLength: number): boolean {
@@ -323,6 +496,11 @@ function loggedPeriodCovers(periods: PeriodLog[], date: ISODate, periodLength: n
  * to the user: it stops projections past a missed period or an ended pregnancy
  * (see forecastLimit), and keeps counting the current cycle on an unlogged
  * expected day instead of starting a projected one.
+ *
+ * 생리 예정 ('period-predicted') covers the open cycle's expected range
+ * (expectedPeriod) and the first days of a projected cycle. With low
+ * confidence there are no peak days and no ovulation marker: those days read
+ * as plain window days.
  */
 export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayInfo {
   const lh = strongestLH(input.lhTests.filter((t) => t.date === date).map((t) => t.result))
@@ -335,30 +513,36 @@ export function dayInfo(input: CycleInput, date: ISODate, today?: ISODate): DayI
   if (limit && date >= limit.from) {
     const info: DayInfo = { ...base, unpredicted: limit.reason }
     if (limit.reason === 'late' && limit.lastStart) {
-      // Keep counting from the last logged start, and keep the missed period's
-      // predicted days visible — nothing after them.
+      // Keep counting from the last logged start, and keep the missed range's
+      // days visible as 생리 예정 — nothing after them.
       info.cycleDay = diffDays(limit.lastStart, date) + 1
-      if (diffDays(limit.from, date) < input.cycle.periodLength) info.phase = 'period-predicted'
+      if (limit.due && date <= limit.due.to) info.phase = 'period-predicted'
     }
     return info
   }
   if (!w) return base
   const pos = cyclePos(w, date)
-  // Projected period days of a projected cycle (never overrides a logged one).
-  if (!w.startLogged && diffDays(w.start, date) < input.cycle.periodLength) {
+  const starts = sortedStarts(input.periods)
+  // The open cycle's expected range (a finished cycle shows only what was logged).
+  const open = w.startLogged && !starts.some((s) => s > w.start)
+  const due = open ? dueFor(cycleStats(input.periods, input.cycle), w.start, input.lhTests) : undefined
+  const inRange = !!due && date >= due.from && date <= due.to
+  // A projected cycle's first days: its period, plus the tail of the range before it.
+  const head = Math.max(input.cycle.periodLength, DUE_CLIP_DAYS + 1)
+  if (inRange || (!w.startLogged && diffDays(w.start, date) < head)) {
     // On an unlogged expected day (today), it is still the current cycle's last day + 1.
     if (today && date <= today) {
-      const starts = sortedStarts(input.periods)
       const last = [...starts].reverse().find((d) => d <= date)
       if (last) return { ...base, phase: 'period-predicted', cycleDay: diffDays(last, date) + 1 }
     }
     return { ...base, ...pos, phase: 'period-predicted' }
   }
+  const low = w.confidence === 'low'
   let phase: DayPhase = 'none'
-  if (isBetween(date, w.peakStart, w.peakEnd)) phase = 'peak'
+  if (!low && isBetween(date, w.peakStart, w.peakEnd)) phase = 'peak'
   else if (isBetween(date, w.fertileStart, w.fertileEnd)) phase = 'fertile'
   else if (isBetween(date, w.broadStart, w.broadEnd)) phase = 'possible'
-  return { ...base, ...pos, phase, isOvulation: date === w.ovulation }
+  return { ...base, ...pos, phase, isOvulation: !low && date === w.ovulation, confidence: w.confidence }
 }
 
 function cyclePos(w: CycleWindow, date: ISODate): Pick<DayInfo, 'cycleDay' | 'ovulationOffset'> {
@@ -371,51 +555,73 @@ export type FertilityStatus =
    * Bleeding today. `nextFertileStart` only when the window is still ahead;
    * `fertileEnd` when a short cycle's estimated window already overlaps the period.
    */
-  | { kind: 'period'; cycleDay: number; nextFertileStart?: ISODate; daysUntilFertile?: number; fertileEnd?: ISODate }
-  | { kind: 'before-fertile'; daysUntil: number; fertileStart: ISODate; cycleDay: number }
-  | { kind: 'fertile'; peak: boolean; isOvulation: boolean; fertileEnd: ISODate; cycleDay: number }
-  | { kind: 'after-fertile'; nextPeriod: ISODate; daysUntilPeriod: number; cycleDay: number }
-  | { kind: 'late'; daysLate: number; expected: ISODate }
+  | {
+      kind: 'period'
+      cycleDay: number
+      nextFertileStart?: ISODate
+      daysUntilFertile?: number
+      fertileEnd?: ISODate
+      confidence: CycleConfidence
+    }
+  | { kind: 'before-fertile'; daysUntil: number; fertileStart: ISODate; cycleDay: number; confidence: CycleConfidence }
+  | { kind: 'fertile'; peak: boolean; isOvulation: boolean; fertileEnd: ISODate; cycleDay: number; confidence: CycleConfidence }
+  /**
+   * After the window, up to the end of the expected range. `nextPeriod` is the
+   * range's first day; `daysUntilPeriod` counts down to it (0 from then on,
+   * when `dueNow` is true: the period may start any day).
+   */
+  | {
+      kind: 'after-fertile'
+      nextPeriod: ISODate
+      daysUntilPeriod: number
+      cycleDay: number
+      due: ExpectedPeriod
+      dueNow: boolean
+      confidence: CycleConfidence
+    }
+  /** The expected range passed with nothing logged: `daysLate` counts from the day after it. */
+  | { kind: 'late'; daysLate: number; due: ExpectedPeriod }
   /** A pregnancy ended and no period has been logged since: nothing to predict yet. */
   | { kind: 'after-pregnancy'; endedAt: ISODate; daysSince: number }
 
 /**
  * One-line summary of "where are we today" for the home screen and alerts.
- * `late` means the expected period has passed with nothing logged — the UI should
- * gently suggest logging the period or taking a pregnancy test. `after-pregnancy`
- * must never do that: the old cycle is meaningless after a pregnancy ended.
+ * `late` means the expected range has passed with nothing logged — the UI should
+ * gently suggest logging the period (and, a few days on, a pregnancy test).
+ * `after-pregnancy` must never do that: the old cycle is meaningless after a
+ * pregnancy ended.
  */
 export function fertilityStatus(input: CycleInput, today: ISODate): FertilityStatus {
   const paused = pausedSince(input)
   if (paused) return { kind: 'after-pregnancy', endedAt: paused, daysSince: Math.max(0, diffDays(paused, today)) }
   const starts = sortedStarts(input.periods)
-  if (starts.length === 0) return { kind: 'no-data' }
-  const last = starts[starts.length - 1]!
+  const cur = [...starts].reverse().find((d) => d <= today)
+  if (!cur) return { kind: 'no-data' }
   const stats = cycleStats(input.periods, input.cycle)
-  const expected = addDays(last, stats.average)
-  const daysPast = diffDays(expected, today)
-  if (last <= today && daysPast >= 1) {
-    return { kind: 'late', daysLate: daysPast, expected }
-  }
-  // On the expected day itself (nothing logged yet) stay in the current cycle
-  // instead of jumping to the projected next one.
-  const w = cycleAt(input, today === expected ? addDays(expected, -1) : today)
+  const due = dueFor(stats, cur, input.lhTests)
+  if (today > due.to) return { kind: 'late', daysLate: diffDays(due.to, today), due }
+  // Inside the expected range we stay in the current cycle (never the projected next one).
+  const w = cycleAt(input, cur)
   if (!w) return { kind: 'no-data' }
-  if (today === expected) {
-    return { kind: 'after-fertile', nextPeriod: expected, daysUntilPeriod: 0, cycleDay: diffDays(w.start, today) + 1 }
-  }
   const info = dayInfo(input, today, today)
-  const cycleDay = info.cycleDay ?? 1
+  const cycleDay = info.cycleDay ?? diffDays(cur, today) + 1
+  const confidence = w.confidence
   if (info.phase === 'period') {
     // Short cycles: the estimated window can start during the period — never
     // call a date that has already come the "next" window.
     if (today < w.fertileStart)
-      return { kind: 'period', cycleDay, nextFertileStart: w.fertileStart, daysUntilFertile: diffDays(today, w.fertileStart) }
-    if (today <= w.fertileEnd) return { kind: 'period', cycleDay, fertileEnd: w.fertileEnd }
-    return { kind: 'period', cycleDay }
+      return {
+        kind: 'period',
+        cycleDay,
+        nextFertileStart: w.fertileStart,
+        daysUntilFertile: diffDays(today, w.fertileStart),
+        confidence,
+      }
+    if (today <= w.fertileEnd) return { kind: 'period', cycleDay, fertileEnd: w.fertileEnd, confidence }
+    return { kind: 'period', cycleDay, confidence }
   }
   if (today < w.fertileStart) {
-    return { kind: 'before-fertile', daysUntil: diffDays(today, w.fertileStart), fertileStart: w.fertileStart, cycleDay }
+    return { kind: 'before-fertile', daysUntil: diffDays(today, w.fertileStart), fertileStart: w.fertileStart, cycleDay, confidence }
   }
   if (today <= w.fertileEnd) {
     return {
@@ -424,9 +630,18 @@ export function fertilityStatus(input: CycleInput, today: ISODate): FertilitySta
       isOvulation: info.isOvulation,
       fertileEnd: w.fertileEnd,
       cycleDay,
+      confidence,
     }
   }
-  return { kind: 'after-fertile', nextPeriod: w.nextPeriod, daysUntilPeriod: diffDays(today, w.nextPeriod), cycleDay }
+  return {
+    kind: 'after-fertile',
+    nextPeriod: due.from,
+    daysUntilPeriod: Math.max(0, diffDays(today, due.from)),
+    cycleDay,
+    due,
+    dueNow: today >= due.from,
+    confidence,
+  }
 }
 
 /** How many days ahead of the estimated window "이번 주는 우리의 주간" starts. */

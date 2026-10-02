@@ -12,20 +12,26 @@ import {
   MAX_CYCLE,
   MIN_CYCLE,
   chanceLevel,
-  cycleAt,
   cycleStats,
+  expectedPeriod,
   fertilityStatus,
   firstSurge,
+  lhTestsInCycle,
+  maxCycleLength,
   sortedStarts,
   upcomingWindows,
   type ChanceLevel,
+  type CycleConfidence,
   type CycleInput,
   type CycleStats,
   type CycleWindow,
   type DayInfo,
   type DayPhase,
+  type ExpectedPeriod,
   type FertilityStatus,
 } from './cycle'
+import { LATE_TEST_DAYS, PERIOD_DUE_COPY, dueRange } from './periodDue'
+import { personalDays, type PersonalDayEntry } from './personalLog'
 import { canSeeCycleDetails, settingsFor } from './prefs'
 import { alertStyleLabel } from './settings'
 import { fertilityVoice } from './today'
@@ -85,15 +91,21 @@ export function visiblePhase(phase: DayPhase, view: FertilityView): DayPhase {
 
 /**
  * Fertile-day display pauses while resting this cycle ("이번 주기는 쉬어요",
- * after a live vaccine or a loss) and while a positive home test waits for
- * the clinic — no windows, no countdowns, no alerts.
+ * after a live vaccine or a loss), while a positive home test waits for the
+ * clinic, and while the couple prepares with a clinic ('clinic' — 병원과 함께
+ * 준비 중, N13: the clinic sets the timing, so the calendar shows logged data
+ * only, not even the projected period) — no windows, no countdowns, no alerts.
  */
-export type CyclePause = 'rest' | 'positive'
+export type CyclePause = 'rest' | 'positive' | 'clinic'
+
+/** '병원과 함께 준비 중' — the badge, the toggle and the eyebrow all say it this way. */
+export const CLINIC_LABEL = '병원과 함께 준비 중'
 
 /** Uses ttc.activeRest / activePositivePending, so a period logged anywhere settles both. */
 export function cyclePause(state: PauseState): CyclePause | undefined {
   if (activePositivePending(state)) return 'positive'
-  if (activeRest(state)) return 'rest'
+  const rest = activeRest(state)
+  if (rest) return rest.reason === 'clinic' ? 'clinic' : 'rest'
   return undefined
 }
 
@@ -157,7 +169,8 @@ export function lensPhase(phase: DayPhase, lens: Lens): DayPhase {
   const p = visiblePhase(phase, lens.view)
   const fertile = p === 'peak' || p === 'fertile' || p === 'possible'
   if (lens.pause && fertile) return 'none'
-  if (lens.pause === 'positive' && p === 'period-predicted') return 'none'
+  // No projected period while a positive test waits, nor with a clinic (logged data only).
+  if ((lens.pause === 'positive' || lens.pause === 'clinic') && p === 'period-predicted') return 'none'
   if (!lens.details) return p === 'peak' || p === 'fertile' ? 'fertile' : 'none'
   return p
 }
@@ -173,6 +186,26 @@ export function showsPeak(lens: Pick<Lens, 'view' | 'details' | 'pause'>): boole
 /** The peak days' name: '가능성 높음' in explicit wording, '특히 좋은 때 (예상)' in soft. */
 export function peakLabel(view: FertilityView): string {
   return view === 'explicit' ? '가능성 높음' : PEAK_SOFT_LABEL
+}
+
+/**
+ * The window band's name (calendar legend, home ring, week row). With low
+ * confidence (settings only, one or two cycles, irregular, 긴 주기) the band is
+ * a wide range, and says so — never 가임기 by name in soft wording.
+ */
+export function windowLabel(view: FertilityView, confidence: CycleConfidence = 'cycles'): string {
+  if (view === 'explicit') return confidence === 'low' ? '예상 범위 (넓음)' : '가임기 (예상)'
+  return confidence === 'low' ? '우리의 주간 (예상 범위)' : '우리의 주간 (예상)'
+}
+
+/**
+ * What the estimate rests on, for an eyebrow or a row: 'LH 기준', '기록 3주기
+ * 기준', or — with low confidence — '달력 기준 · 기록 2주기' / '달력 기준 · 설정값'.
+ */
+export function confidenceLabel(confidence: CycleConfidence, count: number): string {
+  if (confidence === 'lh') return 'LH 기준'
+  if (confidence === 'cycles') return `기록 ${count}주기 기준`
+  return count > 0 ? `달력 기준 · 기록 ${count}주기` : '달력 기준 · 설정값'
 }
 
 /** LH marks: details and explicit wording only — soft, off and low-pressure viewers never see them. */
@@ -290,6 +323,8 @@ export interface CellView {
   /** Strongest pregnancy-test result that day, when this viewer may see it. */
   ptest?: PregnancyTestResult
   ptestBadge?: Badge
+  /** The cycle's confidence, for days inside a known/projected cycle (drives the legend). */
+  confidence?: CycleConfidence
   /** Classes for the round day marker inside the button. */
   className: string
   ariaLabel: string
@@ -371,9 +406,19 @@ export function cellView(info: DayInfo, ctx: CellContext): CellView {
     star,
     ...(lh ? { lh, lhBadge: lhBadge(lh) } : {}),
     ...(ptest ? { ptest, ptestBadge: ptestBadge(ptest) } : {}),
+    ...(info.confidence ? { confidence: info.confidence } : {}),
     className,
     ariaLabel: labels.join(', '),
   }
+}
+
+/**
+ * The confidence a month's legend should follow: 'low' when every window day
+ * shown is a low-confidence one (then no 가능성 높음 / ⭐ item exists to explain).
+ */
+export function monthConfidence(cells: ReadonlyArray<Pick<CellView, 'confidence'>>): CycleConfidence {
+  const known = cells.filter((c) => c.confidence)
+  return known.length > 0 && known.every((c) => c.confidence === 'low') ? 'low' : 'cycles'
 }
 
 export interface LegendItem {
@@ -389,33 +434,42 @@ export interface LegendItem {
 /** The legend never grows past this. */
 export const LEGEND_MAX = 5
 
-export function legendItems(view: FertilityView, lens?: Partial<Omit<Lens, 'view'>>): LegendItem[] {
+/**
+ * The calendar legend. With low confidence (opts.confidence) the window is a
+ * wide range: no 가능성 높음 / ⭐ item, because no such day is drawn.
+ */
+export function legendItems(
+  view: FertilityView,
+  lens?: Partial<Omit<Lens, 'view'>>,
+  opts: { confidence?: CycleConfidence } = {},
+): LegendItem[] {
   const details = lens?.details ?? true
+  const low = opts.confidence === 'low'
   const v: FertilityView = !details && view === 'explicit' ? 'soft' : view
   const items: LegendItem[] = []
   if (details)
     items.push({ key: 'period', label: '생리 · 예정', swatch: PHASE_CLASS.period, swatch2: PHASE_CLASS['period-predicted'] })
   if (v === 'hidden' || lens?.pause) return items
-  if (!details) return [{ key: 'fertile', label: '우리의 주간 (예상)', swatch: PHASE_CLASS.fertile }]
+  if (!details) return [{ key: 'fertile', label: windowLabel('soft', opts.confidence), swatch: PHASE_CLASS.fertile }]
   const soft = v === 'soft'
-  items.push({ key: 'fertile', label: soft ? '우리의 주간' : '가임기 예상', swatch: PHASE_CLASS.fertile })
-  // Peak days for everyone with details (the home strip shows the same days).
-  items.push({ key: 'peak', label: peakLabel(v), swatch: PHASE_CLASS.peak })
+  items.push({
+    key: 'fertile',
+    label: low ? windowLabel(v, 'low') : soft ? '우리의 주간' : '가임기 예상',
+    swatch: PHASE_CLASS.fertile,
+  })
+  // Peak days for everyone with details (the home strip shows the same days) — unless the estimate is too rough to name them.
+  if (!low) items.push({ key: 'peak', label: peakLabel(v), swatch: PHASE_CLASS.peak })
   items.push({ key: 'possible', label: '가능 범위', swatch: PHASE_CLASS.possible })
-  if (v === 'explicit') items.push({ key: 'ovulation', label: '배란 예상', swatch: '', mark: '⭐' })
+  if (v === 'explicit' && !low) items.push({ key: 'ovulation', label: '배란 예상', swatch: '', mark: '⭐' })
   return items
 }
 
 // ── Summary ─────────────────────────────────────────────────
 
-/** cycle.ts averages this many recent cycles. */
-const RECENT_CYCLES = 6
-
 export function averageSourceLabel(stats: CycleStats): string {
   if (stats.source === 'settings') return '설정값 — 두 번 이상 기록하면 자동으로 계산해요'
-  const n = Math.min(stats.lengths.length, RECENT_CYCLES)
   const spread = stats.min !== undefined && stats.max !== undefined && stats.min !== stats.max ? ` (${stats.min}~${stats.max}일)` : ''
-  return `최근 ${n}주기 평균${spread}`
+  return `최근 ${stats.count}주기 평균${spread}`
 }
 
 export interface Headline {
@@ -441,6 +495,10 @@ export interface HeadlineContext {
   nextPeriod?: ISODate
   /** Most recent logged period start. */
   lastStart?: ISODate
+  /** The owner answered '아직 안 왔어요' to this long-late cycle: keep counting, no missed-log framing. */
+  stillWaiting?: boolean
+  /** What the estimate rests on (confidenceLabel), named when confidence is low. */
+  basis?: string
 }
 
 export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx: HeadlineContext): Headline {
@@ -455,14 +513,19 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
     case 'after-pregnancy':
       return AFTER_PREGNANCY_HEADLINE
     case 'late':
+      if (status.daysLate > LONG_LATE_DAYS && ctx.stillWaiting)
+        return {
+          title: PERIOD_DUE_COPY.stillWaiting.eyebrow(ctx.cycleDay ?? status.daysLate),
+          sub: PERIOD_DUE_COPY.stillWaiting.body,
+        }
       if (status.daysLate > LONG_LATE_DAYS && ctx.lastStart)
         return {
-          title: '최근 생리 기록이 없어요',
+          title: PERIOD_DUE_COPY.missedLog.title,
           sub: `마지막 기록은 ${formatKo(ctx.lastStart)}이에요. 그 뒤에 시작한 날을 달력에서 눌러 기록하면 예측을 다시 계산해요.`,
         }
       return {
-        title: `생리 예정일이 ${status.daysLate}일 지났어요`,
-        sub: '시작했다면 기록해 주세요. 주기는 원래 조금씩 달라져요. 며칠 더 늦어지면 임신 테스트를 해 봐도 좋아요.',
+        title: PERIOD_DUE_COPY.lateTitle(status.daysLate),
+        sub: status.daysLate >= LATE_TEST_DAYS ? PERIOD_DUE_COPY.lateSubTest : PERIOD_DUE_COPY.lateSub,
       }
     case 'period':
       // The end date only changes how the calendar colours this period — predictions use start dates.
@@ -472,7 +535,9 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
           sub:
             view === 'soft'
               ? `다음 우리의 주간은 ${formatKo(status.nextFertileStart)}부터예요 (예상).`
-              : `다음 가임기는 ${formatKo(status.nextFertileStart)}부터예요 (예상).`,
+              : status.confidence === 'low'
+                ? `다음 가임기는 ${formatKo(status.nextFertileStart)} 무렵부터예요 (예상 범위, ${ctx.basis ?? '달력 기준'}).`
+                : `다음 가임기는 ${formatKo(status.nextFertileStart)}부터예요 (예상).`,
         }
       // Short cycle: the estimated window already started during the period.
       if (view !== 'hidden' && status.fertileEnd)
@@ -491,6 +556,11 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
           title: `다음 우리의 주간: ${formatKo(status.fertileStart)}부터`,
           sub: '예상이에요. 미리 데이트 계획을 세워 봐도 좋아요.',
         }
+      if (status.confidence === 'low')
+        return {
+          title: `가임기 무렵까지 ${status.daysUntil}일 (예상)`,
+          sub: `${formatKo(status.fertileStart)} 무렵부터예요 (넓은 범위 · ${ctx.basis ?? '달력 기준'}). 며칠 전부터 LH 테스트를 해 보면 좋아요.`,
+        }
       return {
         title: `가임기까지 ${status.daysUntil}일 (예상)`,
         sub: `${formatKo(status.fertileStart)}부터예요. 며칠 전부터 LH 테스트를 해 보면 더 정확해요.`,
@@ -502,6 +572,11 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
           title: '지금은 우리의 주간이에요 (예상)',
           sub: `${formatKo(status.fertileEnd)}까지 · 둘만의 시간을 편하게 챙겨요.`,
         }
+      if (status.confidence === 'low')
+        return {
+          title: '가임기 예상 범위예요 (넓음)',
+          sub: `${formatKo(status.fertileEnd)}까지 · ${ctx.basis ?? '달력 기준'}이라 LH 테스트로 확인해 보면 좋아요.`,
+        }
       return {
         title: status.isOvulation
           ? '오늘은 배란 예상일이에요'
@@ -512,11 +587,11 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
         sub: `${formatKo(status.fertileEnd)}까지 · 매일이 아니어도 괜찮아요. 일주일에 2~3번도 거의 비슷해요.`,
       }
     case 'after-fertile':
-      return status.daysUntilPeriod === 0
-        ? { title: '오늘이 생리 예정일이에요 (예상)', sub: '시작하면 기록해 주세요. 다음 예측이 더 정확해져요.' }
+      return status.dueNow
+        ? { title: `${PERIOD_DUE_COPY.dueNow.title} (예상)`, sub: PERIOD_DUE_COPY.dueNow.body(status.due) }
         : {
             title: `다음 생리까지 ${status.daysUntilPeriod}일 (예상)`,
-            sub: view === 'hidden' ? NICE_LINE : `${formatKo(status.nextPeriod)} 무렵이에요.`,
+            sub: view === 'hidden' ? NICE_LINE : `${dueRange(status.due)} 무렵이에요.`,
           }
   }
 }
@@ -540,8 +615,12 @@ export interface CycleSummary {
   rows: SummaryRow[]
 }
 
+/** The partner's clinic-cycle line: keep to the schedule, ask about nothing. */
+export const CLINIC_PARTNER_HEADLINE: Headline = { title: CLINIC_LABEL, sub: '일정에 맞춰 함께해요. 결과는 묻지 않아도 괜찮아요.' }
+
 /** What a viewer without details sees (only the shared 우리의 주간, soft wording). */
 export function sharedHeadline(status: FertilityStatus, view: FertilityView, pause?: CyclePause): Headline {
+  if (pause === 'clinic') return CLINIC_PARTNER_HEADLINE
   if (view === 'hidden') return { title: '우리 리듬대로 지내요', sub: NICE_LINE }
   if (status.kind === 'no-data') return { title: '아직 우리의 주간 예상이 없어요', sub: '주기 기록이 시작되면 여기에 보여요.' }
   if (!pause) {
@@ -569,6 +648,13 @@ export function pauseHeadline(pause: CyclePause, view: FertilityView, owner: boo
           // Test results by name only in explicit wording (like the calendar's showsTests).
           sub: view === 'explicit' ? '임테기 양성이 기록됐어요. 확인 전이니 차분히 함께 기다려요.' : '확인 전이니 차분히 함께 기다려요.',
         }
+  if (pause === 'clinic') {
+    if (!owner) return CLINIC_PARTNER_HEADLINE
+    return {
+      title: CLINIC_LABEL,
+      sub: '날짜 예상은 쉬고 기록만 보여요. 병원 일정은 챙길 것에서 챙겨요. 생리를 기록해도 꺼지지 않아요.',
+    }
+  }
   if (!owner) return { title: '이번 주기는 쉬어 가요', sub: '평소처럼 편하게 지내요.' }
   return {
     title: '이번 주기는 쉬어요',
@@ -609,15 +695,21 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
     }
   }
 
+  // '아직 안 왔어요' answered for this (long-late) cycle: keep counting the day.
+  const stillWaiting = !!last && !!input.cycleNotes?.[last]?.stillWaiting
   let cycleDay: number | undefined
   let nextPeriod: ISODate | undefined
+  let due: ExpectedPeriod | undefined
   if (status.kind === 'late') {
     const sinceLast = last ? diffDays(last, today) + 1 : undefined
-    cycleDay = sinceLast !== undefined ? knownCycleDay({ cycleDay: sinceLast }) : undefined
-    nextPeriod = status.expected
+    cycleDay =
+      sinceLast !== undefined ? (stillWaiting ? sinceLast : knownCycleDay({ cycleDay: sinceLast }, maxCycleLength(input.cycle))) : undefined
+    due = status.due
+    nextPeriod = due.from
   } else if (status.kind !== 'no-data' && status.kind !== 'after-pregnancy') {
     cycleDay = status.cycleDay
-    nextPeriod = status.kind === 'after-fertile' ? status.nextPeriod : cycleAt(input, today)?.nextPeriod
+    due = status.kind === 'after-fertile' ? status.due : last ? expectedPeriod(input, last) : undefined
+    nextPeriod = due?.from
   }
 
   // While a period is late the next window depends on when it actually starts,
@@ -625,13 +717,18 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
   const late = status.kind === 'late'
   const longLate = late && status.daysLate > LONG_LATE_DAYS
   const avgRow: SummaryRow = { key: 'avg', label: '평균 주기', value: `${stats.average}일`, sub: averageSourceLabel(stats) }
+  // (No LH by name for an owner who turned alerts off — showsLH's rule — nor in soft / hidden wording.)
+  const lhByName = (opts.lh ?? true) && view === 'explicit'
+  // The expected period is a range, read from the one copy table (periodDue.ts).
+  const dueBasis = due ? PERIOD_DUE_COPY.basis[due.basis === 'lh' && !lhByName ? 'calendar' : due.basis] : ''
   const periodRow: SummaryRow | undefined =
-    nextPeriod && !longLate
+    due && !longLate
       ? {
           key: 'period',
-          label: status.kind === 'late' ? '생리 예정일 (지남)' : '다음 생리 (예상)',
-          value: formatKo(nextPeriod),
-          sub: dLabel(nextPeriod, today),
+          label: late ? PERIOD_DUE_COPY.rowLabelLate : PERIOD_DUE_COPY.rowLabel,
+          value: `${dueRange(due)} 무렵`,
+          sub: late ? `D+${status.daysLate}` : today >= due.from ? dueBasis : `${dLabel(due.from, today)} · ${dueBasis}`,
+          wide: true,
         }
       : undefined
 
@@ -657,28 +754,37 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
       rows: [...(periodRow ? [periodRow] : []), avgRow],
     }
   }
+  // With a clinic the next period is the clinic's call: logged data only, no 생리 예정 row.
+  if (pause === 'clinic') {
+    return { status, stats, headline: pauseHeadline(pause, view, owner), cycleDay, rows: [avgRow] }
+  }
 
   const window = upcomingWindows(input, today, 1)[0]
   const rows: SummaryRow[] = []
   if (periodRow) rows.push(periodRow)
+  const basis = window ? confidenceLabel(window.confidence, stats.count).replace(/^LH 기준$/, lhByName ? 'LH 기준' : '기록 기준') : undefined
   if (window && view !== 'hidden') {
     const range = `${formatKo(window.fertileStart)} ~ ${formatKo(window.fertileEnd)}`
+    const low = window.confidence === 'low'
     if (view === 'soft') {
-      rows.push({ key: 'window', label: '우리의 주간 (예상)', value: range, wide: true })
+      rows.push({ key: 'window', label: windowLabel('soft', window.confidence), value: range, wide: true })
+    } else if (low) {
+      // No ovulation day to name: the calendar alone can't — say what it rests on instead.
+      rows.push({ key: 'window', label: windowLabel('explicit', 'low'), value: range, wide: true })
+      rows.push({ key: 'basis', label: '예상 기준', value: basis!, sub: 'LH로 확인하면 좁아져요' })
     } else {
       rows.push({ key: 'window', label: '가임기 (예상)', value: range, wide: true })
       rows.push({
         key: 'ovulation',
         label: '배란 (예상)',
         value: formatKo(window.ovulation),
-        // (No LH by name for an owner who turned alerts off — showsLH's rule.)
-        sub: window.basis === 'lh' ? (opts.lh ?? true ? 'LH 테스트 기준' : '기록 기준') : '달력 계산',
+        sub: window.basis === 'lh' ? (lhByName ? 'LH 테스트 기준' : '기록 기준') : '달력 계산',
       })
     }
   }
   rows.push(avgRow)
 
-  const own = statusHeadline(status, view, { today, cycleDay, nextPeriod, lastStart: last })
+  const own = statusHeadline(status, view, { today, cycleDay, nextPeriod, lastStart: last, stillWaiting, basis })
   return {
     status,
     stats,
@@ -705,15 +811,20 @@ export function partnerHeadline(status: FertilityStatus, view: FertilityView, ow
     case 'late':
       if (status.daysLate > LONG_LATE_DAYS) return { title: '최근 생리 기록이 없어요', sub: '기록이 채워지면 다시 예상해요.' }
       return { title: own.title, sub: '주기는 원래 조금씩 달라져요. 묻거나 재촉하지 말고 평소처럼 지내요.' }
+    case 'fertile':
+      // The owner's "LH 테스트로 확인해 보면" is hers to act on; the dates stay.
+      return status.confidence === 'low' && view === 'explicit'
+        ? { title: own.title, sub: `${formatKo(status.fertileEnd)}까지 · 달력 기준이라 넓게 잡은 범위예요.` }
+        : own
     case 'period':
       // Keep the next-window line; otherwise the owner's "끝나는 날도 기록해 두면…".
       return view !== 'hidden' && (status.nextFertileStart || status.fertileEnd)
         ? own
         : { title: own.title, sub: '평소보다 조금 더 챙겨 주면 좋아요.' }
     case 'before-fertile':
-      return view === 'explicit' ? { title: own.title, sub: `${formatKo(status.fertileStart)}부터예요.` } : own
+      return view === 'explicit' ? { title: own.title, sub: `${formatKo(status.fertileStart)}${status.confidence === 'low' ? ' 무렵' : ''}부터예요.` } : own
     case 'after-fertile':
-      if (status.daysUntilPeriod === 0) return { title: own.title, sub: '평소처럼 편하게 지내요.' }
+      if (status.dueNow) return { title: own.title, sub: '평소처럼 편하게 지내요.' }
       // The hidden view keeps its neutral NICE line (no "waiting" framing).
       return view === 'hidden' ? own : { title: own.title, sub: '기다리는 시간이에요. 증상은 묻지 말고 평소처럼 보내요.' }
     default:
@@ -781,10 +892,11 @@ export function dayActions(periods: PeriodLog[], date: ISODate, today: ISODate, 
 /**
  * Cycle day worth showing. cycle.ts keeps counting through a gap between two
  * logs that is longer than any plausible cycle (a missed log), which would read
- * as "주기 148일째" — treat those days as unknown instead.
+ * as "주기 148일째" — treat those days as unknown instead. `max` follows the
+ * settings (90 with 긴 주기, cycle.maxCycleLength).
  */
-export function knownCycleDay(info: Pick<DayInfo, 'cycleDay'>): number | undefined {
-  return info.cycleDay !== undefined && info.cycleDay <= MAX_CYCLE ? info.cycleDay : undefined
+export function knownCycleDay(info: Pick<DayInfo, 'cycleDay'>, max: number = MAX_CYCLE): number | undefined {
+  return info.cycleDay !== undefined && info.cycleDay <= max ? info.cycleDay : undefined
 }
 
 /** Sheet title: '10월 3일 (금)', with the year when it isn't this year. */
@@ -801,6 +913,8 @@ export function dayTitle(date: ISODate, today: ISODate): string {
  */
 export function dayChanceLabel(info: DayInfo, view: FertilityView): string | null {
   if (view !== 'explicit' || info.unpredicted || knownCycleDay(info) === undefined) return null
+  // Too rough an estimate to rate a day (settings only, 1–2 cycles, irregular): no 높음/보통.
+  if (info.confidence === 'low') return null
   const phase = visiblePhase(info.phase, view)
   if (phase === 'possible') return `${CHANCE_LABEL.low}~${CHANCE_LABEL.medium}`
   if (phase !== 'peak' && phase !== 'fertile') return null
@@ -838,7 +952,9 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean, 
     case 'fertile':
       return view === 'soft'
         ? '우리의 주간이에요 (예상). 서로 컨디션을 살피며 편하게 보내요.'
-        : '배란 예상일로 끝나는 6일, 가임기 예상 기간이에요.'
+        : info.confidence === 'low'
+          ? '달력 기준으로 넓게 잡은 예상 범위예요. LH 테스트로 확인하면 범위가 좁아져요.'
+          : '배란 예상일로 끝나는 6일, 가임기 예상 기간이에요.'
     case 'possible':
       return view === 'soft'
         ? '우리의 주간 앞뒤로 여유를 둔 날이에요. 주기마다 며칠씩 달라질 수 있어서요.'
@@ -874,7 +990,9 @@ export function explainDayFor(info: DayInfo, lens: Lens, isPast: boolean): strin
   if (lens.pause && phase === 'none' && visiblePhase(info.phase, lens.view) !== 'none')
     return lens.pause === 'rest'
       ? '이번 주기는 쉬는 중이라 날짜 예상을 보여 주지 않아요.'
-      : '병원에서 확인하기 전이라 날짜 예상을 잠시 멈췄어요.'
+      : lens.pause === 'clinic'
+        ? '병원과 함께 준비하는 동안은 기록만 보여요. 날짜는 병원 일정을 따라요.'
+        : '병원에서 확인하기 전이라 날짜 예상을 잠시 멈췄어요.'
   return explainDay({ ...info, phase }, lens.view, isPast, lens.owner)
 }
 
@@ -909,8 +1027,22 @@ export interface HistoryRow {
   current: boolean
 }
 
+export interface HistoryOptions {
+  /** The longest plausible cycle (cycle.maxCycleLength; 60 by default, 90 with 긴 주기). */
+  maxCycle?: number
+  /** The average: a gap is flagged '기록 누락?' only past twice it (and past maxCycle). */
+  average?: number
+}
+
+/** Is a gap between two starts likelier a missed log than one long cycle? */
+export function isMissedGap(cycleLength: number, opts: HistoryOptions = {}): boolean {
+  const max = opts.maxCycle ?? MAX_CYCLE
+  if (cycleLength <= max) return false
+  return opts.average === undefined || cycleLength > 2 * opts.average
+}
+
 /** Logged periods newest first, with the measured cycle length to the following one. */
-export function periodHistory(periods: PeriodLog[]): HistoryRow[] {
+export function periodHistory(periods: PeriodLog[], opts: HistoryOptions = {}): HistoryRow[] {
   const byStart = new Map(periods.map((p) => [p.start, p]))
   const starts = sortedStarts(periods)
   const rows = starts.map((start, i): HistoryRow => {
@@ -918,7 +1050,8 @@ export function periodHistory(periods: PeriodLog[]): HistoryRow[] {
     const end = p?.end && p.end >= start ? p.end : undefined
     const next = starts[i + 1]
     const cycleLength = next ? diffDays(start, next) : undefined
-    const hint = cycleLength === undefined ? undefined : cycleLength > MAX_CYCLE ? 'gap' : cycleLength < MIN_CYCLE ? 'short' : undefined
+    const hint =
+      cycleLength === undefined ? undefined : isMissedGap(cycleLength, opts) ? 'gap' : cycleLength < MIN_CYCLE ? 'short' : undefined
     return {
       start,
       end,
@@ -936,6 +1069,20 @@ export interface CycleHistoryRow extends HistoryRow {
   attempt?: number
   /** The cycle's first LH surge (양성 / 가장 진함) and its cycle day. */
   surge?: { date: ISODate; cycleDay: number }
+  /**
+   * LH strips logged in this cycle (to its last day, or to today for the
+   * running one). A finished cycle with strips but no surge reads
+   * 'LH N회 · 양성 없음' (N11) — the running cycle only 'LH N회'.
+   */
+  lhCount: number
+}
+
+/** The row's LH line in the viewer's wording, or undefined when there is nothing to say. */
+export function lhRowLine(r: Pick<CycleHistoryRow, 'surge' | 'lhCount' | 'cycleLength' | 'current'>): string | undefined {
+  if (r.surge) return `첫 LH 양성 ${r.surge.cycleDay}일째`
+  if (r.lhCount === 0) return undefined
+  // Only a finished cycle can say there was no surge; the running one may still see it.
+  return r.cycleLength !== undefined && !r.current ? `LH ${r.lhCount}회 · 양성 없음` : `LH ${r.lhCount}회`
 }
 
 export interface CycleHistory {
@@ -948,6 +1095,8 @@ export interface CycleHistory {
    * first log, or a missed log left a long gap (counted with the average length).
    */
   estimated: boolean
+  /** The longest plausible cycle for these settings (the list's "이번 주기 · N일째" cut-off). */
+  maxCycle: number
 }
 
 /**
@@ -956,8 +1105,9 @@ export interface CycleHistory {
  * the average length and flagged as estimated.
  */
 export function cycleHistory(input: Pick<CycleInput, 'periods' | 'lhTests' | 'cycle'>, today: ISODate, ttcStart?: ISODate): CycleHistory {
-  const base = periodHistory(input.periods).reverse() // oldest first
   const avg = cycleStats(input.periods, input.cycle).average
+  const MAX = maxCycleLength(input.cycle)
+  const base = periodHistory(input.periods, { maxCycle: MAX, average: avg }).reverse() // oldest first
   const attempts = new Map<ISODate, number>()
   let estimated = false
   // A start date still ahead (planning to begin next month) numbers nothing yet.
@@ -982,7 +1132,7 @@ export function cycleHistory(input: Pick<CycleInput, 'periods' | 'lhTests' | 'cy
     for (let i = from; i < base.length; i++) {
       if (i > from) {
         const gap = diffDays(base[i - 1]!.start, base[i]!.start)
-        if (gap > MAX_CYCLE) {
+        if (gap > MAX) {
           n += Math.max(1, Math.round(gap / avg))
           estimated = true
         } else if (gap >= MIN_CYCLE) n += 1
@@ -993,23 +1143,55 @@ export function cycleHistory(input: Pick<CycleInput, 'periods' | 'lhTests' | 'cy
     }
   }
   const rows: CycleHistoryRow[] = base.map((r) => {
-    const len = r.cycleLength !== undefined && r.cycleLength <= MAX_CYCLE ? r.cycleLength : undefined
+    const len = r.cycleLength !== undefined && r.cycleLength <= MAX ? r.cycleLength : undefined
     // A finished cycle ends at the next start; the current one runs to today.
     const surgeDate =
       len !== undefined
         ? firstSurge(r.start, len, input.lhTests, 0)
         : r.current && r.start <= today
-          ? firstSurge(r.start, Math.min(MAX_CYCLE, diffDays(r.start, today) + 1), input.lhTests, 0)
+          ? firstSurge(r.start, Math.min(MAX, diffDays(r.start, today) + 1), input.lhTests, 0)
           : undefined
+    // Strips logged up to the cycle's last day (a gap too long to be one cycle counts only MAX days).
+    const lastDay =
+      len !== undefined
+        ? addDays(r.start, len - 1)
+        : r.cycleLength !== undefined
+          ? addDays(r.start, Math.min(MAX, r.cycleLength) - 1)
+          : r.start <= today
+            ? today
+            : r.start
+    const lhCount = lhTestsInCycle(input.lhTests, r.start, lastDay)
     const attempt = attempts.get(r.start)
     return {
       ...r,
+      lhCount,
       ...(attempt !== undefined ? { attempt } : {}),
       ...(surgeDate ? { surge: { date: surgeDate, cycleDay: diffDays(r.start, surgeDate) + 1 } } : {}),
     }
   })
   const latest = rows[rows.length - 1]
-  return { rows: rows.reverse(), current: latest?.attempt, estimated }
+  return { rows: rows.reverse(), current: latest?.attempt, estimated, maxCycle: MAX }
+}
+
+/**
+ * The owner's own days (오늘 컨디션 chips and 나만 보기 lines, N11) per cycle
+ * row, keyed by the row's start — the tiny list behind '지난 주기 컨디션 N개 ·
+ * 보기'. Owner only: callers must never build this for the partner
+ * (lens.owner), whatever she shares; the log is hers alone (lib/logic/personalLog.ts).
+ */
+export function cycleFeels(
+  state: Pick<AppState, 'personalLog'>,
+  member: MemberId,
+  rows: ReadonlyArray<Pick<CycleHistoryRow, 'start' | 'cycleLength'>>,
+  today: ISODate,
+): Record<ISODate, PersonalDayEntry[]> {
+  const out: Record<ISODate, PersonalDayEntry[]> = {}
+  for (const r of rows) {
+    const end = r.cycleLength !== undefined ? addDays(r.start, r.cycleLength - 1) : today
+    const days = personalDays(state, member, r.start, end)
+    if (days.length) out[r.start] = days
+  }
+  return out
 }
 
 // ── Calendar export ─────────────────────────────────────────
@@ -1031,6 +1213,8 @@ export function icsAvailability(
 ): IcsAvailability {
   if (pause === 'rest')
     return { enabled: false, reason: '이번 주기는 쉬는 중이라 만들지 않아요. 다음 생리를 기록하면 다시 만들 수 있어요.', windows: [] }
+  if (pause === 'clinic')
+    return { enabled: false, reason: '병원과 함께 준비하는 동안은 날짜 알림을 만들지 않아요. 병원 일정은 챙길 것에서 챙겨요.', windows: [] }
   if (pause === 'positive')
     return { enabled: false, reason: '병원에서 확인하기 전이라 날짜 알림을 만들지 않아요.', windows: [] }
   if (settings.lowPressure)

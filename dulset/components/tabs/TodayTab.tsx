@@ -8,6 +8,8 @@
 //   1. today's moment — ring / week row, one title, one sentence, one action
 //   2. 오늘 할 일 — my checks, a weekly check-in when due, today's/tomorrow's appointment
 //   3. 우리 한 줄 — the partner's month task, the other's progress, a signal to answer
+//   + 기록 지키기 (BackupBanner): a compact line under ③ while the app isn't on
+//     the home screen or the backup is over a week old, and on the first period's day
 // The partner's "이번 달 할 일" goes right under the cover when it's urgent
 // (`top`: a live 검사·청구 deadline, or the owner is 35+), else inside the
 // moment card when that has nothing else to say, else in 우리 한 줄.
@@ -22,6 +24,7 @@ import { monthlyTask } from '@/lib/logic/partnerTrack'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { ttcMoment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
+import BackupBanner from '@/components/system/BackupBanner'
 import InstallBackupCard from '@/components/system/InstallBackupCard'
 import AnniversaryBanner from '@/components/today/AnniversaryBanner'
 import { CoupleStreak, MyChecks, PartnerChecks } from '@/components/today/CheckCards'
@@ -30,6 +33,7 @@ import CycleBlock from '@/components/today/CycleBlock'
 import { DateCard, DiaryPromptCard } from '@/components/today/ExtraCards'
 import Greeting from '@/components/today/Greeting'
 import MoreSection from '@/components/today/MoreSection'
+import SetupCard from '@/components/today/SetupCard'
 import { MonthlyTaskCard, useMonthlyTaskDone } from '@/components/today/MonthlyTask'
 import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
@@ -68,7 +72,8 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       className="[&_.cover-photo-h-quiet]:max-h-[var(--cover-fit,none)] [&_.cover-photo-h]:max-h-[var(--cover-fit,none)]"
     >
       <CoverHero onNavigate={onNavigate} />
-      {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} className="mt-[18px]" /> : null}
+      {/* Leading card: its [받았어요]/[신청했어요] row is what stays above the tab bar on a 375×667 phone. */}
+      {task && where === 'top' ? <MonthlyTaskCard task={task} onDone={done} fold className="mt-[18px]" /> : null}
       {moment ? (
         <CycleBlock
           moment={moment}
@@ -81,6 +86,10 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       {task && where === 'after' ? <MonthlyTaskCard task={task} onDone={done} className="mt-3.5" /> : null}
       <TodayTasks onNavigate={onNavigate} className="mt-7" />
       <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
+      {/* 설정 마저 하기: what the short onboarding left for later (N15). */}
+      <SetupCard className="mt-4" />
+      {/* 기록 지키기: outside 더 보기, so a browser-tab couple sees it (N16). */}
+      <BackupBanner className="mt-4" />
       <MoreSection moment={moment} onNavigate={onNavigate} className="mt-[18px]" />
       <p className="mt-1 text-center text-[11.5px] text-ink-3">사진과 기록은 이 폰에만 저장돼요</p>
       {toast}

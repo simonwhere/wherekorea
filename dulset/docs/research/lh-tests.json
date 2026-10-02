@@ -1,0 +1,148 @@
+{
+ "summary": "배란테스트기(소변 LH) 사용법의 근거예요 — '+ 기록' LH 패널의 '어떻게 해요?' 시트(components/log/LHHowTo.tsx)에 들어가는 문장은 전부 이 파일의 findings 중 inUI가 true인 항목에서만 나와요. 일관되게 확인된 것: ① 검사 시작일은 주기 길이에 따라 제품 설명서의 표를 따른다(Clearblue 표: 28일 주기면 11일째, 21일 이하면 5일째, 41일 이상이면 다음 생리 17일 전, 모르면 10일째, 3일 넘게 들쭉날쭉하면 최근 6개월 중 가장 짧은 주기 기준). ② 하루 중 같은 시각에 검사하고, 국내 안내는 흔히 오전 10~11시부터 오후 8시 사이를 권한다. ③ 아침 첫 소변은 피한다. ④ 검사 2시간 전부터 물·음료를 많이 마시지 않는다. ⑤ 결과는 제품이 정한 판독 시간 안에 읽는다(제품마다 달라 분 단위 숫자는 UI에 넣지 않았어요). ⑥ LH 급상승은 짧게 지나갈 수 있어 가까워지면 아침·저녁 하루 두 번 검사하라는 제조사 안내가 있다(국내 의사 Q&A는 '매일 같은 시간 1회면 충분'이라는 견해도 있어 '권하는 제조사도 있어요'로만 적어요). ⑦ 2019-07-23부터 약국·온라인뿐 아니라 편의점·마트에서도 살 수 있다. ⑧ 가격은 온라인 묶음 예시 하나(원포 20개입 13,120원, 개당 약 656원)만 확인돼 '예: …' 형식으로만 적고 약국 개별 가격은 미확인이라 UI에서 뺐어요.",
+ "checkedAt": "2026-10-02",
+ "method": "모든 항목은 WebSearch 결과 요약과 발췌에 근거해요. 이번 세션의 네트워크 프록시가 mfds.go.kr, clearblue.com(국가별 하위 도메인 포함), doctornow.co.kr, dailypharm.com, pubmed.ncbi.nlm.nih.gov, coupang.com, glasswallet.com, lifeabroad.jp, ro.co를 모두 막아(CONNECT 403) 원문 페이지를 하나도 열지 못했어요. 그래서 'verified'는 전부 false이고, confidence는 서로 다른 출처 몇 곳이 같은 말을 하는지로 매겼어요. 출시 전에 식약처 웹진 원문과 국내 허가 제품(원포·클리어블루 등) 사용설명서로 다시 확인해야 해요. 기관 공식 권고(ACOG·ASRM)에는 '하루 중 언제 검사하라'는 지침이 없다는 점(ro.co 요약)도 함께 적어 둬요.",
+ "findings": [
+  {
+   "id": "start-day",
+   "topic": "검사 시작일 — 주기 길이표",
+   "claim": "Clearblue 안내 페이지와 사용설명서(505146-10): 먼저 주기 길이를 세요(생리 시작일 = 1일째, 다음 생리 전날까지). 그 길이로 표에서 시작일을 찾아요 — 21일 이하면 5일째, 22~40일은 길이별로(28일이면 11일째), 41일 이상이면 다음 생리 예정 17일 전부터. 주기가 3일 넘게 들쭉날쭉하면 최근 6개월 중 가장 짧은 주기로 정하고, 주기를 모르면 10일째부터 시작해요. 국내 안내도 '28일 주기면 11일째부터, 주기가 짧거나 길면 시작일도 함께 당기거나 미뤄요'로 같고, 식약처는 '검사 시작일은 제품별 사용설명서를 참고'라고 안내해요.",
+   "sources": [
+    "https://clearblue.com/ovulation-tests/when-to-start",
+    "https://au.clearblue.com/ovulation-tests/when-to-start-ovulation-testing",
+    "https://ca-en.clearblue.com/sites/default/files/wysiwyg/products/leaflets/505146-10%20English.pdf",
+    "https://mfds.go.kr/webzine/202505/sub04.html",
+    "https://glasswallet.com/calculate/ovulation/test-guide"
+   ],
+   "confidence": "medium-high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "둘셋의 자체 규칙(lib/logic/cycle.ts LH_LEAD_DAYS = 3: 예상 가임기 시작 3일 전부터)은 제조사 표보다 며칠 이르러요 — 28일 주기면 둘셋은 7일째, Clearblue 표는 11일째. 일찍 시작하면 이른 배란을 놓칠 일은 줄지만 테스트기가 더 들어요. 시트에는 둘셋 날짜를 '(예상)'으로 보여 주고 '제품 설명서 표와 다를 수 있어요'를 덧붙여요. LH_LEAD_DAYS를 바꿀지는 cycle-core 결정."
+  },
+  {
+   "id": "time-of-day",
+   "topic": "검사 시간대",
+   "claim": "Clearblue: 하루 중 아무 때나 되지만 매일 거의 같은 시각에 검사하고, 검사 전 4시간은 소변을 보지 않은 상태가 좋아요. 국내 의사 Q&A(닥터나우)·건강 정보 사이트: LH가 아침에 오르기 시작해 소변에 반영되기까지 시간이 걸리므로 오전 10~11시부터 오후 8시 사이가 적당하고, 매일 같은 시간대에 일정한 조건으로 검사하는 게 중요해요. 미국 Ro 요약: ACOG·ASRM에는 시간대 권고가 없고, 제조사마다 권고가 달라요.",
+   "sources": [
+    "https://ca-en.clearblue.com/sites/default/files/wysiwyg/products/leaflets/505146-10%20English.pdf",
+    "https://doctornow.co.kr/content/qna/7a1ff5176f5e418fb7f821c61f00cbd8",
+    "https://doctornow.co.kr/content/qna/c096cb20b6644fbf86d4fad40e115561",
+    "https://doctornow.co.kr/content/qna/04b9834104d34c2fa721e7b648b3aa5f",
+    "https://my-doctor.io/healthLab/info/3331/배란테스트기-사용법",
+    "https://ro.co/fertility/best-time-to-take-ovulation-test/"
+   ],
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "UI에는 '오전 10시~오후 8시 사이, 매일 비슷한 시각에'로만 적어요. '4시간 소변 참기'는 Clearblue 한 곳이라 UI에서 뺐어요."
+  },
+  {
+   "id": "first-morning-urine",
+   "topic": "아침 첫 소변 피하기",
+   "claim": "식약처 웹진(2025-05, 배란테스트기 바로 알기)과 수거검사 보도(데일리팜): '아침 첫 소변은 피해주세요'. 닥터나우 의사 답변: 아침 첫 소변보다 오후·저녁 소변에서 LH 급증을 더 잘 감지하고, 첫 소변은 호르몬이 진하게 섞여 판독이 흐려질 수 있어요.",
+   "sources": [
+    "https://mfds.go.kr/webzine/202505/sub04.html",
+    "https://m.dailypharm.com/user/news/5702",
+    "https://doctornow.co.kr/content/qna/ec588ebb519e414ebcffdb7c03f578c1",
+    "https://my-doctor.io/healthLab/info/3331/배란테스트기-사용법"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true
+  },
+  {
+   "id": "fluids-2h",
+   "topic": "검사 2시간 전 수분 제한",
+   "claim": "식약처: '테스트 2시간 전부터 음료(물 포함)의 과도한 섭취는 피해주세요'. 닥터나우: 소변 농도가 결과에 영향을 주므로 검사 전 2시간 정도는 과도한 수분 섭취를 피하는 게 좋아요(소변이 묽어지면 선이 연하게 나와요).",
+   "sources": [
+    "https://mfds.go.kr/webzine/202505/sub04.html",
+    "https://m.dailypharm.com/user/news/5702",
+    "https://doctornow.co.kr/content/qna/f03d7eef6af140818f69a9526fbefddb"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true
+  },
+  {
+   "id": "read-time",
+   "topic": "판독 시간",
+   "claim": "식약처: '제품에서 권장하는 판독 시간을 준수해 주세요', '평평한 곳에서 결과 확인'. 판독 시간(몇 분 안에, 몇 분 뒤에는 무효)은 제품마다 달라요 — 특정 분 숫자는 원문을 열지 못해 확인하지 못했어요.",
+   "sources": [
+    "https://mfds.go.kr/webzine/202505/sub04.html",
+    "https://m.dailypharm.com/user/news/5702"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "UI는 '제품 설명서에 적힌 시간 안에 읽어요'까지만. '3~5분'·'10분 뒤 무효' 같은 숫자는 미확인이라 넣지 않았어요."
+  },
+  {
+   "id": "twice-a-day",
+   "topic": "급상승이 짧을 때 하루 두 번",
+   "claim": "일본 시판 배란테스트기 사용설명서(dotest LHa, Hi Tester; lifeabroad.jp 요약): 하루 1회, 또는 아침·저녁 2회를 매일 같은 시각에 양성이 나올 때까지. Ro(미국, 의사 검수): LH 급상승이 짧을 수 있어 가임기가 가까워지면 하루 두 번 검사하는 게 좋고, 양성 뒤 LH가 빨리 떨어져 다음 날 음성이 될 수 있어요. Park 외 2007(Fertil Steril, 소변 LH 급상승 특성): 급상승 시작이 하루 안에 급격한 유형 42.9%, 스파이크형 41.9%. 반대 견해: 닥터나우 답변은 '매일 같은 시간에 하루 한 번이면 충분'.",
+   "sources": [
+    "https://lifeabroad.jp/html/medical_health/ovulation_tests.html",
+    "https://ro.co/fertility/best-time-to-take-ovulation-test/",
+    "https://pubmed.ncbi.nlm.nih.gov/17434509/",
+    "https://doctornow.co.kr/content/qna/fd6d2b94801a49b2b6e2b90f06772571"
+   ],
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "UI 문장은 '…하루 두 번 해 보라고 권하는 제조사도 있어요'로 한정해요. 둘셋이 하루 두 번까지 남기는 이유이기도 해요(MAX_LH_PER_DAY)."
+  },
+  {
+   "id": "where-to-buy",
+   "topic": "구매처",
+   "claim": "2019-07-23부터 배란테스트기는 의료기기 판매업 신고 없이 편의점·마트 등 일반 소매점에서도 팔 수 있어요(그 전엔 판매업 신고를 한 약국 등에서만). 약국과 온라인(쿠팡 등 오픈마켓, 다이소몰 등)에서도 살 수 있어요.",
+   "sources": [
+    "https://m.dailypharm.com/user/news/72231",
+    "https://medicaldaily.co.kr/news/6302",
+    "https://www.coupang.com/vp/products/201855302",
+    "https://www.daisomall.co.kr/pd/pdr/SCR_PDR_0001?pdNo=69137"
+   ],
+   "confidence": "high",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true
+  },
+  {
+   "id": "price",
+   "topic": "가격대",
+   "claim": "온라인 예: 원포(Wondfo) 배란테스트기 20개입 13,120원(개당 약 656원, 쿠팡, 2026-10-02 검색 결과). 10개입도 있어요. 약국의 개별 가격과 디지털 제품 가격은 검색 결과에 나오지 않아 확인하지 못했어요.",
+   "sources": [
+    "https://www.coupang.com/vp/products/201855302"
+   ],
+   "confidence": "low",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": true,
+   "notes": "UI에는 '예: 온라인 20개입 약 1만 3천 원(2026년 10월 검색 기준) · 약국·판매처마다 달라요'로만. 범위('1만~2만 원대')나 약국 가격은 적지 않아요."
+  },
+  {
+   "id": "mfds-approval",
+   "topic": "허가·성능",
+   "claim": "식약처가 시중 배란테스트기 5개 제품을 수거·검사한 결과 모두 정상 성능이었다는 보도(데일리팜). 배란테스트기는 식약처 허가를 받은 체외진단의료기기예요.",
+   "sources": [
+    "https://m.dailypharm.com/user/news/5702"
+   ],
+   "confidence": "medium",
+   "checked": "2026-10-02",
+   "verified": false,
+   "inUI": false,
+   "notes": "기사 날짜를 확인하지 못해 UI에 넣지 않았어요."
+  }
+ ],
+ "implications": [
+  "LHHowTo 시트의 문장은 inUI가 true인 항목만 쓰고, 각 문장 옆에 출처 번호를, 아래에 출처 이름·URL·확인일(checkedAt)을 붙여요. 숫자(분·원)는 미확인이면 적지 않아요.",
+  "둘셋의 LH 시작 권유(LH_LEAD_DAYS = 3, 예상 가임기 3일 전)는 제조사 표(28일 주기 11일째)보다 4일쯤 일러요. 시트에는 '둘셋 달력 기준 N월 N일부터 (예상) · 제품 설명서 표와 다를 수 있어요'로 적고, 상수 조정은 cycle-core/창업자 결정으로 남겨요.",
+  "'하루 두 번'은 제조사·미국 안내와 국내 의사 Q&A가 갈려요. 둘셋은 두 번까지 남길 수 있게 두되 권유는 '권하는 제조사도 있어요'로만.",
+  "출시 전 재확인: 식약처 웹진 2025-05 원문, 국내 허가 제품 사용설명서(판독 시간 분 단위), 약국 가격 2~3곳."
+ ]
+}

@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { dailyItems, dailyProgress, doneThisWeek, nudgeTarget, soonAppointment, weeklyDue, weeklyRows } from '@/components/today/model'
+import { FEEL_CHIPS, WAITING_WEEK_LINES, waitingWeekLine } from '@/lib/content/fertility'
 import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
+import { addAppointment } from '@/lib/logic/appointments'
+import { isClinicMode, startClinicMode } from '@/lib/logic/clinic'
+import { logPeriodStart } from '@/lib/logic/logs'
+import { FEEL_LABEL, setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
 import { setPersonalPref } from '@/lib/logic/prefs'
-import { cycleLens, lensPhase, showsLH } from '@/lib/logic/calendarView'
+import { CLINIC_LABEL, CLINIC_PARTNER_HEADLINE, cycleLens, lensPhase, showsLH } from '@/lib/logic/calendarView'
 import { dayInfo } from '@/lib/logic/cycle'
 import { fertileHintsAllowed } from '@/lib/logic/dateIdeas'
 import {
@@ -24,13 +29,18 @@ import {
   cycleStrip,
   dismissVaccineRest,
   endRestFromHome,
+  feelLabel,
   homeDiaryPrompt,
   homeVoice,
+  lastFeelsFor,
   latestTest,
+  markStillWaiting,
+  nextClinicAppointment,
   periodTellState,
   retestHint,
   retestRange,
   skipTellPartnerPeriod,
+  stillWaitingSince,
   tellPartnerPeriod,
   tellPartnerPositive,
   ttcMoment,
@@ -38,14 +48,20 @@ import {
   vaccineRestHint,
   type Moment,
 } from '@/lib/logic/ttcFlow'
+import { cycleSummary } from '@/lib/logic/calendarView'
+import { scheduledNotices } from '@/lib/logic/notifications'
+import { dueRange } from '@/lib/logic/periodDue'
+import { sanitizeBackup } from '@/lib/logic/settings'
 import type { AlertStyle, AppState, ISODate, PregnancyTest } from '@/lib/types'
 
-// 'a' = 민수 (partner), 'b' = 지은 (tracks the cycle). Last period 2026-09-01,
-// 28-day cycle → next period 09-29, estimated ovulation 09-15, window
-// 09-10…09-15, peak 09-13…09-15.
+// 'a' = 민수 (partner), 'b' = 지은 (tracks the cycle). Three regular 28-day
+// cycles, then the period 2026-09-01 (confidence 'cycles') → next period
+// expected 09-29 (a one-day range, late from 09-30), estimated ovulation 09-15,
+// window 09-10…09-15, peak 09-13…09-15.
 const OWNER = 'b' as const
 const PARTNER = 'a' as const
 const NOW = '2026-09-01T09:00:00+09:00'
+const REGULAR = [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }]
 
 function fresh(over: Partial<AppState> = {}): AppState {
   const s = createInitialState(
@@ -58,7 +74,7 @@ function fresh(over: Partial<AppState> = {}): AppState {
     },
     new Date(2026, 8, 1, 9, 0),
   )
-  return { ...s, ...over }
+  return { ...s, periods: REGULAR, ...over }
 }
 
 function withStyle(s: AppState, member: 'a' | 'b', style: AlertStyle): AppState {
@@ -173,19 +189,110 @@ describe('owner moments (explicit)', () => {
     expect(m('2026-09-12', surge).title).toBe('LH 양성이 나왔어요')
   })
 
-  it('waiting weeks: a countdown to the testable day (예상), the log a quiet second choice until then', () => {
+  it('waiting weeks: 배란 뒤 N일째, a countdown to the expected range (예상), 오늘 컨디션 as the action until the test day', () => {
     const e = m(DAYS.tww)
     expect(e).toMatchObject({ kind: 'tww', copy: 'owner.tww', testDate: '2026-09-29', early: true })
-    expect(e.eyebrow).toBe('기다리는 주 · 9월 29일부터 (예상)')
+    // Ovulation 09-15 → 09-20 is five days after it.
+    expect(e.eyebrow).toBe('배란 뒤 5일째 (예상)')
     expect(e.title).toBe('테스트까지 D-9')
-    expect(e.body).toBe('너무 이르면 음성일 수 있어요. 평소처럼 보내요.')
+    expect(e.body).toContain('생리 예정은 9월 29일 무렵이에요 (예상).')
     expect(e.body).not.toMatch(/\d+%/)
-    expect(e.primary).toBeUndefined()
+    expect(e.note).toBe('너무 이르면 음성일 수 있어요.')
+    expect(e.primary).toEqual({ type: 'log', kind: 'note', label: '오늘 컨디션' })
     expect(e.secondary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
-    expect(m('2026-09-28').title).toBe('테스트까지 D-1')
+    expect(e.due).toEqual({ from: '2026-09-29', to: '2026-09-29', basis: 'calendar' })
+    expect(m('2026-09-28')).toMatchObject({ title: '테스트까지 D-1', eyebrow: '배란 뒤 13일째 (예상)' })
+    // From the test day (the range's first day): the test is the action; the period may start any day too.
     const due = m(DAYS.expected)
-    expect(due.title).toBe('오늘부터 테스트해 볼 수 있어요')
+    expect(due).toMatchObject({ kind: 'tww', copy: 'owner.period-due', early: false, title: '생리 예정 무렵이에요 (예상)' })
+    expect(due.eyebrow).toBe('배란 뒤 14일째 (예상)')
+    expect(due.body).toBe('9월 29일 무렵이에요 (예상). 시작하면 기록해 주세요.')
     expect(due.primary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
+    expect(due.secondary).toEqual({ type: 'log', kind: 'period', label: '생리 시작 기록' })
+  })
+
+  it('the waiting card changes with the day: one self-care line a day, no medical claim, and her own feel chip', () => {
+    const bodies = new Set<string>()
+    for (let i = 0; i < WAITING_WEEK_LINES.length; i++) {
+      const d = addDays('2026-09-16', i)
+      const e = m(d)
+      expect(e.copy).toBe('owner.tww')
+      const line = e.body.replace(/^생리 예정은 .* 무렵이에요 \(예상\)\. /, '')
+      expect(WAITING_WEEK_LINES).toContain(line)
+      expect(line).toBe(waitingWeekLine(i + 1))
+      bodies.add(e.body)
+    }
+    expect(bodies.size).toBe(WAITING_WEEK_LINES.length)
+    // Days without evidence carry no medical claim: no symptom reading, no numbers, no 착상.
+    expect(WAITING_WEEK_LINES.join(' ')).not.toMatch(/착상|증상|%|\d+일/)
+    expect(waitingWeekLine(WAITING_WEEK_LINES.length)).toBe(WAITING_WEEK_LINES[0])
+    expect(waitingWeekLine(-3)).toBe(WAITING_WEEK_LINES[0])
+    // What she logged today sits on the card — hers only (the partner's card never carries it).
+    const felt = setFeel(s, OWNER, DAYS.tww, 'tired')
+    expect(m(DAYS.tww, felt).todayFeel).toBe('tired')
+    expect(feelLabel('tired')).toBe('피곤해요')
+    expect(feelLabel('nausea')).toBe(FEEL_LABEL.nausea)
+    expect(FEEL_CHIPS.map((c) => c.label)).toEqual(['평소 같아요', '피곤해요', '예민해요', '가슴이 아파요', '배가 살짝 아파요', '살짝 비쳐요'])
+    expect(ttcMoment(felt, DAYS.tww, PARTNER)!.todayFeel).toBeUndefined()
+    expect(ttcMoment(share(felt), DAYS.tww, PARTNER)!.todayFeel).toBeUndefined()
+    expect(m(DAYS.tww).todayFeel).toBeUndefined()
+    // Soft / calm wording never reads 배란: the eyebrow stays 기다리는 주.
+    expect(ttcMoment(withStyle(felt, OWNER, 'soft'), DAYS.tww, OWNER)).toMatchObject({ eyebrow: '기다리는 주', todayFeel: 'tired' })
+    expect(ttcMoment(withStyle(felt, OWNER, 'off'), DAYS.tww, OWNER)!.eyebrow).toBe('기다리는 주')
+  })
+
+  it('LH strips but no surge by the window’s end: keep testing for a week (tww-no-surge), then the ordinary wait', () => {
+    // Window 09-10…09-15; strips 09-11…09-15 all negative / faint.
+    const strips = ['2026-09-11', '2026-09-12', '2026-09-13', '2026-09-14', '2026-09-15'].map((date, i) => ({
+      date,
+      result: i === 2 ? ('faint' as const) : ('negative' as const),
+      by: OWNER,
+    }))
+    const st = fresh({ lhTests: strips })
+    const e = m('2026-09-16', st)
+    expect(e).toMatchObject({ kind: 'tww', copy: 'owner.tww-no-surge', eyebrow: 'LH 5회 · 아직 양성이 없어요', title: '며칠 더 테스트해 봐요' })
+    expect(e.body).toBe('배란이 늦어질 수 있어요 (예상). 9월 22일까지 LH 테스트를 이어 가 봐요.')
+    expect(e.primary).toEqual({ type: 'log', kind: 'lh', label: 'LH 기록' })
+    expect(e.secondary).toEqual({ type: 'log', kind: 'ptest', label: '테스트 결과 기록' })
+    expect(ttcPhase(st, '2026-09-16')?.noSurge).toEqual({ tests: 5, fertileEnd: '2026-09-15', until: '2026-09-22' })
+    expect(m('2026-09-22', st).copy).toBe('owner.tww-no-surge')
+    // The day after the wait: the ordinary 기다리는 주.
+    expect(m('2026-09-23', st)).toMatchObject({ copy: 'owner.tww', title: '테스트까지 D-6' })
+    // A surge during the wait pins ovulation: back to the ordinary flow (LH 기준).
+    const surge = fresh({ lhTests: [...strips, { date: '2026-09-18', result: 'positive' as const, by: OWNER }] })
+    expect(ttcPhase(surge, '2026-09-19')?.noSurge).toBeUndefined()
+    expect(ttcMoment(surge, '2026-09-19', OWNER)!.copy).not.toBe('owner.tww-no-surge')
+    // No strips this cycle → no such card; soft wording keeps LH off the card.
+    expect(m('2026-09-16').copy).toBe('owner.tww')
+    const soft = ttcMoment(withStyle(st, OWNER, 'soft'), '2026-09-16', OWNER)!
+    expect(soft).toMatchObject({ copy: 'owner.tww-no-surge', eyebrow: '기다리는 주' })
+    expect(words(soft)).not.toMatch(FERTILE_WORDS)
+    expect(soft.primary).toEqual({ type: 'log', kind: 'lh', label: '오늘 기록' })
+    expect(ttcMoment(withStyle(st, OWNER, 'off'), '2026-09-16', OWNER)!.copy).toBe('owner.tww')
+    // The partner's card is the same waiting card as ever.
+    expect(ttcMoment(st, '2026-09-16', PARTNER)!.copy).toBe('partner.tww')
+    // A negative home test she took still wins ('다시 해 볼 날').
+    expect(m('2026-09-16', { ...st, pregnancyTests: [test('2026-09-16', 'negative')] }).copy).toBe('owner.retest')
+  })
+
+  it('period days 1–3: her chips from the cycle that just ended, as a count — hers only', () => {
+    // Chips in the 09-01 cycle, then the period 09-29.
+    let st = fresh({ periods: [...REGULAR, { start: '2026-09-29' }] })
+    st = setFeel(st, OWNER, '2026-09-20', 'tired')
+    st = setFeel(st, OWNER, '2026-09-24', 'breast')
+    st = setPrivateNote(st, OWNER, '2026-09-26', '테스트는 음성')
+    st = setFeel(st, OWNER, '2026-09-29', 'cramps') // this cycle, not counted
+    const e = ttcMoment(st, '2026-09-29', OWNER)!
+    expect(e).toMatchObject({ copy: 'owner.period-early', lastFeels: { count: 2, cycleStart: '2026-09-01' } })
+    expect(ttcMoment(st, '2026-10-01', OWNER)!.lastFeels).toEqual({ count: 2, cycleStart: '2026-09-01' })
+    expect(lastFeelsFor(st, OWNER, '2026-09-29')).toEqual({ count: 2, cycleStart: '2026-09-01' })
+    // Nothing logged → no link; no previous logged cycle → no link.
+    expect(ttcMoment(fresh({ periods: [...REGULAR, { start: '2026-09-29' }] }), '2026-09-29', OWNER)!.lastFeels).toBeUndefined()
+    expect(lastFeelsFor({ periods: [{ start: '2026-09-29' }], personalLog: st.personalLog }, OWNER, '2026-09-29')).toBeUndefined()
+    // The partner never sees it, shared details or not.
+    expect(ttcMoment(st, '2026-09-29', PARTNER)!.lastFeels).toBeUndefined()
+    expect(ttcMoment(share(st), '2026-09-29', PARTNER)!.lastFeels).toBeUndefined()
+    expect(words(ttcMoment(share(st), '2026-09-29', PARTNER)!)).not.toMatch(/지난 주기|피곤|가슴|예민|비쳐|살짝/)
   })
 
   it('a negative test → 다시 해 볼 날 (2–3 days later, or the expected day if sooner)', () => {
@@ -221,6 +328,242 @@ describe('owner moments (explicit)', () => {
 
   it('returns null once pregnant', () => {
     expect(ttcMoment({ ...s, stage: 'pregnant' }, DAYS.tww, OWNER)).toBeNull()
+  })
+})
+
+describe('the expected period as a range on the home (N10)', () => {
+  const m = (d: ISODate, st: AppState) => ttcMoment(st, d, OWNER)!
+  // 지은's real case: 29…34-day cycles (average 31) → the 09-04 cycle's range is 10-03…10-08.
+  const jieun = fresh({
+    periods: [{ start: '2026-04-01' }, { start: '2026-05-01' }, { start: '2026-06-04' }, { start: '2026-07-03' }, { start: '2026-08-06' }, { start: '2026-09-04' }],
+  })
+
+  it('days 32–33 are inside the range: no 늦었어요, no test prompt — the home, the 주기 tab and the notice read one range', () => {
+    const d32 = m('2026-10-05', jieun)
+    expect(d32).toMatchObject({ kind: 'tww', copy: 'owner.period-due', cycleDay: 32 })
+    expect(d32.body).toContain('10월 3일~8일 무렵이에요 (예상)')
+    expect(words(d32)).not.toMatch(/지났어요|테스트해 볼까요|임신 테스트/)
+    // From the test day the test is the action; the period log is right there too.
+    expect(d32.primary).toMatchObject({ kind: 'ptest' })
+    expect(d32.secondary).toMatchObject({ kind: 'period' })
+    const tab = cycleSummary(jieun, '2026-10-05', 'explicit')
+    expect(tab.headline.title).toBe('생리 예정 무렵이에요 (예상)')
+    expect(tab.rows.find((r) => r.key === 'period')).toMatchObject({ label: '다음 생리 (예상)', value: '10월 3일~8일 무렵', sub: '기록 기준' })
+    expect(ttcPhase(jieun, '2026-10-08')?.kind).toBe('tww')
+    // Before the range: the countdown names the same range.
+    const early = m('2026-09-28', jieun)
+    expect(early.title).toBe('테스트까지 D-5')
+    expect(early.body).toContain(dueRange(early.due!))
+    expect(dueRange(early.due!)).toBe('10월 3일~8일')
+    // The 주기 tab's row before the range: a countdown to its first day and the basis.
+    expect(cycleSummary(jieun, '2026-09-28', 'explicit').rows.find((r) => r.key === 'period')?.sub).toBe('D-5 · 기록 기준')
+  })
+
+  it('late starts the day after the range; the test comes up from the third day (lateFrom + 2)', () => {
+    const d1 = m('2026-10-09', jieun)
+    expect(d1).toMatchObject({ kind: 'late', copy: 'owner.late', daysLate: 1, title: '예정일이 1일 지났어요', eyebrow: '생리 예정 10월 3일~8일 (예상)' })
+    // Past the test day the test stays the action, but the card doesn't talk about testing yet.
+    expect(d1.primary).toMatchObject({ kind: 'ptest' })
+    expect(d1.secondary).toMatchObject({ kind: 'period' })
+    expect(words(d1)).not.toMatch(/테스트해 볼까요|임신 테스트/)
+    expect(m('2026-10-10', jieun)).toMatchObject({ daysLate: 2, copy: 'owner.late' })
+    expect(m('2026-10-10', jieun).primary).toMatchObject({ kind: 'ptest' })
+    expect(m('2026-10-10', jieun).body).toBe('조금 늦어질 수 있어요. 시작하면 기록해 주세요.')
+    const d3 = m('2026-10-11', jieun)
+    expect(d3).toMatchObject({ daysLate: 3, copy: 'owner.late', body: '테스트해 볼까요? 생리가 시작됐다면 기록해 주세요.' })
+    expect(d3.primary).toMatchObject({ kind: 'ptest' })
+    // The 주기 tab agrees on the day and on when the test comes up.
+    expect(cycleSummary(jieun, '2026-10-09', 'explicit').headline).toMatchObject({ title: '생리 예정일이 1일 지났어요' })
+    expect(cycleSummary(jieun, '2026-10-09', 'explicit').headline.sub).not.toContain('임신 테스트')
+    expect(cycleSummary(jieun, '2026-10-11', 'explicit').headline.sub).toContain('임신 테스트')
+    expect(cycleSummary(jieun, '2026-10-09', 'explicit').rows[0]).toMatchObject({ label: '생리 예정 (지남)', value: '10월 3일~8일 무렵', sub: 'D+1' })
+    // …and the notice too (one late notice at +1, the test one at +3).
+    const late = (d: ISODate) => scheduledNotices(jieun, d).filter((n) => n.to === OWNER && n.key.startsWith('late'))
+    expect(late('2026-10-08')).toEqual([])
+    expect(late('2026-10-09').map((n) => n.key)).toEqual(['late:2026-09-04:b'])
+    expect(late('2026-10-11').map((n) => n.key)).toEqual(['late:2026-09-04:b', 'late-test:2026-09-04:b'])
+    expect(late('2026-10-09')[0]!.body).toContain('10월 3일~8일')
+    // A negative test she took herself still gets its 다시 해 볼 날, even on day 1.
+    const neg = { ...jieun, pregnancyTests: [test('2026-10-08', 'negative')] }
+    expect(m('2026-10-09', neg)).toMatchObject({ copy: 'owner.retest', body: '다시 해 볼 날: 10월 10일~11일' })
+  })
+
+  it('an LH surge this cycle sets the range from max(start + average, ovulation + 12)', () => {
+    // Surge 09-25 → ovulation 09-26 → 10-08…10-10 (start + 31 = 10-05 is earlier).
+    const lh = { ...jieun, lhTests: [{ date: '2026-09-25', result: 'positive' as const }] }
+    expect(m('2026-10-05', lh)).toMatchObject({ kind: 'tww', copy: 'owner.tww', title: '테스트까지 D-3' })
+    expect(m('2026-10-05', lh).body).toContain('10월 8일~10일')
+    expect(m('2026-10-10', lh).copy).toBe('owner.period-due')
+    expect(m('2026-10-11', lh)).toMatchObject({ kind: 'late', daysLate: 1 })
+    // The ring keeps counting this cycle inside the range (never a projected one).
+    expect(cycleStrip(lh, '2026-10-09', OWNER)).toMatchObject({ mode: 'cycle', cycleDay: 36, length: 36 })
+  })
+
+  it('15 days past the range: [생리 시작 기록] [아직 안 왔어요]; the answer keeps the cycle counting', () => {
+    const d = '2026-10-23' // 15 days past 10-08
+    const ask = m(d, jieun)
+    expect(ask).toMatchObject({ kind: 'late', copy: 'owner.late-long', title: '혹시 기록을 빠뜨렸나요?', daysLate: 15, cycleStart: '2026-09-04' })
+    expect(ask.body).toContain('9월 4일')
+    expect(ask.primary).toEqual({ type: 'log', kind: 'period', label: '생리 시작 기록' })
+    expect(ask.secondary).toEqual({ type: 'still-waiting', label: '아직 안 왔어요' })
+    expect(m('2026-10-22', jieun).copy).toBe('owner.late') // day 14: still the gentle count
+    // [아직 안 왔어요]
+    const waiting = markStillWaiting(jieun, '2026-09-04', d)
+    expect(waiting.cycleNotes).toEqual({ '2026-09-04': { stillWaiting: d } })
+    expect(stillWaitingSince(waiting, '2026-09-04')).toBe(d)
+    expect(markStillWaiting(waiting, '2026-09-04', '2026-10-25')).toBe(waiting) // answered once
+    expect(markStillWaiting(jieun, 'not a date', d)).toBe(jieun)
+    const card = m('2026-10-25', waiting)
+    expect(card).toMatchObject({ copy: 'owner.late-waiting', eyebrow: '주기 52일째 · 길어지고 있어요', title: '조금 더 기다려 봐요', cycleDay: 52 })
+    expect(card.body).toContain('병원에서 확인해 봐요')
+    expect(card.body).not.toMatch(/\d+(일|주|개월)/) // no number of days: none in the evidence
+    expect(card.note).toContain('NICE')
+    expect(card.primary).toMatchObject({ kind: 'period' })
+    expect(card.secondary).toMatchObject({ kind: 'ptest' })
+    expect(words(card)).not.toMatch(/누락|빠뜨렸/)
+    expect(cycleStrip(waiting, '2026-10-25', OWNER)).toMatchObject({ mode: 'cycle', cycleDay: 52, length: 52 })
+    // The 주기 tab counts along, and the answer survives a backup.
+    const tab = cycleSummary(waiting, '2026-10-25', 'explicit')
+    expect(tab.headline.title).toBe('주기 52일째 · 길어지고 있어요')
+    expect(tab.cycleDay).toBe(52)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(waiting)))!.cycleNotes).toEqual(waiting.cycleNotes)
+    // A period logged later ends it: a fresh cycle.
+    const logged = { ...waiting, periods: [...waiting.periods, { start: '2026-10-26' }] }
+    expect(ttcPhase(logged, '2026-10-27')?.kind).toBe('period-early')
+    // The partner sees none of this (no details): the waiting card.
+    expect(ttcMoment(waiting, '2026-10-25', PARTNER)!.copy).toBe('partner.tww')
+  })
+})
+
+describe('confidence: the calendar alone names no best days (N12)', () => {
+  const m = (d: ISODate, st: AppState) => ttcMoment(st, d, OWNER)!
+  const one = fresh({ periods: [{ start: '2026-09-01' }] }) // settings only
+  const two = fresh({ periods: [{ start: '2026-08-04' }, { start: '2026-09-01' }] }) // one logged cycle
+
+  it('settings only / one or two cycles: a wide range, the basis in the eyebrow, LH as the action', () => {
+    const f = m(DAYS.peak, one)
+    expect(f).toMatchObject({ copy: 'owner.fertile', confidence: 'low', title: '가임기 예상 범위예요 (넓음)', peak: false })
+    expect(f.eyebrow).toBe('달력 기준 · 설정값 · 9월 15일까지')
+    expect(f.body).toContain('범위가 좁아져요')
+    expect(f.primary).toEqual({ type: 'log', kind: 'lh', label: 'LH 기록' })
+    expect(words(f)).not.toMatch(/가능성 높|배란 예상/)
+    expect(m(DAYS.peak, two).eyebrow).toBe('달력 기준 · 기록 1주기 · 9월 15일까지')
+    expect(m(DAYS.beforeLh, one)).toMatchObject({ copy: 'owner.lh-start', eyebrow: '다가오는 가임기 · 달력 기준 · 설정값' })
+    expect(m(DAYS.beforeLh, one).body).toContain('무렵부터예요 (예상 범위, 넓음)')
+    // The strip: no peak, a flat band named as a range.
+    const strip = cycleStrip(one, DAYS.peak, OWNER)!
+    expect(strip).toMatchObject({ confidence: 'low', windowLabel: '예상 범위 (넓음)' })
+    expect(strip.peakLabel).toBeUndefined()
+    expect(strip.days.some((d) => d.tone === 'peak')).toBe(false)
+    // Three regular cycles: the peak is named again.
+    expect(m(DAYS.peak, fresh())).toMatchObject({ title: '가능성 높은 날이에요 (예상)', peak: true, confidence: 'cycles', eyebrow: '가임기 (예상) · 9월 15일까지' })
+  })
+
+  it('an LH surge this cycle: LH 기준, peak days back', () => {
+    const lh = fresh({ periods: [{ start: '2026-09-01' }], lhTests: [{ date: '2026-09-12', result: 'positive' }] })
+    expect(m('2026-09-13', lh)).toMatchObject({ confidence: 'lh', eyebrow: 'LH 기준 · 9월 13일까지', title: 'LH 양성이 나왔어요' })
+    expect(cycleStrip(lh, '2026-09-13', OWNER)!.days.some((d) => d.tone === 'peak')).toBe(true)
+  })
+
+  it('soft, off and low-pressure wording never carries the basis (no LH, no 가임기) at any confidence', () => {
+    for (const st of [one, two, fresh({ periods: [{ start: '2026-09-01' }], lhTests: [{ date: '2026-09-12', result: 'positive' }] })]) {
+      for (const s of [withStyle(st, OWNER, 'soft'), withStyle(st, OWNER, 'off'), setPersonalPref(st, OWNER, 'lowPressure', true), share(st), withStyle(share(st), PARTNER, 'explicit')]) {
+        for (const d of Object.values(DAYS)) {
+          for (const v of [OWNER, PARTNER] as const) {
+            const mo = ttcMoment(s, d, v)!
+            if (mo.voice === 'explicit') continue
+            expect(words(mo), `${v} ${d} ${mo.copy}`).not.toMatch(FERTILE_WORDS)
+          }
+        }
+      }
+    }
+    expect(cycleStrip(withStyle(one, OWNER, 'soft'), DAYS.peak, OWNER)!.windowLabel).toBe('우리의 주간 (예상 범위)')
+    expect(ttcMoment(withStyle(one, OWNER, 'soft'), DAYS.peak, OWNER)!.title).toBe('이번 주는 우리의 주간이에요')
+  })
+})
+
+describe('병원과 함께 준비 중 (clinic mode, N13)', () => {
+  const clinic = (over: Partial<AppState> = {}) => startClinicMode(fresh(over), '2026-09-05')
+  const appt = (date: ISODate, title: string, who: 'a' | 'b' | 'both' = 'b', time?: string, place?: string): AppState =>
+    addAppointment(clinic(), { date, title, who, kind: 'hospital', time, place }, OWNER)
+
+  it('owner: the next appointment leads the card; a period does not end it; [병원 준비 마치기] does', () => {
+    const s = appt('2026-09-15', '채혈·초음파', 'b', '08:00', '서울 난임센터')
+    const mo = ttcMoment(s, DAYS.peak, OWNER)!
+    expect(mo).toMatchObject({ kind: 'rest', copy: 'owner.clinic', restReason: 'clinic', eyebrow: CLINIC_LABEL, title: '내일 08:00 채혈·초음파' })
+    expect(mo.body).toBe('9월 15일 (화) 08:00 · 서울 난임센터 · 지은')
+    expect(mo.note).toContain('생리를 기록해도 꺼지지 않아요')
+    expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 보기' })
+    expect(mo.secondary).toEqual({ type: 'end-rest', label: '병원 준비 마치기' })
+    expect(words(mo)).not.toMatch(FERTILE_WORDS)
+    expect(ttcMoment(s, '2026-09-15', OWNER)!.title).toBe('오늘 08:00 채혈·초음파')
+    expect(ttcMoment(s, '2026-09-10', OWNER)!.title).toBe('9월 15일 08:00 채혈·초음파')
+    // Done or past appointments don't lead; the next open one does.
+    const two = addAppointment(s, { date: '2026-09-20', title: '인공수정', who: 'both', kind: 'hospital' }, OWNER)
+    expect(ttcMoment(two, '2026-09-16', OWNER)!).toMatchObject({ title: '9월 20일 인공수정', body: '9월 20일 (일) · 둘이 함께' })
+    expect(nextClinicAppointment(two, '2026-09-21')).toBeUndefined()
+    // A logged period keeps the card (and the pause); every date estimate stays off.
+    const logged = { ...s, periods: [...s.periods, { start: '2026-09-29' }] }
+    expect(activeRest(logged)?.reason).toBe('clinic')
+    expect(ttcPhase(logged, '2026-10-02')?.kind).toBe('rest')
+    expect(ttcMoment(logged, DAYS.lateLong, OWNER)!.copy).toBe('owner.clinic')
+    expect(scheduledNotices(logged, '2026-10-05').filter((n) => n.kind === 'fertile-start' || n.kind === 'peak' || n.kind === 'period-due')).toEqual([])
+    expect(endRestFromHome(logged, '2026-10-02', NOW).restCycle).toBeUndefined()
+  })
+
+  it('owner without an appointment: asks for one ([일정 넣기] → 챙길 것)', () => {
+    const mo = ttcMoment(clinic(), DAYS.tww, OWNER)!
+    expect(mo).toMatchObject({ copy: 'owner.clinic', title: '병원 일정에 맞춰 준비해요', body: '다음 병원 일정을 넣어 두면 여기서 알려 드려요.' })
+    expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '일정 넣기' })
+    expect(mo.secondary).toEqual({ type: 'end-rest', label: '병원 준비 마치기' })
+  })
+
+  it('partner: 일정에 맞춰 함께해요 — the schedule, never a window, a date idea or a question', () => {
+    const s = appt('2026-09-15', '채혈·초음파', 'b', '08:00')
+    for (const st of [s, share(s), withStyle(s, PARTNER, 'explicit'), withStyle(s, PARTNER, 'off')]) {
+      const mo = ttcMoment(st, DAYS.peak, PARTNER)!
+      expect(mo).toMatchObject({ kind: 'rest', copy: 'partner.clinic', eyebrow: CLINIC_LABEL, title: '일정에 맞춰 함께해요' })
+      expect(mo.body).toContain('내일 08:00 채혈·초음파 · 지은')
+      expect(mo.body).toContain('결과는 묻지 말고 일정만 함께 챙겨요')
+      expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 보기' })
+      expect(mo.dateIdeas).toBeUndefined()
+      expect(words(mo)).not.toMatch(FERTILE_WORDS)
+      // No shared band for him; with her details, the ring shows her logged days only.
+      const strip = cycleStrip(st, DAYS.peak, PARTNER)
+      if (st.settings.shareCycleDetails) expect(strip!.days.every((d) => d.tone === 'period' || d.tone === 'none')).toBe(true)
+      else expect(strip).toBeNull()
+    }
+    expect(ttcMoment(clinic(), DAYS.peak, PARTNER)!.body).toContain('일정이 잡히면 여기서 알려 드려요')
+    expect(fertileHintsAllowed(s, PARTNER)).toBe(false)
+    expect(fertileHintsAllowed(s, OWNER)).toBe(false)
+  })
+
+  it('the ring shows logged data only: no projected period, no window, while the sheet still logs', () => {
+    const s = clinic()
+    const strip = cycleStrip(s, DAYS.expected, OWNER)!
+    expect(strip.hasWindow).toBe(false)
+    expect(strip.days.some((d) => d.tone === 'period-predicted' || d.tone === 'fertile' || d.tone === 'peak')).toBe(false)
+    expect(strip.days.filter((d) => d.tone === 'period')).toHaveLength(5)
+    // The calendar agrees (lens.pause 'clinic'): nothing projected, periods logged.
+    const lens = cycleLens(s, OWNER)
+    expect(lens.pause).toBe('clinic')
+    expect(lensPhase(dayInfo(s, DAYS.expected, DAYS.expected).phase, lens)).toBe('none')
+    expect(lensPhase(dayInfo(s, DAYS.periodEarly, DAYS.expected).phase, lens)).toBe('period')
+    expect(cycleSummary(s, DAYS.tww, 'explicit', lens).headline.title).toBe(CLINIC_LABEL)
+    expect(cycleSummary(s, DAYS.tww, 'explicit', lens).rows.map((r) => r.key)).toEqual(['avg'])
+    expect(cycleSummary(s, DAYS.tww, 'soft', cycleLens(s, PARTNER)).headline).toEqual(CLINIC_PARTNER_HEADLINE)
+    // Logging still works for the owner; the clinic mode survives it.
+    const logged = logPeriodStart(s, DAYS.expected, OWNER, DAYS.expected)
+    expect(logged.periods.some((p) => p.start === DAYS.expected)).toBe(true)
+    expect(isClinicMode(logged)).toBe(true)
+  })
+
+  it('an ordinary rest still reads 이번 주기는 쉬어요 and ends with the next period', () => {
+    const s = startRestCycle(fresh(), '2026-09-05', 'rest')
+    expect(ttcMoment(s, DAYS.peak, OWNER)!.copy).toBe('owner.rest')
+    expect(ttcMoment(s, DAYS.peak, PARTNER)!.copy).toBe('partner.neutral')
+    expect(cycleLens(s, OWNER).pause).toBe('rest')
+    expect(cycleStrip(s, DAYS.expected, OWNER)!.days.some((d) => d.tone === 'period-predicted')).toBe(true)
   })
 })
 
@@ -617,7 +960,7 @@ describe('review fixes', () => {
   it('a test taken before this cycle’s ovulation doesn’t make 다시 해 볼 날 due', () => {
     const s = fresh({ pregnancyTests: [test('2026-09-02', 'negative')] })
     expect(ttcPhase(s, DAYS.tww)?.retest).toBeUndefined()
-    expect(ttcMoment(s, DAYS.tww, OWNER)).toMatchObject({ copy: 'owner.tww', title: '테스트까지 D-9', eyebrow: '기다리는 주 · 9월 29일부터 (예상)' })
+    expect(ttcMoment(s, DAYS.tww, OWNER)).toMatchObject({ copy: 'owner.tww', title: '테스트까지 D-9', eyebrow: '배란 뒤 5일째 (예상)' })
     expect(ttcPhase(s, DAYS.late)?.retest).toBeUndefined()
     // …while one after it still does.
     const after = fresh({ pregnancyTests: [test('2026-09-02', 'negative'), test('2026-09-22', 'negative')] })

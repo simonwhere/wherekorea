@@ -51,6 +51,11 @@ const R = {
   hug: { id: 'hug', emoji: '🤗', text: '알겠어요, 푹 쉬어요', tone: 'reply' },
   here: { id: 'here', emoji: '🫂', text: '옆에 있을게요', tone: 'reply' },
   metoo: { id: 'metoo', emoji: '💗', text: '나도요', tone: 'reply' },
+  // Answers that fit a kind word and a "not today" (B6: '오늘 고마웠어요' was
+  // answered with '푹 쉬어요', '피곤해요, 내일 해요' with '좋아요!').
+  glad: { id: 'glad', emoji: '😊', text: '덕분에 힘이 나요', tone: 'reply' },
+  soon: { id: 'soon', emoji: '🏠', text: '얼른 갈게요', tone: 'reply' },
+  slow: { id: 'slow', emoji: '🌿', text: '그래요, 천천히 해요', tone: 'reply' },
 } as const satisfies Record<string, Signal>
 
 /** Every signal and reply id the app knows (including demoted ones). */
@@ -90,20 +95,24 @@ export function signalsFor(stage: Stage, isCycleOwner = true): Signal[] {
 }
 
 /**
- * One-tap answers for a received signal. Each set keeps a no-pressure option
- * (다음에 해요 / 푹 쉬어요), so answering never means agreeing.
+ * One-tap answers for a received signal, paired by what it asks: an invite
+ * gets a yes and a no-pressure "다음에"; a call for comfort gets presence; a
+ * kind word gets a kind word back (never "푹 쉬어요"); a "not today" gets an
+ * easy okay (never "좋아요!"). Answering an invite or a rest never means
+ * agreeing — each of those sets keeps a no-pressure option.
  */
 export function repliesFor(signalId: string | undefined): Signal[] {
   const s = signalId ? signalById(signalId) : undefined
+  if (s?.id === S.miss.id) return [R.metoo, R.soon]
   switch (s?.tone) {
     case 'invite':
       return [R.yes, R.later]
     case 'support':
       return [R.here, R.hug]
     case 'warm':
-      return [R.metoo, R.hug]
+      return [R.metoo, R.glad]
     case 'rest':
-      return [R.hug, R.yes]
+      return [R.hug, R.slow]
     default:
       return [...REPLIES]
   }

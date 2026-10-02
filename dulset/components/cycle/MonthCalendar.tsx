@@ -8,6 +8,7 @@ import {
   canShiftMonth,
   cellView,
   legendItems,
+  monthConfidence,
   monthTitle,
   shiftMonth,
   type Lens,
@@ -39,7 +40,8 @@ export default function MonthCalendar({
     () => monthGrid(month).map((d) => cellView(dayInfo(input, d, today), { month, today, view: lens.view, lens, ptest: tests[d] })),
     [input, tests, month, today, lens],
   )
-  const legend = legendItems(lens.view, lens)
+  // No 가능성 높음 / ⭐ item when the month's windows are low-confidence (none is drawn).
+  const legend = legendItems(lens.view, lens, { confidence: monthConfidence(cells) })
   // LH badges only reach explicit wording (calendarView.showsLH), so name LH only then.
   const lhMarks = cells.some((c) => c.lhBadge)
   const testMarks = cells.some((c) => c.ptestBadge)

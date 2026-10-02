@@ -6,6 +6,19 @@ import type { AppState, CheckItem, ISODate, Member, MemberId, Role } from './typ
 export const DEFAULT_CYCLE_LENGTH = 28
 export const DEFAULT_PERIOD_LENGTH = 5
 
+/**
+ * Cycle lengths (days) the onboarding, the settings and a backup accept — the
+ * one source for every clamp (lib/demo.ts CYCLE_RANGE, lib/logic/settings.ts
+ * sanitizeBackup). 15–60 matches lib/logic/cycle.ts MIN_CYCLE / MAX_CYCLE.
+ */
+export const CYCLE_RANGE_DEFAULT = { min: 15, max: 60 } as const
+/** With CycleSettings.longCycles ("45일 이상이거나 들쭉날쭉해요", N12): up to 90 days. */
+export const CYCLE_RANGE_LONG = { min: 15, max: 90 } as const
+
+export function cycleLengthRange(longCycles: boolean | undefined): { min: number; max: number } {
+  return longCycles ? CYCLE_RANGE_LONG : CYCLE_RANGE_DEFAULT
+}
+
 export const ROLE_LABEL: Record<Role, string> = {
   wife: '아내',
   husband: '남편',
@@ -98,6 +111,8 @@ export interface OnboardingInput {
   lastPeriodStart?: string
   cycleLength?: number
   periodLength?: number
+  /** "주기가 45일 이상이거나 들쭉날쭉해요" (N12) — saved as cycle.longCycles when true. */
+  longCycles?: boolean
   ttcStart?: string
   /** The partner's (non-cycle-owner's) answers; omit to keep the original starter list. */
   habits?: HabitAnswers
@@ -140,6 +155,7 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     cycle: {
       cycleLength: input.cycleLength ?? DEFAULT_CYCLE_LENGTH,
       periodLength: input.periodLength ?? DEFAULT_PERIOD_LENGTH,
+      ...(input.longCycles ? { longCycles: true } : {}),
     },
     notifications: [],
     datePlans: [],

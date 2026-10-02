@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { applyOnboardingExtras, createInitialState } from '@/lib/initial'
+import { CYCLE_RANGE_DEFAULT, CYCLE_RANGE_LONG, applyOnboardingExtras, createInitialState, cycleLengthRange } from '@/lib/initial'
+import { CYCLE_RANGE } from '@/lib/demo'
+import { startClinicMode } from '@/lib/logic/clinic'
+import { addEntry } from '@/lib/logic/diary'
+import { setEntryPrivacy, setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { cycleStats } from '@/lib/logic/cycle'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { dueDate } from '@/lib/logic/pregnancy'
@@ -36,7 +40,7 @@ import {
   updateMember,
   validateTtcStart,
 } from '@/lib/logic/settings'
-import { FERTILITY_CLAIM_ID, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
+import { FERTILITY_CLAIM_ID, chainKey, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
 import { canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
 import { CUSTOM_TITLE_MAX } from '@/lib/logic/roadmap'
 import { setCover, setHideCover } from '@/lib/logic/cover'
@@ -615,7 +619,8 @@ describe('sharing & per-person prefs survive a backup', () => {
     s = setFertilityClaimed(s, true, TODAY, 'a')
     const back = parseState(JSON.stringify(s))!
     expect(back.checkItems.filter((i) => i.cadence === 'weekly').map((i) => i.label)).toEqual(['금연', '금주', '사우나·뜨거운 탕 쉬기'])
-    expect(back.planDone[FERTILITY_CLAIM_ID]).toEqual({ at: TODAY, by: 'a' })
+    // The claim is per person (N14): 민수's own key.
+    expect(back.planDone[chainKey(FERTILITY_CLAIM_ID, 'a')]).toEqual({ at: TODAY, by: 'a' })
     expect(back.settings.shareCycleDetails).toBe(true)
     expect(back.settings.personal).toEqual({ a: { lowPressure: true } })
   })
@@ -638,5 +643,116 @@ describe('sharing & per-person prefs survive a backup', () => {
     expect(canSeeCycleDetails(parseState(JSON.stringify(legacy))!, 'a')).toBe(false)
     // A stored choice is kept.
     expect(parseState(JSON.stringify(setShareCycleDetails(s, 'b', true)))!.settings.shareCycleDetails).toBe(true)
+  })
+})
+
+describe('sanitizeBackup: Now 2 fields (personal log · 나만 보기 · 긴 주기 · clinic · LH slots)', () => {
+  const clone = (s: AppState) => JSON.parse(JSON.stringify(s)) as AppState
+
+  /** A state using every new field the way the app would write it. */
+  const rich = (): AppState => {
+    let s = fresh()
+    s = setFeel(s, 'b', '2026-09-14', 'breast')
+    s = setPrivateNote(s, 'b', '2026-09-16', '테스트는 음성')
+    s = addEntry(s, { id: 'e1', date: TODAY, author: 'b', text: '나만 보는 글' }, `${TODAY}T20:00:00+09:00`)
+    s = setEntryPrivacy(s, 'e1', 'b', true)
+    s = startClinicMode(s, '2026-09-20')
+    return {
+      ...s,
+      cycle: { cycleLength: 75, periodLength: 5, longCycles: true },
+      cycleNotes: { '2026-09-10': { stillWaiting: TODAY } },
+      lhTests: [{ date: '2026-09-12', result: 'faint', slot: 'morning', by: 'b' }],
+      appointments: [
+        { id: 'ap1', date: '2026-10-06', time: '09:00', title: '트리거 주사', who: 'b', kind: 'injection', createdBy: 'b' },
+        { id: 'ap2', date: '2026-10-03', title: '약 먹기', who: 'b', kind: 'medication', createdBy: 'b' },
+      ],
+      customTasks: [
+        { id: 'c1', title: '결정통지서 만료', phase: 'preconception', who: 'both', due: '2026-12-01', createdBy: 'b', deadlineAlerts: true },
+      ],
+      settings: { ...s.settings, usesLH: 'later', personal: { b: { lhTestTime: '08:30' } } },
+    }
+  }
+
+  it('round-trips every new field through a backup and a reload', () => {
+    const s = rich()
+    const raw = JSON.stringify(s)
+    expect(sanitizeBackup(JSON.parse(raw))).toEqual(JSON.parse(raw))
+    const back = parseState(raw)!
+    expect(back).toEqual(JSON.parse(raw))
+    expect(back.personalLog).toEqual({ b: { '2026-09-14': { feel: 'breast' }, '2026-09-16': { note: '테스트는 음성' } } })
+    expect(back.diary[0]!.privateTo).toBe('b')
+    expect(back.cycle).toEqual({ cycleLength: 75, periodLength: 5, longCycles: true })
+    expect(back.cycleNotes).toEqual({ '2026-09-10': { stillWaiting: TODAY } })
+    expect(back.restCycle).toEqual({ since: '2026-09-20', reason: 'clinic' })
+    expect(back.lhTests[0]!.slot).toBe('morning')
+    expect(back.appointments.map((a) => a.kind)).toEqual(['injection', 'medication'])
+    expect(back.customTasks[0]!.deadlineAlerts).toBe(true)
+    expect(back.settings.usesLH).toBe('later')
+    expect(back.settings.personal).toEqual({ b: { lhTestTime: '08:30' } })
+    // A real usesLH: true / false also survives.
+    expect(parseState(JSON.stringify({ ...s, settings: { ...s.settings, usesLH: true } }))!.settings.usesLH).toBe(true)
+    expect(parseState(JSON.stringify({ ...s, settings: { ...s.settings, usesLH: false } }))!.settings.usesLH).toBe(false)
+  })
+
+  it('loads data from before these fields existed unchanged', () => {
+    const legacy = clone(fresh())
+    const raw = JSON.stringify(legacy)
+    const back = parseState(raw)!
+    expect(back).toEqual(JSON.parse(raw))
+    for (const k of ['personalLog', 'cycleNotes', 'restCycle']) expect(k in back).toBe(false)
+    expect('longCycles' in back.cycle).toBe(false)
+    expect('usesLH' in back.settings).toBe(false)
+    expect(normalize(legacy)).toEqual(legacy)
+  })
+
+  it('strips privateTo that is not a member id, keeps the entry', () => {
+    const s = clone(rich())
+    s.diary = [
+      { ...s.diary[0]!, privateTo: 'everyone' as never },
+      { ...s.diary[0]!, id: 'e2', privateTo: 'a' },
+      { ...s.diary[0]!, id: 'e3', privateTo: null as never },
+    ]
+    const out = sanitizeBackup(s)!
+    expect(out.diary.map((e) => e.id)).toEqual(['e1', 'e2', 'e3'])
+    expect(out.diary.map((e) => e.privateTo)).toEqual([undefined, 'a', undefined])
+    expect('privateTo' in out.diary[0]!).toBe(false)
+  })
+
+  it('clamps the cycle length to 15–60, or 15–90 with longCycles', () => {
+    const s = clone(fresh())
+    s.cycle = { cycleLength: 75, periodLength: 5 }
+    expect(sanitizeBackup(s)!.cycle).toEqual({ cycleLength: 60, periodLength: 5 })
+    s.cycle = { cycleLength: 75, periodLength: 5, longCycles: true }
+    expect(sanitizeBackup(s)!.cycle).toEqual({ cycleLength: 75, periodLength: 5, longCycles: true })
+    s.cycle = { cycleLength: 120, periodLength: 5, longCycles: true }
+    expect(sanitizeBackup(s)!.cycle).toEqual({ cycleLength: 90, periodLength: 5, longCycles: true })
+    s.cycle = { cycleLength: 40, periodLength: 5, longCycles: false }
+    expect(sanitizeBackup(s)!.cycle).toEqual({ cycleLength: 40, periodLength: 5, longCycles: false })
+    s.cycle = { cycleLength: 75, periodLength: 5, longCycles: 'yes' as never }
+    expect(sanitizeBackup(s)!.cycle).toEqual({ cycleLength: 60, periodLength: 5 })
+    expect(CYCLE_RANGE_DEFAULT).toEqual({ min: 15, max: 60 })
+    expect(CYCLE_RANGE_LONG).toEqual({ min: 15, max: 90 })
+    expect(cycleLengthRange(undefined)).toEqual(CYCLE_RANGE_DEFAULT)
+    expect(cycleLengthRange(true)).toEqual(CYCLE_RANGE_LONG)
+    expect(CYCLE_RANGE).toEqual({ min: 15, max: 60, fallback: 28 })
+  })
+
+  it('drops the invalid rest: a bad usesLH, LH slot, test time, appointment kind, deadline flag, cycle note', () => {
+    const s = clone(rich())
+    s.settings = { ...s.settings, usesLH: 'yes' as never, personal: { b: { lhTestTime: '8:30' }, a: { lhTestTime: 1 as never } } }
+    s.lhTests = [{ date: '2026-09-12', result: 'faint', slot: 'noon' as never }]
+    s.appointments = [{ ...s.appointments[0]!, kind: 'surgery' as never }, s.appointments[1]!]
+    s.customTasks = [{ ...s.customTasks[0]!, deadlineAlerts: 'yes' as never }]
+    s.cycleNotes = { '2026-09-10': { stillWaiting: 'soon' }, bad: { stillWaiting: TODAY }, '2026-08-01': 'x' as never }
+    const out = sanitizeBackup(s)!
+    expect('usesLH' in out.settings).toBe(false)
+    expect(out.settings.personal).toEqual({ a: {}, b: {} })
+    expect('slot' in out.lhTests[0]!).toBe(false)
+    expect(out.appointments.map((a) => a.id)).toEqual(['ap2'])
+    expect('deadlineAlerts' in out.customTasks[0]!).toBe(false)
+    expect('cycleNotes' in out).toBe(false)
+    // One valid note among bad ones stays.
+    s.cycleNotes = { '2026-09-10': { stillWaiting: TODAY, extra: 1 } as never, nope: {} }
+    expect(sanitizeBackup(s)!.cycleNotes).toEqual({ '2026-09-10': { stillWaiting: TODAY } })
   })
 })

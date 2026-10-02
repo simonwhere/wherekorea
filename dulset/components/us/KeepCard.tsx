@@ -34,12 +34,12 @@ export default function KeepCard() {
           <span aria-live="polite">{count ? label : '기록이 생기면 내보낼 수 있어요'}</span>
         </Button>
         <Button full variant="ghost" onClick={openSettings}>
-          설정에서 전체 백업 받기 (.json)
+          설정에서 전체 백업 받기 (.zip)
         </Button>
       </div>
       <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-        기기를 바꾸거나 브라우저 데이터를 지우기 전에 한 번 받아 두세요. 백업 파일에는 사진이 빠지니, 사진은 ‘우리 이야기
-        내보내기’로 함께 남겨 주세요. 파일에는 글과 사진이 그대로 담기니, 다른 사람에게 보낼 때는 한 번 더 확인해 주세요.
+        기기를 바꾸거나 브라우저 데이터를 지우기 전에 한 번 받아 두세요. 전체 백업(.zip)에는 사진도 함께 들어가요. 파일에는 글과
+        사진이 그대로 담기니, 다른 사람에게 보낼 때는 한 번 더 확인해 주세요.
       </p>
     </Card>
   )

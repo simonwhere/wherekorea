@@ -16,10 +16,12 @@ import {
 import { cycleStrip, homeVoice, ttcMoment, type CycleStrip, type StripDay } from '@/lib/logic/ttcFlow'
 import type { AlertStyle, AppState, ISODate } from '@/lib/types'
 
-// Same couple as tests/ttcFlow.test.ts: 'b' = 지은 tracks the cycle. Last
-// period 2026-09-01, 28-day cycle → window 09-10…09-15, peak 09-13…09-15.
+// Same couple as tests/ttcFlow.test.ts: 'b' = 지은 tracks the cycle. Three
+// regular 28-day cycles before the last period 2026-09-01 (confidence 'cycles')
+// → window 09-10…09-15, peak 09-13…09-15, the next period expected 09-29.
 const OWNER = 'b' as const
 const PARTNER = 'a' as const
+const REGULAR = [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }]
 
 function fresh(over: Partial<AppState> = {}): AppState {
   const s = createInitialState(
@@ -32,7 +34,7 @@ function fresh(over: Partial<AppState> = {}): AppState {
     },
     new Date(2026, 8, 1, 9, 0),
   )
-  return { ...s, ...over }
+  return { ...s, periods: REGULAR, ...over }
 }
 const withStyle = (s: AppState, member: 'a' | 'b', style: AlertStyle): AppState => ({
   ...s,
@@ -124,6 +126,47 @@ describe('ringLegend', () => {
     const legend = ringLegend(cycleStrip(s, PEAK, OWNER)!, { quietWindow: false })
     expect(legend.map((i) => i.label)).toEqual(['생리', '가임기 (예상)', '가능성 높음', 'LH 기록'])
     expect(legend.length).toBeLessThanOrEqual(LEGEND_MAX)
+  })
+
+  it('low confidence (one logged period): a wide range — no peak arcs, no 가능성 높음, no ⭐ words', () => {
+    const low = fresh({ periods: [{ start: '2026-09-01' }], lhTests: [{ date: '2026-09-10', result: 'negative' }] })
+    const strip = cycleStrip(low, PEAK, OWNER)!
+    expect(strip.confidence).toBe('low')
+    expect(strip.windowLabel).toBe('예상 범위 (넓음)')
+    expect(strip.peakLabel).toBeUndefined()
+    expect(strip.days.some((d) => d.tone === 'peak')).toBe(false)
+    expect(strip.days.filter((d) => d.tone === 'fertile')).toHaveLength(6)
+    // A flat band (no gradient toward a peak that isn't named).
+    expect(new Set(strip.days.filter((d) => d.tone === 'fertile').map((d) => d.level)).size).toBe(1)
+    const legend = ringLegend(strip, { quietWindow: false })
+    // (The last two ring days, 09-27 and 09-28, are the expected range: 생리 (예상).)
+    expect(legend.map((i) => i.label)).toEqual(['생리', '생리 (예상)', '예상 범위 (넓음)', 'LH 기록'])
+    expect(legend.map((i) => i.label).join(' ')).not.toMatch(/가능성 높|배란/)
+    expect(describeStrip(strip)).not.toMatch(/가능성 높|배란/)
+    // Soft wording keeps its own words for the wide range.
+    expect(cycleStrip(withStyle(low, OWNER, 'soft'), PEAK, OWNER)!.windowLabel).toBe('우리의 주간 (예상 범위)')
+    expect(cycleStrip(low, PEAK, PARTNER)!.windowLabel).toBe('우리의 주간 (예상 범위)')
+    // An LH surge this cycle brings the peak back.
+    const lh = fresh({ periods: [{ start: '2026-09-01' }], lhTests: [{ date: '2026-09-12', result: 'positive' }] })
+    const pinned = cycleStrip(lh, '2026-09-13', OWNER)!
+    expect(pinned.confidence).toBe('lh')
+    expect(pinned.windowLabel).toBe('가임기 (예상)')
+    expect(pinned.days.some((d) => d.tone === 'peak')).toBe(true)
+  })
+
+  it('병원과 함께 준비 중: the ring draws logged days only — no window, no 생리 (예상)', () => {
+    const clinic = startRestCycle(fresh({ lhTests: [{ date: '2026-09-10', result: 'negative' }] }), '2026-09-05', 'clinic')
+    // 09-29 is the expected period's day: on the ring as 생리 (예상) for an ordinary rest, not with a clinic.
+    const strip = cycleStrip(clinic, '2026-09-29', OWNER)!
+    expect(strip.hasWindow).toBe(false)
+    const arcs = ringArcs(strip, { quietWindow: false })
+    expect(arcs.every((a) => a.tone === 'period' || a.tone === 'none')).toBe(true)
+    expect(arcs.some((a) => a.tone === 'period')).toBe(true)
+    expect(ringLegend(strip, { quietWindow: false }).map((i) => i.label)).toEqual(['생리', 'LH 기록'])
+    expect(describeStrip(strip)).not.toMatch(WINDOW_WORDS)
+    // An ordinary rest keeps the expected period on the ring.
+    const rest = startRestCycle(fresh(), '2026-09-05', 'rest')
+    expect(ringArcs(cycleStrip(rest, '2026-09-29', OWNER)!, { quietWindow: false }).some((a) => a.tone === 'period-predicted')).toBe(true)
   })
 
   it('a soft-voice strip has no LH and says 우리의 주간 (예상)', () => {

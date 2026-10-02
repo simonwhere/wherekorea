@@ -17,7 +17,7 @@ export function useNotificationEngine(): void {
   const { state, update, today, viewer } = useApp()
   const shown = useRef(new Set<string>())
 
-  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple, appointments, anniversaries, planDone, milestones } = state
+  const { stage, periods, lhTests, cycle, pregnancy, baby, settings, couple, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending } = state
   useEffect(() => {
     // Preview against the current state to learn what's new; the updater re-derives
     // against the latest state, and key-dedup makes repeated application harmless.
@@ -33,7 +33,9 @@ export function useNotificationEngine(): void {
     update((s) => mergeNotices(s, rules(s), now).state)
     deliver(added.filter((n) => n.to === viewer))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones])
+    // customTasks: a '기한' item added today with D-7 / D-1 / 당일 falling on today (N13);
+    // cycleNotes / restCycle / positivePending: '아직 안 왔어요', a clinic cycle or a test change what goes out.
+  }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, settings.usesLH, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
   // Whatever is already unread when the app opens isn't re-announced.

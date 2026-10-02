@@ -14,7 +14,7 @@ import { useApp } from '@/lib/store'
 import type { CheckItem } from '@/lib/types'
 import { KIND_ICON, KIND_LABEL, PillButton } from './bits'
 import CheckEditor from './CheckEditor'
-import { dailyItems, dailyProgress, dayLabel, homeAppointments, soonAppointment, weeklyRows, whoLabel } from './model'
+import { dailyItems, dailyProgress, dayLabel, homeAppointments, soonAppointments, weeklyRows, whoLabel } from './model'
 
 export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab: TabKey) => void; className?: string }) {
   const { state, update, today, me, partner } = useApp()
@@ -26,7 +26,8 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
   const weekly = weeklyRows(state, me.id, today)
   const done = doneIds(state, me.id, today)
   const prog = dailyProgress(state, me.id, today)
-  const appt = soonAppointment(homeAppointments(state), today)
+  // Every appointment today or tomorrow (a clinic day can have two or three).
+  const appts = soonAppointments(homeAppointments(state), today)
 
   const toggle = (item: CheckItem) => {
     const now = stampOn(today)
@@ -79,8 +80,8 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
             </PillButton>
           </li>
         ) : null}
-        {appt ? (
-          <li>
+        {appts.map((appt) => (
+          <li key={appt.id}>
             <button
               type="button"
               onClick={() => onNavigate('plan')}
@@ -105,7 +106,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
               </span>
             </button>
           </li>
-        ) : null}
+        ))}
       </ul>
       {prog.complete && weekly.every((r) => r.checked) ? (
         <p className="mt-1.5 px-1 text-xs font-semibold text-ok" role="status">

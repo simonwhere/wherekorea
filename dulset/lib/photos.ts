@@ -126,3 +126,62 @@ export async function clearAllPhotos(): Promise<void> {
     /* nothing stored */
   }
 }
+
+// ── Full backup (N16): photos out of and back into IndexedDB ───
+
+export interface StoredPhoto {
+  id: string
+  /** MIME type as stored ('image/jpeg' for anything downscaleImage made). */
+  type: string
+  data: Uint8Array
+}
+
+/**
+ * The photos this device still has among `ids`, as bytes for the backup
+ * archive. Missing or unreadable ones are skipped (the entry keeps its id, so
+ * the picture comes back on a device that has it). Built-in demo pictures are
+ * never exported — they ship with the app.
+ */
+export async function exportPhotos(ids: readonly string[], onProgress?: (done: number, total: number) => void): Promise<StoredPhoto[]> {
+  const out: StoredPhoto[] = []
+  let done = 0
+  for (const id of ids) {
+    if (!isBuiltinPhoto(id)) {
+      const blob = await getPhotoBlob(id)
+      if (blob) {
+        try {
+          out.push({ id, type: blob.type || 'image/jpeg', data: new Uint8Array(await blob.arrayBuffer()) })
+        } catch {
+          /* unreadable blob — leave it out */
+        }
+      }
+    }
+    done++
+    onProgress?.(done, ids.length)
+  }
+  return out
+}
+
+/** Store a photo under a known id (restore). Built-in ids are read-only and ignored. */
+export async function putPhoto(id: string, blob: Blob): Promise<void> {
+  if (isBuiltinPhoto(id)) return
+  await tx('readwrite', (s) => s.put(blob, id))
+}
+
+/**
+ * Put backed-up photos back under their ids, so the restored diary and cover
+ * find them. Returns how many landed; a device without IndexedDB (private
+ * window) restores the record and simply shows those entries without a picture.
+ */
+export async function restorePhotos(photos: readonly StoredPhoto[]): Promise<number> {
+  let n = 0
+  for (const p of photos) {
+    try {
+      await putPhoto(p.id, new Blob([p.data as BlobPart], { type: p.type }))
+      n++
+    } catch {
+      /* IndexedDB unavailable or full — keep going */
+    }
+  }
+  return n
+}

@@ -387,7 +387,15 @@ describe('notifications', () => {
     const toB = n.filter((x) => x.to === 'b')
     expect(toA.map((x) => x.kind)).toEqual(['fertile-start']) // soft: one gentle notice, no peak
     expect(toA[0]!.title).not.toMatch(/가임|가능성/)
-    expect(toB.map((x) => x.kind).sort()).toEqual(['fertile-start', 'peak'])
+    // One logged start = settings only (confidence 'low', N12): the owner gets the
+    // wide-range heads-up but no 🌟 peak days — the calendar alone can't name them.
+    expect(toB.map((x) => x.kind)).toEqual(['fertile-start'])
+    expect(toB[0]!.body).toMatch(/넓음/)
+    // Three regular logged cycles (confidence 'cycles'): the explicit owner also hears the peak days, the soft partner still doesn't.
+    const regular = fresh({ periods: [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }] })
+    const r = scheduledNotices(regular, '2026-09-14')
+    expect(r.filter((x) => x.to === 'b').map((x) => x.kind).sort()).toEqual(['fertile-start', 'peak'])
+    expect(r.filter((x) => x.to === 'a').map((x) => x.kind)).toEqual(['fertile-start'])
     const off = fresh({ settings: { ...s0.settings, alertStyle: { a: 'off', b: 'explicit' } } })
     expect(scheduledNotices(off, '2026-09-14').some((x) => x.to === 'a')).toBe(false)
   })
@@ -403,16 +411,22 @@ describe('notifications', () => {
     expect(mergeNotices(s, scheduledNotices(s, '2026-09-10'), '2026-09-10T09:00:00+09:00').added.filter((x) => x.kind === 'fertile-start')).toHaveLength(0)
   })
 
+  // The expected period is a range (N10): from a 9/1 start with the 28-day
+  // setting it is 9/27–10/1, so the "내일부터" heads-up goes out on 9/26 and
+  // "지났어요" from 10/2 — never on a day inside the range.
   it('sends no fertile-day alerts in low-pressure mode but still tells the owner about her period', () => {
     const s = fresh({ settings: { ...fresh().settings, lowPressure: true } })
     expect(scheduledNotices(s, '2026-09-14').some((x) => x.kind === 'peak' || x.kind === 'fertile-start')).toBe(false)
-    expect(scheduledNotices(s, '2026-09-28').some((x) => x.kind === 'period-due' && x.to === 'b')).toBe(true)
+    expect(scheduledNotices(s, '2026-09-26').some((x) => x.kind === 'period-due' && x.to === 'b')).toBe(true)
+    expect(scheduledNotices(s, '2026-09-28').some((x) => x.kind === 'period-due')).toBe(false)
   })
 
   it('only tells the cycle owner about period timing', () => {
-    const n = scheduledNotices(fresh(), '2026-09-28')
+    const n = scheduledNotices(fresh(), '2026-09-26')
     const due = n.filter((x) => x.kind === 'period-due')
     expect(due.map((x) => x.to)).toEqual(['b'])
+    expect(due[0]!.title).toMatch(/내일부터/)
+    expect(scheduledNotices(fresh(), '2026-10-02').filter((x) => x.kind === 'period-due').map((x) => x.to)).toEqual(['b'])
   })
 
   it('suppresses fertile notices when the period is late', () => {

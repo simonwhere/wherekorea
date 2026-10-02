@@ -1,11 +1,12 @@
 // Reminders for hard administrative deadlines on the 챙길 것 roadmap
-// (출생신고 1개월, 행복출산 60일, 산후도우미 바우처 …). Kept out of
-// notifications.ts so the plan view-model (which reads pregnancy helpers that
-// themselves use notifications) doesn't form an import cycle.
+// (출생신고 1개월, 행복출산 60일, 산후도우미 바우처 …) and for the couple's own
+// dated items that asked for them ('기한', CustomTask.deadlineAlerts — 결정통지서
+// 만료 …). Kept out of notifications.ts so the plan view-model (which reads
+// pregnancy helpers that themselves use notifications) doesn't form an import cycle.
 
 import { ROADMAP } from '../content/roadmap'
-import { diffDays, formatKo } from '../dates'
-import type { AppState, Appointment, ISODate } from '../types'
+import { diffDays, formatKo, isISODate } from '../dates'
+import type { AppState, Appointment, CustomTask, ISODate, MemberId } from '../types'
 import { appointmentNotices } from './appointments'
 import type { Notice } from './notifications'
 import { planItems } from './plan'
@@ -39,24 +40,42 @@ export function appointmentReminders(state: AppState, today: ISODate): Notice[] 
 /** Days before the last day on which a reminder goes out. */
 export const DEADLINE_REMINDER_DAYS = [7, 1, 0] as const
 
+function deadlineNotice(it: { id: string; title: string; end: ISODate }, until: number, to: MemberId): Notice {
+  return {
+    key: `deadline:${it.id}:${it.end}:${until}:${to}`,
+    to,
+    kind: 'system',
+    title: `📝 ${it.title} ${until === 0 ? '오늘까지예요' : `D-${until}`}`,
+    body: `${formatKo(it.end)}까지예요. 이미 했다면 챙길 것에서 체크해 주세요.`,
+  }
+}
+
+/**
+ * The couple's own items that asked for deadline notices (N13 '기한'): dated,
+ * not done, and `deadlineAlerts` on. Off by default, so a shopping item never nags.
+ */
+export function customDeadlineTasks(state: Pick<AppState, 'customTasks'>): Array<CustomTask & { due: ISODate }> {
+  return state.customTasks.filter((c): c is CustomTask & { due: ISODate } => c.deadlineAlerts === true && !c.doneAt && isISODate(c.due))
+}
+
 export function planDeadlineNotices(state: AppState, today: ISODate): Notice[] {
-  // Every hard deadline on the roadmap is tied to the pregnancy or the birth.
-  if (state.stage === 'preparing') return []
   const out: Notice[] = []
+  // The couple's own '기한' items go out in every stage — these are the only
+  // deadline notices while preparing (every roadmap deadline is tied to the
+  // pregnancy or the birth).
+  for (const c of customDeadlineTasks(state)) {
+    const until = diffDays(today, c.due)
+    if (!(DEADLINE_REMINDER_DAYS as readonly number[]).includes(until)) continue
+    const owners: MemberId[] = c.who === 'both' ? ['a', 'b'] : [c.who]
+    for (const to of owners) out.push(deadlineNotice({ id: c.id, title: c.title, end: c.due }, until, to))
+  }
+  if (state.stage === 'preparing') return out
   for (const it of planItems(state, today)) {
-    if (!it.deadline || it.status === 'done' || it.lapsed || !it.end || it.pending) continue
+    if (it.custom || !it.deadline || it.status === 'done' || it.lapsed || !it.end || it.pending) continue
     if (!it.start || today < it.start) continue
     const until = diffDays(today, it.end)
     if (!(DEADLINE_REMINDER_DAYS as readonly number[]).includes(until)) continue
-    for (const to of it.owners) {
-      out.push({
-        key: `deadline:${it.id}:${it.end}:${until}:${to}`,
-        to,
-        kind: 'system',
-        title: `📝 ${it.title} ${until === 0 ? '오늘까지예요' : `D-${until}`}`,
-        body: `${formatKo(it.end)}까지예요. 이미 했다면 챙길 것에서 체크해 주세요.`,
-      })
-    }
+    for (const to of it.owners) out.push(deadlineNotice({ id: it.id, title: it.title, end: it.end }, until, to))
   }
   return out
 }

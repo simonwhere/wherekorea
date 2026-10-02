@@ -18,7 +18,7 @@
 
 import { addDays, addMonths, diffDays, formatShort, isISODate, parts, range, weekdayIndex } from './dates'
 import { uid } from './id'
-import { ROLE_LABEL, createInitialState, type OnboardingInput } from './initial'
+import { CYCLE_RANGE_DEFAULT, DEFAULT_CYCLE_LENGTH, ROLE_LABEL, createInitialState, cycleLengthRange, type OnboardingInput } from './initial'
 import { DATE_IDEAS } from './content/dateIdeas'
 import { ROADMAP } from './content/roadmap'
 import { addAnniversary, setCoupleDates } from './logic/anniversary'
@@ -27,9 +27,10 @@ import { addGrowth, setMilestone } from './logic/baby'
 import { checkupKey, milestoneKey } from './logic/babyView'
 import { activeItems, archiveCheckItem, isDone, isWeekly, itemsFor, mondayOf, toggleCheck, weeklyDone } from './logic/checks'
 import { setCover } from './logic/cover'
-import { addPeriod, upcomingWindows, type CycleWindow } from './logic/cycle'
+import { DUE_SETTINGS_SPREAD, addPeriod, upcomingWindows, type CycleWindow } from './logic/cycle'
 import { addEntry } from './logic/diary'
 import { addLHTest, addPregnancyTest } from './logic/logs'
+import { setFeel, setPrivateNote } from './logic/personalLog'
 import {
   ageFromBirthYear,
   doctorThresholdMonths,
@@ -54,6 +55,7 @@ import type {
   ISODate,
   LHResult,
   MemberId,
+  PersonalFeel,
   PregnancyTestResult,
   Role,
   Stage,
@@ -61,7 +63,12 @@ import type {
 
 // ── Onboarding ──────────────────────────────────────────────
 
-export const CYCLE_RANGE = { min: 21, max: 45, fallback: 28 } as const
+/**
+ * The onboarding stepper's range — the same 15–60 as the settings and a backup
+ * (lib/initial.ts CYCLE_RANGE_DEFAULT, one source). With "45일 이상·들쭉날쭉"
+ * (longCycles) the clamp in stateFromOnboarding goes up to 90.
+ */
+export const CYCLE_RANGE = { ...CYCLE_RANGE_DEFAULT, fallback: DEFAULT_CYCLE_LENGTH } as const
 export const PERIOD_RANGE = { min: 2, max: 10, fallback: 5 } as const
 export const BIRTH_YEAR_RANGE = { min: 1960, max: 2008 } as const
 export const NAME_MAX = 12
@@ -177,8 +184,14 @@ export function stateFromOnboarding(choices: OnboardingChoices, today: ISODate, 
       },
       cycleOwner: choices.cycleOwner === 'b' ? 'b' : 'a',
       lastPeriodStart: pastDate(choices.lastPeriodStart, today),
-      cycleLength: clampInt(choices.cycleLength, CYCLE_RANGE.min, CYCLE_RANGE.max, CYCLE_RANGE.fallback),
+      cycleLength: clampInt(
+        choices.cycleLength,
+        cycleLengthRange(choices.longCycles).min,
+        cycleLengthRange(choices.longCycles).max,
+        CYCLE_RANGE.fallback,
+      ),
       periodLength: clampInt(choices.periodLength, PERIOD_RANGE.min, PERIOD_RANGE.max, PERIOD_RANGE.fallback),
+      ...(choices.longCycles === true ? { longCycles: true } : {}),
       ttcStart: pastDate(choices.ttcStart, today) ?? today,
     },
     at,
@@ -215,15 +228,17 @@ export const PERIOD_MAX_AGE_DAYS = 365
 export const TTC_MAX_AGE_MONTHS = 120
 
 /**
- * Gentle, non-blocking note under the last-period date: a start more than one
- * average cycle ago makes the app read the next period as already late (and
- * suggest a test), which is usually just an older date picked by mistake.
+ * Gentle, non-blocking note under the last-period date: a start older than the
+ * expected range (average ± DUE_SETTINGS_SPREAD — lib/logic/cycle.ts
+ * expectedPeriod, settings basis) makes the app read the next period as already
+ * late, which is usually just an older date picked by mistake. The note appears
+ * exactly when the home would say 늦었어요.
  */
 export function periodDateNote(lastPeriodStart: string, cycleLength: number, today: ISODate): string | null {
   const start = pastDate(lastPeriodStart, today)
   if (!start) return null
   const ago = diffDays(start, today)
-  if (ago <= cycleLength || ago > PERIOD_MAX_AGE_DAYS) return null
+  if (ago <= cycleLength + DUE_SETTINGS_SPREAD || ago > PERIOD_MAX_AGE_DAYS) return null
   return `${ago}일 전이라, 평균 주기(${cycleLength}일)보다 오래됐어요. 그 뒤에 생리가 있었다면 가장 최근 시작일로 넣어 주세요.`
 }
 
@@ -267,6 +282,8 @@ export interface OnboardingDraft {
   periodUnknown: boolean
   cycleLength: number
   periodLength: number
+  /** "주기가 45일 이상이거나 들쭉날쭉해요" (N12) — widens the stepper to 90 days. */
+  longCycles?: boolean
   ttcMode: 'now' | 'date'
   ttcDate: string
   /** Only the styles the user picked; the rest follow the cycle owner. */
@@ -381,6 +398,7 @@ export function draftToChoices(d: OnboardingDraft, today: ISODate): OnboardingCh
     lastPeriodStart: d.periodUnknown ? undefined : pastDate(d.lastPeriodStart, today),
     cycleLength: d.cycleLength,
     periodLength: d.periodLength,
+    ...(d.longCycles === true ? { longCycles: true } : {}),
     ttcStart: draftTtcStart(d, today),
     alertStyle: draftStyles(d),
     lowPressure: d.lowPressure,
@@ -479,6 +497,8 @@ function demoBase(today: ISODate, now: Date, ttcStart: ISODate): AppState {
       shareCycleDetails: false,
       // Each person's own choices: 민수 hides health words on his lock screen.
       personal: { a: { lowPressure: false, discreet: true }, b: { lowPressure: false, discreet: false } },
+      // 지은 uses LH strips (she logs them below), so the app never asks her.
+      usesLH: true,
     },
   }
 }
@@ -503,6 +523,23 @@ function logPregnancyTests(state: AppState, list: ReadonlyArray<readonly [ISODat
   for (const [date, time, result] of list) s = addPregnancyTest(s, { date, time, result, by: 'b' }).state
   return s
 }
+
+/** 지은's own feel chips (본인만 보기 — 민수 never sees them): [date, feel]. */
+function logFeels(state: AppState, list: ReadonlyArray<readonly [ISODate, PersonalFeel]>): AppState {
+  let s = state
+  for (const [date, feel] of list) s = setFeel(s, 'b', date, feel)
+  return s
+}
+
+/** Days after `prev`'s start of 지은's feel chips in last cycle's 기다리는 주 (ovulation was day 13). */
+export const DEMO_FEEL_DAYS: ReadonlyArray<readonly [dayOffset: number, feel: PersonalFeel]> = [
+  [18, 'normal'],
+  [20, 'tired'],
+  [22, 'breast'],
+  [24, 'sensitive'],
+  [26, 'spotting'],
+  [27, 'cramps'],
+] as const
 
 /**
  * Tick the daily items that counted on `date` (itemsFor, so an item archived
@@ -859,6 +896,14 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     [addDays(prev, 24), '06:50', 'negative'],
     [addDays(prev, 27), '06:40', 'negative'],
   ])
+  // Her own log from that 기다리는 주 (본인만 보기): a few feel chips, one
+  // 살짝 비침 two days before the period, and a private line the day of the
+  // early test. These never reach 민수's screen (lib/logic/personalLog.ts).
+  s = logFeels(
+    s,
+    DEMO_FEEL_DAYS.map(([offset, feel]) => [addDays(prev, offset), feel] as const),
+  )
+  s = setPrivateNote(s, 'b', addDays(prev, 24), '테스트는 음성. 아직 이를 수 있으니 며칠만 더 기다려 보기로 했어요.')
 
   s = fillHistory(s, ttcStart, addDays(today, -11))
   s = fillRecent(s, today)

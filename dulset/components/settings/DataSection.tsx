@@ -1,19 +1,18 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import RestoreBackup from '@/components/RestoreBackup'
+import RestoreFullBackup from '@/components/system/RestoreFullBackup'
 import { Button, Card, Sheet, useToast } from '@/components/ui'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
-import { markBackedUp } from '@/lib/persist'
+import { buildFullBackup, deliverFile, fullBackupFilename, markBackedUp, photoIdsInState } from '@/lib/persist'
+import { exportPhotos } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 import { clearDeviceData } from '@/lib/storage'
 import { ConfirmActions, SettingsSection } from './bits'
 
 const noop = () => {}
-
-/** Per-tab "whose phone" key (lib/storage.ts keeps it private). */
 
 const PRINCIPLES: ReadonlyArray<{ icon: string; title: string; body: string }> = [
   {
@@ -53,6 +52,7 @@ export default function DataSection() {
   const toast = useToast()
   const [wipeStep, setWipeStep] = useState<0 | 1 | 2>(0)
   const [busy, setBusy] = useState(false)
+  const [packing, setPacking] = useState(false)
   // Stable callbacks: Sheet re-focuses its panel whenever onClose changes.
   const closeWipe = useCallback(() => setWipeStep(0), [])
   // Each wipe step swaps the sheet's content; put focus on the new step's text
@@ -62,16 +62,64 @@ export default function DataSection() {
     if (wipeStep === 2) stepRef.current?.focus()
   }, [wipeStep])
 
-  const exportBackup = () => {
+  const photoCount = photoIdsInState(state).length
+
+  /** 전체 백업: the record plus every photo this device still has, as one .zip. */
+  const exportFull = async () => {
+    if (packing) return
+    setPacking(true)
+    let blob: Blob
+    let packed = 0
     try {
-      downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
+      const photos = await exportPhotos(photoIdsInState(state))
+      packed = photos.length
+      const bytes = buildFullBackup(state, photos, new Date())
+      blob = new Blob([bytes as BlobPart], { type: 'application/zip' })
+    } catch {
+      setPacking(false)
+      toast.show('백업 파일을 만들지 못했어요. 잠시 뒤 다시 해 주세요')
+      return
+    }
+    // iOS: the share sheet, and "backed up" only once it resolves (lib/persist deliverFile).
+    const result = await deliverFile(blob, fullBackupFilename(today))
+    setPacking(false)
+    if (result === 'shared' || result === 'downloaded') {
+      // Resets the weekly "백업한 지 N일" nudge (BackupBanner / InstallBackupCard) on this device.
+      markBackedUp(stampOn(today))
+      const photosNote = packed > 0 ? ` · 사진 ${packed}장` : ''
+      toast.show(result === 'shared' ? `백업 파일을 보냈어요${photosNote}` : `백업 파일을 저장했어요${photosNote}`)
+    } else if (result === 'cancelled') {
+      toast.show('백업을 취소했어요')
+    } else {
+      toast.show('백업 파일을 저장하지 못했어요. 잠시 뒤 다시 해 주세요')
+    }
+  }
+
+  /** 기록만 (.json): small, opens anywhere — the photos stay on this device. */
+  const exportJson = async () => {
+    let blob: Blob
+    try {
+      blob = new Blob([JSON.stringify(state)], { type: 'application/json' })
     } catch {
       toast.show('백업 파일을 만들지 못했어요. 잠시 뒤 다시 해 주세요')
       return
     }
-    // Resets the weekly "백업한 지 N일" nudge (InstallBackupCard) on this device.
-    markBackedUp(stampOn(today))
-    toast.show('백업 파일을 저장했어요')
+    const result = await deliverFile(blob, BACKUP_FILENAME)
+    if (result === 'shared' || result === 'downloaded') {
+      markBackedUp(stampOn(today))
+      toast.show(result === 'shared' ? '기록 파일을 보냈어요' : '기록 파일을 저장했어요')
+    } else if (result === 'cancelled') {
+      toast.show('백업을 취소했어요')
+    } else {
+      // Last resort: the plain download link.
+      try {
+        downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
+        markBackedUp(stampOn(today))
+        toast.show('기록 파일을 저장했어요')
+      } catch {
+        toast.show('백업 파일을 저장하지 못했어요. 잠시 뒤 다시 해 주세요')
+      }
+    }
   }
 
   const wipe = async () => {
@@ -94,20 +142,23 @@ export default function DataSection() {
               <h3 className="text-sm font-bold text-ink">이 기기에만 저장돼요</h3>
               <p className="mt-1 text-xs leading-relaxed text-ink-2">
                 지금은 모든 기록이 이 브라우저 안에만 있어요. 서버로 보내지 않아요. 대신 브라우저 데이터를 지우면 함께 사라지니,
-                가끔 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.
+                일주일에 한 번 백업 파일을 받아 두세요. 내보내기는 언제나 무료예요.
               </p>
             </div>
           </div>
 
           <div className="mt-3 grid gap-2">
-            <Button full variant="secondary" onClick={exportBackup}>
-              백업 파일 내보내기 (.json)
+            <Button full variant="secondary" onClick={() => void exportFull()} disabled={packing}>
+              {packing ? '백업 파일 만드는 중…' : photoCount > 0 ? `전체 백업 받기 (기록 + 사진 ${photoCount}장, .zip)` : '전체 백업 받기 (.zip)'}
             </Button>
-            <RestoreBackup onMessage={toast.show} />
+            <RestoreFullBackup label="백업 파일 불러오기 (.zip · .json)" onMessage={toast.show} />
+            <Button full variant="ghost" onClick={() => void exportJson()}>
+              기록만 .json으로 받기
+            </Button>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            백업 파일에는 두 사람의 체크와 주기 기록, 일기 글, 만난 날·기념일, 병원 일정, 챙길 것 진행 상황이 모두 들어가요. 사진은
-            크기 때문에 빠지니, 사진이 담긴 기록은 우리 탭의 ‘우리 이야기 내보내기’로 따로 남겨 주세요.
+            전체 백업에는 두 사람의 체크와 주기 기록, 일기 글과 사진, 만난 날·기념일, 병원 일정, 챙길 것 진행 상황이 모두 들어가요.
+            불러오면 사진도 함께 되살아나요. .json에는 사진이 빠져요.
           </p>
 
           <div className="mt-3 border-t border-line pt-3">
@@ -143,10 +194,10 @@ export default function DataSection() {
               두 사람의 체크, 생리 기록, 일기와 사진, 기념일·병원 일정·챙길 것, 알림이 이 기기에서 모두 지워져요. 지운 뒤에는 되돌릴
               수 없어요.
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-ink-3">남겨 두고 싶은 기록이 있다면 먼저 백업 파일을 받아 두세요.</p>
+            <p className="mt-2 text-xs leading-relaxed text-ink-3">남겨 두고 싶은 기록이 있다면 먼저 전체 백업을 받아 두세요.</p>
             <div className="mt-5 grid gap-2">
-              <Button full variant="secondary" onClick={exportBackup}>
-                먼저 백업 파일 받기
+              <Button full variant="secondary" onClick={() => void exportFull()} disabled={packing}>
+                {packing ? '백업 파일 만드는 중…' : '먼저 전체 백업 받기'}
               </Button>
               <Button full variant="danger" onClick={() => setWipeStep(2)}>
                 다음

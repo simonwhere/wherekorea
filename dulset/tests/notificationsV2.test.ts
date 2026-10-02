@@ -52,8 +52,10 @@ import {
 import type { AppNotification, AppState, Settings } from '@/lib/types'
 
 // b (지은) tracks the cycle and hears it plainly; a (민수) gets the soft wording.
-// Period 2026-09-01, 28 days → estimated window 09-10…09-15 (ovulation 09-15,
-// peak 09-13…09-15), next period 09-29.
+// Three regular 28-day cycles, then the period 2026-09-01 → estimated window
+// 09-10…09-15 (ovulation 09-15, peak 09-13…09-15), next period expected 09-29
+// (a one-day range: the three cycles were identical), late from 09-30.
+const REGULAR = [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }]
 function fresh(settings: Partial<Settings> = {}): AppState {
   const s = createInitialState(
     {
@@ -64,7 +66,7 @@ function fresh(settings: Partial<Settings> = {}): AppState {
     },
     new Date(2026, 8, 1, 9, 0),
   )
-  return { ...s, settings: { ...s.settings, ...settings } }
+  return { ...s, periods: REGULAR, settings: { ...s.settings, ...settings } }
 }
 
 const at = (d: string) => `${d}T09:00:00+09:00`
@@ -166,6 +168,81 @@ describe('fertile notices are keyed by the cycle, not the window', () => {
     expect(`${soft!.title} ${soft!.body}`).not.toMatch(/가임|배란|가능성|데이트 탭|숙제|노력|실패|오늘 꼭/)
     const [plain] = fertileTo(scheduledNotices(fresh(), '2026-09-11'), 'b')
     expect(plain!.body).toContain('예상')
+  })
+})
+
+describe('the expected period is a range: 내일 예정 · 늦음 · 임신 테스트 (N10)', () => {
+  const owner = (n: Notice[], prefix: string) => n.filter((x) => x.to === 'b' && x.key.startsWith(prefix))
+
+  it('says 내일부터 생리 예정 무렵 the day before the range starts, once per cycle', () => {
+    // 지은's real case: 29…34-day cycles (average 31) → range 10-03…10-08 from the 09-04 period.
+    const jieun = {
+      ...fresh(),
+      periods: [{ start: '2026-04-01' }, { start: '2026-05-01' }, { start: '2026-06-04' }, { start: '2026-07-03' }, { start: '2026-08-06' }, { start: '2026-09-04' }],
+    }
+    expect(owner(scheduledNotices(jieun, '2026-10-01'), 'period-due:')).toEqual([])
+    const [due] = owner(scheduledNotices(jieun, '2026-10-02'), 'period-due:')
+    expect(due).toMatchObject({ key: 'period-due:2026-09-04:b', kind: 'period-due', title: '🗓️ 내일부터 생리 예정 무렵이에요' })
+    expect(due!.body).toContain('10월 3일~8일 무렵 (예상)')
+    expect(owner(scheduledNotices(jieun, '2026-10-03'), 'period-due:')).toEqual([])
+    // Settings only: the range is average ± 2 → 09-27…10-01, so the heads-up is on 09-26.
+    const one = { ...fresh(), periods: [{ start: '2026-09-01' }] }
+    expect(owner(scheduledNotices(one, '2026-09-26'), 'period-due:')[0]!.body).toContain('9월 27일~10월 1일 무렵')
+    expect(owner(scheduledNotices(one, '2026-09-28'), 'period-due:')).toEqual([])
+  })
+
+  it('calls the period late only the day after the range, and brings up the test only from day 3', () => {
+    const jieun = {
+      ...fresh(),
+      periods: [{ start: '2026-04-01' }, { start: '2026-05-01' }, { start: '2026-06-04' }, { start: '2026-07-03' }, { start: '2026-08-06' }, { start: '2026-09-04' }],
+    }
+    // Days 32 and 33 (10-05, 10-06) and the range's last day: no late notice (review D1).
+    for (const d of ['2026-10-05', '2026-10-06', '2026-10-08']) expect(owner(scheduledNotices(jieun, d), 'late'), d).toEqual([])
+    const late = owner(scheduledNotices(jieun, '2026-10-09'), 'late')
+    expect(late.map((x) => x.key)).toEqual(['late:2026-09-04:b'])
+    expect(late[0]!.title).toBe('🗓️ 생리 예정일이 지났어요')
+    expect(late[0]!.body).toContain('10월 3일~8일')
+    expect(late[0]!.body).not.toMatch(/임신 테스트/)
+    expect(owner(scheduledNotices(jieun, '2026-10-10'), 'late-test:')).toEqual([])
+    const test = owner(scheduledNotices(jieun, '2026-10-11'), 'late-test:')
+    expect(test.map((x) => x.key)).toEqual(['late-test:2026-09-04:b'])
+    expect(test[0]!.title).toContain('임신 테스트')
+    expect(test[0]!.body).toContain('3일 지났어요')
+    // Delivered day by day: each goes out once.
+    const { added } = run(jieun, range('2026-10-01', '2026-10-20'))
+    expect(added.filter((n) => n.key?.startsWith('late:'))).toHaveLength(1)
+    expect(added.filter((n) => n.key?.startsWith('late-test:'))).toHaveLength(1)
+    expect(added.filter((n) => n.key?.startsWith('period-due:'))).toHaveLength(1)
+    // Past LONG_LATE_DAYS nothing more goes out (the home asks about a missed log instead).
+    expect(owner(scheduledNotices(jieun, '2026-10-24'), 'late')).toEqual([])
+  })
+
+  it('an LH surge moves the range (max of start + average and ovulation + 12), and the notices follow', () => {
+    // Surge 09-25 → ovulation 09-26 → range 10-08…10-10 (start + 31 = 10-05 is earlier).
+    const s = addLHTest(fresh(), { date: '2026-09-25', time: '08:00', result: 'positive', by: 'b' })
+    const jieun = {
+      ...s,
+      periods: [{ start: '2026-04-01' }, { start: '2026-05-01' }, { start: '2026-06-04' }, { start: '2026-07-03' }, { start: '2026-08-06' }, { start: '2026-09-04' }],
+    }
+    expect(owner(scheduledNotices(jieun, '2026-10-07'), 'period-due:')).toHaveLength(1)
+    expect(owner(scheduledNotices(jieun, '2026-10-09'), 'late')).toEqual([])
+    expect(owner(scheduledNotices(jieun, '2026-10-11'), 'late').map((x) => x.key)).toEqual(['late:2026-09-04:b'])
+  })
+
+  it('names no best days (🌟) and words the window as a wide range while the calendar alone is all there is', () => {
+    const one = { ...fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareCycleDetails: true }), periods: [{ start: '2026-09-01' }] }
+    const days = range('2026-09-01', '2026-09-29')
+    const all = days.flatMap((d) => scheduledNotices(one, d))
+    expect(all.filter((x) => x.kind === 'peak')).toEqual([])
+    const [heads] = fertileTo(scheduledNotices(one, '2026-09-11'), 'b')
+    expect(heads!.body).toContain('예상 범위예요 (넓음 · 달력 기준)')
+    expect(heads!.body).not.toMatch(/더 정확해요|가능성/)
+    // Three regular cycles: the 🌟 notice is back.
+    expect(peakTo(scheduledNotices(fresh(), '2026-09-13'), 'b')).toHaveLength(1)
+    expect(fertileTo(scheduledNotices(fresh(), '2026-09-11'), 'b')[0]!.body).not.toContain('넓음')
+    // An LH surge this cycle pins it even with one logged period.
+    const lh = addLHTest(one, { date: '2026-09-12', time: '08:00', result: 'positive', by: 'b' })
+    expect(peakTo(scheduledNotices(lh, '2026-09-13'), 'b').map((x) => x.key)).toEqual(['peak:2026-09-01:b'])
   })
 })
 
@@ -343,6 +420,21 @@ describe('rest cycles and a positive test awaiting the clinic', () => {
     // 10-01 is 2 days past the expected period: no late / test notice either.
     expect(scheduledNotices(pending, '2026-10-01').filter((x) => x.key.startsWith('late:'))).toEqual([])
     expect(scheduledNotices(fresh(), '2026-10-01').filter((x) => x.key.startsWith('late:'))).toHaveLength(1)
+  })
+
+  it('a clinic cycle (병원과 함께 준비 중) holds every date notice and the 🩺 notice, period logs or not', () => {
+    const clinic = startRestCycle(fresh({ ttcStart: '2025-01-01' }), '2026-09-05', 'clinic')
+    const dated = (s: AppState, d: string) =>
+      scheduledNotices(s, d).filter((x) => x.kind === 'fertile-start' || x.kind === 'peak' || x.kind === 'period-due' || x.kind === 'doctor')
+    expect(dated(clinic, '2026-09-11')).toEqual([])
+    expect(dated(clinic, '2026-09-28')).toEqual([])
+    expect(dated(clinic, '2026-10-02')).toEqual([])
+    // A period logged for the clinic's 생리 2~3일째 visit does not end it: still quiet next cycle.
+    const logged = addPeriod(clinic, '2026-09-29', undefined, 'b')
+    expect(dated(logged, '2026-10-07')).toEqual([])
+    expect(dated(logged, '2026-10-26')).toEqual([])
+    // An ordinary rest with the same trying time still gets the 🩺 notice.
+    expect(dated(startRestCycle(fresh({ ttcStart: '2025-01-01' }), '2026-09-05'), '2026-09-11').map((x) => x.kind)).toEqual(['doctor', 'doctor'])
   })
 
   it('holds back "내일이 생리 예정일" and the doctor notice while the positive test waits', () => {

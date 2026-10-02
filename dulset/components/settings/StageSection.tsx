@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import ClinicSwitch from '@/components/cycle/ClinicSwitch'
 import { Button, Card, Field, Sheet, inputClass, useToast } from '@/components/ui'
 import { DUE_DATE_NOTE } from '@/lib/content/pregnancy'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
@@ -90,6 +91,9 @@ export default function StageSection() {
           </p>
         ) : null}
       </Card>
+
+      {/* "병원과 함께 준비 중" (N13): the cycle owner's switch, also on the home's 더 보기 and the 주기 tab. */}
+      {state.stage === 'preparing' && canLogCycle(state, viewer) ? <ClinicSwitch className="mt-2 py-2" /> : null}
 
       {/* Each sheet only while the stage still fits it: if the partner changes the
           stage on their phone, a sheet left open here closes instead of

@@ -7,8 +7,10 @@ import {
   LONG_LATE_DAYS,
   addPeriod,
   dayInfo,
+  expectedPeriod,
   fertilityStatus,
   forecastLimit,
+  lateFrom,
   ourWeekSoon,
   upcomingWindows,
 } from '@/lib/logic/cycle'
@@ -164,11 +166,15 @@ describe('stage transitions only apply from their own stage', () => {
 })
 
 describe('late period: nothing is projected past the missed expected date', () => {
-  // Last period 09-15, 28 days → expected 10-13.
+  // Last period 09-15, 28 days from the settings alone → the expected period is
+  // a RANGE (N10): 10-11 … 10-15 (average ± 2); late only from 10-16.
   const s = preparing()
+  const due = expectedPeriod(s, '2026-09-15')
 
   it('keeps counting the cycle and shows no fertile/ovulation days', () => {
-    expect(forecastLimit(s, '2026-10-23')).toMatchObject({ from: '2026-10-13', reason: 'late' })
+    expect(due).toEqual({ from: '2026-10-11', to: '2026-10-15', basis: 'settings' })
+    expect(lateFrom(due)).toBe('2026-10-16')
+    expect(forecastLimit(s, '2026-10-23')).toMatchObject({ from: '2026-10-11', reason: 'late' })
     const today = dayInfo(s, '2026-10-23', '2026-10-23')
     expect(today).toMatchObject({ phase: 'none', cycleDay: 39, unpredicted: 'late', isOvulation: false })
     expect(dayChanceLabel(today, 'explicit')).toBeNull()
@@ -179,7 +185,9 @@ describe('late period: nothing is projected past the missed expected date', () =
   })
 
   it('has no upcoming window for alerts, previews or onboarding', () => {
-    expect(upcomingWindows(s, '2026-10-14')).toEqual([])
+    // Inside the range the cycle is still open (a window is still projected); past it, nothing.
+    expect(upcomingWindows(s, '2026-10-14')).not.toEqual([])
+    expect(upcomingWindows(s, lateFrom(due))).toEqual([])
     expect(sampleWindow('2026-08-20', 28, 5, '2026-09-26')).toBeNull()
     expect(sampleWindow('2026-09-10', 28, 5, '2026-09-26')).not.toBeNull()
   })
@@ -192,9 +200,10 @@ describe('late period: nothing is projected past the missed expected date', () =
 
   it('uses one long-late threshold for the notice', () => {
     expect(LONG_LATE_DAYS).toBe(14)
+    // Days late count from the end of the range; the notice is keyed by the cycle's first day.
     const at = (d: string) => scheduledNotices(s, d).filter((n) => n.key.startsWith('late:'))
-    expect(at(addDays('2026-10-13', LONG_LATE_DAYS))).toHaveLength(1)
-    expect(at(addDays('2026-10-13', LONG_LATE_DAYS + 1))).toHaveLength(0)
+    expect(at(addDays(due.to, LONG_LATE_DAYS))).toEqual([expect.objectContaining({ key: 'late:2026-09-15:b', to: 'b' })])
+    expect(at(addDays(due.to, LONG_LATE_DAYS + 1))).toHaveLength(0)
   })
 })
 
@@ -301,18 +310,29 @@ describe('months of trying are calendar months', () => {
 })
 
 describe('.ics export', () => {
-  const windows = upcomingWindows(preparing(), '2026-09-20', 3)
+  // Three regular cycles before 09-15 → confidence 'cycles': the peak days exist (N12).
+  const confident = preparing({ periods: [{ start: '2026-06-23' }, { start: '2026-07-21' }, { start: '2026-08-18' }, { start: '2026-09-15' }] })
+  const windows = upcomingWindows(confident, '2026-09-20', 3)
 
   it('gives a soft viewer the window only — no peak-day alarm', () => {
+    expect(windows.every((w) => w.confidence === 'cycles')).toBe(true)
     const soft = fertileWindowEvents(windows, { discreet: true, peak: false })
     expect(soft).toHaveLength(windows.length)
     expect(soft.some((e) => e.title.includes('둘만의 저녁'))).toBe(false)
     expect(fertileWindowEvents(windows, { discreet: false, peak: true })).toHaveLength(windows.length * 2)
   })
 
+  it('names no peak day for a window the calendar alone can’t narrow (one logged period), even for the explicit view', () => {
+    const rough = upcomingWindows(preparing(), '2026-09-20', 3)
+    expect(rough.every((w) => w.confidence === 'low')).toBe(true)
+    const events = fertileWindowEvents(rough, { discreet: false, peak: true })
+    expect(events).toHaveLength(rough.length)
+    expect(events.some((e) => e.uid.includes('peak'))).toBe(false)
+  })
+
   it('keeps UIDs stable when predictions move, and adds a SEQUENCE', () => {
     const before = fertileWindowEvents(windows, { discreet: false, peak: true, id: 'AB12' }).map((e) => e.uid)
-    const moved = upcomingWindows(addPeriod(preparing(), '2026-10-09'), '2026-10-09', 3)
+    const moved = upcomingWindows(addPeriod(confident, '2026-10-09'), '2026-10-09', 3)
     const after = fertileWindowEvents(moved, { discreet: false, peak: true, id: 'AB12' }).map((e) => e.uid)
     expect(after).toEqual(before)
     expect(before[0]).toBe('AB12-fertile-1@dulset')

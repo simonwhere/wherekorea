@@ -7,32 +7,40 @@
 import { addMonths, formatKo, isISODate, parts } from '../dates'
 import { CUSTOM_TITLE_MAX } from './roadmap'
 import {
+  APPOINTMENT_KINDS,
+  LH_SLOTS,
   MEMBER_IDS,
+  REST_REASONS,
   type AlertStyle,
   type AppNotification,
   type AppState,
   type Appointment,
+  type AppointmentKind,
   type BabySex,
   type CheckItem,
   type CheckKind,
   type CustomTask,
+  type CycleNotes,
   type CycleSettings,
   type DatePlan,
   type DiaryEntry,
   type GrowthRecord,
+  type LHSlot,
   type NotificationKind,
   type ISODate,
   type Member,
   type MemberId,
   type PersonalPrefs,
+  type RestReason,
   type Role,
   type Settings,
   type Stage,
 } from '../types'
-import { DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, otherMember } from '../initial'
+import { CYCLE_RANGE_DEFAULT, DEFAULT_CYCLE_LENGTH, DEFAULT_PERIOD_LENGTH, ROLE_EMOJI, ROLE_LABEL, cycleLengthRange, otherMember } from '../initial'
 import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
 import { cleanCover } from './cover'
-import type { CycleStats } from './cycle'
+import { cleanPersonalLog } from './personalLog'
+import { maxCycleLength, type CycleStats } from './cycle'
 import { SOFT_FERTILE_TITLE, localNowISO, softFertileBody } from './notifications'
 import { confirmPregnancy } from './today'
 import { canStartPregnancy, updatePregnancy } from './pregnancy'
@@ -148,18 +156,36 @@ export function setSetting<K extends keyof Settings>(state: AppState, key: K, va
   return { ...state, settings: { ...state.settings, [key]: value } }
 }
 
-export const CYCLE_LENGTH_RANGE = { min: 15, max: 60 } as const
+/** The default stepper range (15–60); with 긴 주기 on, read cycleLengthRangeFor(state.cycle) instead (15–90). */
+export const CYCLE_LENGTH_RANGE = CYCLE_RANGE_DEFAULT
 export const PERIOD_LENGTH_RANGE = { min: 1, max: 14 } as const
+
+/** The cycle-length range these settings accept (lib/initial.ts cycleLengthRange): 15–90 with longCycles, 15–60 otherwise. */
+export function cycleLengthRangeFor(cycle: Pick<CycleSettings, 'longCycles'>): { min: number; max: number } {
+  return cycleLengthRange(cycle.longCycles)
+}
 
 function clampInt(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(n)))
 }
 
-/** Patch the fallback cycle numbers; values are rounded and clamped, NaN is ignored. */
+/**
+ * Patch the fallback cycle numbers; values are rounded and clamped, NaN is
+ * ignored. `longCycles` ("45일 이상이거나 들쭉날쭉해요", N12) widens the accepted
+ * length to 90; turning it off pulls a longer length back to 60. Stored only
+ * when true (an older save has no field at all).
+ */
 export function setCycle(state: AppState, patch: Partial<CycleSettings>): AppState {
   const cycle = { ...state.cycle }
+  if (typeof patch.longCycles === 'boolean') {
+    if (patch.longCycles) cycle.longCycles = true
+    else delete cycle.longCycles
+  }
+  const range = cycleLengthRangeFor(cycle)
   if (patch.cycleLength !== undefined && Number.isFinite(patch.cycleLength)) {
-    cycle.cycleLength = clampInt(patch.cycleLength, CYCLE_LENGTH_RANGE.min, CYCLE_LENGTH_RANGE.max)
+    cycle.cycleLength = clampInt(patch.cycleLength, range.min, range.max)
+  } else if (Number.isFinite(cycle.cycleLength)) {
+    cycle.cycleLength = clampInt(cycle.cycleLength, range.min, range.max)
   }
   if (patch.periodLength !== undefined && Number.isFinite(patch.periodLength)) {
     cycle.periodLength = clampInt(patch.periodLength, PERIOD_LENGTH_RANGE.min, PERIOD_LENGTH_RANGE.max)
@@ -202,12 +228,12 @@ export function setTtcStart(state: AppState, date: string | undefined, today: IS
   return { ...state, settings }
 }
 
-/** The line under "주기 설정" explaining which numbers predictions use right now. */
-export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: number): string {
+/** The line under "주기 설정" explaining which numbers predictions use right now (the accepted gap follows 긴 주기: 15~90일). */
+export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: number, cycle?: Pick<CycleSettings, 'longCycles'>): string {
   if (stats.source === 'logs')
     return '생리 기록이 쌓여서 지금은 기록 평균으로 예상해요. 아래 주기 길이는 기록이 부족할 때만 쓰여요.'
   if (periodCount >= 2)
-    return '기록 사이 간격이 15~60일일 때만 평균에 넣어요. 그런 기록이 생기기 전까지는 아래 값으로 예상해요.'
+    return `기록 사이 간격이 15~${maxCycleLength(cycle)}일일 때만 평균에 넣어요. 그런 기록이 생기기 전까지는 아래 값으로 예상해요.`
   return '생리 시작일을 두 번 이상 기록하면 기록으로 평균을 계산해요. 그 전까지는 아래 값으로 예상해요.'
 }
 
@@ -364,6 +390,21 @@ const isObj = (v: unknown): v is Loose => !!v && typeof v === 'object' && !Array
 const isStr = (v: unknown): v is string => typeof v === 'string'
 const isMemberId = (v: unknown): v is MemberId => v === 'a' || v === 'b'
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const isTime = (v: unknown): v is string => isStr(v) && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
+
+/**
+ * cycleNotes[cycle start] = { stillWaiting? } — real dates only; a note with
+ * nothing valid left is dropped, and so is an empty map.
+ */
+function cleanCycleNotes(raw: unknown): CycleNotes | undefined {
+  if (!isObj(raw)) return undefined
+  const out: CycleNotes = {}
+  for (const [start, note] of Object.entries(raw)) {
+    if (!isISODate(start) || !isObj(note)) continue
+    if (isISODate(note.stillWaiting)) out[start] = { stillWaiting: note.stillWaiting }
+  }
+  return Object.keys(out).length ? out : undefined
+}
 
 function cleanMember(raw: Loose, id: MemberId): Member {
   const role: Role = ROLES.includes(raw.role as Role) ? (raw.role as Role) : 'partner'
@@ -417,13 +458,15 @@ export function sanitizeBackup(input: AppState): AppState | null {
   else delete couple.cover
 
   const c: Loose = isObj(input.cycle) ? input.cycle : {}
+  // "45일 이상·들쭉날쭉" widens the accepted length to 90 (lib/initial.ts CYCLE_RANGE_LONG).
+  const longCycles = typeof c.longCycles === 'boolean' ? c.longCycles : undefined
+  const lengthRange = cycleLengthRange(longCycles)
   const cycle: CycleSettings = {
-    cycleLength: isNum(c.cycleLength)
-      ? clampInt(c.cycleLength, CYCLE_LENGTH_RANGE.min, CYCLE_LENGTH_RANGE.max)
-      : DEFAULT_CYCLE_LENGTH,
+    cycleLength: isNum(c.cycleLength) ? clampInt(c.cycleLength, lengthRange.min, lengthRange.max) : DEFAULT_CYCLE_LENGTH,
     periodLength: isNum(c.periodLength)
       ? clampInt(c.periodLength, PERIOD_LENGTH_RANGE.min, PERIOD_LENGTH_RANGE.max)
       : DEFAULT_PERIOD_LENGTH,
+    ...(longCycles !== undefined ? { longCycles } : {}),
   }
 
   const st: Loose = isObj(input.settings) ? input.settings : {}
@@ -438,7 +481,9 @@ export function sanitizeBackup(input: AppState): AppState | null {
     alertStyle: { a: styleFor('a'), b: styleFor('b') },
   }
   if (!isISODate(settings.ttcStart)) delete settings.ttcStart
-  // Per-person prefs: only booleans for a/b.
+  // 써요 / 안 써요 / 나중에 (N17) — anything else means the question wasn't asked.
+  if (!(typeof st.usesLH === 'boolean' || st.usesLH === 'later')) delete settings.usesLH
+  // Per-person prefs: only booleans for a/b, plus an 'HH:MM' LH test time.
   if (isObj(st.personal)) {
     const personal: NonNullable<Settings['personal']> = {}
     for (const id of MEMBER_IDS) {
@@ -448,6 +493,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (typeof p.lowPressure === 'boolean') out.lowPressure = p.lowPressure
       if (typeof p.discreet === 'boolean') out.discreet = p.discreet
       if (typeof p.hideCover === 'boolean') out.hideCover = p.hideCover
+      if (isTime(p.lhTestTime)) out.lhTestTime = p.lhTestTime
       personal[id] = out
     }
     settings.personal = personal
@@ -531,6 +577,8 @@ export function sanitizeBackup(input: AppState): AppState | null {
     d.stage = STAGES.includes(raw.stage as Stage) ? raw.stage : input.stage
     d.createdAt = isStr(raw.createdAt) ? raw.createdAt : `${raw.date as string}T00:00:00`
     optStr(d, 'mood', 'photoId')
+    // '나만 보기': a member id or nothing — anything else would hide it from everyone or no one.
+    if (!isMemberId(raw.privateTo)) delete d.privateTo
     // Reactions: only {a|b: short string}.
     if (isObj(raw.reactions)) {
       const r: Record<string, string> = {}
@@ -563,6 +611,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
     ).map((t) => {
       const out = { ...t }
       if (!(isStr(t.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(t.time))) delete out.time
+      if (!LH_SLOTS.includes(t.slot as LHSlot)) delete out.slot
       if (!isMemberId(t.by)) delete out.by
       return out
     }),
@@ -598,7 +647,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
         isStr(a.title) &&
         isISODate(a.date) &&
         (a.who === 'both' || isMemberId(a.who)) &&
-        ['hospital', 'test', 'vaccine', 'admin', 'other'].includes(a.kind as string) &&
+        APPOINTMENT_KINDS.includes(a.kind as AppointmentKind) &&
         (a.time === undefined || (isStr(a.time) && /^([01]\d|2[0-3]):[0-5]\d$/.test(a.time))),
     ).map((raw) => {
       const a: Loose = {
@@ -634,6 +683,7 @@ export function sanitizeBackup(input: AppState): AppState | null {
       if (!isISODate(raw.doneAt)) delete c.doneAt
       if (!isMemberId(raw.doneBy)) delete c.doneBy
       if (!isMemberId(raw.createdBy)) c.createdBy = ownerId
+      if (typeof raw.deadlineAlerts !== 'boolean') delete c.deadlineAlerts
       return c as unknown as CustomTask
     }),
   }
@@ -670,13 +720,21 @@ export function sanitizeBackup(input: AppState): AppState | null {
   } else delete next.baby
 
   const rc: unknown = input.restCycle
-  if (isObj(rc) && isISODate(rc.since) && ['rest', 'vaccine', 'loss'].includes(rc.reason as string)) {
-    next.restCycle = { since: rc.since, reason: rc.reason as NonNullable<AppState['restCycle']>['reason'] }
+  if (isObj(rc) && isISODate(rc.since) && REST_REASONS.includes(rc.reason as RestReason)) {
+    next.restCycle = { since: rc.since, reason: rc.reason as RestReason }
   } else delete next.restCycle
   const pp: unknown = input.positivePending
   if (isObj(pp) && isISODate(pp.since)) {
     next.positivePending = { since: pp.since, ...(isStr(pp.testId) ? { testId: pp.testId } : {}) }
   } else delete next.positivePending
+
+  // Each member's own log (본인만 보기) and the per-cycle notes: strict shapes, kept in a backup.
+  const personalLog = cleanPersonalLog(input.personalLog)
+  if (personalLog) next.personalLog = personalLog
+  else delete next.personalLog
+  const cycleNotes = cleanCycleNotes(input.cycleNotes)
+  if (cycleNotes) next.cycleNotes = cycleNotes
+  else delete next.cycleNotes
 
   return next
 }

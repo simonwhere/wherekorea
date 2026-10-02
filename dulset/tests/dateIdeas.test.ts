@@ -394,6 +394,15 @@ describe('dateBanner', () => {
         expect(fertileHintsAllowed(s, viewer)).toBe(false)
       }
     }
+    // A clinic cycle too — and a logged period does not end that one.
+    const clinic = startRestCycle(fresh(), '2026-09-05', 'clinic')
+    const clinicLogged = { ...clinic, periods: [...clinic.periods, { start: '2026-09-29' }] }
+    for (const s of [clinic, clinicLogged]) {
+      for (const viewer of ['a', 'b'] as const) {
+        expect(fertileHintsAllowed(s, viewer)).toBe(false)
+        expect(dateBanner(s, '2026-10-06', viewer).kind).toBe('preparing')
+      }
+    }
     // The next logged period ends the rest cycle (and settles the pending test): back to normal.
     const after = { ...rest, periods: [...rest.periods, { start: '2026-09-29' }] }
     expect(dateBanner(after, '2026-10-06', 'a').kind).toBe('our-week')
@@ -589,14 +598,16 @@ describe('partner notices', () => {
 
 describe('review fixes', () => {
   it('does not suggest a day in the projected window while the period is late', () => {
-    // Expected period 09-29; on 10-01 it is 2 days late and the projected next
-    // window (10-08) is within a week — still, no "우리의 주간" suggestion.
+    // Expected range 09-27…10-01 (one logged period, settings ± 2); on 10-02 it is
+    // a day late and the projected next window (10-08) is within a week — still,
+    // no "우리의 주간" suggestion.
     const s = fresh()
-    expect(fertilityStatus(s, '2026-10-01').kind).toBe('late')
+    expect(fertilityStatus(s, '2026-10-01').kind).toBe('after-fertile') // the range's last day
+    expect(fertilityStatus(s, '2026-10-02').kind).toBe('late')
     // The projection itself is withheld while late (cycle.forecastLimit).
-    expect(upcomingWindows(s, '2026-10-01', 1)).toEqual([])
-    expect(suggestPlanDate(s, '2026-10-01', 'b')).toEqual({ date: '2026-10-03', reason: 'saturday' })
-    expect(dateBanner(s, '2026-10-01', 'b').kind).toBe('preparing')
+    expect(upcomingWindows(s, '2026-10-02', 1)).toEqual([])
+    expect(suggestPlanDate(s, '2026-10-02', 'b')).toEqual({ date: '2026-10-03', reason: 'saturday' })
+    expect(dateBanner(s, '2026-10-02', 'b').kind).toBe('preparing')
   })
 
   it('explains the suggested date without ambiguity', () => {

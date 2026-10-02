@@ -2,8 +2,10 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AppErrorBoundary from '@/components/AppErrorBoundary'
+import LHHowTo from '@/components/log/LHHowTo'
 import LogSheet from '@/components/log/LogSheet'
 import Onboarding from '@/components/Onboarding'
+import PartnerFirstRunSheet from '@/components/onboarding/PartnerFirstRunSheet'
 import { goToSettings, isSettingsAnchor } from '@/components/settings/anchors'
 import NotificationsSheet from '@/components/NotificationsSheet'
 import BabyTab from '@/components/tabs/BabyTab'
@@ -14,12 +16,14 @@ import PregnancyTab from '@/components/tabs/PregnancyTab'
 import SettingsTab from '@/components/tabs/SettingsTab'
 import TodayTab from '@/components/tabs/TodayTab'
 import UsTab from '@/components/tabs/UsTab'
+import { useFirstPeriodMarker } from '@/components/system/BackupBanner'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { Icon, isIconName, type IconName } from '@/components/ui/icons'
+import { formatKo, isISODate } from '@/lib/dates'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
 import { useApp, useStore } from '@/lib/store'
-import type { Stage } from '@/lib/types'
+import type { ISODate, Stage } from '@/lib/types'
 
 export type TabKey = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'plan' | 'date' | 'diary' | 'settings'
 
@@ -68,6 +72,43 @@ export const STAGE_LABEL: Record<Stage, string> = {
 
 function readHash(): string {
   return typeof window === 'undefined' ? '' : window.location.hash.replace(/^#/, '')
+}
+
+/** The `?today=YYYY-MM-DD` pin (lib/store reads the same parameter), or null. */
+function readPinnedToday(): ISODate | null {
+  if (typeof window === 'undefined') return null
+  const v = new URLSearchParams(window.location.search).get('today')
+  return isISODate(v) ? v : null
+}
+
+/** Drop the `today` parameter and reload, so the app follows the real date again. */
+function unpinToday(): void {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('today')
+  window.location.replace(url.toString())
+}
+
+/**
+ * A thin line under the header while the date is pinned, so a demo link never
+ * passes for real use without anyone noticing (review P-5). 해제 reloads on the real date.
+ */
+function PinnedTodayBanner() {
+  const [pinned, setPinned] = useState<ISODate | null>(null)
+  useEffect(() => setPinned(readPinnedToday()), [])
+  if (!pinned) return null
+  return (
+    <p role="status" className="flex items-center justify-between gap-3 border-t border-line/70 bg-surface-2 px-4 py-1 text-[12px] leading-snug text-ink-2">
+      <span>데모: 오늘을 {formatKo(pinned, { weekday: false })}로 고정</span>
+      <button
+        type="button"
+        onClick={unpinToday}
+        // 44px tall (the line stays thin: the extra height hangs over the rows above and below).
+        className="-my-[9px] h-11 shrink-0 rounded-full px-2 text-[12px] font-bold text-brand-ink underline underline-offset-2 hover:bg-bg/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        해제
+      </button>
+    </p>
+  )
 }
 
 export default function AppShell() {
@@ -122,6 +163,8 @@ function MainApp() {
   }, [])
 
   useNotificationEngine()
+  // 기록 지키기: remember the day the first period gets logged (BackupBanner shows it once).
+  useFirstPeriodMarker()
 
   // Hash routing (#today, #cycle, …) keeps the static export portable and the back button useful.
   useEffect(() => {
@@ -245,12 +288,13 @@ function MainApp() {
             <button
               type="button"
               onClick={() => goToSettings('data')}
-              className="-my-1 h-9 shrink-0 rounded-full px-2 text-[12.5px] font-bold text-brand-ink underline underline-offset-2 hover:bg-bg/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+              className="-my-[7px] h-11 shrink-0 rounded-full px-2 text-[12.5px] font-bold text-brand-ink underline underline-offset-2 hover:bg-bg/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
             >
               백업 받기
             </button>
           </p>
         ) : null}
+        <PinnedTodayBanner />
       </header>
 
       <main className="flex-1 px-4 pb-28 pt-4">{content}</main>
@@ -264,7 +308,7 @@ function MainApp() {
             const active = t.key === tab
             return (
               <Fragment key={t.key}>
-                {logAfter === i ? <LogButton /> : null}
+                {logAfter === i ? <LogButton fromToday={tab === 'today'} /> : null}
                 <li>
                   <button
                     type="button"
@@ -295,17 +339,25 @@ function MainApp() {
 
       <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
       <LogSheet request={logRequest} onClose={closeLog} />
+      {/* '배란테스트기, 이렇게 해요' — opened with openLHHowTo() from the LH panel, the guide and the home card. */}
+      <LHHowTo />
+      {/* "민수님, 처음이죠?" — the joining member's own first run (N15); it decides by itself when to open. */}
+      <PartnerFirstRunSheet />
     </div>
   )
 }
 
-/** Center "+ 기록" action in the bottom bar (opens the one log sheet). */
-function LogButton() {
+/**
+ * Center "+ 기록" action in the bottom bar (opens the one log sheet). From the
+ * home it says so, so the 되돌리기 toast moves up and never covers the moment
+ * card's new buttons (알리기 · 차분히 알리기 · 병원 일정 넣기) — QF6.
+ */
+function LogButton({ fromToday }: { fromToday: boolean }) {
   return (
     <li className="flex items-center justify-center">
       <button
         type="button"
-        onClick={() => openLog()}
+        onClick={() => openLog(fromToday ? { from: 'today' } : {})}
         aria-label="기록하기"
         className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-[0_8px_18px_-6px_rgb(var(--brand)/.5)] ring-[5px] ring-bg hover:bg-brand/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:shadow-none"
       >

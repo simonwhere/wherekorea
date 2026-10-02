@@ -57,16 +57,24 @@ export function normalize(state: AppState): AppState {
   const cover = cleanCover(couple.cover)
   if (cover) couple.cover = cover
   else delete couple.cover
-  // Per-person prefs: hideCover is a yes/no or unset (automatic).
+  // Per-person prefs: hideCover is a yes/no or unset (automatic); lhTestTime is 'HH:MM' or unset.
   const personal = settings.personal
     ? Object.fromEntries(
         Object.entries(settings.personal).map(([id, p]) => {
-          if (!p || typeof p !== 'object' || !('hideCover' in p) || typeof p.hideCover === 'boolean') return [id, p]
-          const { hideCover: _bad, ...rest } = p
-          return [id, rest]
+          if (!p || typeof p !== 'object') return [id, p]
+          const { hideCover, lhTestTime, ...rest } = p as Record<string, unknown>
+          return [
+            id,
+            {
+              ...rest,
+              ...(typeof hideCover === 'boolean' ? { hideCover } : {}),
+              ...(typeof lhTestTime === 'string' && TIME_RE.test(lhTestTime) ? { lhTestTime } : {}),
+            },
+          ]
         }),
       )
     : undefined
+  const usesLH = settings.usesLH
   return {
     ...s,
     couple,
@@ -79,7 +87,11 @@ export function normalize(state: AppState): AppState {
     planDone: s.planDone ?? {},
     customTasks: s.customTasks ?? [],
     pregnancyTests: s.pregnancyTests ?? [],
-    cycle: { cycleLength: cycle.cycleLength ?? 28, periodLength: cycle.periodLength ?? 5 },
+    cycle: {
+      cycleLength: cycle.cycleLength ?? 28,
+      periodLength: cycle.periodLength ?? 5,
+      ...(typeof cycle.longCycles === 'boolean' ? { longCycles: cycle.longCycles } : {}),
+    },
     settings: {
       discreet: settings.discreet ?? false,
       browserNotifications: settings.browserNotifications ?? false,
@@ -95,9 +107,15 @@ export function normalize(state: AppState): AppState {
       // cycle owner opts in (설정 › 공유 범위), the partner sees only 우리의 주간.
       // Data saved before this setting existed never recorded that consent.
       shareCycleDetails: settings.shareCycleDetails ?? false,
+      // 써요 / 안 써요 / 나중에 — unset means not asked yet (N17).
+      ...(typeof usesLH === 'boolean' || usesLH === 'later' ? { usesLH } : {}),
     },
+    // personalLog, cycleNotes, restCycle, diary[].privateTo, lhTests[].slot and
+    // customTasks[].deadlineAlerts ride along in `...s`; sanitizeBackup checks them.
   }
 }
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 export function parseState(raw: string | null): AppState | null {
   if (!raw) return null
@@ -147,9 +165,27 @@ export function saveState(state: AppState | null): boolean {
   return true
 }
 
-/** Per-tab "whose phone is this" — lets two browser tabs act as two phones. */
+/**
+ * Whose "phone" this is: the tab's own choice (sessionStorage — two browser
+ * tabs act as two phones, ⇄ is a quick peek), else the device's answer to
+ * '이 폰은 누구 거예요?' (the same key in localStorage, written by the chooser
+ * after a restore — components/onboarding/deviceViewer.ts), else 'a'. The
+ * device answer is what survives closing a home-screen app (N15).
+ */
 export function loadViewer(): MemberId {
-  const v = safeSession()?.getItem(VIEWER_KEY)
+  let v: string | null = null
+  try {
+    v = safeSession()?.getItem(VIEWER_KEY) ?? null
+  } catch {
+    v = null
+  }
+  if (v !== 'a' && v !== 'b') {
+    try {
+      v = safeLocal()?.getItem(VIEWER_KEY) ?? null
+    } catch {
+      v = null
+    }
+  }
   return v === 'b' ? 'b' : 'a'
 }
 

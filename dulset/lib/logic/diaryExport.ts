@@ -8,6 +8,7 @@
 import { formatKo, isISODate } from '../dates'
 import type { Baby, DiaryEntry, ISODate, Member, MemberId, Pregnancy, Stage } from '../types'
 import { dayOfLife } from './baby'
+import { canSeeEntry, visibleEntries } from './personalLog'
 import { gestationalAge } from './pregnancy'
 
 /** Longest diary text (composer and edit sheet share it). */
@@ -177,11 +178,16 @@ export async function mapWithConcurrency<T, R>(
 export interface DiaryFilter {
   stage: Stage | 'all'
   author: MemberId | 'all'
+  /** Who is reading: the other member's '나만 보기' entries are left out (lib/logic/personalLog.ts). */
+  viewer?: MemberId
 }
 
 export function filterEntries(entries: DiaryEntry[], f: DiaryFilter): DiaryEntry[] {
   return entries.filter(
-    (e) => (f.stage === 'all' || e.stage === f.stage) && (f.author === 'all' || e.author === f.author),
+    (e) =>
+      (f.viewer === undefined || canSeeEntry(e, f.viewer)) &&
+      (f.stage === 'all' || e.stage === f.stage) &&
+      (f.author === 'all' || e.author === f.author),
   )
 }
 
@@ -224,6 +230,12 @@ export function isSafeImageDataURL(url: unknown): url is string {
 
 export interface DiaryExportInput {
   entries: DiaryEntry[]
+  /**
+   * Who is exporting: the other member's '나만 보기' entries never leave the
+   * phone in a file (lib/logic/personalLog.ts visibleEntries). Pass it from
+   * every export screen; a build without it exports everything it was given.
+   */
+  viewer?: MemberId
   members: readonly Member[]
   title: string
   /** photoId → data: URL. Missing ids are skipped with a short note. */
@@ -314,7 +326,7 @@ function renderEntry(e: DiaryEntry, input: DiaryExportInput, byId: Map<MemberId,
  */
 export function buildDiaryHtml(input: DiaryExportInput): string {
   const byId = new Map<MemberId, Member>(input.members.map((m) => [m.id, m]))
-  const entries = storyOrder(input.entries)
+  const entries = storyOrder(input.viewer === undefined ? input.entries : visibleEntries(input.entries, input.viewer))
   const title = input.title.trim() || '우리 이야기'
 
   const body: string[] = []

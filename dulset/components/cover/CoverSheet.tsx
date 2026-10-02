@@ -118,8 +118,8 @@ function CoverSheetBody({ onClose }: { onClose: () => void }) {
 
   // In the quiet weeks the row leaves out the ended pregnancy's entries (e.g. ultrasound photos).
   const album = useMemo(
-    () => albumGroups(view.quiet ? state.diary.filter((e) => e.stage !== 'pregnant') : state.diary).flatMap((g) => g.entries),
-    [state.diary, view.quiet],
+    () => albumGroups(view.quiet ? state.diary.filter((e) => e.stage !== 'pregnant') : state.diary, me.id).flatMap((g) => g.entries),
+    [state.diary, view.quiet, me.id],
   )
   const selectedEntry = choice?.kind === 'album' ? choice.entryId : null
 

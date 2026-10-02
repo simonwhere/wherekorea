@@ -62,6 +62,7 @@ export const NOT_ONE_APPOINTMENT: ReadonlySet<string> = new Set([
 /** Roadmap item → lib/content/programs id, for the "신청하러 가기" link. */
 export const ROADMAP_PROGRAMS: Record<string, string> = {
   'pre-health-check-support': 'fertility-check',
+  'pre-checkup-partner': 'fertility-check',
   'pre-folic': 'folic-acid',
   'pre-infertility-support': 'infertility',
   'p1-voucher': 'pregnancy-voucher',
@@ -313,8 +314,10 @@ const TEMPLATES: RoadmapTemplate[] = [
     kind: 'test',
     title: '임신 사전건강관리 검사 지원 신청',
     when: '임신 계획 3~6개월 전',
+    // kr-programs.json: the support counts per person ('부부 각각 나이 주기별'); whether one
+    // application covers both people is still to be confirmed (STATUS N18) — so "확인해요".
     detail:
-      '20~49세라면 결혼 여부와 상관없이 여성은 AMH·부인과 초음파 최대 13만 원, 남성은 정액검사 최대 5만 원을 나이 구간(29세 이하·30~34세·35~49세)마다 1회씩, 최대 3회 지원받아요(2026년 기준). 검사 전에 e보건소나 보건소에서 먼저 신청해야 하고, 먼저 검사한 뒤 청구하는 소급 지원은 안 돼요. 신청 후 3개월 안에 검사하고, 검사 후 1개월 안에 청구해요.',
+      '20~49세라면 결혼 여부와 상관없이 여성은 AMH·부인과 초음파 최대 13만 원, 남성은 정액검사 최대 5만 원을 나이 구간(29세 이하·30~34세·35~49세)마다 1회씩, 최대 3회 지원받아요(2026년 기준). 지원은 사람마다 따로 세요 — 각자 이름으로 신청하는지 보건소에 확인해요. 검사 전에 e보건소나 보건소에서 먼저 신청해야 하고, 먼저 검사한 뒤 청구하는 소급 지원은 안 돼요. 신청 후 3개월 안에 검사하고, 검사 후 1개월 안에 청구해요.',
     sources: [S.eHealth, S.easylawPregSupport, S.mohwPreconception],
   },
   {
@@ -335,8 +338,10 @@ const TEMPLATES: RoadmapTemplate[] = [
     kind: 'test',
     title: '임신 전 검사 (정액·감염병)',
     when: '임신 계획 3개월 전',
+    // kr-programs.json '신청과 환급 절차': referral → a participating clinic within 3 months →
+    // claim within 1 month with 청구서·영수증·세부내역서·통장사본.
     detail:
-      '정액검사는 보건소 임신 사전건강관리로 최대 5만 원까지 지원돼요(검사 전에 신청). 혈액·소변검사, 매독·HIV, B·C형 간염과 간 기능, 흉부 X선(결핵)도 함께 받아 두길 권해요.',
+      '정액검사는 보건소 임신 사전건강관리로 최대 5만 원까지 지원돼요(검사 전에 신청, 차액은 본인 부담). 검사의뢰서를 들고 사업에 참여하는 의료기관에서 받고, 검사 후 1개월 안에 청구서·영수증·세부내역서·통장사본으로 청구해요. 혈액·소변검사, 매독·HIV, B·C형 간염과 간 기능, 흉부 X선(결핵)도 함께 받아 두길 권해요.',
     sources: [S.eHealth, S.yaleobgy],
   },
   {

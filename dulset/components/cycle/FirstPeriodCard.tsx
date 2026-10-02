@@ -2,13 +2,18 @@
 
 import { useId, useState } from 'react'
 import SettingsLink from '@/components/cycle/SettingsLink'
+import { QuickDateChips } from '@/components/onboarding/parts'
 import { Button, Card, inputClass, useToast } from '@/components/ui'
 import { formatKo, isISODate } from '@/lib/dates'
 import type { FertilityView } from '@/lib/logic/calendarView'
 import { logPeriodStart } from '@/lib/logic/logs'
 import { useApp } from '@/lib/store'
 
-/** Empty state for the cycle owner: nothing logged yet — one date is enough to start predicting. */
+/**
+ * Empty state for the cycle owner: nothing logged yet — one date is enough to
+ * start predicting. The date comes first, with [오늘][어제][1주 전]… chips for
+ * "it was around mid-September" (N15).
+ */
 export default function FirstPeriodCard({ view }: { view: FertilityView }) {
   const { state, update, today, viewer } = useApp()
   const toast = useToast()
@@ -54,17 +59,18 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
           aria-describedby={error ? errorId : undefined}
           className={inputClass}
         />
+        <QuickDateChips today={today} value={date} onPick={setDate} label="생리 시작일 빠른 선택" />
         {error ? (
           <p id={errorId} className="text-xs text-period">
             {error}
           </p>
         ) : null}
         <Button type="submit" size="lg" full disabled={!valid}>
-          마지막 생리 시작일 기록하기
+          {valid ? `${formatKo(date, { weekday: false })} 시작으로 기록하기` : '마지막 생리 시작일 기록하기'}
         </Button>
       </form>
       <p className="mt-3 text-xs leading-relaxed text-ink-3">
-        두 번째 기록부터는 실제 주기로 계산해요. 그 전까지는 설정한 주기 {state.cycle.cycleLength}일을 써요.{' '}
+        쓰던 앱의 시작일 몇 개를 더 옮기면 그 주기로 계산해요. 그 전까지는 설정한 주기 {state.cycle.cycleLength}일을 써요.{' '}
         <SettingsLink>주기 길이 바꾸기</SettingsLink>
       </p>
     </Card>

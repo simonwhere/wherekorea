@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createInitialState } from '@/lib/initial'
-import { CORRUPT_KEY, STORAGE_KEY, loadState, saveState } from '@/lib/storage'
+import { CORRUPT_KEY, STORAGE_KEY, VIEWER_KEY, loadState, loadViewer, normalize, saveState, saveViewer } from '@/lib/storage'
 
 /** A localStorage stand-in; `failing` makes every write throw like a full quota does. */
 function fakeStorage(failing = false) {
@@ -65,5 +65,72 @@ describe('storage: the one corrupt copy', () => {
     vi.stubGlobal('window', undefined)
     expect(saveState(fresh())).toBe(false)
     expect(loadState()).toBeNull()
+  })
+})
+
+describe('viewer: the device remembers whose phone it is (N15)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('reads the tab’s own choice first, then the device’s answer (localStorage), else a', () => {
+    const ls = fakeStorage()
+    const ss = fakeStorage()
+    vi.stubGlobal('window', { localStorage: ls, sessionStorage: ss })
+    expect(loadViewer()).toBe('a')
+    ls.setItem(VIEWER_KEY, 'b') // '이 폰은 누구 거예요?' → 민수 (components/onboarding/deviceViewer.ts writes this key)
+    expect(loadViewer()).toBe('b')
+    saveViewer('a') // ⇄ in this tab is a quick peek: the tab wins while it lives…
+    expect(loadViewer()).toBe('a')
+    expect(ls.getItem(VIEWER_KEY)).toBe('b') // …and never overwrites the device's answer
+    ss.setItem(VIEWER_KEY, 'x')
+    expect(loadViewer()).toBe('b') // junk in the tab → the device answer
+    ss.removeItem(VIEWER_KEY)
+    ls.setItem(VIEWER_KEY, 'zzz')
+    expect(loadViewer()).toBe('a')
+  })
+
+  it('never throws when storage is blocked', () => {
+    vi.stubGlobal('window', {
+      get localStorage(): Storage {
+        throw new Error('SecurityError')
+      },
+      get sessionStorage(): Storage {
+        throw new Error('SecurityError')
+      },
+    })
+    expect(loadViewer()).toBe('a')
+  })
+})
+
+describe('normalize: fields added for Now 2 ride along', () => {
+  it('keeps longCycles, usesLH, lhTestTime, the personal log, cycle notes and 나만 보기 — and drops a bad lhTestTime / hideCover', () => {
+    const s = fresh()
+    const saved = {
+      ...s,
+      cycle: { ...s.cycle, longCycles: true },
+      settings: { ...s.settings, usesLH: 'later' as const, personal: { a: { hideCover: true, lhTestTime: '21:00' }, b: { lhTestTime: '8pm', discreet: true } } },
+      personalLog: { b: { '2026-09-01': { feel: 'tired' as const } } },
+      cycleNotes: { '2026-08-20': { stillWaiting: '2026-09-01' } },
+      diary: [{ id: 'e1', date: '2026-09-01', author: 'b' as const, stage: 'preparing' as const, text: '나만', createdAt: '2026-09-01T20:00:00+09:00', privateTo: 'b' as const }],
+    }
+    const out = normalize(JSON.parse(JSON.stringify(saved)))
+    expect(out.cycle).toEqual({ cycleLength: 28, periodLength: 5, longCycles: true })
+    expect(out.settings.usesLH).toBe('later')
+    expect(out.settings.personal).toEqual({ a: { hideCover: true, lhTestTime: '21:00' }, b: { discreet: true } })
+    expect(out.personalLog).toEqual(saved.personalLog)
+    expect(out.cycleNotes).toEqual(saved.cycleNotes)
+    expect(out.diary[0]!.privateTo).toBe('b')
+    // An unknown usesLH is treated as "not asked".
+    expect('usesLH' in normalize({ ...s, settings: { ...s.settings, usesLH: 'maybe' as never } }).settings).toBe(false)
+    expect('longCycles' in normalize({ ...s, cycle: { ...s.cycle, longCycles: 'yes' as never } }).cycle).toBe(false)
+  })
+
+  it('loads an older save without the fields exactly as before', () => {
+    const s = fresh()
+    const out = normalize(JSON.parse(JSON.stringify(s)))
+    expect(out).toEqual(JSON.parse(JSON.stringify(s)))
+    expect('usesLH' in out.settings).toBe(false)
+    expect('longCycles' in out.cycle).toBe(false)
+    expect('personalLog' in out).toBe(false)
+    expect('cycleNotes' in out).toBe(false)
   })
 })

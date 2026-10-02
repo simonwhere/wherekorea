@@ -4,7 +4,7 @@
 // only: no contraception, no diagnosis, no "success-rate" promises.
 
 import { doctorThresholdMonths } from '../logic/notifications'
-import type { LHResult, PregnancyTestResult } from '../types'
+import type { LHResult, PersonalFeel, PregnancyTestResult } from '../types'
 
 export interface Source {
   name: string
@@ -267,4 +267,44 @@ export function ptestAfterCopy(
     title: '남겨 뒀어요',
     body: ['생리 예정일 전이었다면 2~3일 뒤 다시 해 봐도 좋아요.', '생리가 시작되면 생리로 기록해 주세요.'],
   }
+}
+
+// ── 기다리는 주: 오늘 컨디션 (N11) ──────────────────────────
+// Her own record of how the day felt (lib/logic/personalLog.ts — 본인만 보기,
+// never the partner's screen). Plain words, no reading of what they mean:
+// '살짝 비쳐요' stays descriptive — no 착상혈, no "it could mean…".
+
+/** The six chips of the 오늘 컨디션 panel, in this order. */
+export const FEEL_CHIPS: ReadonlyArray<{ feel: PersonalFeel; label: string }> = [
+  { feel: 'normal', label: '평소 같아요' },
+  { feel: 'tired', label: '피곤해요' },
+  { feel: 'sensitive', label: '예민해요' },
+  { feel: 'breast', label: '가슴이 아파요' },
+  { feel: 'cramps', label: '배가 살짝 아파요' },
+  { feel: 'spotting', label: '살짝 비쳐요' },
+]
+
+/** Under the chips: what the record is for, and who sees it. */
+export const FEEL_PANEL_NOTE = '나만 볼 수 있어요. 둘셋은 이 기록으로 예측하거나 해석하지 않아요.'
+
+/**
+ * One quiet line a day for the 기다리는 주 card. Nothing here is a medical
+ * claim — docs/research has no evidence that ties a day after ovulation to a
+ * symptom or an action, so the card rotates self-care only (and says
+ * '너무 이르면 음성일 수 있어요', SOURCES.earlyTest, next to the test action).
+ */
+export const WAITING_WEEK_LINES: readonly string[] = [
+  '오늘은 조금 일찍 쉬어요.',
+  '따뜻한 차 한 잔 어때요?',
+  '가볍게 걸어 볼까요?',
+  '평소처럼 보내는 게 제일이에요.',
+  '몸의 변화는 적어 두기만 해요. 해석은 하지 않아도 돼요.',
+  '좋아하는 음악 한 곡 들어요.',
+  '물 한 잔 더 마셔요.',
+]
+
+/** The line for day `n` of the wait (n ≥ 0 — rotates through WAITING_WEEK_LINES). */
+export function waitingWeekLine(n: number): string {
+  const i = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
+  return WAITING_WEEK_LINES[i % WAITING_WEEK_LINES.length]!
 }

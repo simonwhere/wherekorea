@@ -7,7 +7,7 @@
 // saving) must not re-render the broken screen and flicker back here.
 
 import { Component, useState } from 'react'
-import RestoreBackup from '@/components/RestoreBackup'
+import RestoreFullBackup from '@/components/system/RestoreFullBackup'
 import { Button } from '@/components/ui'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
@@ -67,7 +67,7 @@ function RecoveryScreen({ onRetry }: { onRetry: () => void }) {
             지금 기록을 파일로 받기
           </Button>
         ) : null}
-        <RestoreBackup label="백업 파일로 복원하기" variant="primary" onRestored={onRetry} />
+        <RestoreFullBackup label="백업 파일로 복원하기 (.zip · .json)" variant="primary" onRestored={onRetry} />
         <Button full variant="ghost" onClick={onRetry}>
           다시 시도하기
         </Button>

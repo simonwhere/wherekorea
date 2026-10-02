@@ -1,6 +1,7 @@
 'use client'
 
 import { BigAction, dayWord, type SaveLog } from '@/components/log/parts'
+import { QuickDateChips } from '@/components/onboarding/parts'
 import { addDays, diffDays, formatKo } from '@/lib/dates'
 import { dayActions, periodCovering } from '@/lib/logic/calendarView'
 import { logPeriodEnd, logPeriodStart, movePeriodStart, removePeriodLog } from '@/lib/logic/logs'
@@ -61,6 +62,26 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
   const isToday = date === today
   const yesterday = addDays(date, -1)
   const offerYesterday = isToday && !periodCovering(state.periods, yesterday, len)
+
+  // Nothing logged yet: the first record is the LAST start, which is often not
+  // today — the chosen day first, then [어제][1주 전][2주 전][3주 전] (N15).
+  if (state.periods.length === 0) {
+    const first = (d: ISODate) =>
+      save((s) => logPeriodStart(s, d, viewer, today), { kind: 'period' }, `${dayWord(d, today)} 시작으로 남겼어요. 이제부터 예상을 보여 드릴게요`)
+    return (
+      <div className="space-y-3">
+        <p className="text-[13px] leading-relaxed text-ink-2">
+          첫 기록이에요. 마지막 생리가 시작된 날 하나면 돼요 — 대략적인 날이어도 괜찮아요.
+        </p>
+        <BigAction label={isToday ? '오늘 시작' : `${day} 시작`} hint="마지막 생리 시작일로 남겨요" onClick={() => first(date)} />
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-ink-2">또는</p>
+          <QuickDateChips today={today} onPick={first} label="마지막 생리 시작일 빠른 선택" skip={[diffDays(date, today)]} />
+        </div>
+        <p className="text-[11px] leading-relaxed text-ink-3">다른 날은 위의 날짜에서 고르고, 쓰던 앱의 이전 시작일은 주기 탭에서 더 넣을 수 있어요.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">

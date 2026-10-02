@@ -207,7 +207,8 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
           <button
             type="button"
             onClick={openSheet}
-            className="absolute bottom-4 left-1/2 inline-flex h-[42px] -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface pl-3.5 pr-[18px] text-sm font-bold text-ink shadow-[0_4px_16px_-4px_rgb(var(--brand)/.28)] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:shadow-[0_4px_16px_-4px_rgb(0_0_0/.5)]"
+            // In the 56px strip (useFoldFit COVER_STRIP) the button sits 7px up so it still fits whole.
+            className="absolute bottom-4 left-1/2 inline-flex h-[42px] -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-surface pl-3.5 pr-[18px] text-sm font-bold text-ink shadow-[0_4px_16px_-4px_rgb(var(--brand)/.28)] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand dark:shadow-[0_4px_16px_-4px_rgb(0_0_0/.5)] [[data-cover-strip]_&]:bottom-[7px]"
           >
             <Icon name="plus" className="h-[18px] w-[18px]" strokeWidth={2.2} />
             우리 사진 걸기

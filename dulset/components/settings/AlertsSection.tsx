@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useId, useState } from 'react'
-import { Button, Card, Toggle, cx, useToast } from '@/components/ui'
+import { Button, Card, Toggle, cx, inputClass, useToast } from '@/components/ui'
 import { NICE_GUIDANCE } from '@/lib/content/fertility'
 import { cycleLens, cyclePause, icsAvailability, windowRangeShort } from '@/lib/logic/calendarView'
 import { upcomingWindows } from '@/lib/logic/cycle'
@@ -17,9 +17,22 @@ import {
 } from '@/lib/logic/settings'
 import { useApp } from '@/lib/store'
 import type { AlertStyle } from '@/lib/types'
-import { Pill, RadioCard, SettingsSection } from './bits'
-import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor, setPersonalPref, settingsFor } from '@/lib/logic/prefs'
+import { Pill, RadioCard, Segmented, SettingsSection } from './bits'
+import {
+  USES_LH_OPTIONS,
+  canLogCycle,
+  canSeeCycleDetails,
+  discreetFor,
+  lhTestTimeFor,
+  lowPressureFor,
+  setLHTestTime,
+  setPersonalPref,
+  setUsesLH,
+  settingsFor,
+  type UsesLH,
+} from '@/lib/logic/prefs'
 import { fertilityVoice } from '@/lib/logic/today'
+import { openLHHowTo } from '@/lib/logLauncher'
 
 /**
  * Does this viewer read 가임기 / 배란 wording? Only with their own explicit
@@ -42,6 +55,7 @@ export default function AlertsSection() {
   const { state, update, viewer, me, partner } = useApp()
   const preparing = state.stage === 'preparing'
   const low = lowPressureFor(state.settings, viewer)
+  const explicit = useExplicitWords()
   return (
     <SettingsSection id="alerts" title="내 알림" sub={`${me.name}님 폰에만 적용돼요 · ${partner.name}님은 각자 정해요`}>
       <div className="grid gap-2">
@@ -71,8 +85,79 @@ export default function AlertsSection() {
         {/* The cycle owner's own dates, so only the owner exports them (as on the 주기 tab).
             Low-pressure mode makes no date alarms, so the export isn't offered at all. */}
         {preparing && !low && canLogCycle(state, viewer) ? <IcsCard /> : null}
+        {/* LH strips are the owner's tool, named only where she reads 가임기 words herself. */}
+        {preparing && canLogCycle(state, viewer) && explicit ? <LHStripsCard /> : null}
       </div>
     </SettingsSection>
+  )
+}
+
+// ── 배란테스트기 (LH) ────────────────────────────────────────
+
+const USES_LH_CHOICES = USES_LH_OPTIONS.map((o) => ({ value: String(o.value), label: o.label }))
+
+function usesLHFrom(value: string): UsesLH {
+  return value === 'true' ? true : value === 'false' ? false : 'later'
+}
+
+/**
+ * settings.usesLH — [써요][안 써요][나중에], the same answer the log sheet asks
+ * for at the first LH moment (N17). '안 써요' takes the LH prompts off the home
+ * (prefs.lhPrompting); the usual test time is a per-person note for now.
+ */
+function LHStripsCard() {
+  const { state, update, viewer } = useApp()
+  const toast = useToast()
+  const uses = state.settings.usesLH
+  const time = lhTestTimeFor(state.settings, viewer) ?? ''
+  const timeId = useId()
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-bold text-ink">
+          <span aria-hidden>🧪 </span>배란테스트기(LH)
+        </h3>
+        <button
+          type="button"
+          onClick={openLHHowTo}
+          className="-mr-2 -mt-2 min-h-[44px] shrink-0 rounded-lg px-2 text-xs font-semibold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          어떻게 해요?
+        </button>
+      </div>
+      <p className="mt-1 text-xs leading-relaxed text-ink-2">
+        ‘안 써요’면 홈에서 LH 테스트 권유가 사라지고 달력 기준으로만 안내해요. 기록은 언제든 할 수 있어요.
+      </p>
+      <div className="mt-3">
+        <Segmented
+          legend="써요?"
+          options={USES_LH_CHOICES}
+          value={uses === undefined ? '' : String(uses)}
+          onChange={(v) => {
+            const next = usesLHFrom(v)
+            update((s) => setUsesLH(s, next, viewer))
+            toast.show(next === true ? '배란테스트기를 써요' : next === false ? 'LH 테스트 권유를 쉬어요' : '다음 주기에 다시 물어볼게요')
+          }}
+        />
+      </div>
+      {uses === true ? (
+        <div className="mt-3 flex items-center gap-3">
+          <label htmlFor={timeId} className="shrink-0 text-xs font-semibold text-ink-2">
+            보통 검사하는 시각 <span className="font-normal text-ink-3">(내 폰만)</span>
+          </label>
+          <input
+            id={timeId}
+            type="time"
+            value={time}
+            onChange={(e) => update((s) => setLHTestTime(s, viewer, e.target.value || undefined))}
+            className={`${inputClass} w-32`}
+          />
+        </div>
+      ) : null}
+      {uses === true ? (
+        <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">지금은 메모만 해 둬요. 시각 알림은 설치형 앱에서 켤 예정이에요.</p>
+      ) : null}
+    </Card>
   )
 }
 

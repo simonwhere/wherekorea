@@ -1,109 +1,32 @@
 'use client'
 
-// "기록 지키기" rows for 더 보기: add the app to the home screen (Safari keeps a
-// tab's storage only 7 days without a visit; the home-screen app is exempt and
-// can receive notifications — WebKit, review [42]) and a weekly backup nudge.
-// Mounting also asks once for persistent storage (lib/persist.requestPersist).
+// "기록 지키기" rows for the pregnant / parenting home: add the app to the home
+// screen (Safari keeps a tab's storage only 7 days without a visit; the
+// home-screen app is exempt — WebKit, review [42]) and a weekly backup nudge.
+// The preparing home has the compact BackupBanner under 우리 한 줄 instead
+// (N16), so this renders nothing there. Device state: useDeviceRecord.
 
-import { useEffect, useState } from 'react'
-import {
-  BACKED_UP_EVENT,
-  INSTALL_STEPS,
-  LAST_BACKUP_KEY,
-  backupNudge,
-  currentInstallPlatform,
-  isStandalone,
-  lastBackupAt,
-  requestPersist,
-  type InstallPlatform,
-} from '@/lib/persist'
+import { INSTALL_STEPS, backupNudge } from '@/lib/persist'
 import { goToSettings } from '@/components/settings/anchors'
 import { useApp } from '@/lib/store'
-
-/** Chrome's install prompt (Android): kept so a button can open it later. */
-interface InstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice?: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-const PROMPT_CHANGED = 'dulset:install-prompt'
-let deferredPrompt: InstallPromptEvent | null = null
-
-// Registered when the app loads (this module is part of the home screen), since
-// the browser fires beforeinstallprompt once, early. The browser's own install
-// UI is left alone (no preventDefault); this only adds a button when possible.
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    deferredPrompt = e as InstallPromptEvent
-    window.dispatchEvent(new Event(PROMPT_CHANGED))
-  })
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null
-    window.dispatchEvent(new Event(PROMPT_CHANGED))
-  })
-}
-
-interface DeviceInfo {
-  installed: boolean
-  platform: InstallPlatform
-  lastBackup: string | null
-  canPrompt: boolean
-}
-
-function readDevice(): DeviceInfo {
-  return {
-    installed: isStandalone(),
-    platform: currentInstallPlatform(),
-    lastBackup: lastBackupAt(),
-    canPrompt: deferredPrompt !== null,
-  }
-}
+import { useDeviceRecord } from './useDeviceRecord'
 
 const rowAction =
   'mt-2 inline-flex min-h-[44px] items-center rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-brand-ink ' +
   'transition-colors hover:bg-brand-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
-/** Go to 설정 › 데이터와 개인정보 (#data, 백업 파일 내보내기). */
+/** Go to 설정 › 데이터와 개인정보 (#data, 전체 백업). */
 const goToBackup = () => goToSettings('data')
 
 export default function InstallBackupCard() {
   const { state, today } = useApp()
-  // Read after mount: display mode, storage and the install prompt are browser-only.
-  const [device, setDevice] = useState<DeviceInfo | null>(null)
+  const { device, install } = useDeviceRecord()
 
-  useEffect(() => {
-    void requestPersist() // once per page load, however often this mounts
-    const refresh = () => setDevice(readDevice())
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === LAST_BACKUP_KEY || e.key === null) refresh()
-    }
-    refresh()
-    window.addEventListener(BACKED_UP_EVENT, refresh)
-    window.addEventListener(PROMPT_CHANGED, refresh)
-    window.addEventListener('storage', onStorage)
-    return () => {
-      window.removeEventListener(BACKED_UP_EVENT, refresh)
-      window.removeEventListener(PROMPT_CHANGED, refresh)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [])
-
+  // Preparing: BackupBanner (components/tabs/TodayTab.tsx) carries this now.
+  if (state.stage === 'preparing') return null
   if (!device) return null
   const nudge = backupNudge(device.lastBackup, state.createdAt, today)
   if (device.installed && !nudge) return null
-
-  const install = async () => {
-    const e = deferredPrompt
-    if (!e) return
-    try {
-      await e.prompt()
-      await e.userChoice
-    } catch {
-      /* already shown or not allowed — the steps below still apply */
-    }
-    deferredPrompt = null
-    setDevice(readDevice())
-  }
 
   return (
     <section aria-label="기록 지키기" className="space-y-3">
@@ -119,7 +42,7 @@ export default function InstallBackupCard() {
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-ink-3">{INSTALL_STEPS[device.platform]}</p>
             {device.canPrompt ? (
-              <button type="button" className={rowAction} onClick={install}>
+              <button type="button" className={rowAction} onClick={() => void install()}>
                 홈 화면에 추가하기
               </button>
             ) : device.platform === 'inapp' && !nudge ? (

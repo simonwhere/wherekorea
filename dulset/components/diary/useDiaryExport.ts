@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useToast } from '@/components/ui'
 import { buildDiaryHtml, isSafeImageDataURL, mapWithConcurrency } from '@/lib/logic/diaryExport'
 import { downloadText } from '@/lib/logic/ics'
+import { visibleEntries } from '@/lib/logic/personalLog'
 import { getPhotoDataURL } from '@/lib/photos'
 import { useApp } from '@/lib/store'
 
@@ -18,12 +19,14 @@ const PHOTO_READS = 4
  * standalone HTML file. Always free — the record is the couple's, not ours.
  */
 export function useDiaryExport() {
-  const { state, today } = useApp()
+  const { state, today, me } = useApp()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
-  const count = state.diary.length
-  const photoCount = state.diary.filter((e) => e.photoId).length
+  // The export is the reader's view: the other member's '나만 보기' entries stay out.
+  const visible = visibleEntries(state.diary, me.id)
+  const count = visible.length
+  const photoCount = visible.filter((e) => e.photoId).length
 
   async function run() {
     if (busy || !count) return
@@ -31,7 +34,8 @@ export function useDiaryExport() {
     const snapshot = state
     setBusy(true)
     try {
-      const ids = Array.from(new Set(snapshot.diary.flatMap((e) => (e.photoId ? [e.photoId] : []))))
+      const entries = visibleEntries(snapshot.diary, me.id)
+      const ids = Array.from(new Set(entries.flatMap((e) => (e.photoId ? [e.photoId] : []))))
       if (ids.length) setProgress({ done: 0, total: ids.length })
       const loaded = await mapWithConcurrency(
         ids,
@@ -46,7 +50,8 @@ export function useDiaryExport() {
         else missing++
       }
       const html = buildDiaryHtml({
-        entries: snapshot.diary,
+        entries,
+        viewer: me.id,
         members: snapshot.couple.members,
         title: EXPORT_TITLE,
         photos,

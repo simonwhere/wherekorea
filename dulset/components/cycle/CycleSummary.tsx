@@ -21,7 +21,7 @@ export default function CycleSummary({
   onLog?: () => void
   /** Owner only: "이번 주기는 쉬어 갈래요". */
   onRest?: () => void
-  /** Owner only: end the rest cycle. */
+  /** Owner only: end the rest cycle (or, with a clinic pause, 병원 준비 마치기). */
   onResume?: () => void
 }) {
   const { status, headline, rows, cycleDay, stats } = summary
@@ -57,9 +57,9 @@ export default function CycleSummary({
 
         {onLog ? (
           <div className="mt-4 flex flex-wrap gap-2">
-            {pause === 'rest' && onResume ? (
+            {(pause === 'rest' || pause === 'clinic') && onResume ? (
               <Button variant="secondary" onClick={onResume}>
-                다시 켜기
+                {pause === 'clinic' ? '병원 준비 마치기' : '다시 켜기'}
               </Button>
             ) : null}
             {pause === 'positive' ? (

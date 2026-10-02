@@ -8,9 +8,11 @@ import { uid } from '../id'
 import { MEMBER_IDS, type AppNotification, type AppState, type ISODate, type MemberId, type NotificationKind } from '../types'
 import { anniversaryNotices } from './anniversary'
 import { koreanDays } from './baby'
-import { LONG_LATE_DAYS, fertilityStatus, upcomingWindows, type CycleWindow } from './cycle'
+import { isClinicMode } from './clinic'
+import { LONG_LATE_DAYS, fertilityStatus, sortedStarts, upcomingWindows, type CycleWindow } from './cycle'
+import { AMENORRHEA_NOTICE_DAYS, LATE_TEST_DAYS, PERIOD_DUE_COPY } from './periodDue'
 import { gestationalAge, recentlyEnded } from './pregnancy'
-import { canSeeCycleDetails, lowPressureFor } from './prefs'
+import { canSeeCycleDetails, lhPrompting, lowPressureFor } from './prefs'
 import { activePositivePending, activeRest } from './ttc'
 
 export interface Notice {
@@ -113,6 +115,18 @@ export function deliveredUnderOldKey(
   })
 }
 
+/**
+ * The two 임신 전 검사 rows (lib/content/roadmap; partnerTrack FERTILITY_TEST_ID /
+ * FERTILITY_CARRIER_TEST_ID). Both ticked, the "N개월이 지났으면 두 사람 모두
+ * 검사를" notice and card have been answered (review ④) — the 🩺 'months'
+ * reason is dropped (lib/logic/today.ts doctorAdvice reads the same rule).
+ */
+export const CHECKUP_ITEM_IDS: readonly string[] = ['pre-checkup-partner', 'pre-checkup-carrier']
+
+export function checkupsDone(state: Pick<AppState, 'planDone'>): boolean {
+  return CHECKUP_ITEM_IDS.every((id) => !!state.planDone[id])
+}
+
 /** 'doctor:<ttc start>' (toBoth appends ':<member>'). */
 export function doctorKey(ttcStart: ISODate): string {
   return `doctor:${ttcStart}`
@@ -126,6 +140,11 @@ export function doctorTold(state: Pick<AppState, 'notifications'>, ttcStart: ISO
     const m = n.key ? DOCTOR_KEY.exec(n.key) : null
     return !!m && m[1] === ttcStart
   })
+}
+
+/** 'amenorrhea:<cycle start>:<week>:<owner>' — the quiet 🩺 notice after '아직 안 왔어요' (one per week). */
+export function amenorrheaKey(cycleStart: ISODate, week: number, owner: MemberId): string {
+  return `amenorrhea:${cycleStart}:${week}:${owner}`
 }
 
 /** The soft "우리의 주간" heads-up — no health words (설정's preview shows the same). */
@@ -148,19 +167,50 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
 
   if (state.stage === 'preparing') {
     const status = fertilityStatus(state, today)
+    // The notices about the expected period are keyed by the cycle (its first
+    // day), so each goes out once per cycle however the range moves.
+    const cycleStart = [...sortedStarts(state.periods)].reverse().find((d) => d <= today)
     // A positive test awaiting the clinic already answers "late?" — no test prompt.
     // A rest cycle pauses every date (ttcFlow.ttcPhase shows 쉬는 주기 even on
     // late days), so neither the late nor the period-due notice goes out.
     const pending = activePositivePending(state)
     const resting = !!activeRest(state)
-    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending && !resting) {
+    if (status.kind === 'late' && status.daysLate <= LONG_LATE_DAYS && !pending && !resting && cycleStart) {
+      // The day after the expected range: log it if it started. The pregnancy
+      // test comes up only LATE_TEST_DAYS days past the range (periodDue.ts).
       out.push({
-        key: `late:${status.expected}:${owner.id}`,
+        key: `late:${cycleStart}:${owner.id}`,
         to: owner.id,
         kind: 'period-due',
-        title: '🗓️ 생리 예정일이 지났어요',
-        body: `예정일(${formatKo(status.expected)})이 ${status.daysLate}일 지났어요. 생리가 시작됐다면 기록해 주세요. 아니라면 임신 테스트를 해 볼 때예요.`,
+        title: PERIOD_DUE_COPY.late.title,
+        body: PERIOD_DUE_COPY.late.body(status.due),
       })
+      if (status.daysLate >= LATE_TEST_DAYS) {
+        out.push({
+          key: `late-test:${cycleStart}:${owner.id}`,
+          to: owner.id,
+          kind: 'period-due',
+          title: PERIOD_DUE_COPY.lateTest.title,
+          body: PERIOD_DUE_COPY.lateTest.body(status.due, status.daysLate),
+        })
+      }
+    }
+    // '아직 안 왔어요' (15 days or more past the range, no positive test awaiting
+    // the clinic): a quiet 🩺 line to the owner alone, once a week from her
+    // answer — never to the partner (it would give her period away), never
+    // while a rest / clinic cycle or a waiting positive test pauses the dates.
+    const waitingSince = cycleStart ? state.cycleNotes?.[cycleStart]?.stillWaiting : undefined
+    if (status.kind === 'late' && status.daysLate > LONG_LATE_DAYS && waitingSince && !pending && !resting && cycleStart) {
+      const week = Math.floor(diffDays(waitingSince, today) / AMENORRHEA_NOTICE_DAYS)
+      if (week >= 1) {
+        out.push({
+          key: amenorrheaKey(cycleStart, week, owner.id),
+          to: owner.id,
+          kind: 'doctor',
+          title: PERIOD_DUE_COPY.stillWaiting.notice.title,
+          body: PERIOD_DUE_COPY.stillWaiting.notice.body,
+        })
+      }
     }
     // Rest cycles and a positive test awaiting the clinic send no fertile-day alerts
     // (activeRest / activePositivePending: a period logged since settles both).
@@ -182,6 +232,8 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
           // would give away an LH result). Same rule as the home and calendar
           // (ttcFlow.homeVoice, calendarView.cycleLens).
           const soft = style === 'soft' || !canSeeCycleDetails(state, m.id)
+          // Someone who said '안 써요' to LH strips (prefs.lhPrompting) is not told to use them.
+          const lh = lhPrompting(state)
           // Heads-up the day before the window, and on any day inside it — once
           // per cycle (the key is the cycle's first day, so an LH-shifted window
           // in the same cycle is not announced again).
@@ -196,12 +248,17 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
               title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
               body: soft
                 ? softFertileBody(m.id === owner.id)
-                : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`,
+                : w.confidence === 'low'
+                  ? // Settings only, one or two cycles, or irregular: a wide calendar range, no peak days.
+                    `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지 무렵이 예상 범위예요 (넓음 · 달력 기준).${lh ? ' LH 배란테스트로 확인해 보면 좋아요.' : ''}`
+                  : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. ${lh ? '예상치라 LH 배란테스트로 확인하면 더 정확해요.' : '달력 기준 예상이에요.'}`,
             })
           }
           // Explicit style only: soft style already got its one gentle nudge above.
+          // No 🌟 with low confidence — the calendar alone can't name the best days.
           if (
             !soft &&
+            w.confidence !== 'low' &&
             isBetween(today, w.peakStart, w.peakEnd) &&
             !deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
           ) {
@@ -219,20 +276,28 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     // While a positive test waits for the clinic, "tomorrow is your period" and
     // "time to see a fertility doctor" are the wrong messages; they wait until
     // a period settles it (then still apply) or the pregnancy is confirmed.
-    if (status.kind === 'after-fertile' && status.daysUntilPeriod === 1 && !pending && !resting) {
+    // The heads-up goes out the day before the expected RANGE starts (its first day).
+    if (
+      status.kind === 'after-fertile' &&
+      today === addDays(status.due.from, -1) &&
+      !pending &&
+      !resting &&
+      cycleStart
+    ) {
       out.push({
-        key: `period-due:${status.nextPeriod}:${owner.id}`,
+        key: `period-due:${cycleStart}:${owner.id}`,
         to: owner.id,
         kind: 'period-due',
-        title: '🗓️ 내일이 생리 예정일이에요',
-        body: '시작하면 달력에 기록해 주세요. 다음 예측이 더 정확해져요.',
+        title: PERIOD_DUE_COPY.dueTomorrow.title,
+        body: PERIOD_DUE_COPY.dueTomorrow.body(status.due),
       })
     }
 
     // Counted from the later of ttcStart and an ended pregnancy, and quiet for a
-    // while after a pregnancy ended (same rules as the home DoctorCard).
+    // while after a pregnancy ended (same rules as the home DoctorCard). A couple
+    // already preparing with a clinic (N13) is not told to see one.
     const ttcStart = ttcClockStart(state)
-    if (ttcStart && !recentlyEnded(state, today) && !pending) {
+    if (ttcStart && !recentlyEnded(state, today) && !pending && !isClinicMode(state)) {
       const ownerAge = ageFromBirthYear(owner.birthYear, today)
       const threshold = doctorThresholdMonths(ownerAge)
       const months = monthsBetween(ttcStart, today)
@@ -242,7 +307,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       // still count (doctorTold).
       if (doctorTold(state, ttcStart)) {
         /* already told */
-      } else if (threshold > 0 && months >= threshold) {
+      } else if (threshold > 0 && months >= threshold && !checkupsDone(state)) {
         out.push(
           ...toBoth({
             key: doctorKey(ttcStart),

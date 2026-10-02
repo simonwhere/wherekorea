@@ -3,6 +3,7 @@
 import { Card, SectionTitle } from '@/components/ui'
 import { GUIDE_CHECKED_AT, doctorAgeLine, guideSections, guideSources } from '@/lib/content/fertility'
 import { formatKo } from '@/lib/dates'
+import { openLHHowTo } from '@/lib/logLauncher'
 import type { FertilityView } from '@/lib/logic/calendarView'
 
 export default function FertilityGuide({
@@ -60,12 +61,28 @@ export default function FertilityGuide({
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-[11px] text-ink-3">
-                    출처:{' '}
+                  {/* The one-page how-to (LHHowTo, N17): start day, time of day, reading, where to buy. */}
+                  {s.id === 'lh' ? (
+                    <button
+                      type="button"
+                      onClick={openLHHowTo}
+                      className="mt-1 inline-flex min-h-[44px] items-center gap-0.5 text-[13px] font-bold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      어떻게 해요? <span aria-hidden>→</span>
+                    </button>
+                  ) : null}
+                  {/* Each source is a 44px-tall link in its own row of the wrap (the same list, in full, sits under 근거 보기). */}
+                  <p className="-mb-2 mt-1 flex flex-wrap items-center gap-x-1 text-[11px] text-ink-3">
+                    <span className="mr-1">출처:</span>
                     {s.sources.map((src, i) => (
-                      <span key={src.url}>
-                        {i > 0 ? ', ' : ''}
-                        <a href={src.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                      <span key={src.url} className="inline-flex items-center">
+                        {i > 0 ? <span aria-hidden>, </span> : null}
+                        <a
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-[44px] items-center underline underline-offset-2"
+                        >
                           {src.name}
                         </a>
                       </span>
@@ -83,14 +100,15 @@ export default function FertilityGuide({
                   ⌄
                 </span>
               </summary>
-              <ol className="space-y-2 px-4 pb-4">
+              <ol className="px-4 pb-4">
                 {sources.map((src) => (
                   <li key={src.url} className="text-xs leading-relaxed">
+                    {/* 44px tall rows: the link is the whole line, the note sits beside it. */}
                     <a
                       href={src.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-brand-ink underline underline-offset-2"
+                      className="inline-flex min-h-[44px] items-center font-medium text-brand-ink underline underline-offset-2"
                     >
                       {src.name}
                     </a>

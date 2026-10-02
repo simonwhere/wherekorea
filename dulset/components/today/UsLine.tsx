@@ -7,8 +7,9 @@ import type { TabKey } from '@/components/AppShell'
 import { cx, useToast } from '@/components/ui'
 import type { MonthlyTask } from '@/lib/logic/partnerTrack'
 import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
-import { pendingSignal } from '@/lib/logic/signals'
+import { pendingSignal, signalIdOf } from '@/lib/logic/signals'
 import { stampOn } from '@/lib/logic/today'
+import { PERIOD_PARTNER_TIP } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import { PendingSignal } from '@/components/signals/SignalsCard'
 import { dailyProgress, nudgeTarget } from './model'
@@ -40,6 +41,8 @@ export default function UsLine({
   const left = Math.max(0, NUDGES_PER_DAY - nudgesSentToday(state, me.id, today))
   const canNudge = !!target && left > 0
   const pending = pendingSignal(state, me.id, today)
+  // '이번 달은 아니었어요' is the month's hardest line: what to say (and not) goes with the reply.
+  const notThisMonth = !!pending && signalIdOf(pending) === 'not-this-month'
 
   const nudge = () => {
     if (!canNudge) return
@@ -104,6 +107,11 @@ export default function UsLine({
         {pending ? (
           <div className="mt-3 border-t border-line/75 pt-3">
             <PendingSignal />
+            {notThisMonth ? (
+              <p className="mt-2.5 rounded-[14px] bg-surface-2 px-3 py-2 text-[12.5px] leading-[1.5] text-ink-2">
+                <b className="font-bold text-ink">해 줄 말</b> · {PERIOD_PARTNER_TIP}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>

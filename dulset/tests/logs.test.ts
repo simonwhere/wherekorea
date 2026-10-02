@@ -7,13 +7,19 @@ import {
   addNote,
   addPregnancyTest,
   defaultLogKind,
+  freeLHSlot,
   isTime,
+  lhAskDue,
   lhChangesEstimate,
+  lhKey,
+  lhSlotOf,
   lhTestsOn,
+  lhWhen,
   logPeriodEnd,
   logPeriodStart,
   logUndo,
   movePeriodStart,
+  planLHTest,
   pregnancyTestsOn,
   removeLHTest,
   removePeriodLog,
@@ -24,9 +30,11 @@ import {
 } from '@/lib/logic/logs'
 import { addEntry } from '@/lib/logic/diary'
 import { mergeNotices, scheduledNotices } from '@/lib/logic/notifications'
+import { USES_LH_OPTIONS, lhPrompting, lhTestTimeFor, setLHTestTime, setPersonalPref, setUsesLH } from '@/lib/logic/prefs'
+import { sanitizeBackup } from '@/lib/logic/settings'
 import { LH_LEAD_DAYS as HOME_LH_LEAD_DAYS } from '@/lib/logic/ttcFlow'
 import { startRestCycle } from '@/lib/logic/ttc'
-import type { AppState } from '@/lib/types'
+import type { AppState, LHTest } from '@/lib/types'
 
 const NOW = '2026-09-28T09:00:00+09:00'
 
@@ -56,35 +64,51 @@ describe('LH tests (two a day)', () => {
     ])
   })
 
-  it('replaces a test at the same time', () => {
-    let s = addLHTest(preparing(), { date: '2026-09-14', time: '08:10', result: 'negative' })
-    s = addLHTest(s, { date: '2026-09-14', time: '08:10', result: 'positive' })
-    expect(s.lhTests).toEqual([{ date: '2026-09-14', time: '08:10', result: 'positive' }])
+  it('never overwrites quietly: a test at the same time is replaced only when told so', () => {
+    const s = addLHTest(preparing(), { date: '2026-09-14', time: '08:10', result: 'negative' })
+    const plan = planLHTest(lhTestsOn(s.lhTests, '2026-09-14'), { date: '2026-09-14', time: '08:10', result: 'positive' })
+    expect(plan).toMatchObject({ action: 'replace', target: { time: '08:10', result: 'negative' } })
+    expect(addLHTest(s, { date: '2026-09-14', time: '08:10', result: 'positive' })).toBe(s)
+    const replaced = addLHTest(s, { date: '2026-09-14', time: '08:10', result: 'positive' }, undefined, { replace: true })
+    expect(replaced.lhTests).toEqual([{ date: '2026-09-14', time: '08:10', result: 'positive' }])
   })
 
-  it(`keeps at most ${MAX_LH_PER_DAY} a day: a third replaces the one closest in time`, () => {
+  it(`keeps at most ${MAX_LH_PER_DAY} a day: a third goes in place of the one closest in time, and only when agreed`, () => {
     let s = preparing()
     s = addLHTest(s, { date: '2026-09-14', time: '08:00', result: 'negative' })
     s = addLHTest(s, { date: '2026-09-14', time: '21:00', result: 'faint' })
-    s = addLHTest(s, { date: '2026-09-14', time: '19:00', result: 'positive' })
+    const third = { date: '2026-09-14', time: '19:00', result: 'positive' } as const
+    expect(planLHTest(lhTestsOn(s.lhTests, '2026-09-14'), third)).toMatchObject({ action: 'replace', target: { time: '21:00' } })
+    expect(addLHTest(s, third)).toBe(s)
+    s = addLHTest(s, third, undefined, { replace: true })
     expect(lhTestsOn(s.lhTests, '2026-09-14').map((t) => [t.time, t.result])).toEqual([
       ['08:00', 'negative'],
       ['19:00', 'positive'],
     ])
-    s = addLHTest(s, { date: '2026-09-14', time: '07:00', result: 'faint' })
+    s = addLHTest(s, { date: '2026-09-14', time: '07:00', result: 'faint' }, undefined, { replace: true })
     expect(lhTestsOn(s.lhTests, '2026-09-14').map((t) => t.time)).toEqual(['07:00', '19:00'])
     // Other days are untouched.
     s = addLHTest(s, { date: '2026-09-15', time: '07:00', result: 'peak' })
     expect(s.lhTests).toHaveLength(3)
   })
 
-  it('handles untimed (legacy) tests: same slot replaces, a full day drops the later one', () => {
+  it('a test without a time or a slot takes the first free half of the day', () => {
     let s = addLHTest(preparing(), { date: '2026-09-14', result: 'negative' })
+    expect(s.lhTests).toEqual([{ date: '2026-09-14', slot: 'morning', result: 'negative' }])
     s = addLHTest(s, { date: '2026-09-14', result: 'faint' })
-    expect(s.lhTests).toEqual([{ date: '2026-09-14', result: 'faint' }])
-    s = addLHTest(s, { date: '2026-09-14', time: '09:00', result: 'negative' })
-    s = addLHTest(s, { date: '2026-09-14', time: '20:00', result: 'positive' })
-    expect(lhTestsOn(s.lhTests, '2026-09-14').map((t) => t.time ?? '-')).toEqual(['-', '20:00'])
+    expect(lhTestsOn(s.lhTests, '2026-09-14').map((t) => [t.slot, t.result])).toEqual([
+      ['morning', 'negative'],
+      ['evening', 'faint'],
+    ])
+    // Both halves taken: the third would replace 아침 — not without agreement.
+    const third = { date: '2026-09-14', result: 'positive' } as const
+    expect(planLHTest(lhTestsOn(s.lhTests, '2026-09-14'), third)).toMatchObject({ action: 'replace', target: { slot: 'morning' } })
+    expect(addLHTest(s, third)).toBe(s)
+    // An untimed test from before slots existed keeps its own key ('').
+    const legacy: { lhTests: LHTest[] } = { lhTests: [{ date: '2026-09-14', result: 'positive' }] }
+    expect(lhKey(legacy.lhTests[0]!)).toBe('')
+    expect(lhSlotOf(legacy.lhTests[0]!)).toBeUndefined()
+    expect(addLHTest(legacy, { date: '2026-09-14', result: 'negative' }).lhTests.map(lhKey)).toEqual(['', 'morning'])
   })
 
   it('ignores a malformed time', () => {
@@ -93,9 +117,10 @@ describe('LH tests (two a day)', () => {
     expect(isTime('07:05')).toBe(true)
     const s = addLHTest(preparing(), { date: '2026-09-14', time: '7:5', result: 'negative' })
     expect(s.lhTests[0]).not.toHaveProperty('time')
+    expect(s.lhTests[0]).toHaveProperty('slot', 'morning')
   })
 
-  it('removes one test by date and time', () => {
+  it('removes one test by date and key (time, slot, or none)', () => {
     let s = preparing()
     s = addLHTest(s, { date: '2026-09-14', time: '08:00', result: 'negative' })
     s = addLHTest(s, { date: '2026-09-14', time: '20:00', result: 'positive' })
@@ -103,6 +128,9 @@ describe('LH tests (two a day)', () => {
     expect(s.lhTests).toEqual([{ date: '2026-09-14', time: '08:00', result: 'negative' }])
     const legacy = removeLHTest({ lhTests: [{ date: '2026-09-14', result: 'positive' }, ...s.lhTests] }, '2026-09-14')
     expect(legacy.lhTests).toEqual(s.lhTests)
+    const slotted = addLHTest(s, { date: '2026-09-13', slot: 'evening', result: 'faint' })
+    expect(removeLHTest(slotted, '2026-09-13', 'evening').lhTests).toEqual(s.lhTests)
+    expect(removeLHTest(slotted, '2026-09-13', 'morning')).toEqual(slotted)
   })
 
   it('says the estimate moved only for the cycle’s first surge', () => {
@@ -115,6 +143,9 @@ describe('LH tests (two a day)', () => {
     expect(lhChangesEstimate(s, { date: '2026-09-14', result: 'peak' })).toBe(false)
     const surged = addLHTest(s, { date: '2026-09-12', time: '08:00', result: 'positive' })
     expect(lhChangesEstimate(surged, { date: '2026-09-13', result: 'peak' })).toBe(false)
+    // Judged as if the person agrees to replace: the same slot's negative turning positive moves it.
+    const negative = addLHTest(s, { date: '2026-09-12', slot: 'morning', result: 'negative' })
+    expect(lhChangesEstimate(negative, { date: '2026-09-12', slot: 'morning', result: 'positive' })).toBe(true)
     // No cycle yet: nothing to recalculate.
     expect(lhChangesEstimate(preparing({ periods: [] }), { date: '2026-09-12', result: 'positive' })).toBe(false)
   })
@@ -122,6 +153,170 @@ describe('LH tests (two a day)', () => {
   it('replaceLHDay restores a whole day', () => {
     const s = addLHTest(preparing(), { date: '2026-09-14', time: '08:00', result: 'negative' })
     expect(replaceLHDay(s, '2026-09-14', []).lhTests).toEqual([])
+  })
+})
+
+describe('LH slots for a past day (아침 · 저녁)', () => {
+  const day = '2026-09-14'
+
+  it('two slot entries on one past day both stay (아침 음성, 저녁 양성)', () => {
+    let s = addLHTest(preparing(), { date: day, slot: 'morning', result: 'negative', by: 'b' })
+    s = addLHTest(s, { date: day, slot: 'evening', result: 'positive', by: 'b' })
+    expect(lhTestsOn(s.lhTests, day)).toEqual([
+      { date: day, slot: 'morning', result: 'negative', by: 'b' },
+      { date: day, slot: 'evening', result: 'positive', by: 'b' },
+    ])
+    expect(lhTestsOn(s.lhTests, day).map(lhWhen)).toEqual(['아침', '저녁'])
+    expect(freeLHSlot(lhTestsOn(s.lhTests, day))).toBeUndefined()
+  })
+
+  it('a slot already taken asks before replacing; the other slot is free', () => {
+    const s = addLHTest(preparing(), { date: day, slot: 'morning', result: 'negative' })
+    const tests = lhTestsOn(s.lhTests, day)
+    expect(freeLHSlot(tests)).toBe('evening')
+    expect(planLHTest(tests, { date: day, slot: 'evening', result: 'faint' })).toMatchObject({ action: 'add', test: { slot: 'evening' } })
+    expect(planLHTest(tests, { date: day, slot: 'morning', result: 'faint' })).toMatchObject({ action: 'replace', target: { slot: 'morning' } })
+    expect(addLHTest(s, { date: day, slot: 'morning', result: 'faint' })).toBe(s)
+    expect(addLHTest(s, { date: day, slot: 'morning', result: 'faint' }, undefined, { replace: true }).lhTests).toEqual([
+      { date: day, slot: 'morning', result: 'faint' },
+    ])
+  })
+
+  it('a timed test counts as the slot of its half of the day ("08:10 기록을 바꿀까요?")', () => {
+    const s = addLHTest(preparing(), { date: day, time: '08:10', result: 'negative' })
+    const tests = lhTestsOn(s.lhTests, day)
+    expect(lhSlotOf(tests[0]!)).toBe('morning')
+    expect(lhSlotOf({ time: '12:00' })).toBe('evening')
+    expect(freeLHSlot(tests)).toBe('evening')
+    const plan = planLHTest(tests, { date: day, slot: 'morning', result: 'positive', by: 'b' })
+    expect(plan.action).toBe('replace')
+    if (plan.action === 'replace') expect(lhWhen(plan.target)).toBe('08:10')
+    // …and the replacement keeps that clock time ('08:10 희미' → '08:10 양성'), not a bare slot.
+    expect(plan.test).toEqual({ date: day, time: '08:10', result: 'positive', by: 'b' })
+    expect(addLHTest(s, { date: day, slot: 'morning', result: 'positive' }, undefined, { replace: true }).lhTests).toEqual([
+      { date: day, time: '08:10', result: 'positive' },
+    ])
+    // A slot given with a valid time is ignored: the time is the key.
+    expect(planLHTest(tests, { date: day, time: '20:00', slot: 'morning', result: 'positive' })).toMatchObject({
+      action: 'add',
+      test: { time: '20:00' },
+    })
+    expect(planLHTest(tests, { date: day, time: '20:00', slot: 'morning', result: 'positive' }).test).not.toHaveProperty('slot')
+  })
+
+  it('a full day of timed tests: 아침 stands for the first, 저녁 for the last', () => {
+    let s = addLHTest(preparing(), { date: day, time: '13:00', result: 'negative' })
+    s = addLHTest(s, { date: day, time: '20:00', result: 'faint' })
+    const tests = lhTestsOn(s.lhTests, day)
+    // Both are 저녁 by their times — 저녁 stands for the later one, 아침 (no morning test) for the first row.
+    expect(planLHTest(tests, { date: day, slot: 'evening', result: 'positive' })).toMatchObject({ action: 'replace', target: { time: '13:00' } })
+    expect(planLHTest(tests, { date: day, slot: 'morning', result: 'positive' })).toMatchObject({ action: 'replace', target: { time: '13:00' } })
+    const s2 = addLHTest(preparing(), { date: day, time: '13:00', result: 'negative' })
+    const s3 = addLHTest(s2, { date: day, time: '14:00', result: 'faint' })
+    const t3 = lhTestsOn(s3.lhTests, day)
+    expect(planLHTest(t3, { date: day, slot: 'evening', result: 'positive' })).toMatchObject({ action: 'replace', target: { time: '13:00' } })
+    // Untimed legacy rows count as farthest for a timed test and are never the half-of-day match.
+    const legacy = [{ date: day, result: 'negative' as const }, { date: day, time: '09:00', result: 'faint' as const }]
+    expect(planLHTest(legacy, { date: day, time: '10:00', result: 'positive' })).toMatchObject({ action: 'replace', target: { time: '09:00' } })
+  })
+
+  it('orders 아침 before clock times and 저녁 after, and sorts across days', () => {
+    let s = addLHTest(preparing(), { date: day, time: '09:00', result: 'negative' })
+    s = addLHTest(s, { date: day, slot: 'evening', result: 'faint' }, undefined, { replace: true })
+    s = replaceLHDay(s, day, [{ date: day, slot: 'evening', result: 'faint' }, { date: day, slot: 'morning', result: 'negative' }])
+    s = addLHTest(s, { date: '2026-09-13', time: '21:00', result: 'negative' })
+    expect(s.lhTests.map((t) => `${t.date} ${lhKey(t)}`)).toEqual([`2026-09-13 21:00`, `${day} morning`, `${day} evening`])
+    const mixed = replaceLHDay(s, day, [{ date: day, slot: 'evening', result: 'faint' }, { date: day, time: '23:30', result: 'negative' }])
+    expect(lhTestsOn(mixed.lhTests, day).map(lhKey)).toEqual(['23:30', 'evening'])
+  })
+
+  it('undo puts the replaced slot entry back', () => {
+    const s = addLHTest(preparing(), { date: day, slot: 'morning', result: 'negative' })
+    const undo = logUndo(s, { kind: 'lh', date: day })
+    const after = addLHTest(s, { date: day, slot: 'morning', result: 'positive' }, undefined, { replace: true })
+    expect(lhTestsOn(after.lhTests, day)).toEqual([{ date: day, slot: 'morning', result: 'positive' }])
+    expect(undoLog(after, undo).lhTests).toEqual(s.lhTests)
+  })
+
+  it('the backup validator keeps slots and drops anything else', () => {
+    const s = addLHTest(preparing(), { date: day, slot: 'evening', result: 'faint', by: 'b' })
+    const raw = JSON.parse(JSON.stringify(s)) as AppState
+    ;(raw.lhTests[0] as unknown as { slot: string }).slot = 'evening'
+    raw.lhTests.push({ date: day, slot: 'noon' as never, result: 'negative' })
+    const clean = sanitizeBackup(raw)
+    expect(clean && clean.lhTests.map((t) => t.slot)).toEqual(['evening', undefined])
+  })
+})
+
+describe('배란테스트기 써요? (settings.usesLH)', () => {
+  // Period 09-01, 28 days: window 09-10…09-15 (예상); LH_LEAD_DAYS = 3 → the LH moment starts 09-07.
+  const s = preparing()
+
+  it('asks once the cycle reaches the LH moment and until answered', () => {
+    expect(lhAskDue(s, '2026-09-03')).toBe(false)
+    expect(lhAskDue(s, '2026-09-06')).toBe(false)
+    expect(lhAskDue(s, '2026-09-07')).toBe(true)
+    expect(lhAskDue(s, '2026-09-12')).toBe(true)
+    expect(lhAskDue(s, '2026-09-20')).toBe(true)
+    expect(lhAskDue(s, '2026-10-05')).toBe(true) // late
+    expect(lhAskDue(preparing({ periods: [] }), '2026-09-12')).toBe(false)
+  })
+
+  it('is settled by an answer, and 나중에 waits for the next cycle', () => {
+    expect(lhAskDue(setUsesLH(s, true), '2026-09-12')).toBe(false)
+    expect(lhAskDue(setUsesLH(s, false), '2026-09-12')).toBe(false)
+    const later = setUsesLH(s, 'later')
+    expect(lhAskDue(later, '2026-09-12')).toBe(true)
+    expect(lhAskDue(later, '2026-09-12', '2026-09-01')).toBe(false)
+    expect(lhAskDue(later, '2026-09-12', '2026-08-04')).toBe(true)
+    // The next cycle asks again.
+    const next = logPeriodStart(later, '2026-09-29', 'b')
+    expect(lhAskDue(next, '2026-10-06', '2026-09-01')).toBe(true)
+  })
+
+  it('stays quiet while the dates are paused and outside preparing', () => {
+    expect(lhAskDue(startRestCycle(s, '2026-09-05'), '2026-09-12')).toBe(false)
+    expect(lhAskDue(addPregnancyTest(s, { date: '2026-09-11', result: 'positive' }).state, '2026-09-12')).toBe(false)
+    expect(lhAskDue(preparing({ stage: 'pregnant' }), '2026-09-12')).toBe(false)
+  })
+
+  it('lhPrompting is off only for an explicit 안 써요', () => {
+    expect(lhPrompting(s)).toBe(true)
+    expect(lhPrompting(setUsesLH(s, 'later'))).toBe(true)
+    expect(lhPrompting(setUsesLH(s, true))).toBe(true)
+    expect(lhPrompting(setUsesLH(s, false))).toBe(false)
+    expect(USES_LH_OPTIONS.map((o) => o.value)).toEqual([true, false, 'later'])
+  })
+
+  it('only the cycle owner answers; clearing asks again', () => {
+    expect(setUsesLH(s, false, 'a')).toBe(s) // 민수 is not the cycle owner
+    const no = setUsesLH(s, false, 'b')
+    expect(no.settings.usesLH).toBe(false)
+    expect(setUsesLH(no, false, 'b')).toBe(no)
+    const cleared = setUsesLH(no, undefined)
+    expect('usesLH' in cleared.settings).toBe(false)
+    expect(lhAskDue(cleared, '2026-09-12')).toBe(true)
+  })
+
+  it('the sheet opens on 메모 instead of LH for someone who said 안 써요', () => {
+    expect(defaultLogKind(s, '2026-09-12', '2026-09-12')).toBe('lh')
+    expect(defaultLogKind(setUsesLH(s, false), '2026-09-12', '2026-09-12')).toBe('note')
+    expect(defaultLogKind(setUsesLH(s, false), '2026-09-20', '2026-09-20')).toBe('ptest')
+    expect(defaultLogKind(setUsesLH(s, 'later'), '2026-09-12', '2026-09-12')).toBe('lh')
+  })
+
+  it('keeps a usual LH test time per person (HH:MM only)', () => {
+    expect(lhTestTimeFor(s.settings, 'b')).toBeUndefined()
+    const t = setLHTestTime(s, 'b', '19:30')
+    expect(lhTestTimeFor(t.settings, 'b')).toBe('19:30')
+    expect(lhTestTimeFor(t.settings, 'a')).toBeUndefined()
+    expect(setLHTestTime(t, 'b', '19:30')).toBe(t)
+    expect(lhTestTimeFor(setLHTestTime(t, 'b', '7:5').settings, 'b')).toBeUndefined()
+    expect(lhTestTimeFor(setLHTestTime(t, 'b', undefined).settings, 'b')).toBeUndefined()
+    expect(setLHTestTime(s, 'b', undefined)).toBe(s)
+    // Other personal prefs on the same person survive.
+    const both = setLHTestTime(setPersonalPref(s, 'b', 'discreet', true), 'b', '08:00')
+    expect(both.settings.personal?.b).toEqual({ discreet: true, lhTestTime: '08:00' })
   })
 })
 
@@ -296,7 +491,10 @@ describe('되돌리기', () => {
     const today = '2026-09-10'
     const engine = (x: AppState) => mergeNotices(x, scheduledNotices(x, today), NOW).state
     const keys = (x: AppState) => x.notifications.map((n) => n.key)
-    const s = engine(preparing())
+    // Three regular cycles behind 09-01: a confirmed estimate (cycleStats.confidence
+    // 'cycles'), which the peak notice needs (N12) — a lone period sends none.
+    const regular = ['2026-06-09', '2026-07-07', '2026-08-04', '2026-09-01'].map((start) => ({ start, by: 'b' as const }))
+    const s = engine(preparing({ periods: regular }))
     expect(keys(s).some((k) => k?.startsWith('peak:'))).toBe(false)
     const { after, undo } = run(s, { kind: 'lh', date: today }, (x) =>
       addLHTest(x, { date: today, time: '08:00', result: 'positive' }),

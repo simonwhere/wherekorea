@@ -8,9 +8,10 @@
 
 import { useCallback, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
+import { requestOpenFeels } from '@/components/cycle/CycleHistory'
 import { Card, cx, useToast } from '@/components/ui'
 import { formatKo } from '@/lib/dates'
-import { openLog } from '@/lib/logLauncher'
+import { openLHHowTo, openLog } from '@/lib/logLauncher'
 import { isSurge } from '@/lib/logic/cycle'
 import { ringLegend, type LegendItem } from '@/lib/logic/cycleRing'
 import type { MonthlyTask } from '@/lib/logic/partnerTrack'
@@ -22,6 +23,8 @@ import {
   cycleStrip,
   dismissVaccineRest,
   endRestFromHome,
+  feelLabel,
+  markStillWaiting,
   skipTellPartnerPeriod,
   tellPartnerPeriod,
   tellPartnerPositive,
@@ -125,7 +128,9 @@ export default function CycleBlock({
   // Boxes inside the card: surface-2 on a surface card, surface on a muted one.
   const inner = cx('mt-3.5 rounded-[18px] p-3.5', muted ? 'bg-surface' : 'bg-surface-2')
   // Period days 1–3: "수고했어요" first — no window on the ring (or its legend).
-  const quietWindow = m.kind === 'period-early'
+  // No window/peak arcs on period days 1–3, nor on a long-late cycle she said
+  // is still running — the past window would read as if the app still expects it.
+  const quietWindow = m.kind === 'period-early' || m.copy === 'owner.late-waiting'
 
   const run = (a: MomentAction) => {
     switch (a.type) {
@@ -138,7 +143,12 @@ export default function CycleBlock({
         return
       case 'end-rest':
         update((s) => endRestFromHome(s, today, stampOn(today)))
-        toast.show('다시 켰어요. 예상과 알림이 돌아와요')
+        toast.show(m.restReason === 'clinic' ? '병원 준비를 마쳤어요. 예상과 알림이 돌아와요' : '다시 켰어요. 예상과 알림이 돌아와요')
+        return
+      case 'still-waiting':
+        // [아직 안 왔어요]: the cycle keeps counting; nothing is logged. The card
+        // itself changes ('길어지고 있어요'), so no toast over its buttons.
+        if (m.cycleStart) update((s) => markStillWaiting(s, m.cycleStart!, today))
         return
       case 'confirm-pregnancy':
         setConfirmOpen(true)
@@ -163,16 +173,23 @@ export default function CycleBlock({
   const secondaryPill = secondary && secondary.type !== 'nav' && !pending ? secondary : undefined
   // The fold rule (useFoldFit) keeps the card's action on the first screen: the
   // primary, else the 알릴까요? buttons or the lone secondary pill, else the title.
-  const foldOnTitle = !primary && !m.askTell && !secondaryPill
+  // A quiet card with the support list (after a loss) folds on its title: the
+  // list is long by design and its pill sits under it.
+  const foldOnTitle = !primary && !m.askTell && (!secondaryPill || !!m.support)
   // With a ring or week row there is always a way to the calendar.
   const cycleLink = strip ? TO_CYCLE : undefined
+  // 'LH 테스트 시작' / '오늘 LH 테스트해 봐요' (explicit words only): the one-page
+  // how-to (LHHowTo, N17) sits right of the LH primary; 주기 보기 moves up.
+  const howTo = m.copy === 'owner.lh-start' && m.voice === 'explicit' && !!primary && !secondaryPill
   // Right of the primary: a link (the moment's own, else 주기 보기), unless a second pill takes the row.
-  const actionLink = primary && !secondaryPill && !pending ? (secondaryLink ?? cycleLink) : undefined
+  const actionLink = primary && !secondaryPill && !pending && !howTo ? (secondaryLink ?? cycleLink) : undefined
   // Without a primary, the one link sits at the right of the eyebrow row (as does
   // 주기 보기 when the action row is full: two pills, or the 병원 확인 전 buttons).
-  const headerLink = pending || (primary && secondaryPill) ? cycleLink : !primary ? (secondaryLink ?? cycleLink) : undefined
+  const headerLink = pending || (primary && secondaryPill) || howTo ? cycleLink : !primary ? (secondaryLink ?? cycleLink) : undefined
 
-  const legend = strip?.mode === 'cycle' ? ringLegend(strip, { quietWindow }) : []
+  // Period days 1–3 draw only the period, which needs no legend — and on a
+  // 375×667 phone the line it saves keeps the 알릴까요? buttons above the tab bar.
+  const legend = strip?.mode === 'cycle' && !quietWindow ? ringLegend(strip, { quietWindow }) : []
   // A long caveat (the vaccine rest's sources) reads as a footnote under the
   // action, so the action keeps its place on the first screen.
   const footnote = !!m.note && m.note.length > NOTE_BESIDE_MAX
@@ -184,6 +201,12 @@ export default function CycleBlock({
       {m.todayLH && m.voice === 'explicit' && !(isSurge(m.todayLH) && m.title.startsWith('LH 양성')) ? (
         <p className="mt-2 inline-flex rounded-full bg-surface-2 px-2.5 py-1 text-[11.5px] font-semibold text-ink-2">
           오늘 기록 · LH {LH_LABEL[m.todayLH]}
+        </p>
+      ) : null}
+      {/* Her own 오늘 컨디션 chip (ttcFlow sets it for the owner only, never the partner). */}
+      {m.todayFeel ? (
+        <p className="mt-2 inline-flex rounded-full bg-surface-2 px-2.5 py-1 text-[11.5px] font-semibold text-ink-2">
+          오늘 컨디션 · {feelLabel(m.todayFeel)}
         </p>
       ) : null}
     </>
@@ -203,7 +226,22 @@ export default function CycleBlock({
       >
         <div className="flex min-h-[22px] items-center justify-between gap-2">
           <p className={cx('min-w-0 text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{m.eyebrow}</p>
-          {headerLink ? (
+          {m.lastFeels && (!headerLink || headerLink === TO_CYCLE) ? (
+            // Period days 1–3: the way to the 주기 tab is a look back at her own
+            // chips from the cycle that just ended (the row's list opens there).
+            // In the header row, so the 알릴까요? buttons keep their place on a 375×667 phone.
+            <LinkButton
+              size="md"
+              arrow
+              onClick={() => {
+                requestOpenFeels(m.lastFeels!.cycleStart)
+                onNavigate('cycle')
+              }}
+              className="-my-[11px] -mr-1 shrink-0 px-1"
+            >
+              지난 주기 컨디션 {m.lastFeels.count}개 · 보기
+            </LinkButton>
+          ) : headerLink ? (
             <LinkButton size="md" arrow onClick={() => run(headerLink)} className="-my-[11px] -mr-1 shrink-0 px-1">
               {headerLink.label}
             </LinkButton>
@@ -271,7 +309,7 @@ export default function CycleBlock({
             </div>
           ) : (
             <>
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-2 [@media(max-height:700px)]:mt-3">
                 {primary ? (
                   <div data-fold="">
                     <PillButton full onClick={() => run(primary)}>
@@ -320,7 +358,11 @@ export default function CycleBlock({
                 <PillButton icon={primary.type === 'log' ? 'plus' : undefined} onClick={() => run(primary)}>
                   {primary.label}
                 </PillButton>
-                {actionLink ? (
+                {howTo ? (
+                  <LinkButton size="md" arrow onClick={openLHHowTo} className="-mr-1 shrink-0 px-1">
+                    어떻게 해요?
+                  </LinkButton>
+                ) : actionLink ? (
                   <LinkButton size="md" arrow onClick={() => run(actionLink)} className="-mr-1 shrink-0 px-1">
                     {actionLink.label}
                   </LinkButton>
@@ -329,7 +371,7 @@ export default function CycleBlock({
             )}
           </div>
         ) : secondaryPill ? (
-          <div data-fold="" className="mt-3.5">
+          <div data-fold={foldOnTitle ? undefined : ''} className="mt-3.5">
             <PillButton variant="outline" full onClick={() => run(secondaryPill)}>
               {secondaryPill.label}
             </PillButton>

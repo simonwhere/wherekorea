@@ -3,6 +3,7 @@
 
 import { addDays } from '../dates'
 import type { ISODate } from '../types'
+import type { CycleConfidence } from './cycle'
 
 export interface IcsEvent {
   uid: string
@@ -93,7 +94,8 @@ export interface FertileExportOptions {
   /**
    * Also add the peak days with their own alarm. Only for the explicit view —
    * a soft viewer gets the one window heads-up the app promises, no disguised
-   * "D-day" alarm.
+   * "D-day" alarm. A window the calendar alone can't narrow (confidence 'low',
+   * N12) gets no peak event either way: no such day exists on any screen.
    */
   peak: boolean
   /** Couple id (invite code) so UIDs never collide with another couple's export. */
@@ -107,7 +109,14 @@ export interface FertileExportOptions {
  * instead of leaving stale copies on both phones.
  */
 export function fertileWindowEvents(
-  windows: Array<{ start: ISODate; fertileStart: ISODate; fertileEnd: ISODate; peakStart: ISODate; peakEnd: ISODate }>,
+  windows: Array<{
+    start: ISODate
+    fertileStart: ISODate
+    fertileEnd: ISODate
+    peakStart: ISODate
+    peakEnd: ISODate
+    confidence?: CycleConfidence
+  }>,
   opts: FertileExportOptions,
 ): IcsEvent[] {
   const { discreet, peak } = opts
@@ -125,7 +134,8 @@ export function fertileWindowEvents(
       // 9:00 on the day before (all-day events start at 00:00 → 15 h before).
       alarmMinutesBefore: 15 * 60,
     })
-    if (!peak) continue
+    // Per window: a low-confidence projection names no best days (calendarView.legendItems, cycle.dayInfo).
+    if (!peak || w.confidence === 'low') continue
     events.push({
       uid: `${ns}peak-${i + 1}@dulset`,
       start: w.peakStart,

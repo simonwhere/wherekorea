@@ -18,7 +18,7 @@
 
 import { MONTH_DEADLINES, NOT_ONE_APPOINTMENT, ROADMAP, planKey } from '@/lib/content/roadmap'
 import { addDays, addMonths, diffDays, dLabel, isISODate, parts } from '@/lib/dates'
-import { isValidTime } from '@/lib/logic/appointments'
+import { isValidTime, needsTime } from '@/lib/logic/appointments'
 import { checksSince } from '@/lib/logic/pregnancyView'
 import {
   PHASES,
@@ -517,21 +517,41 @@ export function emptyDraft(today: ISODate): AppointmentDraft {
   return { date: today, time: '', title: '', place: '', who: 'both', kind: 'hospital', note: '' }
 }
 
-export type DraftError = 'date' | 'time' | 'title'
+export type DraftError = 'date' | 'time' | 'time-required' | 'title'
 
-/** New appointments start today or later; an edited one may keep its own (past) date. */
+/**
+ * New appointments start today or later; an edited one may keep its own (past)
+ * date. 주사·약 (N13) need a time of day.
+ */
 export function validateDraft(d: AppointmentDraft, minDate: ISODate): DraftError | null {
   if (!isISODate(d.date) || d.date < minDate) return 'date'
   if (!isValidTime(d.time)) return 'time'
+  if (needsTime(d.kind) && !d.time) return 'time-required'
   if (!d.title.trim()) return 'title'
   return null
+}
+
+function byDateTime(a: Appointment, b: Appointment): number {
+  return a.date === b.date ? (a.time ?? '').localeCompare(b.time ?? '') : a.date < b.date ? -1 : 1
 }
 
 /** Upcoming (not done) appointment linked to a roadmap item, if any. */
 export function linkedAppointment(list: Appointment[], itemId: string, today: ISODate): Appointment | undefined {
   return usableAppointments(list)
     .filter((a) => a.taskId === itemId && !a.done && a.date >= today)
-    .sort((a, b) => (a.date === b.date ? (a.time ?? '').localeCompare(b.time ?? '') : a.date < b.date ? -1 : 1))[0]
+    .sort(byDateTime)[0]
+}
+
+/**
+ * The appointment a step of a chain waits on (the partner's 정액검사, N14):
+ * the next upcoming one, else the latest past one nobody has marked done yet
+ * — that one is the "다녀왔어요?" question. A done appointment is behind us.
+ */
+export function stepAppointment(list: Appointment[], itemId: string, today: ISODate): Appointment | undefined {
+  const open = usableAppointments(list).filter((a) => a.taskId === itemId && !a.done)
+  const upcoming = open.filter((a) => a.date >= today).sort(byDateTime)[0]
+  if (upcoming) return upcoming
+  return open.filter((a) => a.date < today).sort((a, b) => -byDateTime(a, b))[0]
 }
 
 export { CUSTOM_TITLE_MAX } from '@/lib/logic/roadmap'

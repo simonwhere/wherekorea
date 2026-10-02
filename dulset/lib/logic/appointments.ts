@@ -12,6 +12,8 @@ export const APPOINTMENT_KIND_LABEL: Record<AppointmentKind, string> = {
   vaccine: '예방접종',
   admin: '신청·행정',
   other: '기타',
+  injection: '주사',
+  medication: '약',
 }
 
 export const APPOINTMENT_KIND_EMOJI: Record<AppointmentKind, string> = {
@@ -20,6 +22,13 @@ export const APPOINTMENT_KIND_EMOJI: Record<AppointmentKind, string> = {
   vaccine: '💉',
   admin: '📝',
   other: '📌',
+  injection: '💉',
+  medication: '💊',
+}
+
+/** 주사·약 (the clinic-cycle kinds, N13) happen at a time of day, so the form asks for one. */
+export function needsTime(kind: AppointmentKind): boolean {
+  return kind === 'injection' || kind === 'medication'
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/

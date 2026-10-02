@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { Button, Field, Sheet, inputClass, useToast } from '@/components/ui'
+import { Button, Field, Sheet, Toggle, inputClass, useToast } from '@/components/ui'
 import { isISODate } from '@/lib/dates'
 import { PHASES, addCustomTask } from '@/lib/logic/roadmap'
 import { useApp } from '@/lib/store'
@@ -18,6 +18,8 @@ export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhas
   const [phase, setPhase] = useState<RoadmapPhase>(defaultPhase)
   const [who, setWho] = useState<Who>('both')
   const [due, setDue] = useState('')
+  // '기한' (N13): D-7 · D-1 · 당일 notices for this own dated item (결정통지서 만료 …).
+  const [alerts, setAlerts] = useState(false)
   const [error, setError] = useState<'title' | 'due' | null>(null)
   const [a, b] = state.couple.members
 
@@ -25,7 +27,10 @@ export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhas
     e.preventDefault()
     if (!title.trim()) return setError('title')
     if (due && !isISODate(due)) return setError('due')
-    update((s) => addCustomTask(s, { title, phase, who, due: due || undefined }, me.id))
+    // (Not an object literal at the call: lib/logic/roadmap addCustomTask reads
+    // `deadlineAlerts` once its input lists it; until then the flag is ignored.)
+    const input = { title, phase, who, due: due || undefined, deadlineAlerts: due && alerts ? true : undefined }
+    update((s) => addCustomTask(s, input, me.id))
     toast.show(`챙길 것에 담았어요 · ${partner.name}님 화면에도 보여요`)
     onClose()
   }
@@ -88,6 +93,16 @@ export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhas
           />
         </Field>
         {error === 'due' ? <FieldError id={`${errorId}-due`}>날짜를 다시 확인해 주세요.</FieldError> : null}
+        {due && isISODate(due) ? (
+          <div className="rounded-xl bg-surface-2 px-3">
+            <Toggle
+              checked={alerts}
+              onChange={setAlerts}
+              label="기한 알림 받기"
+              description="7일 전 · 1일 전 · 당일에 챙길 사람에게 알려요. 결정통지서 만료 같은 진짜 기한에만 켜요."
+            />
+          </div>
+        ) : null}
 
         <Button type="submit" full size="lg">
           추가하기

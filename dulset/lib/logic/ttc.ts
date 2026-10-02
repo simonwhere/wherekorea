@@ -39,8 +39,14 @@ export function endRestCycle(state: AppState): AppState {
   return rest
 }
 
-/** Does a period starting on `start` end this rest cycle? */
+/**
+ * Does a period starting on `start` end this rest cycle? Never for 'clinic'
+ * (병원과 함께 준비 중, lib/logic/clinic.ts): clinics ask for a 생리 2~3일째
+ * visit, so periods are logged on the way to the next cycle — only the couple
+ * ends it.
+ */
 export function periodEndsRest(rest: RestCycle, start: ISODate): boolean {
+  if (rest.reason === 'clinic') return false
   if (!(rest.since < start)) return false
   if (rest.reason === 'vaccine') return diffDays(rest.since, start) >= LIVE_VACCINE_REST_DAYS
   return true

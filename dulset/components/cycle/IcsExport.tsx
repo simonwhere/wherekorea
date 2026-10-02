@@ -19,12 +19,14 @@ export default function IcsExport({
   const { enabled, reason, windows } = availability
   // A "soft" viewer gets the discreet title (우리의 주간) and only the window event.
   const useDiscreet = discreet || view === 'soft'
+  // Peak-day events only when the estimate can name them (not with low confidence anywhere in the export).
+  const withPeak = view === 'explicit' && windows.every((w) => w.confidence !== 'low')
 
   const download = () => {
     if (!enabled) return
     downloadText(
       'dulset-fertile.ics',
-      buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: view === 'explicit', id: coupleId })),
+      buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: withPeak, id: coupleId })),
     )
     toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
   }

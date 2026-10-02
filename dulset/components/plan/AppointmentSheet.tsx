@@ -3,15 +3,16 @@
 import { useId, useState } from 'react'
 import { Button, Field, Sheet, inputClass, textareaClass, useToast } from '@/components/ui'
 import { templateById } from '@/lib/content/roadmap'
-import { formatKo, isISODate } from '@/lib/dates'
+import { addDays, formatKo, isISODate } from '@/lib/dates'
 import {
   APPOINTMENT_KIND_EMOJI,
   APPOINTMENT_KIND_LABEL,
   addAppointment,
+  needsTime,
   updateAppointment,
 } from '@/lib/logic/appointments'
 import { useApp } from '@/lib/store'
-import type { Appointment, AppointmentKind } from '@/lib/types'
+import { APPOINTMENT_KINDS, type Appointment, type AppointmentKind } from '@/lib/types'
 import { ChoiceChips, FieldError } from './bits'
 import {
   APPT_PLACEHOLDER,
@@ -23,11 +24,18 @@ import {
   type Who,
 } from '@/lib/logic/plan'
 
-const KINDS: AppointmentKind[] = ['hospital', 'test', 'vaccine', 'admin', 'other']
+// 주사·약 (N13) last: the clinic-cycle kinds, which ask for a time of day.
+const KINDS: readonly AppointmentKind[] = APPOINTMENT_KINDS
+
+/** A visit that already happened (a test to claim for, a clinic day logged late) may be up to a year back (N13 ⑤). */
+export const APPT_PAST_DAYS = 365
+/** "같은 일정 +2일" — the clinic's usual rhythm (채혈·초음파 every other day). */
+const DUPLICATE_AFTER_DAYS = 2
 
 const ERROR_TEXT: Record<DraftError, string> = {
-  date: '오늘이나 이후 날짜를 골라 주세요.',
+  date: '지난 1년 안이나 앞으로의 날짜를 골라 주세요.',
   time: '시간을 다시 확인해 주세요.',
+  'time-required': '주사·약은 몇 시인지 적어 주세요.',
   title: '무슨 일정인지 한 줄로 적어 주세요.',
 }
 
@@ -51,13 +59,15 @@ export default function AppointmentSheet({
   const [draft, setDraft] = useState<AppointmentDraft>(initial)
   const [error, setError] = useState<DraftError | null>(null)
   const [a, b] = state.couple.members
-  // An existing appointment may keep its own (past) date; new ones start today.
-  const minDate = editing && editing.date < today ? editing.date : today
+  // Past visits count too (a test already taken, a clinic day written up at night).
+  const minDate = addDays(today, -APPT_PAST_DAYS)
   const task = draft.taskId ? templateById(draft.taskId) ?? state.customTasks.find((c) => c.id === draft.taskId) : undefined
+
+  const timed = needsTime(draft.kind)
 
   const set = <K extends keyof AppointmentDraft>(key: K, value: AppointmentDraft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }))
-    if (error === key) setError(null)
+    if (error === key || (key === 'time' && error === 'time-required') || (key === 'kind' && error === 'time-required')) setError(null)
   }
 
   const submit = (e: React.FormEvent) => {
@@ -85,6 +95,32 @@ export default function AppointmentSheet({
     onClose()
   }
 
+  /** "같은 일정 +2일": one more of this appointment two days on (the draft as it is now). */
+  const duplicate = () => {
+    const err = validateDraft(draft, minDate)
+    setError(err)
+    if (err) return
+    const date = addDays(draft.date, DUPLICATE_AFTER_DAYS)
+    update((s) =>
+      addAppointment(
+        s,
+        {
+          date,
+          time: draft.time || undefined,
+          title: draft.title,
+          place: draft.place,
+          who: draft.who,
+          kind: draft.kind,
+          note: draft.note,
+          taskId: draft.taskId,
+        },
+        me.id,
+      ),
+    )
+    toast.show(`${formatKo(date)}에 같은 일정을 넣었어요`)
+    onClose()
+  }
+
   const describe = (key: DraftError) => (error === key ? `${errorId}-${key}` : undefined)
 
   return (
@@ -109,18 +145,19 @@ export default function AppointmentSheet({
               onChange={(e) => set('date', e.target.value)}
             />
           </Field>
-          <Field label="시간 (선택)">
+          <Field label={timed ? '시간' : '시간 (선택)'}>
             <input
               type="time"
               className={`${inputClass} w-[7.5rem]`}
               value={draft.time}
-              aria-invalid={error === 'time'}
-              aria-describedby={describe('time')}
+              required={timed}
+              aria-invalid={error === 'time' || error === 'time-required'}
+              aria-describedby={describe('time') ?? describe('time-required')}
               onChange={(e) => set('time', e.target.value)}
             />
           </Field>
         </div>
-        {error === 'date' || error === 'time' ? (
+        {error === 'date' || error === 'time' || error === 'time-required' ? (
           <FieldError id={`${errorId}-${error}`}>{ERROR_TEXT[error]}</FieldError>
         ) : null}
 
@@ -200,6 +237,11 @@ export default function AppointmentSheet({
         <Button type="submit" full size="lg">
           {editing ? '저장' : '일정 추가'}
         </Button>
+        {editing ? (
+          <Button type="button" full variant="ghost" onClick={duplicate}>
+            같은 일정 +{DUPLICATE_AFTER_DAYS}일 복제
+          </Button>
+        ) : null}
       </form>
     </Sheet>
   )

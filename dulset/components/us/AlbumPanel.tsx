@@ -13,7 +13,7 @@ import { useNearScreen, usePhotoURL } from './usePhotoURL'
 /** 우리 › 앨범: every diary photo, newest first, by month. */
 export default function AlbumPanel({ onGoStory }: { onGoStory: () => void }) {
   const { state, me, partner } = useApp()
-  const groups = useMemo(() => albumGroups(state.diary), [state.diary])
+  const groups = useMemo(() => albumGroups(state.diary, me.id), [state.diary, me.id])
   const flat = useMemo(() => groups.flatMap((g) => g.entries), [groups])
   const [openId, setOpenId] = useState<string | null>(null)
   const close = useCallback(() => setOpenId(null), [])

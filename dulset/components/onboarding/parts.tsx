@@ -1,8 +1,13 @@
 'use client'
 
-// Small building blocks shared by the onboarding steps.
+// Small building blocks shared by the onboarding steps (and the two places
+// that reuse their chips: FirstPeriodCard and the empty 생리 log panel).
 
+import { useId, useState } from 'react'
 import { cx } from '@/components/ui'
+import { formatKo } from '@/lib/dates'
+import { QUICK_START_CHIPS, quickStartDate } from '@/lib/logic/onboarding'
+import type { ISODate } from '@/lib/types'
 
 export interface Option<T extends string> {
   value: T
@@ -75,7 +80,7 @@ export function ChoiceGroup<T extends string>({
   )
 }
 
-/** Six dots; the current one is a wider pill. Decorative — the count is read out separately. */
+/** Progress dots; the current one is a wider pill. Decorative — the count is read out separately. */
 export function ProgressDots({ step, total }: { step: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -122,21 +127,6 @@ export function Group({
   )
 }
 
-/** A phone-notification look-alike used to preview alert wording. */
-export function NoticePreview({ title, body, muted }: { title: string; body: string; muted?: boolean }) {
-  return (
-    <div className={cx('rounded-xl border border-line bg-surface-2 px-3 py-2.5', muted && 'opacity-60')}>
-      <div className="flex items-center gap-1.5 text-[11px] text-ink-3">
-        <span className="font-bold text-ink">둘셋</span>
-        <span aria-hidden>·</span>
-        <span>미리보기</span>
-      </div>
-      <p className="mt-0.5 text-[13px] font-semibold text-ink">{title}</p>
-      {body ? <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{body}</p> : null}
-    </div>
-  )
-}
-
 export function SourceLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <a
@@ -147,5 +137,92 @@ export function SourceLink({ href, children }: { href: string; children: React.R
     >
       {children}
     </a>
+  )
+}
+
+/**
+ * [오늘][어제][1주 전][2주 전][3주 전] — one tap picks a start date (the date
+ * itself is read out, e.g. "1주 전, 9월 25일"). `value` marks the chip that
+ * matches the current date, if any.
+ */
+export function QuickDateChips({
+  today,
+  value,
+  onPick,
+  label = '빠른 선택',
+  skip,
+}: {
+  today: ISODate
+  value?: string
+  onPick: (date: ISODate) => void
+  label?: string
+  /** Chips to leave out (e.g. 오늘 when today is already covered). */
+  skip?: ReadonlyArray<number>
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
+      {QUICK_START_CHIPS.filter((c) => !skip?.includes(c.daysAgo)).map((c) => {
+        const date = quickStartDate(today, c.daysAgo)
+        const on = value === date
+        return (
+          <button
+            key={c.daysAgo}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onPick(date)}
+            className={cx(
+              'inline-flex h-11 items-center gap-1 rounded-full border px-3.5 text-sm font-semibold transition-colors',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+              on ? 'border-brand bg-brand-soft text-brand-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
+            )}
+          >
+            {c.label}
+            <span className="sr-only">, {formatKo(date, { weekday: false })}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * "자세히 ▾" — a folded block (consent notices, install steps). A real button,
+ * 44px tall, with aria-expanded; the content is simply not rendered while folded.
+ */
+export function Disclosure({
+  label = '자세히',
+  closeLabel = '접기',
+  children,
+  className,
+  defaultOpen = false,
+}: {
+  label?: string
+  closeLabel?: string
+  children: React.ReactNode
+  className?: string
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const id = useId()
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex min-h-[44px] items-center gap-1 text-xs font-semibold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        {open ? closeLabel : label}
+        <span aria-hidden className={cx('transition-transform', open && 'rotate-180')}>
+          ▾
+        </span>
+      </button>
+      {open ? (
+        <div id={id} className="pb-1">
+          {children}
+        </div>
+      ) : null}
+    </div>
   )
 }

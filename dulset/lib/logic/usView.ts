@@ -13,6 +13,7 @@ import { dayOfLife } from './baby'
 import { DIARY_NAME, groupByMonth, removeEntry } from './diary'
 import { STAGE_SHORT, entryStageLabel } from './diaryExport'
 import { mergeNotices, ttcClockStart } from './notifications'
+import { canSeeEntry, visibleEntries } from './personalLog'
 import { PREGNANCY_DAYS, gestationalAge, recentlyEnded } from './pregnancy'
 import { lowPressureFor } from './prefs'
 
@@ -90,12 +91,20 @@ export function chaptersWithEntries(entries: DiaryEntry[], ctx: ChapterContext):
 export interface StoryFilter {
   chapter: Chapter | 'all'
   author: MemberId | 'all'
+  /**
+   * Who is reading: the other member's '나만 보기' entries (DiaryEntry.privateTo,
+   * lib/logic/personalLog.ts) are left out. Every screen that lists the story
+   * passes it; without it nothing is hidden (a backup summary, a count).
+   */
+  viewer?: MemberId
 }
 
 export function filterStory(entries: DiaryEntry[], ctx: ChapterContext, f: StoryFilter): DiaryEntry[] {
   return entries.filter(
     (e) =>
-      (f.chapter === 'all' || entryChapter(e, ctx) === f.chapter) && (f.author === 'all' || e.author === f.author),
+      (f.viewer === undefined || canSeeEntry(e, f.viewer)) &&
+      (f.chapter === 'all' || entryChapter(e, ctx) === f.chapter) &&
+      (f.author === 'all' || e.author === f.author),
   )
 }
 
@@ -368,9 +377,10 @@ export function checkAnyDate(value: string): DateCheck {
 
 // ── Album ───────────────────────────────────────────────────
 
-/** Entries with a photo, newest first, by month. */
-export function albumGroups(entries: DiaryEntry[]): Array<{ month: string; entries: DiaryEntry[] }> {
-  return groupByMonth(entries.filter((e) => typeof e.photoId === 'string' && e.photoId.length > 0))
+/** Entries with a photo, newest first, by month — for `viewer`, without the other member's '나만 보기' entries. */
+export function albumGroups(entries: DiaryEntry[], viewer?: MemberId): Array<{ month: string; entries: DiaryEntry[] }> {
+  const mine = viewer === undefined ? entries : visibleEntries(entries, viewer)
+  return groupByMonth(mine.filter((e) => typeof e.photoId === 'string' && e.photoId.length > 0))
 }
 
 /** First `max` characters (by code point) of a text, with '…' when cut. */

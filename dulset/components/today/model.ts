@@ -148,7 +148,16 @@ export function nudgeTarget(state: Pick<AppState, 'checkItems' | 'checkLog'>, me
   return nudgeableItem(state, member, today)
 }
 
-/** Today's or tomorrow's appointment (the first one), for the 오늘 할 일 list. */
+/** Today's or tomorrow's appointment (the first one). */
 export function soonAppointment(list: Appointment[], today: ISODate): Appointment | undefined {
-  return upcomingForToday(list, today).find((a) => diffDays(today, a.date) <= 1)
+  return soonAppointments(list, today)[0]
+}
+
+/**
+ * Every appointment today or tomorrow (not done), in time order, for the
+ * 오늘 할 일 list — a clinic day has 채혈 08:00 and 주사 21:00 (N13 ⑤), not just
+ * the first of them.
+ */
+export function soonAppointments(list: Appointment[], today: ISODate): Appointment[] {
+  return upcomingAppointments(list, today, 1).filter((a) => diffDays(today, a.date) <= 1)
 }

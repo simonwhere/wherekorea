@@ -18,16 +18,22 @@ import {
   averageSourceLabel,
   canShiftMonth,
   cellView,
+  confidenceLabel,
   LEGEND_MAX,
   PHASE_CLASS,
+  cycleFeels,
   cycleHistory,
   cycleLens,
   cycleSummary,
   dayChanceFor,
   dayLine,
   explainDayFor,
+  isMissedGap,
+  knownCycleDay,
   lensPhase,
   lhBadge,
+  lhRowLine,
+  monthConfidence,
   PEAK_SOFT_LABEL,
   peakLabel,
   showsPeak,
@@ -55,17 +61,22 @@ import {
   statusHeadline,
   viewNotice,
   visiblePhase,
+  windowLabel,
   type FertilityView,
 } from '@/lib/logic/calendarView'
 import { createInitialState } from '@/lib/initial'
 import type { AppState, Settings } from '@/lib/types'
 
+// Three regular 28-day cycles before the current period (confidence 'cycles'):
+// window 09-10…09-15, peak 09-13…09-15, the next period expected on 09-29.
 const base = (over: Partial<CycleInput> = {}): CycleInput => ({
-  periods: [{ start: '2026-09-01', end: '2026-09-05' }],
+  periods: [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01', end: '2026-09-05' }],
   lhTests: [],
   cycle: { cycleLength: 28, periodLength: 5 },
   ...over,
 })
+/** One logged period + the setting: a settings-only estimate (confidence 'low'). */
+const single = (over: Partial<CycleInput> = {}): CycleInput => base({ periods: [{ start: '2026-09-01', end: '2026-09-05' }], ...over })
 
 const settings = (over: Partial<Settings> = {}): Settings => ({
   discreet: false,
@@ -251,7 +262,7 @@ describe('cycleSummary', () => {
     expect(s.headline.title).toBe('가임기까지 3일 (예상)')
     expect(s.rows.map((r) => r.key)).toEqual(['period', 'window', 'ovulation', 'avg'])
     expect(s.rows.find((r) => r.key === 'ovulation')?.sub).toBe('달력 계산')
-    expect(s.rows.find((r) => r.key === 'period')?.sub).toBe('D-22')
+    expect(s.rows.find((r) => r.key === 'period')).toMatchObject({ value: '9월 29일 무렵', sub: 'D-22 · 기록 기준' })
   })
 
   it('soft view: 우리의 주간 without countdown', () => {
@@ -281,15 +292,16 @@ describe('cycleSummary', () => {
     expect(s.status.kind).toBe('late')
     expect(s.cycleDay).toBe(31)
     expect(s.headline.title).toBe('생리 예정일이 2일 지났어요')
-    expect(s.rows[0]).toMatchObject({ label: '생리 예정일 (지남)', sub: 'D+2' })
+    expect(s.rows[0]).toMatchObject({ label: '생리 예정 (지남)', value: '9월 29일 무렵', sub: 'D+2' })
     // The next window depends on when the period actually starts.
     expect(s.rows.map((r) => r.key)).toEqual(['period', 'avg'])
   })
 
   it('explains where the average comes from', () => {
-    expect(cycleSummary(base(), '2026-09-07', 'explicit').rows.at(-1)?.sub).toBe(
+    expect(cycleSummary(single(), '2026-09-07', 'explicit').rows.at(-1)?.sub).toBe(
       '설정값 — 두 번 이상 기록하면 자동으로 계산해요',
     )
+    expect(cycleSummary(base(), '2026-09-07', 'explicit').rows.at(-1)?.sub).toBe('최근 3주기 평균')
     const logged = base({ periods: [{ start: '2026-07-01' }, { start: '2026-07-27' }, { start: '2026-08-28' }] })
     expect(averageSourceLabel(cycleSummary(logged, '2026-09-05', 'explicit').stats)).toBe('최근 2주기 평균 (26~32일)')
   })
@@ -474,7 +486,7 @@ describe('headline edge cases', () => {
   it('a very late period reads as a missing log, not "100일 지났어요"', () => {
     const s = cycleSummary(base(), '2026-12-20', 'explicit')
     expect(s.status.kind).toBe('late')
-    expect(s.headline.title).toBe('최근 생리 기록이 없어요')
+    expect(s.headline.title).toBe('혹시 기록을 빠뜨렸나요?')
     expect(s.headline.sub).toContain('9월 1일')
     // No stale due date, no guessed window, no "주기 111일째".
     expect(s.rows.map((r) => r.key)).toEqual(['avg'])
@@ -484,7 +496,7 @@ describe('headline edge cases', () => {
   })
 
   it('does not claim the end date improves predictions', () => {
-    const h = statusHeadline({ kind: 'period', cycleDay: 2, nextFertileStart: '2026-09-10' }, 'hidden', { today: '2026-09-02' })
+    const h = statusHeadline({ kind: 'period', cycleDay: 2, nextFertileStart: '2026-09-10', confidence: 'cycles' }, 'hidden', { today: '2026-09-02' })
     expect(h.sub).not.toContain('예측')
   })
 
@@ -493,6 +505,120 @@ describe('headline edge cases', () => {
     expect(s.status.kind).toBe('fertile')
     expect(s.headline.sub).toContain('매일이 아니어도 괜찮아요')
     expect(s.headline.sub).toContain('2~3번')
+  })
+})
+
+// ── N12: confidence on the calendar ─────────────────────────
+
+describe('low confidence on the calendar (settings only, 1–2 cycles, irregular)', () => {
+  const ctx = (view: FertilityView) => ({ month: '2026-09-01', today: '2026-09-07', view })
+
+  it('draws no peak day and no ⭐, and rates no day', () => {
+    for (const d of ['2026-09-13', '2026-09-14', '2026-09-15']) {
+      const c = cellView(dayInfo(single(), d), ctx('explicit'))
+      expect(c.phase, d).toBe('fertile')
+      expect(c.star, d).toBe(false)
+      expect(c.confidence).toBe('low')
+      expect(c.ariaLabel).not.toMatch(/가능성|배란/)
+      expect(dayChanceLabel(dayInfo(single(), d), 'explicit')).toBeNull()
+    }
+    expect(explainDay(dayInfo(single(), '2026-09-14'), 'explicit', false)).toContain('넓게 잡은 예상 범위')
+    expect(explainDay(dayInfo(single(), '2026-09-14'), 'explicit', false)).not.toMatch(/배란 예상일/)
+    // With three regular cycles the same day is a peak day with its ⭐.
+    expect(cellView(dayInfo(base(), '2026-09-15'), ctx('explicit'))).toMatchObject({ phase: 'peak', star: true, confidence: 'cycles' })
+    // An irregular record (24, 35, 27, 32) is low too — even with four cycles.
+    const irregular = base({ periods: [{ start: '2026-05-01' }, { start: '2026-05-25' }, { start: '2026-06-29' }, { start: '2026-07-26' }, { start: '2026-08-27' }] })
+    expect(cellView(dayInfo(irregular, '2026-09-10'), { ...ctx('explicit'), today: '2026-09-01' }).confidence).toBe('low')
+    expect(dayInfo(irregular, '2026-09-10').phase).not.toBe('peak')
+  })
+
+  it('the legend follows: 예상 범위 (넓음), no 가능성 높음, no 배란 예상', () => {
+    expect(legendItems('explicit', undefined, { confidence: 'low' }).map((l) => l.label)).toEqual(['생리 · 예정', '예상 범위 (넓음)', '가능 범위'])
+    expect(legendItems('soft', undefined, { confidence: 'low' }).map((l) => l.label)).toEqual(['생리 · 예정', '우리의 주간 (예상 범위)', '가능 범위'])
+    expect(legendItems('explicit', { details: false, owner: false }, { confidence: 'low' }).map((l) => l.label)).toEqual(['우리의 주간 (예상 범위)'])
+    expect(legendItems('explicit', undefined, { confidence: 'cycles' }).map((l) => l.key)).toContain('peak')
+    // A month's legend is low only when every window day in it is.
+    const sep = range('2026-08-30', '2026-10-10').map((d) => cellView(dayInfo(single(), d), ctx('explicit')))
+    expect(monthConfidence(sep)).toBe('low')
+    expect(monthConfidence(range('2026-08-30', '2026-10-10').map((d) => cellView(dayInfo(base(), d), ctx('explicit'))))).toBe('cycles')
+    expect(monthConfidence([])).toBe('cycles')
+    expect(windowLabel('explicit', 'low')).toBe('예상 범위 (넓음)')
+    expect(windowLabel('explicit')).toBe('가임기 (예상)')
+    expect(windowLabel('soft', 'lh')).toBe('우리의 주간 (예상)')
+    expect(confidenceLabel('low', 0)).toBe('달력 기준 · 설정값')
+    expect(confidenceLabel('low', 2)).toBe('달력 기준 · 기록 2주기')
+    expect(confidenceLabel('cycles', 3)).toBe('기록 3주기 기준')
+    expect(confidenceLabel('lh', 3)).toBe('LH 기준')
+  })
+
+  it('the summary names the basis instead of an ovulation day, and reads the range in every view', () => {
+    const s = cycleSummary(single(), '2026-09-12', 'explicit')
+    expect(s.headline.title).toBe('가임기 예상 범위예요 (넓음)')
+    expect(s.headline.sub).toContain('달력 기준 · 설정값')
+    expect(s.rows.map((r) => r.key)).toEqual(['period', 'window', 'basis', 'avg'])
+    expect(s.rows.find((r) => r.key === 'window')?.label).toBe('예상 범위 (넓음)')
+    expect(s.rows.find((r) => r.key === 'basis')).toMatchObject({ label: '예상 기준', value: '달력 기준 · 설정값' })
+    expect(s.rows.find((r) => r.key === 'period')).toMatchObject({ value: '9월 27일~10월 1일 무렵', sub: 'D-15 · 설정값 기준' })
+    expect(cycleSummary(single(), '2026-09-07', 'explicit').headline.title).toBe('가임기 무렵까지 3일 (예상)')
+    // Soft wording: the same range, its own words, no basis row.
+    const soft = cycleSummary(single(), '2026-09-12', 'soft')
+    expect(soft.rows.map((r) => r.key)).toEqual(['period', 'window', 'avg'])
+    expect(soft.rows.find((r) => r.key === 'window')?.label).toBe('우리의 주간 (예상 범위)')
+    // Hidden wording never names LH, even when LH set the range.
+    const lh = single({ lhTests: [{ date: '2026-09-12', result: 'positive' }] })
+    const hidden = cycleSummary(lh, '2026-09-20', 'hidden')
+    expect(hidden.rows.map((r) => `${r.label} ${r.value} ${r.sub ?? ''}`).join(' ')).not.toMatch(/LH/)
+    expect(hidden.rows.find((r) => r.key === 'period')?.sub).toContain('기록 기준')
+    expect(cycleSummary(lh, '2026-09-20', 'explicit').rows.find((r) => r.key === 'period')?.sub).toContain('LH 기준')
+    expect(cycleSummary(lh, '2026-09-20', 'explicit', { lh: false }).rows.find((r) => r.key === 'period')?.sub).toContain('기록 기준')
+  })
+})
+
+describe('long cycles and 기록 누락? (N12)', () => {
+  it("flags a gap only past the settings' maximum AND twice the average", () => {
+    expect(isMissedGap(61)).toBe(true)
+    expect(isMissedGap(60)).toBe(false)
+    expect(isMissedGap(61, { average: 28 })).toBe(true)
+    expect(isMissedGap(64, { maxCycle: 60, average: 35 })).toBe(false) // under 2 × 35
+    expect(isMissedGap(64, { maxCycle: 90, average: 30 })).toBe(false) // a long cycle is a cycle
+    expect(isMissedGap(125, { maxCycle: 90, average: 60 })).toBe(true)
+    // A 긴 주기 record: 64, 55, 64 → no '기록 누락?', the day counts past 60.
+    const periods = [{ start: '2026-01-01' }, { start: '2026-03-06' }, { start: '2026-04-30' }, { start: '2026-07-03' }]
+    const long = { periods, lhTests: [], cycle: { cycleLength: 50, periodLength: 5, longCycles: true } }
+    const h = cycleHistory(long, '2026-09-04', '2026-01-01')
+    expect(h.maxCycle).toBe(90)
+    expect(h.rows.map((r) => r.hint)).toEqual([undefined, undefined, undefined, undefined])
+    expect(h.rows.map((r) => r.attempt)).toEqual([4, 3, 2, 1])
+    expect(h.estimated).toBe(false)
+    // Without the setting a 64-day gap is dropped from the average but, at under twice the
+    // 55-day average, still not called a missed log; a 70-day gap on 28-day cycles is one.
+    const plain = cycleHistory({ ...long, cycle: { cycleLength: 28, periodLength: 5 } }, '2026-09-04', '2026-01-01')
+    expect(plain.maxCycle).toBe(60)
+    expect(plain.rows.filter((r) => r.hint === 'gap')).toHaveLength(0)
+    const missed = cycleHistory(
+      { periods: [{ start: '2026-01-01' }, { start: '2026-01-29' }, { start: '2026-02-26' }, { start: '2026-05-07' }], lhTests: [], cycle: { cycleLength: 28, periodLength: 5 } },
+      '2026-05-10',
+      '2026-01-01',
+    )
+    expect(missed.rows.map((r) => r.hint)).toEqual([undefined, 'gap', undefined, undefined])
+    expect(missed.estimated).toBe(true)
+    expect(periodHistory(missed.rows.map((r) => ({ start: r.start })), { maxCycle: 90, average: 28 }).map((r) => r.hint)).toEqual([undefined, undefined, undefined, undefined])
+    expect(knownCycleDay({ cycleDay: 64 })).toBeUndefined()
+    expect(knownCycleDay({ cycleDay: 64 }, 90)).toBe(64)
+    expect(cycleSummary(long, '2026-09-04', 'explicit').cycleDay).toBe(64)
+  })
+
+  it("'아직 안 왔어요' keeps the 주기 tab counting a long-late cycle", () => {
+    const input = base({ cycleNotes: { '2026-09-01': { stillWaiting: '2026-10-20' } } })
+    const s = cycleSummary(input, '2026-10-25', 'explicit')
+    expect(s.status).toMatchObject({ kind: 'late', daysLate: 26 })
+    expect(s.cycleDay).toBe(55)
+    expect(s.headline).toEqual({ title: '주기 55일째 · 길어지고 있어요', sub: expect.stringContaining('병원에서 확인해 봐요') })
+    expect(s.headline.sub).not.toMatch(/\d+(일|주|개월)/)
+    // Without the answer: the missed-log question.
+    expect(cycleSummary(base(), '2026-10-25', 'explicit').headline.title).toBe('혹시 기록을 빠뜨렸나요?')
+    // The partner (details) reads neither as a nudge.
+    expect(cycleSummary(input, '2026-10-25', 'explicit', { owner: false }).headline.title).toBe('최근 생리 기록이 없어요')
   })
 })
 
@@ -516,7 +642,7 @@ describe('day sheet helpers', () => {
     expect(dayChanceLabel(dayInfo(input, possible), 'explicit')).toBe('낮음~보통')
     expect(dayChanceLabel(dayInfo(input, '2026-09-14'), 'hidden')).toBeNull()
     expect(dayChanceLabel(dayInfo(input, '2026-09-02'), 'explicit')).toBeNull()
-    expect(dayChanceLabel(dayInfo(input, '2026-08-20'), 'explicit')).toBeNull()
+    expect(dayChanceLabel(dayInfo(input, '2026-05-20'), 'explicit')).toBeNull() // before the first log
   })
 
   it('explains ordinary days without 가임기 wording in the soft view', () => {
@@ -525,7 +651,7 @@ describe('day sheet helpers', () => {
     expect(explainDay(info, 'soft', false)).not.toMatch(/가임기|배란/)
     expect(explainDay(info, 'explicit', false)).toBe('예상 범위 밖이에요 · 예측은 주기마다 틀릴 수 있어요.')
     expect(explainDay(info, 'hidden', false)).not.toMatch(/가임기|배란/)
-    expect(explainDay(dayInfo(base(), '2026-08-20'), 'explicit', true)).toContain('기록 전')
+    expect(explainDay(dayInfo(base(), '2026-05-20'), 'explicit', true)).toContain('기록 전')
   })
 
   it('points at the closest nearby log and offers moving a later start', () => {
@@ -859,6 +985,56 @@ describe('cycleHistory (시도 N번째 주기)', () => {
     expect(byStart['2026-08-25']).toBe(3)
     expect(byStart['2026-08-28']).toBe(3)
     expect(dup.current).toBe(4)
+  })
+
+  it('counts each cycle’s LH strips: a finished cycle without a surge reads LH N회 · 양성 없음', () => {
+    const lhTests = [
+      { date: '2026-06-30', result: 'negative' as const },
+      { date: '2026-07-02', result: 'negative' as const, time: '08:00' },
+      { date: '2026-07-02', result: 'faint' as const, time: '21:00' },
+      { date: '2026-07-12', result: 'positive' as const },
+      { date: '2026-08-30', result: 'negative' as const },
+      { date: '2026-09-25', result: 'negative' as const },
+    ]
+    const h = cycleHistory({ ...input, lhTests }, '2026-09-28', '2026-07-10')
+    const rows = Object.fromEntries(h.rows.map((r) => [r.start, r]))
+    // 06-29 cycle: four strips and a surge → the surge line wins.
+    expect(rows['2026-06-29']!.lhCount).toBe(4)
+    expect(lhRowLine(rows['2026-06-29']!)).toBe('첫 LH 양성 14일째')
+    // 08-25 cycle (finished 09-21): one strip, no surge.
+    expect(rows['2026-08-25']!.lhCount).toBe(1)
+    expect(lhRowLine(rows['2026-08-25']!)).toBe('LH 1회 · 양성 없음')
+    // 07-28: none → nothing to say. The running cycle (09-22): one strip, still testing.
+    expect(rows['2026-07-28']!.lhCount).toBe(0)
+    expect(lhRowLine(rows['2026-07-28']!)).toBeUndefined()
+    expect(rows['2026-09-22']!.lhCount).toBe(1)
+    expect(lhRowLine(rows['2026-09-22']!)).toBe('LH 1회')
+    // The strip on 09-25 belongs to the running cycle only.
+    expect(h.rows.reduce((n, r) => n + r.lhCount, 0)).toBe(6)
+  })
+
+  it('her feel chips per cycle row (오늘 컨디션) — never built for the partner', () => {
+    const h = cycleHistory(input, '2026-09-28', '2026-07-10')
+    const personalLog = {
+      b: {
+        '2026-09-10': { feel: 'tired' as const },
+        '2026-09-18': { feel: 'breast' as const, note: '음성' },
+        '2026-09-20': { note: '메모만' },
+        '2026-09-25': { feel: 'normal' as const },
+      },
+      a: { '2026-09-10': { feel: 'tired' as const } },
+    }
+    const feels = cycleFeels({ personalLog }, 'b', h.rows, '2026-09-28')
+    expect(Object.keys(feels)).toEqual(['2026-09-22', '2026-08-25'])
+    // Chips and 나만 보기 lines alike, oldest first, each cycle's own days only.
+    expect(feels['2026-08-25']).toEqual([
+      { date: '2026-09-10', feel: 'tired' },
+      { date: '2026-09-18', feel: 'breast', note: '음성' },
+      { date: '2026-09-20', note: '메모만' },
+    ])
+    expect(feels['2026-09-22']!.map((d) => d.feel)).toEqual(['normal'])
+    expect(cycleFeels({ personalLog }, 'a', h.rows, '2026-09-28')).toEqual({ '2026-08-25': [{ date: '2026-09-10', feel: 'tired' }] })
+    expect(cycleFeels({}, 'b', h.rows, '2026-09-28')).toEqual({})
   })
 
   it('shows each cycle’s first LH surge day', () => {

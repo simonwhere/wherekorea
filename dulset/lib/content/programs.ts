@@ -151,6 +151,44 @@ export const PROGRAMS: Program[] = [
   },
 ]
 
+/**
+ * 임신 사전건강관리, step by step, for the partner's staged "이번 달 할 일" card
+ * (N14). Every line is from docs/research/kr-programs.json ('검사 항목과 금액',
+ * '신청과 환급 절차'): apply first → referral → a participating clinic within
+ * 3 months → claim within 1 month with four papers → paid within 3 months.
+ * Whether one application covers both people is still to be confirmed by a
+ * person (docs/STATUS.md N18), so nothing here says so.
+ */
+export const FERTILITY_CHECK_GUIDE = {
+  /** What each person's supported test is and what the support covers. */
+  test: {
+    partner: { what: '정액검사', cost: '최대 5만 원 지원 · 차액은 본인 부담' },
+    carrier: { what: 'AMH·부인과 초음파', cost: '최대 13만 원 지원 · 차액은 본인 부담' },
+  },
+  apply: {
+    where: 'e보건소(온라인) 또는 주소지 보건소',
+    gives: '검사의뢰서 (출력물이나 모바일 화면)',
+  },
+  /** Where to be tested and what to bring. */
+  where: '사업에 참여하는 의료기관 (e보건소·보건소에서 확인)',
+  bring: '검사의뢰서',
+  /** The four papers the claim needs (검사 후 1개월 안). */
+  claimDocs: [
+    { id: 'form', label: '청구서' },
+    { id: 'receipt', label: '영수증' },
+    { id: 'statement', label: '세부내역서' },
+    { id: 'bankbook', label: '통장사본' },
+  ] as const,
+  claimWhere: 'e보건소 또는 보건소',
+  paidWithin: '청구 후 3개월 안에 입금돼요',
+  url: 'https://www.e-health.go.kr/gh/caSrvcGud/selectMdclSupGudInfo.do?heBiz=PG00003&menuId=200097',
+  urlLabel: 'e보건소 임신 사전건강관리',
+  checkedAt: PROGRAMS_CHECKED_AT,
+} as const
+
+export type ClaimDoc = (typeof FERTILITY_CHECK_GUIDE.claimDocs)[number]
+export type ClaimDocId = ClaimDoc['id']
+
 export function programsFor(stage: Stage): Program[] {
   return PROGRAMS.filter((p) => p.stages.includes(stage))
 }

@@ -11,9 +11,12 @@ import {
   toggleCheck,
   toggleWeekly,
 } from './checks'
-import { cycleStats, ourWeekSoon, sortedStarts, type FertilityStatus } from './cycle'
+import { isClinicMode } from './clinic'
+import { LONG_LATE_DAYS, cycleStats, fertilityStatus, ourWeekSoon, sortedStarts, type FertilityStatus } from './cycle'
 import {
+  CHECKUP_ITEM_IDS,
   ageFromBirthYear,
+  checkupsDone,
   doctorThresholdMonths,
   localNowISO,
   mergeNotices,
@@ -21,9 +24,9 @@ import {
   notifyCompleted,
   ttcClockStart,
 } from './notifications'
-import { lowPressureFor } from './prefs'
+import { canSeeCycleDetails, lowPressureFor } from './prefs'
 import { MAX_GESTATION_DAYS, canStartPregnancy, recentlyEnded, startPregnancy } from './pregnancy'
-import { clearPositivePending } from './ttc'
+import { activePositivePending, clearPositivePending } from './ttc'
 
 // ── Clock anchored to the app's `today` ─────────────────────
 
@@ -333,7 +336,16 @@ export function folicTimer(state: TimerInput, member: MemberId, today: ISODate):
 
 // ── "See a doctor" guidance ─────────────────────────────────
 
-export type DoctorReason = 'age' | 'months' | 'irregular'
+/**
+ * 'amenorrhea' (N12): the period is 15 days or more past the expected range,
+ * she answered '아직 안 왔어요' and no positive test is waiting — NICE: irregular
+ * or absent periods are a reason to be seen earlier (docs/research/medical.json).
+ * Its card line is PERIOD_DUE_COPY.stillWaiting.advice.
+ */
+export type DoctorReason = 'age' | 'months' | 'irregular' | 'amenorrhea'
+
+/** The two 임신 전 검사 rows: both ticked answers the 'months' reason (notifications.ts holds the list; re-exported for the card). */
+export { CHECKUP_ITEM_IDS }
 
 export interface DoctorAdvice {
   reasons: DoctorReason[]
@@ -349,12 +361,21 @@ export interface DoctorAdvice {
 
 /**
  * ASRM: 12 months under 35, 6 months at 35+, promptly at 40+; irregular cycles
- * are a reason to go early (NICE). Returns null when nothing applies.
+ * and an absent period are reasons to go early (NICE). Returns null when
+ * nothing applies — and always while the couple prepares with a clinic (N13:
+ * they are being seen already), and without the 'months' reason once both
+ * 임신 전 검사 rows are ticked (the checks the card asks for are done).
+ *
+ * `viewer`: who reads the card. The 'amenorrhea' reason is her period data
+ * (it says she is weeks late right now), so a reader without shared cycle
+ * details never gets it — the same rule as the 🩺 notice, which goes to the
+ * owner only. Without a viewer the advice is the couple's full picture.
  */
-export function doctorAdvice(state: AppState, today: ISODate): DoctorAdvice | null {
+export function doctorAdvice(state: AppState, today: ISODate, viewer?: MemberId): DoctorAdvice | null {
   if (state.stage !== 'preparing') return null
   // Right after a pregnancy ended, a "see a specialist" card is not what anyone needs.
   if (recentlyEnded(state, today)) return null
+  if (isClinicMode(state)) return null
   const owner = state.couple.members.find((m) => m.tracksCycle) ?? state.couple.members[0]
   const age = ageFromBirthYear(owner.birthYear, today)
   const threshold = doctorThresholdMonths(age)
@@ -362,13 +383,28 @@ export function doctorAdvice(state: AppState, today: ISODate): DoctorAdvice | nu
   // Months of trying count from the later of ttcStart and an ended pregnancy.
   const ttc = ttcClockStart(state)
   const months = ttc && ttc <= today ? monthsBetween(ttc, today) : undefined
+  const checked = checkupsDone(state)
   if (threshold === 0) reasons.push('age')
-  else if (months !== undefined && months >= threshold) reasons.push('months')
+  else if (months !== undefined && months >= threshold && !checked) reasons.push('months')
   const stats = cycleStats(state.periods, state.cycle)
   let irregularBy: DoctorAdvice['irregularBy']
-  if (stats.irregular) {
+  // Her period data: the partner reads it only with shared details.
+  if (stats.irregular && (viewer === undefined || canSeeCycleDetails(state, viewer))) {
     reasons.push('irregular')
     irregularBy = stats.average < 21 || stats.average > 35 ? 'length' : 'variation'
+  }
+  // '아직 안 왔어요' answered for a long-late cycle, no positive test waiting.
+  const status = fertilityStatus(state, today)
+  const cur = sortedStarts(state.periods).filter((d) => d <= today).pop()
+  if (
+    status.kind === 'late' &&
+    status.daysLate > LONG_LATE_DAYS &&
+    cur &&
+    state.cycleNotes?.[cur]?.stillWaiting &&
+    !activePositivePending(state) &&
+    (viewer === undefined || canSeeCycleDetails(state, viewer))
+  ) {
+    reasons.push('amenorrhea')
   }
   return reasons.length ? { reasons, threshold, months, age, irregularBy } : null
 }
