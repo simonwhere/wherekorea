@@ -21,6 +21,11 @@
 --                        record, no personal log, no 관계일 ever gets here.
 --   • partner_events     what his page sends back: ids and dates only
 --                        (lib/logic/partnerEvents.ts), never free text
+--   • link_opens         '링크 연 날' (research only, Now 3 decision
+--                        2026-10-03): couple id · Seoul date · how many
+--                        opens. No IP, no device, no time of day, no token,
+--                        no content. Never shown on her phone. Deleted after
+--                        the study (README → 연구가 끝나면).
 --
 -- Trust model, honestly: there is no account. The owner key and the share
 -- token are the secrets (the server keeps their hashes; the strings travel
@@ -71,9 +76,20 @@ create table if not exists public.partner_events (
 );
 create index if not exists partner_events_couple_created_idx on public.partner_events (couple_id, created_at);
 
+-- '링크 연 날': one row per couple per Seoul date; `count` is how many times
+-- the page was loaded that day (the page polls every few seconds, but only a
+-- load counts — lib/sync/linkOpens.ts). The study reads distinct days.
+create table if not exists public.link_opens (
+  couple_id uuid not null references public.couples (id) on delete cascade,
+  day date not null,
+  count integer not null default 1 check (count > 0),
+  primary key (couple_id, day)
+);
+
 -- ── Limits (one place) ──────────────────────────────────────
 
--- A snapshot is a page's worth of text; an event is a handful of ids.
+-- A snapshot is seven days of a page's worth of text (v2, ~25 KB; 128 KB
+-- at most); an event is a handful of ids.
 -- Tokens live 30 days by default, 90 at most. A couple's link may send at
 -- most 200 events a day (the app itself allows far fewer taps).
 
@@ -209,7 +225,8 @@ end
 $$;
 
 -- Publish the latest snapshot under `p_token` (issued on first use, 30 days).
--- Keeps the last three versions; returns the new version number.
+-- Keeps the last three versions; returns the new version number. Since v2
+-- the payload carries today and the six days after it (N20).
 create or replace function public.publish_snapshot(
   p_owner_key text,
   p_couple_id uuid,
@@ -231,7 +248,7 @@ begin
   if p_payload is null or jsonb_typeof(p_payload) <> 'object' then
     raise exception 'snapshot must be an object' using errcode = '22023';
   end if;
-  if octet_length(p_payload::text) > 65536 then
+  if octet_length(p_payload::text) > 131072 then
     raise exception 'snapshot too large' using errcode = '22023';
   end if;
   if p_token is null or length(p_token) < 16 then
@@ -360,9 +377,68 @@ begin
 end
 $$;
 
+-- '링크 연 날' (research only): his page says it was opened. The token is the
+-- only argument; the couple comes from its hash, the day is the server's own
+-- Seoul date. An unknown, expired or revoked token records nothing — and no
+-- error either, so the page never learns more than it sent.
+create or replace function public.record_link_open(p_token text)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_couple uuid;
+  v_day date := (now() at time zone 'Asia/Seoul')::date;
+begin
+  if p_token is null or length(p_token) < 16 then
+    return;
+  end if;
+  select t.couple_id into v_couple
+    from public.couple_tokens t
+   where t.token_hash = public.dulset_hash(p_token)
+     and t.revoked_at is null
+     and t.expires_at > now();
+  if v_couple is null then
+    return;
+  end if;
+  insert into public.link_opens as o (couple_id, day, count)
+  values (v_couple, v_day, 1)
+  on conflict (couple_id, day) do update
+     set count = least(o.count + 1, 100000);
+end
+$$;
+
+-- Research only: on how many distinct days in p_from…p_to (inclusive) the
+-- couple's link was opened. The owner key is checked like every owner call.
+-- The app never shows this number on her phone (positioning §6 — 읽음 표시는
+-- 압박이에요); it is for the study's own export.
+create or replace function public.link_open_days(p_owner_key text, p_couple_id uuid, p_from date, p_to date)
+returns integer
+language plpgsql
+stable
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_couple uuid := public.dulset_owner_couple(p_owner_key, p_couple_id);
+  v_n integer;
+begin
+  select count(*)::integer into v_n
+    from public.link_opens o
+   where o.couple_id = v_couple
+     and o.day between p_from and p_to
+     and o.count > 0;
+  return coalesce(v_n, 0);
+end
+$$;
+
 -- ── Housekeeping (optional: schedule with pg_cron, see README) ──
 
 -- Old events, old snapshots and long-expired tokens go; nothing a live link needs.
+-- DURING THE STUDY do not schedule it (README → 연구 중에는): the study reads
+-- old snapshots and events. It never touches link_opens — that table goes
+-- whole after the study.
 create or replace function public.dulset_cleanup()
 returns void
 language sql

@@ -20,7 +20,7 @@ import {
   setCoverFocus,
   setHideCover,
 } from '@/lib/logic/cover'
-import { PERIOD_EARLY_DAYS } from '@/lib/logic/ttcFlow'
+import { PERIOD_EARLY_DAYS, tellPartnerPeriod } from '@/lib/logic/ttcFlow'
 import { createDemoState } from '@/lib/demo'
 import { addEntry } from '@/lib/logic/diary'
 import { deletePhoto, getPhotoBlob, getPhotoURL, isBuiltinPhoto, savePhoto } from '@/lib/photos'
@@ -485,7 +485,7 @@ describe('heroLine', () => {
                       ...state.settings,
                       alertStyle: { ...state.settings.alertStyle, [viewer]: style },
                       personal: { [viewer]: { lowPressure, discreet } },
-                      shareCycleDetails: share,
+                      shareLevel: share ? 'details' : 'week',
                     },
                   }
                   for (const s of inboxes(base, day, viewer)) {
@@ -710,17 +710,24 @@ describe("'N년 전 오늘' (settings.memories, off by default)", () => {
     expect(memoryFor(entry(s, '2025-09-11', '산책'), '2026-09-11', OWNER)).toBeUndefined()
     expect(memoryFor(entry(s, '2025-09-12', '산책'), '2026-09-12', OWNER)).toBeUndefined()
     expect(memoryFor(entry(s, '2025-09-13', '산책'), '2026-09-13', OWNER)).toMatchObject({ date: '2025-09-13' })
-    // Today is day 2 of the 2026-09-01 period: nothing, even for the partner.
+    // Today is day 2 of the 2026-09-01 period: nothing for her. N19 changed the
+    // partner's side on purpose: without her details he skips only a period
+    // she TOLD him about — a line that vanished on the day of an untold period
+    // would tell it. With her details (he sees her period days) it is skipped too.
     const d2 = entry(s, '2025-09-02', '산책')
     expect(memoryFor(d2, '2026-09-02', OWNER)).toBeUndefined()
-    expect(memoryFor(d2, '2026-09-02', PARTNER)).toBeUndefined()
+    expect(memoryFor(d2, '2026-09-02', PARTNER)).toBeDefined()
+    expect(memoryFor(tellPartnerPeriod(d2, '2026-09-01', '2026-09-01T09:00:00+09:00'), '2026-09-02', PARTNER)).toBeUndefined()
+    expect(memoryFor({ ...d2, settings: { ...d2.settings, shareLevel: 'details' } }, '2026-09-02', PARTNER)).toBeUndefined()
     expect(memoryFor(entry(s, '2025-09-04', '산책'), '2026-09-04', PARTNER)).toBeDefined()
     // A negative test on the entry's day, or today.
     const negThen = on(fresh({ pregnancyTests: [{ id: 't1', date: '2025-09-20', result: 'negative', by: OWNER }] }))
     expect(memoryFor(entry(negThen, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()
     const negNow = on(fresh({ pregnancyTests: [{ id: 't2', date: '2026-09-20', result: 'negative', by: OWNER }] }))
     expect(memoryFor(entry(negNow, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()
-    expect(memoryFor(entry(negNow, '2025-09-20', '산책'), '2026-09-20', PARTNER)).toBeUndefined()
+    // (N19) A negative test is never told: his line is the same as the day before.
+    expect(memoryFor(entry(negNow, '2025-09-20', '산책'), '2026-09-20', PARTNER)).toBeDefined()
+    expect(memoryFor(entry(negNow, '2025-09-19', '산책'), '2026-09-19', PARTNER)).toBeDefined()
     // A faint line is a test day that led nowhere too (cover.ts sadTestOn): nothing that day either.
     const faint = on(fresh({ pregnancyTests: [{ id: 't3', date: '2026-09-20', result: 'faint', by: OWNER }] }))
     expect(memoryFor(entry(faint, '2025-09-20', '산책'), '2026-09-20', OWNER)).toBeUndefined()

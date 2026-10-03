@@ -1,55 +1,66 @@
 'use client'
 
-// 남편용 설치 없는 웹 화면 (Next A ①) — the page behind the link she sends.
+// 남편용 설치 없는 웹 화면 (Next A ① · Now 3) — the page behind the link she sends.
 //
 // It reads the share token from the URL hash (#t=…: a hash never reaches a
-// server log), asks the transport for the PartnerSnapshot the token can see,
-// and draws one warm page from it: greeting and cover, the moment card with
-// the shared week row and two date ideas, his month task, his checks, the
-// signal waiting for his answer, 콕 / 응원, and a footer that says what this
-// is. Every tap becomes a small typed event (lib/logic/partnerEvents) sent
-// through the same transport; her phone applies it and republishes, and the
-// page polls the snapshot back. Nothing else is requested — no app state, no
-// cycle data, no other origin.
+// server log), asks the transport for the PartnerSnapshot the token can see
+// — seven days of pages since v2 (N20) — and draws the entry for this
+// device's own date (lib/logic/partnerSnapshot snapshotDay) with
+// components/link/LinkBody: greeting and cover, the moment card with the
+// shared week row and two date ideas, his month task, '이번 주 우리 둘', his
+// checks, the signal waiting for his answer, 콕 / 응원. Every tap becomes a
+// small typed event (lib/logic/partnerEvents) sent through the same
+// transport; her phone applies it by the moment it was taken in and
+// republishes, and the page polls the snapshot back. At midnight the page
+// simply moves to the next entry — no fetch needed while the week lasts.
 //
-// Offline-first after the first load: the last snapshot this browser saw is
-// kept (components/link/model LINK_VIEW_KEY) and shown while the transport is
-// unreachable. An unknown, expired or revoked token shows the calm notice;
-// a snapshot older than its validUntil (her phone has not refreshed it)
-// shows '잠시 쉬고 있어요'. The page has no store and no onboarding.
+// When the week the snapshot covers is over (her phone has not opened since),
+// the page says so calmly — '새 화면은 곧 채워져요 · 지은님 폰이 열리면 다시
+// 채워져요' — and keeps what still works: 우리 신호 and 응원 (they wait for her
+// phone like any event). An unknown, expired or revoked token shows the calm
+// notice. Offline-first after the first load: the last snapshot this browser
+// saw is kept (components/link/model LINK_VIEW_KEY).
+//
+// The first time this device opens it (N22): the three-line card with the
+// short setup ('setup' event), a '사파리/크롬으로 열기' hint inside 카카오톡 and
+// a '홈 화면에 두기' card elsewhere. Each open records '링크 연 날' once per day
+// (transport.recordLinkOpen — the token only; research, never shown to her).
+// Nothing else is requested — no app state, no cycle data, no other origin.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
+import Polaroid from '@/components/cover/Polaroid'
 import { ToastProvider, useToast } from '@/components/ui'
 import { isISODate, todayISO } from '@/lib/dates'
 import { uid } from '@/lib/id'
 import { CHEERS_PER_DAY, type PartnerEvent } from '@/lib/logic/partnerEvents'
-import { snapshotUsable, type PartnerSnapshot, type SnapshotCheck, type SnapshotTask } from '@/lib/logic/partnerSnapshot'
-import type { Signal } from '@/lib/logic/signals'
+import { snapshotDay, type PartnerPage, type PartnerSnapshot, type SnapshotCheck, type SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import { SIGNALS_PER_DAY, type Signal } from '@/lib/logic/signals'
+import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import { transport } from '@/lib/sync/transport'
 import type { ISODate } from '@/lib/types'
 import { tokenFromHash } from '@/lib/useLinkSync'
-import { clockKo, Heading } from './bits'
-import LinkChecks from './LinkChecks'
-import LinkCover from './LinkCover'
-import LinkMoment from './LinkMoment'
+import { clockKo, Heading, Pill } from './bits'
+import LinkBody, { type LinkActions } from './LinkBody'
+import { LinkInstallCard, LinkOutsideHint, useWhere } from './LinkInstall'
+import LinkIntro from './LinkIntro'
 import LinkNotice, { type NoticeKind } from './LinkNotice'
 import LinkSignals from './LinkSignals'
-import LinkTaskCard from './LinkTask'
-import LinkUsLine from './LinkUsLine'
 import {
+  LINK_INSTALL_KEY,
+  LINK_INTRO_KEY,
+  LINK_OUTSIDE_KEY,
   LINK_VIEW_KEY,
   NO_MARKS,
+  noticeCopy,
   ownerOf,
   parseCachedView,
+  parseDeviceMark,
   pruneMarks,
-  viewCanNudge,
-  viewChecks,
   viewerOf,
-  viewSignal,
-  viewSignalsLeft,
-  viewTask,
   type CachedView,
   type LocalMarks,
+  type setupFields,
 } from './model'
 
 /** The snapshot is fetched again this often while the page is visible. */
@@ -60,7 +71,7 @@ const AFTER_SEND_MS = [1_500, 3_500, 7_000] as const
 type View =
   | { kind: 'loading' }
   | { kind: 'notice'; notice: NoticeKind; ownerName?: string }
-  | { kind: 'ready'; snapshot: PartnerSnapshot; fetchedAt: number; fromCache: boolean }
+  | { kind: 'snapshot'; snapshot: PartnerSnapshot; fetchedAt: number; fromCache: boolean }
 
 function safeLocal(): Storage | null {
   try {
@@ -87,6 +98,23 @@ function writeCache(view: CachedView | null): void {
     else ls.removeItem(LINK_VIEW_KEY)
   } catch {
     /* storage full or blocked: the page still works from memory */
+  }
+}
+
+/** A per-device "done" mark (first-run card, install card, in-app hint). */
+function readMark(key: string): boolean {
+  try {
+    return parseDeviceMark(safeLocal()?.getItem(key) ?? null) !== null
+  } catch {
+    return false
+  }
+}
+
+function writeMark(key: string): void {
+  try {
+    safeLocal()?.setItem(key, JSON.stringify({ at: Date.now() }))
+  } catch {
+    /* blocked storage: the card closes for this visit only */
   }
 }
 
@@ -125,6 +153,19 @@ function useHashToken(): string | null | undefined {
   return token
 }
 
+/** The three per-device marks, read once on the client (all "seen" during the static render, so nothing flashes). */
+function useDeviceMarks() {
+  const [marks, setMarks] = useState({ intro: true, install: true, outside: true })
+  useEffect(() => {
+    setMarks({ intro: readMark(LINK_INTRO_KEY), install: readMark(LINK_INSTALL_KEY), outside: readMark(LINK_OUTSIDE_KEY) })
+  }, [])
+  const close = useCallback((which: 'intro' | 'install' | 'outside') => {
+    writeMark(which === 'intro' ? LINK_INTRO_KEY : which === 'install' ? LINK_INSTALL_KEY : LINK_OUTSIDE_KEY)
+    setMarks((m) => ({ ...m, [which]: true }))
+  }, [])
+  return { seen: marks, close }
+}
+
 export default function LinkPage() {
   return (
     <ToastProvider>
@@ -137,11 +178,14 @@ function LinkScreen() {
   const token = useHashToken()
   const today = useToday()
   const toast = useToast()
+  const where = useWhere()
+  const device = useDeviceMarks()
   const [view, setView] = useState<View>({ kind: 'loading' })
   const [marks, setMarks] = useState<LocalMarks>(NO_MARKS)
   const viewRef = useRef(view)
   viewRef.current = view
   const timers = useRef<number[]>([])
+  const opened = useRef<Set<string>>(new Set())
 
   const applySnapshot = useCallback(
     (snapshot: PartnerSnapshot | null, tok: string, fetched: boolean) => {
@@ -153,7 +197,7 @@ function LinkScreen() {
         const prev = viewRef.current
         const cached = readCache(tok)
         const ownerName =
-          prev.kind === 'ready'
+          prev.kind === 'snapshot'
             ? ownerOf(prev.snapshot).name
             : prev.kind === 'notice'
               ? prev.ownerName
@@ -166,13 +210,14 @@ function LinkScreen() {
         setMarks(NO_MARKS)
         return
       }
-      if (!snapshotUsable(snapshot, today)) {
-        setView({ kind: 'notice', notice: 'stale', ownerName: ownerOf(snapshot).name })
+      if (!Array.isArray(snapshot.members) || !Array.isArray(snapshot.days)) {
+        // A snapshot from another version of the app: nothing to draw yet.
+        setView({ kind: 'notice', notice: 'stale', ...(Array.isArray(snapshot.members) ? { ownerName: ownerOf(snapshot).name } : {}) })
         return
       }
       if (fetched) writeCache({ token: tok, snapshot, at: now })
-      setMarks((m) => pruneMarks(m, snapshot, now))
-      setView({ kind: 'ready', snapshot, fetchedAt: now, fromCache: !fetched })
+      setMarks((m) => pruneMarks(m, snapshotDay(snapshot, today), now))
+      setView({ kind: 'snapshot', snapshot, fetchedAt: now, fromCache: !fetched })
     },
     [today],
   )
@@ -186,7 +231,7 @@ function LinkScreen() {
       } catch {
         // Unreachable: keep what is on screen; with nothing cached, say so.
         const prev = viewRef.current
-        if (prev.kind === 'ready') setView({ ...prev, fromCache: true })
+        if (prev.kind === 'snapshot') setView({ ...prev, fromCache: true })
         else if (prev.kind !== 'notice' || prev.notice === 'offline') setView({ kind: 'notice', notice: 'offline' })
       }
     },
@@ -232,6 +277,17 @@ function LinkScreen() {
     }
   }, [token, applySnapshot, fetchNow])
 
+  // '링크 연 날' (research only): once per page load and day — the token goes, nothing else.
+  useEffect(() => {
+    if (!token) return
+    const key = `${token}|${today}`
+    if (opened.current.has(key)) return
+    opened.current.add(key)
+    void transport()
+      .then((t) => t.recordLinkOpen(token, today))
+      .catch(() => {})
+  }, [token, today])
+
   // Send one event, then re-fetch a few times so her confirmation lands on screen.
   const send = useCallback(
     async (ev: PartnerEvent, done: string) => {
@@ -249,78 +305,85 @@ function LinkScreen() {
     [token, toast, fetchNow],
   )
 
-  const snapshot = view.kind === 'ready' ? view.snapshot : null
-  const me = snapshot ? viewerOf(snapshot) : null
-  const owner = snapshot ? ownerOf(snapshot) : null
-  const checks = useMemo(() => (snapshot ? viewChecks(snapshot.checks, marks) : null), [snapshot, marks])
-  const signalsLeft = snapshot ? viewSignalsLeft(snapshot, marks) : 0
-  const cheersLeft = Math.max(0, CHEERS_PER_DAY - marks.cheers.length)
-  const pending = snapshot ? viewSignal(snapshot, marks) : undefined
-  const canNudge = snapshot ? viewCanNudge(snapshot, marks) : false
-  const task = snapshot ? viewTask(snapshot, marks) : null
+  const snapshot = view.kind === 'snapshot' ? view.snapshot : null
+  const page: PartnerPage | null = snapshot ? snapshotDay(snapshot, today) : null
 
-  const onToggle = (item: SnapshotCheck) => {
-    if (!snapshot) return
-    const done = !item.done
-    setMarks((m) => ({ ...m, checks: { ...m.checks, [item.id]: { done, at: Date.now() } } }))
-    void send(
-      { id: uid(), from: snapshot.viewer, kind: 'check', itemId: item.id, date: today, done },
-      done ? `‘${item.label}’ 체크했어요` : `‘${item.label}’ 체크를 풀었어요`,
-    )
-  }
-  const onTaskDone = (t: SnapshotTask) => {
-    if (!snapshot) return
-    setMarks((m) => ({ ...m, task: { id: t.id, at: Date.now() } }))
-    void send({ id: uid(), from: snapshot.viewer, kind: 'task-done', taskId: t.id, date: t.defaultDoneAt }, `‘${t.title}’ 완료했어요`)
-  }
-  const onReply = (r: Signal) => {
-    if (!snapshot || !pending?.signalId) return
-    setMarks((m) => ({ ...m, reply: { signalId: pending.signalId!, at: Date.now() } }))
-    void send(
-      { id: uid(), from: snapshot.viewer, kind: 'reply', signalId: pending.signalId, replyId: r.id },
-      `${owner!.name}님에게 “${r.text}” 보냈어요`,
-    )
-  }
-  const onSignal = (s: Signal) => {
-    if (!snapshot) return
-    setMarks((m) => ({ ...m, signals: [...m.signals, Date.now()] }))
-    void send({ id: uid(), from: snapshot.viewer, kind: 'signal', signalId: s.id }, `${owner!.name}님에게 “${s.text}” 보냈어요`)
-  }
-  const onNudge = () => {
-    if (!snapshot) return
-    setMarks((m) => ({ ...m, nudge: { at: Date.now() } }))
-    void send({ id: uid(), from: snapshot.viewer, kind: 'nudge' }, `${owner!.name}님에게 콕! 보냈어요`)
-  }
-  const onCheer = () => {
-    if (!snapshot) return
-    setMarks((m) => ({ ...m, cheers: [...m.cheers, Date.now()] }))
-    void send({ id: uid(), from: snapshot.viewer, kind: 'cheer' }, `${owner!.name}님에게 응원을 보냈어요`)
-  }
-  const goToUsLine = () => {
-    const el = document.getElementById('us-line')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
-    el?.querySelector<HTMLElement>('[data-reply]:not([disabled])')?.focus({ preventScroll: true })
+  const actionsFor = (p: PartnerPage): LinkActions => {
+    const owner = ownerOf(p)
+    return {
+      onToggle: (item: SnapshotCheck) => {
+        const done = !item.done
+        setMarks((m) => ({ ...m, checks: { ...m.checks, [item.id]: { done, at: Date.now() } } }))
+        void send(
+          { id: uid(), from: p.viewer, kind: 'check', itemId: item.id, date: today, done },
+          done ? `‘${item.label}’ 체크했어요` : `‘${item.label}’ 체크를 풀었어요`,
+        )
+      },
+      onTaskDone: (t: SnapshotTask) => {
+        setMarks((m) => ({ ...m, task: { id: t.id, at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'task-done', taskId: t.id, date: t.defaultDoneAt }, `‘${t.title}’ 완료했어요`)
+      },
+      onReply: (r: Signal) => {
+        const signalId = p.signal?.signalId
+        if (!signalId) return
+        setMarks((m) => ({ ...m, reply: { signalId, at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'reply', signalId, replyId: r.id }, `${owner.name}님에게 “${r.text}” 보냈어요`)
+      },
+      onSignal: (s: Signal) => {
+        setMarks((m) => ({ ...m, signals: [...m.signals, Date.now()] }))
+        void send({ id: uid(), from: p.viewer, kind: 'signal', signalId: s.id }, `${owner.name}님에게 “${s.text}” 보냈어요`)
+      },
+      onNudge: () => {
+        setMarks((m) => ({ ...m, nudge: { at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'nudge' }, `${owner.name}님에게 콕! 보냈어요`)
+      },
+      onCheer: () => {
+        setMarks((m) => ({ ...m, cheers: [...m.cheers, Date.now()] }))
+        void send({ id: uid(), from: p.viewer, kind: 'cheer' }, `${owner.name}님에게 응원을 보냈어요`)
+      },
+      onWeekPick: (optionId: WeekOptionId) => {
+        const w = p.week
+        if (!w) return
+        const text = w.options.find((o) => o.id === optionId)?.text ?? ''
+        setMarks((m) => ({ ...m, weekPick: { monday: w.monday, optionId, at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'week-pick', optionId, date: today }, `이번 주는 ‘${text}’로 골랐어요`)
+      },
+      onWeekDone: () => {
+        const w = p.week
+        if (!w) return
+        setMarks((m) => ({ ...m, weekDone: { monday: w.monday, at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'week-done', date: today }, `했어요! ${owner.name}님에게 전해져요`)
+      },
+    }
   }
 
-  // Where his month task sits — components/tabs/TodayTab's rule, so the page
-  // orders itself the way his in-app home does: a live deadline (`top`) goes
-  // before the moment card, or right after it when the card ends in a button;
-  // else inside the card when the card features it; else in 우리 한 줄.
-  const m = snapshot?.moment
-  const where: 'top' | 'after' | 'card' | 'us' | null = !task
-    ? null
-    : task.task.top
-      ? m?.primary
-        ? 'after'
-        : 'top'
-      : m?.monthlyTask
-        ? 'card'
-        : 'us'
-  const featured = where === 'card'
-  const leads = where === 'top'
-  const follows = where === 'after'
-  const inUsLine = where === 'us'
+  // The first-run card goes away: start his page from its top (the card was most of the first screen).
+  const closeIntro = () => {
+    device.close('intro')
+    window.scrollTo({ top: 0 })
+  }
+  const onSetup = (p: PartnerPage, fields: NonNullable<ReturnType<typeof setupFields>>) => {
+    closeIntro()
+    void send({ id: uid(), from: p.viewer, kind: 'setup', ...fields }, `내 화면을 정했어요. ${ownerOf(p).name}님 폰이 열리면 반영돼요`)
+  }
+
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.show('주소를 복사했어요. 사파리나 크롬에 붙여 넣어 주세요')
+    } catch {
+      toast.show('주소창을 길게 눌러 복사해 주세요')
+    }
+  }
+
+  const outsideHint =
+    where?.inApp && !device.seen.outside ? (
+      <LinkOutsideHint inApp={where.inApp} onCopy={() => void copyAddress()} onClose={() => device.close('outside')} />
+    ) : null
+  const installCard =
+    where && !where.inApp && !where.standalone && !device.seen.install ? (
+      <LinkInstallCard platform={where.platform} onClose={() => device.close('install')} />
+    ) : null
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-bg">
@@ -337,51 +400,110 @@ function LinkScreen() {
             <span className="animate-pulse text-sm">불러오는 중…</span>
           </div>
         ) : view.kind === 'notice' ? (
-          <LinkNotice
-            kind={view.notice}
-            ownerName={view.ownerName}
-            onRetry={view.notice === 'offline' && token ? () => void fetchNow(token) : undefined}
-          />
-        ) : snapshot && me && owner && checks && task !== undefined ? (
           <>
-            <LinkCover snapshot={snapshot} today={today} onLine={pending ? goToUsLine : undefined} />
-
-            <div className="mt-4 space-y-3">
-              {leads && task ? <LinkTaskCard task={task.task} done={task.done} onDone={onTaskDone} /> : null}
-              {snapshot.moment ? (
-                <LinkMoment snapshot={snapshot} task={featured && task ? task : undefined} onTaskDone={onTaskDone} />
-              ) : null}
-              {follows && task ? <LinkTaskCard task={task.task} done={task.done} onDone={onTaskDone} /> : null}
-            </div>
-
-            <Heading>오늘 할 일</Heading>
-            <LinkChecks me={me} her={me.id === snapshot.cycleOwner} checks={checks} onToggle={onToggle} />
-
-            <Heading sub={pending ? `${owner.name}님의 신호에 답해 보세요` : undefined}>우리 한 줄</Heading>
-            {inUsLine && task ? <LinkTaskCard task={task.task} done={task.done} onDone={onTaskDone} className="mb-3" /> : null}
-            <LinkUsLine
-              snapshot={snapshot}
-              signal={pending}
-              canNudge={canNudge}
-              cheersLeft={cheersLeft}
-              signalsLeft={signalsLeft}
-              onNudge={onNudge}
-              onCheer={onCheer}
-              onReply={onReply}
+            {outsideHint ? <div className="mb-4">{outsideHint}</div> : null}
+            <LinkNotice
+              kind={view.notice}
+              ownerName={view.ownerName}
+              onRetry={view.notice === 'offline' && token ? () => void fetchNow(token) : undefined}
             />
-
-            <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
-            <LinkSignals snapshot={snapshot} left={signalsLeft} onSend={onSignal} />
-
-            <footer className="mt-8 space-y-1.5 px-1 text-center text-[11.5px] leading-relaxed text-ink-3">
-              <p>설치 없이 보는 화면이에요 · 앱으로 설치하면 알림을 받아요 (준비 중)</p>
-              <p>
-                {owner.name}님이 보낸 링크로만 열려요 · {view.fromCache ? '마지막으로 받은 화면이에요' : `${clockKo(view.fetchedAt)} 기준`}
-              </p>
-            </footer>
           </>
+        ) : page ? (
+          <LinkBody
+            page={page}
+            today={today}
+            marks={marks}
+            actions={actionsFor(page)}
+            top={
+              outsideHint || (!device.seen.intro && page.stage === 'preparing' && !page.moment?.support) ? (
+                <>
+                  {outsideHint}
+                  {!device.seen.intro && page.stage === 'preparing' && !page.moment?.support ? (
+                    <LinkIntro
+                      myName={viewerOf(page).name}
+                      ownerName={ownerOf(page).name}
+                      onSetup={(fields) => onSetup(page, fields)}
+                      onLater={closeIntro}
+                    />
+                  ) : null}
+                </>
+              ) : null
+            }
+            bottom={installCard}
+            footer={
+              <footer className="mt-8 space-y-1.5 px-1 text-center text-[11.5px] leading-relaxed text-ink-3">
+                <p>설치 없이 보는 화면이에요</p>
+                <p>
+                  {ownerOf(page).name}님이 보낸 링크로만 열려요 ·{' '}
+                  {view.fromCache ? '마지막으로 받은 화면이에요' : `${clockKo(view.fetchedAt)} 기준`}
+                </p>
+              </footer>
+            }
+          />
+        ) : snapshot ? (
+          <WaitingView
+            snapshot={snapshot}
+            marks={marks}
+            top={outsideHint}
+            onSignal={(s) => {
+              setMarks((m) => ({ ...m, signals: [...m.signals, Date.now()] }))
+              void send({ id: uid(), from: snapshot.viewer, kind: 'signal', signalId: s.id }, `${ownerOf(snapshot).name}님에게 “${s.text}” 보냈어요`)
+            }}
+            onCheer={() => {
+              setMarks((m) => ({ ...m, cheers: [...m.cheers, Date.now()] }))
+              void send({ id: uid(), from: snapshot.viewer, kind: 'cheer' }, `${ownerOf(snapshot).name}님에게 응원을 보냈어요`)
+            }}
+          />
         ) : null}
       </main>
     </div>
+  )
+}
+
+/**
+ * After the snapshot's last day: the calm '새 화면은 곧 채워져요' and what still
+ * works without a page for today — 우리 신호 and 응원 (they wait for her phone
+ * like any event and are judged on the day they arrived). Nothing dated: no
+ * card, no band, no checks, no task.
+ */
+function WaitingView({
+  snapshot,
+  marks,
+  top,
+  onSignal,
+  onCheer,
+}: {
+  snapshot: PartnerSnapshot
+  marks: LocalMarks
+  top?: React.ReactNode
+  onSignal: (s: Signal) => void
+  onCheer: () => void
+}) {
+  const owner = ownerOf(snapshot)
+  const copy = noticeCopy('stale', owner.name)
+  const left = Math.max(0, SIGNALS_PER_DAY - marks.signals.length)
+  const cheersLeft = Math.max(0, CHEERS_PER_DAY - marks.cheers.length)
+  return (
+    <section aria-label={copy.title}>
+      {top ? <div className="mb-4">{top}</div> : null}
+      <Polaroid
+        decorated={false}
+        quiet
+        caption={<span className="min-w-0 truncate text-[12.5px] font-medium text-ink-3">{owner.name}님의 둘셋에서 왔어요</span>}
+      >
+        <CoverArt tod={timeOfDay(new Date().getHours())} quiet className="absolute inset-0" />
+      </Polaroid>
+      <div className="mt-5 px-1 text-center">
+        <h1 className="text-[21px] font-extrabold leading-[1.3] tracking-[-0.035em] text-ink">{copy.title}</h1>
+        <p className="mt-2 text-[14px] leading-[1.55] text-ink-2">{copy.body}</p>
+        <div className="mt-4">
+          <Pill tone="outline" onClick={onCheer} disabled={cheersLeft <= 0} ariaLabel={`${owner.name}님에게 응원 보내기`}>
+            <span aria-hidden>👏</span> 응원 보내기
+          </Pill>
+        </div>
+      </div>
+      <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
+      <LinkSignals snapshot={snapshot} left={left} onSend={onSignal} />
+    </section>
   )
 }

@@ -13,6 +13,7 @@
 
 import { addDays, diffDays, isISODate } from '../dates'
 import { defaultCheckItems, type HabitAnswers } from '../initial'
+import { decided } from '../sync/model'
 import { MIN_CYCLE, addPeriod } from './cycle'
 import { linkPartner, setAlertStyle, setSetting } from './settings'
 import type { AlertStyle, AppState, CheckItem, ISODate, MemberId, Settings } from '../types'
@@ -192,12 +193,23 @@ export function applyPartnerDefaults(state: AppState, today: ISODate): AppState 
 }
 
 /**
+ * The decisions key a 'setup' event from the link leaves (partnerEvents, N22):
+ * he already answered the habit questions and 소식 받는 방식 on the link, so the
+ * in-app sheet does not ask again. A decision only — not couple.linkedAt,
+ * which 설정 › 연결 shows her: when he opened the link stays off her screens
+ * (docs/positioning.md §6, 읽음 표시).
+ */
+export const PARTNER_SETUP_KEY = 'partner-setup'
+
+/**
  * Show "민수님, 처음이죠?" — the joining member's own screen, opened for the
- * first time: not linked yet (the sheet links on completion) and no check of
- * theirs anywhere (data from before this sheet existed is left alone).
+ * first time: not linked yet (the sheet links on completion), no first run
+ * answered on the link (PARTNER_SETUP_KEY) and no check of theirs anywhere
+ * (data from before this sheet existed is left alone).
  */
 export function needsPartnerFirstRun(state: AppState, viewer: MemberId): boolean {
   if (viewer !== JOINING_MEMBER || state.stage !== 'preparing' || state.couple.linkedAt) return false
+  if (decided(state, PARTNER_SETUP_KEY)) return false
   return !Object.values(state.checkLog).some((day) => (day[JOINING_MEMBER]?.length ?? 0) > 0)
 }
 

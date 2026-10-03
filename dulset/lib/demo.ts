@@ -11,7 +11,7 @@
 //
 // It shows the preconception-first model: 지은 logs her own cycle (LH strips at
 // 희미 → 양성 → 가장 진함 with times, negative home tests in a past 기다리는 주)
-// and keeps the details to herself (shareCycleDetails: false), 민수 hears the
+// and keeps the details to herself (shareLevel 'week' — 우리의 주간 only), 민수 hears the
 // soft "우리의 주간" wording, checks two daily habits and two once-a-week
 // check-ins (금주 · 사우나 쉬기, the starter list's labels — N7), and every timer
 // counts from a real first check. They applied for 임신 사전건강관리 at 보건소
@@ -41,6 +41,7 @@ import { sendSignal } from './logic/signals'
 import { addLeaveDay, addTreatment } from './logic/treatments'
 import { periodToldKey, tellPartnerPeriod } from './logic/ttcFlow'
 import { setReaction } from './logic/usView'
+import { markWeekDone, pickWeek, weekOf, weekOptions } from './logic/weekTogether'
 import { decide, lhId, periodId } from './sync/model'
 import type {
   AppState,
@@ -133,8 +134,8 @@ function demoBase(today: ISODate, now: Date, ttcStart: ISODate): AppState {
     settings: {
       ...s.settings,
       // 지은 keeps her period days, LH and test results to herself; 민수 sees the
-      // shared 우리의 주간 and gentle status only (privacy by default).
-      shareCycleDetails: false,
+      // shared 우리의 주간 and gentle status only (privacy by default, N23 'week').
+      shareLevel: 'week',
       // Each person's own choices: 민수 hides health words on his lock screen.
       // 민수 hides health words on the lock screen, but his home card is readable on first tap in the demo.
       personal: { a: { lowPressure: false, discreet: true, homeDiscreet: false }, b: { lowPressure: false, discreet: false } },
@@ -686,6 +687,16 @@ function demoPreparing(today: ISODate, now: Date): AppState {
   // …and a moment ago a "🙏 오늘 고마웠어요" signal that 지은 hasn't answered yet:
   // her cover line says "민수님이 신호를 보냈어요" and 우리 한 줄 holds the reply chips.
   s = sendSignal(s, 'a', 'b', 'thanks', today, earlierToday(today, now, 20))
+  // 이번 주 우리 둘 (N21): on Monday 민수 picked the first of this week's three
+  // and said [했어요] on Thursday (when that day has come), so 지은's home has
+  // '이번 주 민수님' to read and her [고마워요] is still hers to give.
+  const monday = weekOf(today)
+  const pick = weekOptions(s, monday, 'a')[0]
+  if (pick) {
+    s = pickWeek(s, 'a', pick.id, monday)
+    const thursday = addDays(monday, 3)
+    if (thursday <= today) s = markWeekDone(s, 'a', thursday)
+  }
   return settleInbox(s, today)
 }
 

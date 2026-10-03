@@ -10,9 +10,12 @@
 //    (what 설정 › 연결 shows).
 //
 // What travels is only lib/logic/partnerSnapshot.buildPartnerSnapshot — a
-// projection through the privacy lenses, never the AppState — and what comes
-// back is applied with lib/logic/partnerEvents.applyPartnerEvents through
-// update(fn), with the same gates the app's own screens use.
+// projection through the privacy lenses for today and the six days after it
+// (N20), never the AppState — and what comes back is applied with
+// lib/logic/partnerSnapshot.applyReceivedEvents through update(fn): each event
+// on the day the transport took it in, with the same gates the app's own
+// screens use (partnerEvents.applyPartnerEvent), so a reply he sent on Monday
+// still counts when her phone opens on Thursday.
 //
 // The record lives in localStorage under LINK_KEY: the raw token stays on this
 // device only (it has to: the owner needs it to publish, and the server
@@ -24,7 +27,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { localNowISO } from './logic/notifications'
-import { applyPartnerEvents, hasAppliedEvent } from './logic/partnerEvents'
+import { addDays } from './dates'
+import { hasAppliedEvent } from './logic/partnerEvents'
 import {
   coupleLinkOf,
   linkStatus,
@@ -35,7 +39,7 @@ import {
   setCoupleLink,
   type LinkRecord,
 } from './logic/partnerLink'
-import { buildPartnerSnapshot } from './logic/partnerSnapshot'
+import { applyReceivedEvents, buildPartnerSnapshot } from './logic/partnerSnapshot'
 import { partnerId } from './logic/partnerTrack'
 import { stampOn } from './logic/today'
 import { cycleOwnerId } from './logic/ttcFlow'
@@ -272,12 +276,24 @@ export const PULL_EVERY_MS = 4_000
 export const PULL_WINDOW_DAYS = 7
 
 /**
+ * The pull window's start: PULL_WINDOW_DAYS back from her day or from the
+ * clock, whichever is earlier (a `?today=` demo pin and the real clock both
+ * stay inside it).
+ */
+export function pullSince(today: string, nowMs: number = Date.now()): ISODateTime {
+  const byDay = stampOn(addDays(today, -PULL_WINDOW_DAYS))
+  const byClock = localNowISO(new Date(nowMs - PULL_WINDOW_DAYS * 86_400_000))
+  return byDay < byClock ? byDay : byClock
+}
+
+/**
  * On the cycle owner's phone (the tab whose viewer is the owner — in the
  * prototype the other tab is the partner's phone, and never publishes):
  *  • after every relevant state change (debounced), build the snapshot and
  *    publish it under the live token — the same snapshot twice is not re-sent;
  *  • pull the partner's events every few seconds, on focus, and when the
- *    transport says something changed; apply the new ones with update(fn).
+ *    transport says something changed; apply the new ones with update(fn),
+ *    each on the day it was taken in (applyReceivedEvents).
  * An expired link is revoked on the transport the first time it is seen.
  */
 export function useLinkSync(app: AppApi): void {
@@ -341,13 +357,10 @@ export function useLinkSync(app: AppApi): void {
     async (id: string) => {
       try {
         const t = await transport()
-        const since = localNowISO(new Date(Date.now() - PULL_WINDOW_DAYS * 86_400_000))
-        const events = await t.pullEvents(id, since)
-        const fresh = events.filter((ev) => !hasAppliedEvent(stateRef.current, ev.id))
-        if (fresh.length) {
-          const day = todayRef.current
-          update((s) => applyPartnerEvents(s, fresh, day))
-        }
+        const day = todayRef.current
+        const received = await t.pullReceived(id, pullSince(day))
+        const fresh = received.filter((r) => !hasAppliedEvent(stateRef.current, r.event.id))
+        if (fresh.length) update((s) => applyReceivedEvents(s, fresh, day))
         setStatus({ kind: t.kind, pulledAt: localNowISO(), error: null })
       } catch (e) {
         setStatus({ error: errorText(e) })

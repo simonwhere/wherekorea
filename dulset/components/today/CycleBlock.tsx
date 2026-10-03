@@ -14,6 +14,7 @@ import { openClinicSummary } from '@/components/clinic/openClinicSummary'
 import { openTreatments } from '@/components/clinic/openTreatments'
 import { CLINIC_SUMMARY_SHEET_TITLE } from '@/components/clinic/summaryTitle'
 import { requestOpenFeels } from '@/components/cycle/CycleHistory'
+import { cardEyebrow } from '@/components/link/model'
 import { Card, cx, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
@@ -286,7 +287,8 @@ export default function CycleBlock({
         )}
       >
         <div className="flex min-h-[22px] items-center justify-between gap-2">
-          <p className={cx('min-w-0 text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{m.eyebrow}</p>
+          {/* The 평소 주 card's eyebrow would repeat the week block right below it (WeekTogether): link/model.cardEyebrow. */}
+          <p className={cx('min-w-0 text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{cardEyebrow(m.eyebrow, !!m.weekTogether)}</p>
           {m.lastFeels && (!headerLink || headerLink === TO_CYCLE) ? (
             // Period days 1–3: the way to the 주기 tab is a look back at her own
             // chips from the cycle that just ended (the row's list opens there).

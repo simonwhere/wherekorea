@@ -224,16 +224,21 @@ describe('short cycles', () => {
   })
 
   it('the date tab and the home teaser agree with the "우리의 주간" notice during the period', () => {
-    // The heads-up notice goes out on 09-30 (day before the 10-01 window), while the period is on.
-    const notice = scheduledNotices(s, '2026-09-30').find((n) => n.to === 'a' && n.kind === 'fertile-start')
-    expect(notice?.title).toBe('💞 이번 주는 우리의 주간이에요')
+    // Her own estimate: the window (10-01…) overlaps the period, so 곧 우리의 주간 already shows on 09-30.
     for (const d of ['2026-09-30', '2026-10-02']) {
       const st = fertilityStatus(s, d)
       expect(st.kind).toBe('period')
       expect(ourWeekSoon(st)).toBe(true)
       expect(showDateTeaser(st, 'soft')).toBe(true)
-      expect(dateBanner(s, d, 'a').kind).toBe('our-week')
+      expect(dateBanner(s, d, 'b').kind).toBe('our-week')
     }
+    // His (N19, cycleRing.sharedWeek): no shared span starts on period days 1–3 (09-29…10-01) —
+    // the heads-up notice and the date tab both wait for day 4 (10-02), and agree with each other.
+    const notice = (d: string) => scheduledNotices(s, d).find((n) => n.to === 'a' && n.kind === 'fertile-start')
+    expect(notice('2026-09-30')).toBeUndefined()
+    expect(dateBanner(s, '2026-09-30', 'a').kind).toBe('preparing')
+    expect(notice('2026-10-02')?.title).toBe('💞 이번 주는 우리의 주간이에요')
+    expect(dateBanner(s, '2026-10-02', 'a').kind).toBe('our-week')
     // Early in a normal-length period the window is still far off.
     const normal = preparing({ periods: [{ start: '2026-09-15' }] })
     expect(ourWeekSoon(fertilityStatus(normal, '2026-09-16'))).toBe(false)

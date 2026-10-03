@@ -9,7 +9,7 @@ import {
   isWeekly,
   nudgeableItem,
   toggleCheck,
-  toggleWeekly,
+  toggleWeeklyUndoable,
 } from './checks'
 import { isClinicMode } from './clinic'
 import { LONG_LATE_DAYS, cycleStats, fertilityStatus, ourWeekSoon, sortedStarts, type FertilityStatus } from './cycle'
@@ -116,7 +116,9 @@ export function firstUnchecked(
 /**
  * Toggle one item; when that toggle finishes the day's daily list, tell the
  * partner (once a day — notifyCompleted dedups by key). A weekly check-in is
- * toggled for the whole week (toggleWeekly) and never counts as "finishing".
+ * toggled for the whole week (checks.toggleWeeklyUndoable) and never counts
+ * as "finishing"; when the tap took it back, `cleared` lists the days it was
+ * cleared from, for the 되돌리기 toast (checks.restoreWeekly, N24).
  */
 export function toggleWithCompletion(
   state: AppState,
@@ -125,9 +127,12 @@ export function toggleWithCompletion(
   date: ISODate,
   itemId: string,
   nowISO: string,
-): { state: AppState; completed: boolean } {
+): { state: AppState; completed: boolean; cleared?: ISODate[] } {
   const item = state.checkItems.find((i) => i.id === itemId)
-  if (item && isWeekly(item)) return { state: toggleWeekly(state, member, date, itemId), completed: false }
+  if (item && isWeekly(item)) {
+    const t = toggleWeeklyUndoable(state, member, date, itemId)
+    return { state: t.state, completed: false, ...(t.cleared.length ? { cleared: t.cleared } : {}) }
+  }
   const before = rowProgress(state, member, date).complete
   let next = toggleCheck(state, member, date, itemId)
   const completed = !before && rowProgress(next, member, date).complete

@@ -1,12 +1,106 @@
 // The home's cycle ring and week row (components/today/CycleRing.tsx,
 // WeekRow.tsx) — pure shaping of ttcFlow.cycleStrip, so the drawing rules are
-// testable. Nothing here decides WHAT a viewer may see: cycleStrip already
-// applied the lens (details, wording, LH only in explicit wording). These
-// helpers only turn its days into arcs, legend items and week cells.
+// testable. These helpers only turn its days into arcs, legend items and week
+// cells: cycleStrip already applied the lens (details, wording, LH only in
+// explicit wording).
+//
+// One rule does live here, because the home card, the week row, the calendar
+// and the partner's one notice all read it (ttcFlow, calendarView,
+// notifications): sharedWeek — WHICH window a partner without her details may
+// see, and when (N19, docs/positioning.md §4 '0번: 새는 곳').
 
-import { formatKo, weekdayKo } from '../dates'
-import type { ISODate } from '../types'
+import { addDays, diffDays, formatKo, isISODate, weekdayKo } from '../dates'
+import type { AppState, ISODate } from '../types'
+import { cycleAt, fertilityStatus, ourWeekSoon, sortedStarts, type CycleConfidence, type CycleInput, type CycleWindow } from './cycle'
+import { recentlyEnded } from './pregnancy'
+import { activePositivePending, activeRest } from './ttc'
 import type { CycleStrip, StripDay, StripTone } from './ttcFlow'
+
+// ── The shared band (partner without details, N19) ─────────
+//
+// The husband loop's rule #1: what he sees is what she sent or his own, and a
+// change of his screen is information too. So a partner without her details
+// ('우리의 주간' or '날짜 없음' sharing) never sees a screen change on the day
+// of something she did not tell: an untold period start, an LH result, a test,
+// a late period, a rest or a positive test waiting for the clinic. From the
+// day after 우리의 주간 ends until the next '곧 우리의 주간' starts, his home,
+// week row and calendar are one '평소 주' — the same card, no band, nothing
+// drawn ahead. The ONLY moments that change it are the shared start of 곧
+// 우리의 주간 and the window itself (this function), what she tells with
+// [알리기], her signals, his own actions, and the quiet after a pregnancy
+// ended (a stage change both phones already showed).
+//
+// The window he sees is computed from her logged period starts and the cycle
+// settings alone — never from LH strips or tests (her records; positioning §6:
+// no LH result goes to him automatically). So her own (LH-tuned) card may name
+// a slightly different window than his; that gap is the privacy boundary.
+//
+// Residuals (documented, tested in tests/leakInference.test.ts):
+//  • When the next window would have come and does not (a late period, a rest,
+//    a positive test), he sees no change at all — only the absence of one, on
+//    the day it would have come.
+//  • A pause she starts INSIDE the shared window (a rest, the clinic) ends it
+//    early for him too: showing '우리의 주간' through a rest she chose (after
+//    a live vaccine, say) would contradict the rest itself.
+//  • A period logged inside the window (a cycle far shorter than expected)
+//    ends it as well.
+//  • A period start logged late (backdated to day 4 or later of its cycle)
+//    can start the next shared span on the day it is logged.
+
+/** Period days 1–3 are hers (ttcFlow.PERIOD_EARLY_DAYS — a test keeps them equal): no shared span starts on them. */
+export const SHARED_QUIET_DAYS = 3
+
+export interface SharedWeek {
+  /** 'soon': the days before the window ('곧 우리의 주간', cycle.OUR_WEEK_LEAD_DAYS); 'window': inside it. */
+  kind: 'soon' | 'window'
+  fertileStart: ISODate
+  fertileEnd: ISODate
+  /** The calendar window behind it (its `start` keys his one notice: notifications.fertileKey). */
+  window: CycleWindow
+  /** Logged cycles only ('cycles' / 'low') — never 'lh'. */
+  confidence: CycleConfidence
+}
+
+type SharedState = Pick<AppState, 'stage' | 'periods' | 'cycle' | 'pregnancy' | 'restCycle' | 'positivePending'> &
+  Partial<Pick<AppState, 'cycleNotes'>>
+
+/** What a partner without details is computed from: her logged period starts and the cycle settings — no LH, no tests. */
+export function sharedCycleInput(state: Omit<SharedState, 'stage' | 'restCycle' | 'positivePending'>): CycleInput {
+  return {
+    periods: state.periods,
+    lhTests: [],
+    cycle: state.cycle,
+    ...(state.pregnancy ? { pregnancy: state.pregnancy } : {}),
+    ...(state.cycleNotes ? { cycleNotes: state.cycleNotes } : {}),
+  }
+}
+
+/**
+ * The shared window a partner without details sees on `today` — '곧 우리의
+ * 주간' (the lead days before it) or the window itself — or undefined: the
+ * '평소 주'. Undefined outside the preparing stage, in the quiet after a
+ * pregnancy ended, while a rest, the clinic or a positive test pauses the
+ * dates, on period days 1–3, and whenever the window is not near. Pure; one
+ * rule for the home card, the week row, the calendar and his notice.
+ */
+export function sharedWeek(state: SharedState, today: ISODate): SharedWeek | undefined {
+  if (state.stage !== 'preparing' || !isISODate(today)) return undefined
+  if (activePositivePending(state) || activeRest(state, today) || recentlyEnded(state, today)) return undefined
+  const input = sharedCycleInput(state)
+  const status = fertilityStatus(input, today)
+  if (!ourWeekSoon(status)) return undefined
+  const start = [...sortedStarts(state.periods)].reverse().find((d) => d <= today)
+  if (!start || diffDays(start, today) + 1 <= SHARED_QUIET_DAYS) return undefined
+  const w = cycleAt(input, start)
+  if (!w || w.fertileEnd < today) return undefined
+  const kind = today < w.fertileStart ? 'soon' : 'window'
+  return { kind, fertileStart: w.fertileStart, fertileEnd: w.fertileEnd, window: w, confidence: w.confidence }
+}
+
+/** Did the shared window already run on the day before `monday` (the week row's left edge stays square)? */
+export function sharedBandBefore(week: Pick<SharedWeek, 'fertileStart'> | undefined, monday: ISODate): boolean {
+  return !!week && week.fertileStart <= addDays(monday, -1)
+}
 
 // ── Ring ────────────────────────────────────────────────────
 

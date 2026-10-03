@@ -11,6 +11,7 @@
 // (bold + underline). Research: docs/research/regulation.json.
 
 import { cx } from '@/components/ui'
+import { SHARE_LEVELS, type ShareLevel } from '@/lib/types'
 
 /** Clearly marked "중요한 내용" (bold + underline). */
 export function Mark({ children }: { children: React.ReactNode }) {
@@ -59,32 +60,78 @@ export function SensitiveConsentNotice() {
   )
 }
 
-/** 파트너 공유 — what "자세한 기록까지" means, for the cycle owner. */
-export function ShareConsentNotice({ partner }: { partner: string }) {
+/**
+ * 파트너 공유 — what widening to a level means, for the cycle owner: who gets
+ * what, why, for how long, and that saying no is fine. '자세히' (the default
+ * here) is the 생리일·테스트 결과 notice; '우리의 주간' names the expected
+ * window, which is computed from her cycle and so is health information too.
+ */
+export function ShareConsentNotice({ partner, level = 'details' }: { partner: string; level?: Exclude<ShareChoice, 'none'> }) {
   return (
     <NoticeRows
       rows={[
         ['받는 사람', <Mark key="r">{partner}님</Mark>],
-        ['항목', <Mark key="i">생리일, 배테기(LH)·임테기 결과</Mark>],
+        [
+          '항목',
+          level === 'details' ? (
+            <Mark key="i">생리일, 배테기(LH)·임테기 결과</Mark>
+          ) : (
+            <Mark key="i">‘우리의 주간’ 예상 날짜 (생리일·테스트 결과는 빼고)</Mark>
+          ),
+        ],
         ['목적', '둘이 함께 준비하기 위해'],
         ['기간', <Mark key="k">설정에서 끄거나 연결을 끊을 때까지</Mark>],
-        ['거부', '‘우리의 주간만’을 고르면 돼요. 그래도 둘셋을 똑같이 쓸 수 있어요.'],
+        [
+          '거부',
+          level === 'details'
+            ? '‘우리의 주간’이나 ‘날짜 없음’을 고르면 돼요. 그래도 둘셋을 똑같이 쓸 수 있어요.'
+            : '‘날짜 없음’을 고르면 돼요. 그래도 둘셋을 똑같이 쓸 수 있어요.',
+        ],
       ]}
     />
   )
 }
 
-export type ShareChoice = 'week' | 'details'
+/**
+ * How much the partner sees of the cycle (settings.shareLevel, N23) — the
+ * same three words everywhere: onboarding ③, 설정 › 공유 범위, the cycle tab.
+ */
+export type ShareChoice = ShareLevel
 
-export const SHARE_OPTIONS: ReadonlyArray<{ value: ShareChoice; label: string; hint: (partner: string) => string }> = [
+/**
+ * The three levels, least first, each with one line on exactly what the
+ * partner's screen shows. Whatever the level, the partner always sees his own
+ * things and what she sends: checks, his 할 일, 이번 주 우리 둘, signals, and
+ * anything she tells with [알리기].
+ */
+export const SHARE_OPTIONS: ReadonlyArray<{ value: ShareChoice; label: string; short: string; hint: (partner: string) => string }> = [
+  {
+    value: 'none',
+    label: '날짜 없음',
+    short: '날짜 없음',
+    hint: (p) => `${p}님 화면에 날짜와 띠가 없어요. 체크·할 일·신호, 그리고 내가 알린 것만 보여요.`,
+  },
   {
     value: 'week',
-    label: '우리의 주간만 (기본)',
-    hint: (p) => `${p}님에게는 ‘우리의 주간’과 부드러운 안내만 보여요. 생리일과 테스트 결과는 나만 봐요.`,
+    label: '우리의 주간 (기본)',
+    short: '우리의 주간',
+    hint: (p) => `${p}님에게 ‘우리의 주간’ 예상 띠와 부드러운 안내까지 보여요. 생리일·테스트 결과는 나만 봐요.`,
   },
   {
     value: 'details',
-    label: '자세한 기록까지 (생리·배테기·임테기)',
-    hint: (p) => `생리일, 배테기·임테기 결과도 ${p}님 화면에 보여요.`,
+    label: '자세히 (생리·배테기·임테기)',
+    short: '자세히',
+    hint: (p) => `생리일, 배테기·임테기 결과까지 ${p}님 화면에 보여요.`,
   },
 ]
+
+/** The option for a level (always found: SHARE_OPTIONS covers every ShareLevel). */
+export function shareOption(level: ShareChoice): (typeof SHARE_OPTIONS)[number] {
+  return SHARE_OPTIONS.find((o) => o.value === level) ?? SHARE_OPTIONS[1]!
+}
+
+/** Is `next` more than `current` (a widening asks for consent first)? */
+export function widens(current: ShareChoice, next: ShareChoice): boolean {
+  const order: readonly ShareChoice[] = SHARE_LEVELS
+  return order.indexOf(next) > order.indexOf(current)
+}

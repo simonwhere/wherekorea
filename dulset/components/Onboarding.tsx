@@ -127,7 +127,7 @@ export default function Onboarding() {
     }
     // 부담 없이 is per person (settings.personal) and not asked here — never couple-wide.
     const base = stateFromOnboarding({ ...choices, lowPressure: false }, today, new Date(), code)
-    let state = applyOnboardingExtras(base, { shareCycleDetails: share === 'details' }, today)
+    let state = applyOnboardingExtras(base, { shareLevel: share }, today)
     // The other person wasn't asked anything: default rows and the soft style until their first run.
     state = applyPartnerDefaults(state, today)
     state = applyOnboardingCycle(state, { pastStarts, usesLH }, today)

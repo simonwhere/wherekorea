@@ -9,15 +9,25 @@
 //
 // The link is made on the cycle owner's phone only: the snapshot is built
 // here, through her lenses (lib/useLinkSync). The partner's screen says so.
+//
+// '민수님 화면 미리보기' (N23): the owner can open the partner's page exactly as
+// the link draws it today — a snapshot built on this phone
+// (partnerSnapshot.buildPartnerSnapshot, the same lenses) rendered by the
+// link's own components (components/link/LinkPreview, inert) — nothing is
+// published or sent. The '링크 연 날' research counter (transport.linkOpenDays)
+// is deliberately not shown here or anywhere on her screens: it would be a
+// read receipt (docs/positioning.md §6 and §7).
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, Toggle, cx, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
-import { coverOnLink, setCoverOnLink } from '@/lib/logic/prefs'
+import { buildPartnerSnapshot } from '@/lib/logic/partnerSnapshot'
+import { coverOnLink, setCoverOnLink, shareLevelOf } from '@/lib/logic/prefs'
 import { linkPartner, unlinkPartner } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
+import type { MemberId } from '@/lib/types'
 import { TRANSPORT_LABEL } from '@/lib/sync/transport'
 import {
   LINK_DAYS,
@@ -33,6 +43,7 @@ import {
 } from '@/lib/useLinkSync'
 import { SettingsSection } from './bits'
 import { timeKo } from '@/components/link/bits'
+import LinkPreview from '@/components/link/LinkPreview'
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -120,6 +131,8 @@ export default function LinkSection() {
   const stateLink = state.couple.link
   const orphan = isOwner && !link && !!stateLink && !stateLink.revokedAt && linkStatus(stateLink, now) === 'active'
   const sendsCover = coverOnLink(state.settings)
+  // 날짜 없음 (N23): the band and its ideas never go on the link.
+  const sendsBand = shareLevelOf(state) !== 'none'
   const toggleCover = (on: boolean) => {
     update((s) => setCoverOnLink(s, me.id, on))
     toast.show(on ? `표지 사진을 링크에도 보내요. ${other.name}님 화면에 다음 전송부터 보여요` : '표지 사진은 이제 링크로 가지 않아요')
@@ -254,8 +267,9 @@ export default function LinkSection() {
             {[
               '두 사람의 이름과 이모지, 함께한 지 D+N',
               `지금 상황 카드의 문장 — ${other.name}님 화면에 보이는 그대로`,
-              '우리의 주간 띠(이번 주·다음 주)와 데이트 아이디어 2개',
+              ...(sendsBand ? ['우리의 주간 띠(이번 주·다음 주)와 데이트 아이디어 2개'] : []),
               `${other.name}님의 이번 달 할 일과 오늘 체크`,
+              `이번 주 우리 둘 — ${other.name}님이 고를 것 셋, 내 준비 한 줄, 내가 보낸 고마워요`,
               `답할 신호와 답장 선택지, 콕·응원`,
               `${cycleOwner.name}님의 오늘 체크 개수(항목 이름은 빼고)`,
               `표지 사진 — ${sendsCover ? '보내요' : `안 보내요 (${isOwner ? '아래에서 켤 수 있어요' : `${cycleOwner.name}님이 정해요`})`}`,
@@ -280,6 +294,7 @@ export default function LinkSection() {
           <ul className="mt-1.5 space-y-1">
             {[
               '생리·배란테스트기·임신테스트 기록과 주기 날짜',
+              ...(sendsBand ? [] : ['우리의 주간 띠와 날짜 (공유 범위: 날짜 없음)']),
               '컨디션, 나만 보기 메모, 관계일',
               '병원 메모와 시술 기록, 일기와 사진(표지 빼고)',
               '앱의 기록 전체 — 링크는 화면 한 장이지 백업이 아니에요',
@@ -295,6 +310,8 @@ export default function LinkSection() {
           </p>
         </div>
       </Card>
+
+      {isOwner ? <PartnerPreview name={other.name} id={other.id} /> : null}
 
       <Card className="mt-3" aria-label="프로토타입에서 두 폰 흉내 내기">
         <p className="text-xs font-semibold text-ink">프로토타입에서는 이렇게 연결돼요</p>
@@ -340,5 +357,49 @@ export default function LinkSection() {
         </div>
       </Card>
     </SettingsSection>
+  )
+}
+
+/**
+ * '민수님 화면 미리보기' (N23): his page for today, built on this phone through
+ * the same lenses as the link (buildPartnerSnapshot) and drawn by the link's
+ * own components, read-only. Built only while open; nothing is published,
+ * stored or sent — with or without a link.
+ */
+function PartnerPreview({ name, id }: { name: string; id: MemberId }) {
+  const { state, today } = useApp()
+  const [open, setOpen] = useState(false)
+  const snapshot = useMemo(() => (open ? buildPartnerSnapshot(state, today, id) : null), [open, state, today, id])
+  return (
+    <Card className="mt-3" aria-label={`${name}님 화면 미리보기`}>
+      <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+        <Icon name="phone" className="h-[18px] w-[18px] text-ink-2" />
+        {name}님 화면 미리보기
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-ink-2">
+        오늘 {name}님 링크에 보이는 화면 그대로예요. 이 폰에서만 그려 보고, 아무것도 보내지 않아요.
+      </p>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="mt-3 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-surface-2 px-4 text-sm font-semibold text-ink transition-colors hover:bg-line/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      >
+        {open ? '미리보기 닫기' : '미리보기 열기'}
+        <Icon name="chev" className={cx('h-4 w-4 transition-transform', open && 'rotate-180')} strokeWidth={2.2} />
+      </button>
+      {open ? (
+        snapshot ? (
+          <div
+            data-partner-preview
+            className="mt-3 max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-bg px-3 pb-3 pt-3"
+          >
+            <LinkPreview snapshot={snapshot} today={today} />
+          </div>
+        ) : (
+          <p className="mt-3 rounded-xl bg-surface-2 px-3 py-2 text-xs text-ink-2">지금은 미리 볼 화면이 없어요.</p>
+        )
+      ) : null}
+    </Card>
   )
 }

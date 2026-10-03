@@ -7,11 +7,8 @@
 // her period started: cycleStrip only hands over the shared window.
 
 import { cx } from '@/components/ui'
-import { addDays } from '@/lib/dates'
-import { upcomingWindows } from '@/lib/logic/cycle'
 import { plainLegendLabel, weekRows, type WeekBand } from '@/lib/logic/cycleRing'
 import type { CycleStrip } from '@/lib/logic/ttcFlow'
-import { useApp } from '@/lib/store'
 import { describe } from './CycleStrip'
 
 const pct = (n: number) => `${(n / 7) * 100}%`
@@ -38,16 +35,11 @@ export default function WeekRow({
   /** "(예상)" once per card: 'none' when the card's copy carries it (the band label goes plain). */
   estimate?: 'none' | 'one'
 }) {
-  const { state } = useApp()
   const bandLabel = strip.windowLabel && estimate === 'none' ? plainLegendLabel(strip.windowLabel) : strip.windowLabel
-  const monday = strip.days[0]?.date
-  // Did the same shared window already run on the Sunday before? Then the band's
-  // left end is square (it continues), like the mockup's cut strip.
-  const bandBefore =
-    !!monday &&
-    (strip.days[0]?.tone === 'fertile' || strip.days[0]?.tone === 'peak') &&
-    upcomingWindows(state, addDays(monday, -1), 1).some((w) => w.fertileStart < monday)
-  const rows = weekRows(strip, { bandBefore })
+  // Did the same shared window already run on the Sunday before? Then the band's left end is square
+  // (it continues), like the mockup's cut strip. cycleStrip works that out from the shared window
+  // alone (strip.bandBefore) — never from her cycle, which would carry her LH-tuned window.
+  const rows = weekRows(strip, { bandBefore: !!strip.bandBefore })
 
   return (
     <div role="img" aria-label={describe(strip)} className="mt-3.5">

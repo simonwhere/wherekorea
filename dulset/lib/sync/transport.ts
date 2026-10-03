@@ -5,9 +5,22 @@
 // period, LH or test record, no personal log, no 관계일, nothing the partner's
 // own lens would hide), published under an expiring share token, and the
 // small PartnerEvents the partner sends back (lib/logic/partnerEvents.ts:
-// a check, a reply, a signal, 콕, 응원, his month task — ids and dates only).
-// The owner's phone publishes and pulls; the partner's browser fetches and
-// sends.
+// a check, a reply, a signal, 콕, 응원, his month task, his pick of the week,
+// his first-run answers — ids, dates and fixed values only). The owner's
+// phone publishes and pulls; the partner's browser fetches and sends.
+//
+// Since Now 3 (N20) a snapshot carries seven days and the owner's phone
+// applies each event on the day the transport took it in (pullReceived →
+// partnerSnapshot.applyReceivedEvents), so a reply is never lost because her
+// phone stayed closed for a few days.
+//
+// The '링크 연 날' counter (N25 decision 2026-10-03, lib/sync/linkOpens.ts):
+// the partner's page records that the link was opened today
+// (recordLinkOpen — the token and nothing else; the transport files it as
+// {couple id, day} → a count, no IP, no device, no content), and a research
+// tool on the owner's side can read on how many distinct days it was opened
+// (linkOpenDays). It is not a read receipt: positioning §6 keeps it off her
+// screens.
 //
 // Two implementations share this interface:
 //  • lib/sync/mockTransport.ts — localStorage + BroadcastChannel: two browser
@@ -21,7 +34,7 @@
 
 import type { PartnerEvent } from '../logic/partnerEvents'
 import type { PartnerSnapshot } from '../logic/partnerSnapshot'
-import type { ISODateTime } from '../types'
+import type { ISODate, ISODateTime } from '../types'
 
 /** What a published snapshot is wrapped in (the row in storage / the DB). */
 export interface SnapshotEnvelope {
@@ -68,6 +81,25 @@ export interface Transport {
    */
   pullEvents(coupleId: string, since: ISODateTime): Promise<PartnerEvent[]>
   /**
+   * The same page as pullEvents, each event with the moment the transport
+   * took it in (the mock's stamp, the server's created_at) — what the owner's
+   * phone applies them by (partnerSnapshot.applyReceivedEvents, N20).
+   */
+  pullReceived(coupleId: string, since: ISODateTime): Promise<ReceivedEvent[]>
+  /**
+   * The partner's browser: the link was opened (once per page load). Only the
+   * token goes; the transport files it under the token's couple and the day
+   * (the mock: `day`, the page's own date; the server: its own Seoul date) —
+   * no IP, no device, no content. An unknown or dead token records nothing
+   * and never throws: the page must not break over a counter.
+   */
+  recordLinkOpen(token: string, day: ISODate): Promise<void>
+  /**
+   * Research only (positioning §7, never shown on her screens — §6): on how
+   * many distinct days in from…to (inclusive) the couple's link was opened.
+   */
+  linkOpenDays(coupleId: string, from: ISODate, to: ISODate): Promise<number>
+  /**
    * Optional: be told when a snapshot or event for `coupleId` may have
    * changed (the mock: the other tab wrote). Returns the unsubscribe.
    * Without it, callers poll.
@@ -94,20 +126,37 @@ export function eventId(ev: Pick<PartnerEvent, 'id'>): string {
 
 /**
  * Received events after `since` (exclusive), oldest first (ties by id), one
- * per id (the first arrival wins). Pure; both transports use it.
+ * per id (the first arrival wins), with their receipt stamps. Pure; both
+ * transports use it.
+ *
+ * Stamps are compared as instants when both sides parse (the server's UTC
+ * created_at against a local `since` from her clock), else as strings.
  */
-export function pageEvents(list: readonly ReceivedEvent[], since: ISODateTime): PartnerEvent[] {
+export function pageReceived(list: readonly ReceivedEvent[], since: ISODateTime): ReceivedEvent[] {
   const seen = new Set<string>()
-  const out: PartnerEvent[] = []
-  const sorted = [...list].sort((a, b) =>
-    a.receivedAt < b.receivedAt ? -1 : a.receivedAt > b.receivedAt ? 1 : a.event.id < b.event.id ? -1 : a.event.id > b.event.id ? 1 : 0,
-  )
+  const out: ReceivedEvent[] = []
+  const at = (stamp: string) => {
+    const t = Date.parse(stamp)
+    return Number.isFinite(t) ? t : undefined
+  }
+  const cmp = (a: string, b: string) => {
+    const ta = at(a)
+    const tb = at(b)
+    if (ta !== undefined && tb !== undefined && ta !== tb) return ta < tb ? -1 : 1
+    return a < b ? -1 : a > b ? 1 : 0
+  }
+  const sorted = [...list].sort((a, b) => cmp(a.receivedAt, b.receivedAt) || (a.event.id < b.event.id ? -1 : a.event.id > b.event.id ? 1 : 0))
   for (const r of sorted) {
     if (seen.has(r.event.id)) continue
     seen.add(r.event.id)
-    if (r.receivedAt > since) out.push(r.event)
+    if (!since || cmp(r.receivedAt, since) > 0) out.push(r)
   }
   return out
+}
+
+/** pageReceived without the stamps. */
+export function pageEvents(list: readonly ReceivedEvent[], since: ISODateTime): PartnerEvent[] {
+  return pageReceived(list, since).map((r) => r.event)
 }
 
 // ── Picking the transport ───────────────────────────────────

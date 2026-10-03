@@ -51,7 +51,7 @@ const PRIVATE_LINES = ['08:40 · 희미', '20:50 · 희미', '06:50', '06:40', '
 function partnerStyle(s: AppState, style: AlertStyle): AppState {
   return {
     ...s,
-    settings: { ...s.settings, shareCycleDetails: false, alertStyle: { ...s.settings.alertStyle, [PARTNER]: style } },
+    settings: { ...s.settings, shareLevel: 'week', alertStyle: { ...s.settings.alertStyle, [PARTNER]: style } },
   }
 }
 
@@ -99,7 +99,7 @@ describe('PreparingHome · partner without shared details', () => {
       ...s,
       settings: {
         ...s.settings,
-        shareCycleDetails: false,
+        shareLevel: 'week',
         alertStyle: { ...s.settings.alertStyle, [PARTNER]: 'explicit' },
         personal: { ...s.settings.personal, [PARTNER]: { ...s.settings.personal?.[PARTNER], lowPressure: true } },
       },

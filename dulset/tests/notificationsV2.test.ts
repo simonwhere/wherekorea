@@ -19,6 +19,7 @@ import {
   fertileKey,
   inbox,
   mergeNotices,
+  peakBody,
   peakKey,
   scheduledNotices,
   sendCheer,
@@ -237,7 +238,7 @@ describe('the expected period is a range: 내일 예정 · 늦음 · 임신 테�
   })
 
   it('names no best days (🌟) and words the window as a wide range while the calendar alone is all there is', () => {
-    const one = { ...fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareCycleDetails: true }), periods: [{ start: '2026-09-01' }] }
+    const one = { ...fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'details' }), periods: [{ start: '2026-09-01' }] }
     const days = range('2026-09-01', '2026-09-29')
     const all = days.flatMap((d) => scheduledNotices(one, d))
     expect(all.filter((x) => x.kind === 'peak')).toEqual([])
@@ -313,7 +314,7 @@ describe('the partner hears nothing about period, LH or tests without the detail
   })
 
   it('once she shares the details, gets the dated window and peak — still never the period or tests', () => {
-    const got = toPartner(eventful({ shareCycleDetails: true }))
+    const got = toPartner(eventful({ shareLevel: 'details' }))
     expect(got.map((n) => n.kind).sort()).toEqual(['doctor', 'fertile-start', 'peak'])
     expect(got.some((n) => n.kind === 'period-due' || n.key?.startsWith('late:'))).toBe(false)
   })
@@ -373,7 +374,7 @@ describe('answers kept as dismissed notice records (알릴까요? · 접종 뒤 
 describe("a partner without the owner's cycle details", () => {
   it('gets only the shared 우리의 주간 notice, even with the explicit style (no dates, no peak days)', () => {
     // 민수 (a) chose explicit, but 지은 (b, the owner) hasn't shared her details.
-    const hidden = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareCycleDetails: false })
+    const hidden = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'week' })
     const n = scheduledNotices(hidden, '2026-09-13')
     const [toA] = fertileTo(n, 'a')
     expect(toA!.title).toBe('💞 이번 주는 우리의 주간이에요')
@@ -385,16 +386,16 @@ describe("a partner without the owner's cycle details", () => {
   })
 
   it('gets the explicit wording once the owner shares her details', () => {
-    const shared = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareCycleDetails: true })
+    const shared = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'details' })
     const n = scheduledNotices(shared, '2026-09-13')
     expect(fertileTo(n, 'a')[0]!.title).toBe('💞 가임기가 다가왔어요')
     expect(peakTo(n, 'a').map((x) => x.key)).toEqual(['peak:2026-09-01:a'])
   })
 
   it('still hears nothing with the style off or in low-pressure mode', () => {
-    const off = fresh({ alertStyle: { a: 'off', b: 'explicit' }, shareCycleDetails: true })
+    const off = fresh({ alertStyle: { a: 'off', b: 'explicit' }, shareLevel: 'details' })
     expect(scheduledNotices(off, '2026-09-13').some((x) => x.to === 'a')).toBe(false)
-    const calm = fresh({ personal: { a: { lowPressure: true } }, shareCycleDetails: true })
+    const calm = fresh({ personal: { a: { lowPressure: true } }, shareLevel: 'details' })
     expect(fertileTo(scheduledNotices(calm, '2026-09-13'), 'a')).toEqual([])
     expect(fertileTo(scheduledNotices(calm, '2026-09-13'), 'b')).toHaveLength(1)
   })
@@ -453,9 +454,13 @@ describe('rest cycles and a positive test awaiting the clinic', () => {
     const long = fresh({ ttcStart: '2025-01-01' })
     const doctor = (s: AppState) => scheduledNotices(s, '2026-09-20').filter((x) => x.kind === 'doctor')
     expect(doctor(long).map((x) => x.to).sort()).toEqual(['a', 'b'])
-    // …but not on top of a positive test awaiting the clinic.
+    // …but not on top of a positive test awaiting the clinic — for her, and for
+    // him once she told him. (N19) A partner she has NOT told gets his copy as
+    // on any other day: holding it back would change his inbox on the day of a
+    // test he doesn't know about.
     const waiting = markPositivePending(long, '2026-09-18')
-    expect(doctor(waiting)).toEqual([])
+    expect(doctor(waiting).map((x) => x.to)).toEqual(['a'])
+    expect(doctor(tellPartnerPositive(waiting, '2026-09-18T21:00:00+09:00'))).toEqual([])
     // A period after the test settles it: the notice comes back.
     const settled = addPeriod(waiting, '2026-09-19', undefined, 'b')
     expect(doctor(settled).map((x) => x.to).sort()).toEqual(['a', 'b'])
@@ -498,7 +503,13 @@ describe('the 🩺 notice is keyed by the trying period, not the age threshold',
     }
     const told = { ...long, notifications: [old] }
     expect(doctorTold(told, '2025-01-01')).toBe(true)
-    expect(doctor(told, '2026-09-20')).toEqual([])
+    // Each person's copy counts for that person (N19: the two may go out on
+    // different days): 'a' was told under the old key, 'b' still gets hers.
+    expect(doctorTold(told, '2025-01-01', 'a')).toBe(true)
+    expect(doctorTold(told, '2025-01-01', 'b')).toBe(false)
+    expect(doctor(told, '2026-09-20').map((x) => x.to)).toEqual(['b'])
+    const both = { ...long, notifications: [old, { ...old, id: 'o2', to: 'b' as const, key: 'doctor:2025-01-01:12:b' }] }
+    expect(doctor(both, '2026-09-20')).toEqual([])
     // A new trying period (after a loss) gets its own.
     expect(doctorTold(told, '2026-03-01')).toBe(false)
   })
@@ -698,5 +709,56 @@ describe('Next B: the quiet after a pregnancy ended, and 콕 받기', () => {
     const filler: Notice[] = Array.from({ length: 260 }, (_, i) => ({ key: `x:${i}`, to: 'a', kind: 'system', title: 't', body: 'b' }))
     s = mergeNotices(s, filler, at('2026-09-02')).state
     expect(s.notifications.some((n) => n.key === 'bleeding-told:2026-09-26')).toBe(true)
+  })
+})
+
+describe('N19 / N24: the partner’s 우리의 주간 notice follows the shared window — and never counts times', () => {
+  it('a partner without her details: the notice comes inside the shared window only, from her logged starts', () => {
+    const s = fresh({ alertStyle: { a: 'soft', b: 'explicit' }, shareLevel: 'week' })
+    // The day before the window (09-09) and inside it; never earlier, never after.
+    expect(fertileTo(scheduledNotices(s, '2026-09-08'), 'a')).toEqual([])
+    expect(fertileTo(scheduledNotices(s, '2026-09-09'), 'a').map((x) => x.key)).toEqual(['fertile:2026-09-01:a'])
+    expect(fertileTo(scheduledNotices(s, '2026-09-15'), 'a')).toHaveLength(1)
+    expect(fertileTo(scheduledNotices(s, '2026-09-16'), 'a')).toEqual([])
+    // An LH surge moves her window (and her notice), never his.
+    const lh = addLHTest(s, { date: '2026-09-08', time: '08:00', result: 'positive', by: 'b' })
+    for (const d of range('2026-09-05', '2026-09-18')) {
+      expect(fertileTo(scheduledNotices(lh, d), 'a'), d).toEqual(fertileTo(scheduledNotices(s, d), 'a'))
+    }
+    // A rest she starts, or a positive test she has not told: no notice to him (as for her) — only its absence.
+    expect(fertileTo(scheduledNotices(startRestCycle(s, '2026-09-05'), '2026-09-12'), 'a')).toEqual([])
+  })
+
+  it('a short cycle whose window covers the period: nothing to him on days 1–3 (they would date her untold period)', () => {
+    const short = {
+      ...fresh({ alertStyle: { a: 'soft', b: 'explicit' }, shareLevel: 'week' }),
+      periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }],
+    }
+    for (const d of ['2026-09-29', '2026-09-30', '2026-10-01']) expect(fertileTo(scheduledNotices(short, d), 'a'), d).toEqual([])
+    expect(fertileTo(scheduledNotices(short, '2026-10-02'), 'a').map((x) => x.key)).toEqual(['fertile:2026-09-29:a'])
+    // Hers comes on her own schedule.
+    expect(fertileTo(scheduledNotices(short, '2026-09-30'), 'b')).toHaveLength(1)
+  })
+
+  it("'날짜 없음' (N23): no 우리의 주간 notice to him at all — hers unchanged", () => {
+    const none = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'none' })
+    for (const d of range('2026-09-01', '2026-10-05')) {
+      expect(scheduledNotices(none, d).filter((x) => x.to === 'a' && (x.kind === 'fertile-start' || x.kind === 'peak')), d).toEqual([])
+    }
+    expect(fertileTo(scheduledNotices(none, '2026-09-12'), 'b')).toHaveLength(1)
+  })
+
+  it("with her details and his explicit style: dates, no 'how often', no LH homework for him; hers keeps both", () => {
+    const shared = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'details' })
+    const n = scheduledNotices(shared, '2026-09-13')
+    const [peakA] = peakTo(n, 'a')
+    expect(peakA!.body).toBe(peakBody('2026-09-13', '2026-09-15', false))
+    expect(peakA!.body).not.toMatch(/하루나 이틀|한 번|번이면/)
+    expect(peakTo(n, 'b')[0]!.body).toContain('하루나 이틀에 한 번이면 충분해요')
+    const [headsA] = fertileTo(n, 'a')
+    expect(headsA!.body).not.toMatch(/LH|배란테스트/)
+    expect(headsA!.body).toContain('예상 가임기')
+    expect(fertileTo(n, 'b')[0]!.body).toContain('LH 배란테스트')
+    for (const t of [peakA!.body, headsA!.body]) expect(t).not.toMatch(/숙제|실패|노력|오늘 꼭|관계를 가져야/)
   })
 })

@@ -1,7 +1,8 @@
 'use client'
 
 // ③ 동의 + 공유 범위: three short facts, what the partner may see (only the
-// cycle owner answers; '우리의 주간만' is the default), then the general and
+// cycle owner answers, with the same three levels as 설정 › 공유 범위 —
+// 날짜 없음 / 우리의 주간 (default) / 자세히, N23), then the general and
 // the separate 민감정보 consent — each notice folded under '자세히' so the two
 // checkboxes sit on one screen. Copy and the legal notes live in ./consentCopy.
 
@@ -40,7 +41,7 @@ export default function ConsentStep({
   const partner = names.b
   const points: Array<{ icon: IconName; text: string }> = [
     { icon: 'phone', text: '지금은 이 기기에만 저장해요. 서버가 없고, 동의하기 전에는 아무것도 저장하지 않았어요.' },
-    { icon: 'users', text: `‘우리의 주간’, 체크 현황, 병원 일정, 우리 기록은 함께 봐요. 생리일·배테기·임테기는 ${names[owner]}님이 허용할 때만요.` },
+    { icon: 'users', text: `체크 현황, 할 일, 신호, 병원 일정은 함께 봐요. 날짜를 얼마나 보여 줄지는 ${names[owner]}님이 정해요.` },
     { icon: 'trash', text: '기록은 직접 지울 때까지만 보관해요. 설정에서 한 번에 지울 수 있어요.' },
   ]
 
@@ -88,15 +89,19 @@ export default function ConsentStep({
           {share === 'details' ? (
             <div className="mt-3 rounded-xl bg-surface-2 p-3">
               <p className="mb-1.5 text-xs font-bold text-ink">파트너 공유 동의 (선택)</p>
-              <ShareConsentNotice partner={partner} />
+              <ShareConsentNotice partner={partner} level="details" />
             </div>
+          ) : share === 'week' ? (
+            <Disclosure className="mt-1" label="‘우리의 주간’을 보여 주면" closeLabel="접기">
+              <ShareConsentNotice partner={partner} level="week" />
+            </Disclosure>
           ) : null}
         </fieldset>
       ) : (
         <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
           <p className="text-sm font-bold text-ink">자세한 주기 기록은 {names[owner]}님이 정해요</p>
           <p className="mt-1 text-xs leading-relaxed text-ink-3">
-            처음에는 ‘우리의 주간’만 함께 봐요. 생리일이나 테스트 결과를 보여 줄지는 {names[owner]}님이 직접 골라요.
+            처음에는 ‘우리의 주간’만 함께 봐요. 날짜를 얼마나 보여 줄지(날짜 없음 · 우리의 주간 · 자세히)는 {names[owner]}님이 직접 골라요.
           </p>
         </div>
       )}

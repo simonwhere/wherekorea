@@ -7,6 +7,7 @@
 import { cx } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import type { HabitAnswers } from '@/lib/initial'
+import { DRINK_OPTIONS, SMOKE_OPTIONS } from './partnerChoices'
 import { ChoiceGroup, Group } from './parts'
 
 /** What the form holds while the user answers (both questions start unanswered). */
@@ -40,10 +41,7 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
           columns={2}
           value={habits.smokes === undefined ? undefined : habits.smokes ? 'yes' : 'no'}
           onChange={(v) => set({ smokes: v === 'yes' })}
-          options={[
-            { value: 'no', label: '안 피워요' },
-            { value: 'yes', label: '피워요' },
-          ]}
+          options={SMOKE_OPTIONS}
         />
       </Group>
 
@@ -53,11 +51,7 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
           columns={1}
           value={habits.drinks}
           onChange={(drinks) => set({ drinks })}
-          options={[
-            { value: 'rarely', label: '거의 안 마셔요' },
-            { value: 'sometimes', label: '가끔 (주 1~2번)' },
-            { value: 'often', label: '자주 (주 3번 이상)' },
-          ]}
+          options={DRINK_OPTIONS}
         />
       </Group>
 

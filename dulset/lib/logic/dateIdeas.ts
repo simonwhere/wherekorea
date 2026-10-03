@@ -16,8 +16,9 @@ import { addDays, formatKo, isISODate, parts, weekdayIndex } from '../dates'
 import { uid } from '../id'
 import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
 import { fertilityStatus, ourWeekSoon } from './cycle'
+import { sharedWeek } from './cycleRing'
 import { mergeNotices } from './notifications'
-import { lowPressureFor } from './prefs'
+import { canSeeCycleDetails, canSeeWeekBand, lowPressureFor } from './prefs'
 import { activePositivePending, activeRest } from './ttc'
 
 // ── Season / week ───────────────────────────────────────────
@@ -206,7 +207,8 @@ const PREGNANT_NOTE = '🍹 음료는 무알콜로, ♨️ 뜨거운 탕·사우
 type BannerState = Pick<
   AppState,
   'stage' | 'settings' | 'couple' | 'periods' | 'lhTests' | 'cycle' | 'pregnancy' | 'restCycle' | 'positivePending'
->
+> &
+  Partial<Pick<AppState, 'cycleNotes'>>
 
 /** The viewer's alert style, with the same defaults as the calendar. */
 export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, viewer: MemberId) {
@@ -216,11 +218,12 @@ export function viewerAlertStyle(state: Pick<AppState, 'settings' | 'couple'>, v
 
 /**
  * May the 둘만의 시간 screen mention the fertile window (as "우리의 주간") to this
- * viewer? Not in low-pressure mode or with alerts off, and not while the cycle
- * rests ("이번 주기는 쉬어요") or a positive test waits for the clinic. With
- * `today`, a rest whose last day has passed (the 42-day quiet after a loss,
- * ttc.activeRest) no longer counts; without it the quiet lasts until a period
- * after it is logged — the quiet side.
+ * viewer? Not in low-pressure mode or with alerts off, not to a partner she
+ * shares no dates with ('날짜 없음', prefs.canSeeWeekBand — N23), and not
+ * while the cycle rests ("이번 주기는 쉬어요") or a positive test waits for the
+ * clinic. With `today`, a rest whose last day has passed (the 42-day quiet
+ * after a loss, ttc.activeRest) no longer counts; without it the quiet lasts
+ * until a period after it is logged — the quiet side.
  */
 export function fertileHintsAllowed(
   state: Pick<AppState, 'stage' | 'settings' | 'couple'> &
@@ -229,6 +232,7 @@ export function fertileHintsAllowed(
   today?: ISODate,
 ): boolean {
   if (state.stage !== 'preparing') return false
+  if (!canSeeWeekBand(state, viewer)) return false
   if (lowPressureFor(state.settings, viewer) || viewerAlertStyle(state, viewer) === 'off') return false
   const periods = state.periods ?? []
   if (activeRest({ restCycle: state.restCycle, periods }, today)) return false
@@ -263,9 +267,14 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       note: PREPARING_NOTE,
     }
   }
-  if (fertileHintsAllowed(state, viewer)) {
-    // Same rule as the home teaser and the "이번 주는 우리의 주간" notice.
-    if (ourWeekSoon(fertilityStatus(state, today))) {
+  if (fertileHintsAllowed(state, viewer, today)) {
+    // Same rule as the home teaser and the "이번 주는 우리의 주간" notice: her
+    // own (LH-tuned) estimate for her and a partner she shares the details
+    // with; for a partner without them the one shared window (cycleRing
+    // .sharedWeek — her logged starts only, never on period days 1–3), so an
+    // untold period, LH strip or test never flips this banner (N19).
+    const soon = canSeeCycleDetails(state, viewer) ? ourWeekSoon(fertilityStatus(state, today)) : !!sharedWeek(state, today)
+    if (soon) {
       return {
         kind: 'our-week',
         emoji: '💞',

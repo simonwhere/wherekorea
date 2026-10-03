@@ -32,7 +32,8 @@ import {
 } from './cycle'
 import { LATE_TEST_DAYS, PERIOD_DUE_COPY, dueRange } from './periodDue'
 import { personalDays, type PersonalDayEntry } from './personalLog'
-import { canSeeCycleDetails, settingsFor } from './prefs'
+import { sharedWeek, type SharedWeek } from './cycleRing'
+import { canSeeCycleDetails, canSeeWeekBand, settingsFor } from './prefs'
 import { alertStyleLabel } from './settings'
 import { fertilityVoice } from './today'
 import { activePositivePending, activeRest } from './ttc'
@@ -62,22 +63,32 @@ export function fertilityView(
   return style
 }
 
-/** Why estimates are hidden — drives the explanation line. */
-export function hiddenReason(settings: Pick<Settings, 'lowPressure'>): 'low-pressure' | 'off' {
-  return settings.lowPressure ? 'low-pressure' : 'off'
+/**
+ * Why estimates are hidden — drives the explanation line. 'share': she shares
+ * no dates ('날짜 없음', N23 — only a partner's view is ever hidden for it;
+ * the owner's hidden view is always 부담 없이).
+ */
+export function hiddenReason(settings: Pick<Settings, 'lowPressure'> & Partial<Pick<Settings, 'shareLevel'>>): 'low-pressure' | 'share' | 'off' {
+  if (settings.lowPressure) return 'low-pressure'
+  return settings.shareLevel === 'none' ? 'share' : 'off'
 }
 
 /**
  * One-line notice above the calendar explaining the current view, or null for
  * the plain explicit view. Never uses 가임기/배란 itself — the whole point of
  * the soft and hidden views is to keep that wording off this viewer's screen.
- * Names match the settings screen (알림 › 부담 없이 모드 / 받지 않을래요).
+ * Names match the settings screen (알림 › 부담 없이 모드 / 받지 않을래요, 공유
+ * 범위 › 날짜 없음).
  */
-export function viewNotice(view: FertilityView, settings: Pick<Settings, 'lowPressure'>): { icon: string; text: string } | null {
+export function viewNotice(
+  view: FertilityView,
+  settings: Pick<Settings, 'lowPressure'> & Partial<Pick<Settings, 'shareLevel'>>,
+): { icon: string; text: string } | null {
   if (view === 'explicit') return null
   if (view === 'soft') return { icon: '💞', text: '‘우리의 주간’처럼 부드러운 표현으로 보고 있어요.' }
-  if (hiddenReason(settings) === 'low-pressure')
-    return { icon: '🌿', text: '부담 없이 모드예요 · 날짜 예측 없이 생리 기록만 보여요.' }
+  const reason = hiddenReason(settings)
+  if (reason === 'low-pressure') return { icon: '🌿', text: '부담 없이 모드예요 · 날짜 예측 없이 생리 기록만 보여요.' }
+  if (reason === 'share') return { icon: '💞', text: '날짜 없이 함께 준비해요 · 이번 주 우리 둘에 집중해요.' }
   return { icon: '🔕', text: `알림 방식을 ‘${alertStyleLabel('off')}’로 골라서 날짜 예측을 숨겼어요.` }
 }
 
@@ -150,18 +161,46 @@ export interface Lens {
   pendingSince?: ISODate
   /** Behind a 'rest' pause: why, and (a 'loss' quiet) its last day — for the headline. */
   rest?: Pick<RestCycle, 'reason' | 'until'>
+  /**
+   * A partner without details (N19): the ONE window he may see, while it is on
+   * (cycleRing.sharedWeek — '곧 우리의 주간' to its last day), or null on every
+   * other day: then no day is drawn as the band, nothing ahead, nothing
+   * behind. Unset for a viewer with details (and a hand-built lens).
+   */
+  band?: SharedBand | null
 }
+
+/** The shared window as a lens carries it (Lens.band). */
+export interface SharedBand {
+  kind: SharedWeek['kind']
+  from: ISODate
+  to: ISODate
+  confidence: CycleConfidence
+}
+
+type BandState = Partial<Pick<AppState, 'cycle' | 'pregnancy' | 'cycleNotes'>>
 
 export const OWNER_LENS = (view: FertilityView): Lens => ({ view, details: true, owner: true })
 
-/** `today` lets a 'loss' quiet end on its last day (cyclePause); screens that have it pass it. */
-export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseState, viewer: MemberId, today?: ISODate): Lens {
+/**
+ * `today` lets a 'loss' quiet end on its last day (cyclePause); screens that
+ * have it pass it. A partner without details also needs it — with the cycle
+ * settings and the pregnancy record (`cycle`, `pregnancy`) — for his one
+ * window (Lens.band); without them his lens draws no band at all.
+ */
+export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseState & BandState, viewer: MemberId, today?: ISODate): Lens {
   const ownerId = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
   const details = canSeeCycleDetails(state, viewer)
   const own = fertilityView(settingsFor(state.settings, viewer), viewer, ownerId)
-  const view: FertilityView = !details && own === 'explicit' ? 'soft' : own
-  const pause = cyclePause(state, today)
-  const pending = activePositivePending(state)
+  // '날짜 없음' (N23): no band, no window words, no dates for the partner.
+  const view: FertilityView = !canSeeWeekBand(state, viewer) ? 'hidden' : !details && own === 'explicit' ? 'soft' : own
+  // Without details only the couple's clinic mode shows as a pause — even under
+  // a positive test she has not told: a rest or that test is hers (his one
+  // window just stays off).
+  const herPause = cyclePause(state, today)
+  const clinicOn = state.restCycle?.reason === 'clinic' && !!activeRest(state, today)
+  const pause: CyclePause | undefined = details ? herPause : clinicOn ? 'clinic' : undefined
+  const pending = details ? activePositivePending(state) : undefined
   const rest = pause === 'rest' ? pauseRest(state, today) : undefined
   return {
     view,
@@ -172,16 +211,32 @@ export function cycleLens(state: Pick<AppState, 'couple' | 'settings'> & PauseSt
     ...(pause ? { pause } : {}),
     ...(pending ? { pendingSince: pending.since } : {}),
     ...(rest ? { rest } : {}),
+    ...(details ? {} : { band: view === 'hidden' ? null : sharedBand(state, today) }),
   }
 }
 
+/** The partner's one window (cycleRing.sharedWeek) as Lens.band — null when off, or when the state lacks what it needs. */
+function sharedBand(state: PauseState & BandState, today: ISODate | undefined): SharedBand | null {
+  if (!today || !state.cycle) return null
+  const w = sharedWeek({ ...state, cycle: state.cycle, pregnancy: state.pregnancy }, today)
+  return w ? { kind: w.kind, from: w.fertileStart, to: w.fertileEnd, confidence: w.confidence } : null
+}
+
 /**
- * The phase this viewer sees. On top of visiblePhase: a pause drops the fertile
- * band (and, while a positive test waits, the projected period); a partner
- * without details sees only the band, with no peak / 가능 범위. Anyone with
- * details sees the peak days (showsPeak) — in soft wording as 특히 좋은 때.
+ * The phase this viewer sees on `date`. On top of visiblePhase: a pause drops
+ * the fertile band (and, while a positive test waits, the projected period).
+ * Anyone with details sees the peak days (showsPeak) — in soft wording as 특히
+ * 좋은 때. A partner without details sees only his one window (Lens.band):
+ * its days are the band — whatever her LH-tuned estimate says — and every
+ * other day is plain; without `date` (or with no window on) nothing is band.
+ * A hand-built lens without `band` keeps the old reading (the band where the
+ * estimate has it).
  */
-export function lensPhase(phase: DayPhase, lens: Lens): DayPhase {
+export function lensPhase(phase: DayPhase, lens: Lens, date?: ISODate): DayPhase {
+  if (!lens.details && lens.band !== undefined) {
+    if (lens.view === 'hidden' || !lens.band || !date) return 'none'
+    return date >= lens.band.from && date <= lens.band.to ? 'fertile' : 'none'
+  }
   const p = visiblePhase(phase, lens.view)
   const fertile = p === 'peak' || p === 'fertile' || p === 'possible'
   if (lens.pause && fertile) return 'none'
@@ -389,7 +444,7 @@ export function cellView(info: DayInfo, ctx: CellContext): CellView {
   const { day, month: m } = parts(info.date)
   const inMonth = m === parts(month).month
   const isToday = info.date === today
-  const phase = lensPhase(info.phase, lens)
+  const phase = lensPhase(info.phase, lens, info.date)
   const star = view === 'explicit' && lens.details && !lens.pause && info.isOvulation && phase !== 'period'
   const lh = showsLH(lens) ? info.hasLH : undefined
   const ptest = showsTests(lens) ? ctx.ptest : undefined
@@ -466,7 +521,11 @@ export function legendItems(
   if (details)
     items.push({ key: 'period', label: '생리 · 예정', swatch: PHASE_CLASS.period, swatch2: PHASE_CLASS['period-predicted'] })
   if (v === 'hidden' || lens?.pause) return items
-  if (!details) return [{ key: 'fertile', label: windowLabel('soft', opts.confidence), swatch: PHASE_CLASS.fertile }]
+  // A partner without details: the band's item only while his one window is drawn (Lens.band).
+  if (!details) {
+    if (lens?.band === null) return []
+    return [{ key: 'fertile', label: windowLabel('soft', lens?.band?.confidence ?? opts.confidence), swatch: PHASE_CLASS.fertile }]
+  }
   const soft = v === 'soft'
   items.push({
     key: 'fertile',
@@ -493,8 +552,14 @@ export interface Headline {
   sub?: string
 }
 
-/** NICE NG257 framing, used wherever fertile-day estimates are hidden. */
+/** NICE NG257 framing, used wherever fertile-day estimates are hidden — on the owner's own screens. */
 export const NICE_LINE = '특정 날을 맞추기보다 2~3일에 한 번, 편한 리듬이면 좋아요.'
+
+/** A partner's day with no dates shown (날짜 없음, or his alerts off): the same line every day, no frequency. */
+export const PARTNER_HIDDEN_DAY_LINE = '날짜 예상 없이 지내요. 둘만의 시간은 언제든 좋아요.'
+
+/** The partner's summary line where hers says NICE_LINE (a 자세히 partner who turned his alerts off). */
+export const PARTNER_CALM_SUB = '날짜에 맞추지 않아도 괜찮아요. 서로의 하루를 챙겨 주세요.'
 
 /** Shared with the 오늘 hero and the late-period notice (lib/logic/cycle.ts). */
 export { LONG_LATE_DAYS }
@@ -635,21 +700,25 @@ export interface CycleSummary {
 /** The partner's clinic-cycle line: keep to the schedule, ask about nothing. */
 export const CLINIC_PARTNER_HEADLINE: Headline = { title: CLINIC_LABEL, sub: '일정에 맞춰 함께해요. 결과는 묻지 않아도 괜찮아요.' }
 
-/** What a viewer without details sees (only the shared 우리의 주간, soft wording). */
-export function sharedHeadline(status: FertilityStatus, view: FertilityView, pause?: CyclePause): Headline {
+/** The partner's hidden view (alerts off, 부담 없이, '날짜 없음'): no dates, and no 'every 2–3 days' either (positioning §6). */
+export const SHARED_HIDDEN_HEADLINE: Headline = { title: '우리 리듬대로 지내요', sub: '날짜는 신경 쓰지 않아도 괜찮아요.' }
+
+/** The '평소 주' (N19): the same line every day outside the shared window — with or without her records. */
+export const SHARED_USUAL_HEADLINE: Headline = { title: '편안한 날들이에요', sub: '우리의 주간이 가까워지면 여기에 보여요.' }
+
+/**
+ * What a viewer without details sees (only the shared 우리의 주간, soft
+ * wording): his one window while it is on (`band`, Lens.band — cycleRing
+ * .sharedWeek), else the '평소 주' line, whatever her records say. `status` is
+ * no longer read (kept for older callers); the clinic mode is the couple's.
+ */
+export function sharedHeadline(status: FertilityStatus, view: FertilityView, pause?: CyclePause, band?: SharedBand | null): Headline {
+  void status
   if (pause === 'clinic') return CLINIC_PARTNER_HEADLINE
-  if (view === 'hidden') return { title: '우리 리듬대로 지내요', sub: NICE_LINE }
-  if (status.kind === 'no-data') return { title: '아직 우리의 주간 예상이 없어요', sub: '주기 기록이 시작되면 여기에 보여요.' }
-  if (!pause) {
-    if (status.kind === 'fertile' || (status.kind === 'period' && status.fertileEnd)) {
-      const end = status.kind === 'fertile' ? status.fertileEnd : status.fertileEnd!
-      return { title: '지금은 우리의 주간이에요 (예상)', sub: `${formatKo(end)}까지 · 둘만의 시간을 편하게 챙겨요.` }
-    }
-    const next =
-      status.kind === 'before-fertile' ? status.fertileStart : status.kind === 'period' ? status.nextFertileStart : undefined
-    if (next) return { title: `다음 우리의 주간: ${formatKo(next)}부터 (예상)`, sub: '평소처럼 편하게 지내요.' }
-  }
-  return { title: '편안한 날들이에요', sub: '우리의 주간이 가까워지면 여기에 보여요.' }
+  if (view === 'hidden') return SHARED_HIDDEN_HEADLINE
+  if (band?.kind === 'window') return { title: '지금은 우리의 주간이에요 (예상)', sub: `${formatKo(band.to)}까지 · 둘만의 시간을 편하게 챙겨요.` }
+  if (band?.kind === 'soon') return { title: `다음 우리의 주간: ${formatKo(band.from)}부터 (예상)`, sub: '평소처럼 편하게 지내요.' }
+  return SHARED_USUAL_HEADLINE
 }
 
 /** The owner's calendar headline through the quiet after a pregnancy ended (a 'loss' rest with its last day). */
@@ -714,15 +783,23 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
   const last = starts[starts.length - 1]
 
   if (!details) {
+    // A partner without details (N19): his one window while it is on
+    // (opts.band — cycleLens), the '평소 주' line every other day. Nothing
+    // here is read from her records: the status he gets says only what the
+    // band says ('fertile' inside it, else no-data), so the card's colour
+    // cannot change on the day of something she did not tell.
     const v: FertilityView = view === 'explicit' ? 'soft' : view
-    const window = pause || v === 'hidden' ? undefined : upcomingWindows(input, today, 1)[0]
+    const band = v === 'hidden' || pause === 'clinic' ? null : (opts.band ?? null)
+    const shared: FertilityStatus =
+      band?.kind === 'window'
+        ? { kind: 'fertile', peak: false, isOvulation: false, fertileEnd: band.to, cycleDay: 0, confidence: band.confidence }
+        : { kind: 'no-data' }
     return {
-      status,
+      status: shared,
       stats,
-      headline: sharedHeadline(status, v, pause),
-      window,
-      rows: window
-        ? [{ key: 'window', label: '우리의 주간 (예상)', value: `${formatKo(window.fertileStart)} ~ ${formatKo(window.fertileEnd)}`, wide: true }]
+      headline: sharedHeadline(shared, v, pause, band),
+      rows: band
+        ? [{ key: 'window', label: '우리의 주간 (예상)', value: `${formatKo(band.from)} ~ ${formatKo(band.to)}`, wide: true }]
         : [],
     }
   }
@@ -837,6 +914,12 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
  * (review: 배란 뒤 남편 화면 '증상은 묻지 말고 평소처럼').
  */
 export function partnerHeadline(status: FertilityStatus, view: FertilityView, own: Headline): Headline {
+  const h = partnerHeadlineFor(status, view, own)
+  // No frequency line for the partner (docs/positioning.md §6): the NICE sub is hers.
+  return h.sub === NICE_LINE ? { ...h, sub: PARTNER_CALM_SUB } : h
+}
+
+function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: Headline): Headline {
   switch (status.kind) {
     case 'no-data':
       return { title: '아직 주기 기록이 없어요', sub: '기록이 시작되면 여기에 보여요.' }
@@ -1007,16 +1090,20 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean, 
         return canLog
           ? '앞뒤 기록 사이가 길어서 이 무렵은 예측하지 않았어요. 빠진 생리 기록이 있다면 여기서 추가해 주세요.'
           : '앞뒤 기록 사이가 길어서 이 무렵은 예측하지 않았어요.'
-      if (view === 'hidden') return NICE_LINE
+      // The NICE frequency line is hers (canLog = the owner); a partner never gets a frequency line (positioning §6).
+      if (view === 'hidden') return canLog ? NICE_LINE : PARTNER_HIDDEN_DAY_LINE
       return view === 'soft' ? '평범한 하루예요. 둘만의 시간은 언제든 좋아요.' : OUTSIDE_RANGE_NOTE
   }
 }
 
 /** explainDay through the viewer's lens (details, pause, partner). */
 export function explainDayFor(info: DayInfo, lens: Lens, isPast: boolean): string {
-  const phase = lensPhase(info.phase, lens)
+  // The day's own date: a partner without details reads his one window (Lens.band) for it.
+  const phase = lensPhase(info.phase, lens, info.date)
   if (!lens.details) {
-    if (lens.view === 'hidden') return NICE_LINE
+    // No frequency line for the partner (docs/positioning.md §6 — '2~3일에 한 번' reads as a quota to
+    // him); the owner's NICE line stays on her own screens.
+    if (lens.view === 'hidden') return PARTNER_HIDDEN_DAY_LINE
     return phase === 'fertile'
       ? '우리의 주간이에요 (예상). 서로 컨디션을 살피며 편하게 보내요.'
       : '평범한 하루예요. 둘만의 시간은 언제든 좋아요.'
@@ -1033,7 +1120,7 @@ export function explainDayFor(info: DayInfo, lens: Lens, isPast: boolean): strin
 /** dayChanceLabel through the viewer's lens: never while paused or without details. */
 export function dayChanceFor(info: DayInfo, lens: Lens): string | null {
   if (lens.pause || !lens.details) return null
-  return dayChanceLabel({ ...info, phase: lensPhase(info.phase, lens) }, lens.view)
+  return dayChanceLabel({ ...info, phase: lensPhase(info.phase, lens, info.date) }, lens.view)
 }
 
 /** Compact "주기 12일째 · 가임기 예상" line for the log sheet's date header. */
@@ -1041,7 +1128,7 @@ export function dayLine(info: DayInfo, lens: Lens): string {
   const out: string[] = []
   const day = lens.details && !info.unpredicted ? knownCycleDay(info) : undefined
   if (day !== undefined) out.push(`주기 ${day}일째`)
-  const label = phaseLabel(lensPhase(info.phase, lens), lens.view)
+  const label = phaseLabel(lensPhase(info.phase, lens, info.date), lens.view)
   if (label) out.push(label)
   return out.join(' · ')
 }

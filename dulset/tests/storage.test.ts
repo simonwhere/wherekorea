@@ -267,3 +267,39 @@ describe('two-tab rebase marks: the sidecar key the store can move AppState.sync
     expect(readSyncMarks()).toEqual({})
   })
 })
+
+describe('normalize + loadState: 공유 범위 (N23, schema 4)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', { localStorage: fakeStorage(), sessionStorage: fakeStorage() })
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('reads the old yes/no into a level and keeps a stored level', () => {
+    const s = fresh()
+    const { shareLevel: _l, ...older } = s.settings
+    const legacy = (v?: boolean) =>
+      JSON.parse(JSON.stringify({ ...s, schemaVersion: 3, settings: { ...older, ...(v === undefined ? {} : { shareCycleDetails: v }) } }))
+    expect(normalize(legacy(true)).settings.shareLevel).toBe('details')
+    expect(normalize(legacy(false)).settings.shareLevel).toBe('week')
+    expect(normalize(legacy()).settings.shareLevel).toBe('week')
+    expect('shareCycleDetails' in normalize(legacy(true)).settings).toBe(false)
+    for (const level of ['none', 'week', 'details'] as const) {
+      expect(normalize({ ...s, settings: { ...s.settings, shareLevel: level } }).settings.shareLevel).toBe(level)
+    }
+  })
+
+  it('a schema-3 save in localStorage loads at schema 4 with its level, and saves back without the old key', () => {
+    const s = fresh()
+    const { shareLevel: _l, ...older } = s.settings
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...s, schemaVersion: 3, settings: { ...older, shareCycleDetails: true } }))
+    const loaded = loadState()!
+    expect(loaded.schemaVersion).toBe(SCHEMA_VERSION)
+    expect(SCHEMA_VERSION).toBe(4)
+    expect(loaded.settings.shareLevel).toBe('details')
+    expect(saveState(loaded)).toBe(true)
+    expect(window.localStorage.getItem(STORAGE_KEY)).not.toContain('shareCycleDetails')
+    expect(parseState(window.localStorage.getItem(STORAGE_KEY))).toEqual(loaded)
+  })
+})

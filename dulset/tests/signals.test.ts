@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
+import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
-import { inbox } from '@/lib/logic/notifications'
+import { inbox, markRead } from '@/lib/logic/notifications'
 import {
   ALL_SIGNALS,
   LEGACY_SIGNAL_IDS,
   REPLIES,
   SIGNALS,
   SIGNALS_PER_DAY,
+  REPLY_UNSEEN_DAYS,
   SIGNAL_REPLY_DAYS,
   pendingSignal,
+  receivedReply,
   repliesFor,
   sendSignal,
   signalById,
@@ -192,5 +195,50 @@ describe('preparing signals', () => {
       expect(x.text).not.toMatch(BANNED)
       expect(x.emoji).not.toMatch(/🎉|🥳|🎊/)
     }
+  })
+})
+
+describe('receivedReply (N21 ③): his answer shows on her home, not only as a 🔔', () => {
+  it('the latest reply to my signal within the reply window, with the signal it answers', () => {
+    let s = sendSignal(base(), 'b', 'a', 'comfort', '2026-10-01', '2026-10-01T20:00:00+09:00')
+    expect(receivedReply(s, 'b', '2026-10-01')).toBeUndefined()
+    s = sendSignal(s, 'a', 'b', 'hug', '2026-10-01', '2026-10-01T20:05:00+09:00')
+    const r = receivedReply(s, 'b', '2026-10-01')!
+    expect(r.from).toBe('a')
+    expect(r.reply.id).toBe('hug')
+    expect(r.answered?.id).toBe('comfort')
+    expect(r.at).toBe('2026-10-01T20:05:00+09:00')
+    // The other person never sees their own reply as received.
+    expect(receivedReply(s, 'a', '2026-10-01')).toBeUndefined()
+    // It stays for the reply window (today and the two days before); once read, it goes after it.
+    expect(receivedReply(s, 'b', addDays('2026-10-01', SIGNAL_REPLY_DAYS))?.reply.id).toBe('hug')
+    const seen = markRead(s, 'b')
+    expect(receivedReply(seen, 'b', addDays('2026-10-01', SIGNAL_REPLY_DAYS))?.reply.id).toBe('hug')
+    expect(receivedReply(seen, 'b', addDays('2026-10-01', SIGNAL_REPLY_DAYS + 1))).toBeUndefined()
+    // A new signal of mine: that answer belonged to the previous one.
+    const next = sendSignal(s, 'b', 'a', 'rest', '2026-10-02', '2026-10-02T09:00:00+09:00')
+    expect(receivedReply(next, 'b', '2026-10-02')).toBeUndefined()
+  })
+
+  it('a reply applied late (her phone closed, N20) stays on her home until its 🔔 is read — at most REPLY_UNSEEN_DAYS', () => {
+    // She asks on Saturday; he answers from the link on Monday; her phone opens on Thursday.
+    let s = sendSignal(base(), 'b', 'a', 'comfort', '2026-10-03', '2026-10-03T20:00:00+09:00')
+    s = sendSignal(s, 'a', 'b', 'here', '2026-10-05', '2026-10-05T08:00:00+09:00')
+    const thu = '2026-10-08'
+    expect(receivedReply(s, 'b', thu)).toMatchObject({ from: 'a', reply: { id: 'here' }, answered: { id: 'comfort' } })
+    // Read in the 🔔: back to the plain reply window.
+    expect(receivedReply(markRead(s, 'b'), 'b', thu)).toBeUndefined()
+    // Unread, but older than REPLY_UNSEEN_DAYS: gone.
+    expect(receivedReply(s, 'b', addDays('2026-10-05', REPLY_UNSEEN_DAYS))?.reply.id).toBe('here')
+    expect(receivedReply(s, 'b', addDays('2026-10-05', REPLY_UNSEEN_DAYS + 1))).toBeUndefined()
+    // A reply stamped after her day (another device's clock) is not shown early.
+    expect(receivedReply(s, 'b', '2026-10-04')).toBeUndefined()
+    // A newer question of hers still wins.
+    expect(receivedReply(sendSignal(s, 'b', 'a', 'rest', thu, `${thu}T09:00:00+09:00`), 'b', thu)).toBeUndefined()
+  })
+
+  it('a signal (not a reply) from him is not a reply', () => {
+    const s = sendSignal(base(), 'a', 'b', 'thanks', '2026-10-01', '2026-10-01T20:00:00+09:00')
+    expect(receivedReply(s, 'b', '2026-10-01')).toBeUndefined()
   })
 })

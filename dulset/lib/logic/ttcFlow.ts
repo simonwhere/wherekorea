@@ -30,7 +30,7 @@
 import { FEEL_CHIPS, waitingWeekLine } from '../content/fertility'
 import { addDays, addMonths, diffDays, formatKo, formatShort, isBetween, isISODate } from '../dates'
 import type { LogKind } from '../logLauncher'
-import { decide, decided } from '../sync/model'
+import { decide, decided, decisionDay } from '../sync/model'
 import type {
   AppState,
   Appointment,
@@ -56,6 +56,7 @@ import {
   type FertilityView,
 } from './calendarView'
 import { mondayOf } from './checks'
+import { sharedBandBefore, sharedWeek } from './cycleRing'
 import { fertileHintsAllowed } from './dateIdeas'
 import { logPeriodStart } from './logs'
 import {
@@ -70,7 +71,6 @@ import {
   ourWeekSoon,
   sortedStarts,
   strongestLH,
-  upcomingWindows,
   type CycleConfidence,
   type CycleWindow,
   type ExpectedPeriod,
@@ -82,11 +82,12 @@ import { mergeNotices } from './notifications'
 import { LATE_TEST_DAYS, PERIOD_DUE_COPY, dueRange } from './periodDue'
 import { FEEL_LABEL, lastCycleFeels, personalDay } from './personalLog'
 import { bleedingAdvice, isBleedingDuringPositive, type BleedingLineId } from './positiveBleeding'
-import { canLogCycle, canSeeCycleDetails, lhPrompting, lowPressureFor, settingsFor } from './prefs'
+import { canLogCycle, canSeeCycleDetails, canSeeWeekBand, lhPrompting, lowPressureFor, settingsFor } from './prefs'
 import { recentlyEnded } from './pregnancy'
 import { homeDiscreetFor } from './settings'
 import { fertilityVoice, type FertilityVoice } from './today'
 import { LIVE_VACCINE_REST_DAYS, activePositivePending, activeRest, endRestCycle, startRestCycle } from './ttc'
+import { weekQuiet, weekTogetherOn } from './weekTogether'
 
 // ── Where are we today (viewer-independent) ────────────────
 
@@ -339,7 +340,9 @@ export type MomentCopyKey =
   | 'owner.retest'
   | 'owner.clinic'
   | 'partner.clinic'
+  /** @deprecated Retired (N19): without her records the partner gets the '평소 주' card ('partner.neutral'). Kept so old snapshots still type-check. */
   | 'partner.no-data'
+  /** The '평소 주' card (N19): the one card a partner without her details sees outside the shared window. */
   | 'partner.neutral'
   | 'partner.after-loss'
   | 'partner.positive-told'
@@ -408,6 +411,13 @@ export interface Moment {
   dateIdeas?: boolean
   /** Partner: the card may feature "이번 달 할 일" (lib/logic/partnerTrack). */
   monthlyTask?: boolean
+  /**
+   * Partner, the '평소 주' card (N21/N23): '이번 주 우리 둘' leads it — the
+   * screen draws this week's pick (lib/logic/weekTogether: weekOptions /
+   * weekPick / weekDone / thanksThisWeek) inside or right under the card. Set
+   * only while the week runs (weekTogether.weekTogetherOn).
+   */
+  weekTogether?: boolean
   /** Quiet support after a pregnancy ended (LOSS_SUPPORT). */
   support?: boolean
   /** One thing the partner can do today. */
@@ -550,12 +560,39 @@ function nameOf(state: Pick<AppState, 'couple'>, id: MemberId): string {
  * The wording this viewer gets on the home screen. Their own alert style and
  * low-pressure choice first; a partner without shared details never gets the
  * explicit 가임기 wording — only the shared "우리의 주간" (the same rule as the
- * calendar, calendarView.cycleLens).
+ * calendar, calendarView.cycleLens) — and a partner she shares no dates with
+ * ('날짜 없음', N23: prefs.canSeeWeekBand) gets no window wording at all.
  */
 export function homeVoice(state: AppState, viewer: MemberId): FertilityVoice {
   const isOwner = viewer === cycleOwnerId(state)
+  if (!isOwner && !canSeeWeekBand(state, viewer)) return 'calm'
   const own = fertilityVoice(settingsFor(state.settings, viewer), viewer, isOwner)
   return own === 'explicit' && !canSeeCycleDetails(state, viewer) ? 'soft' : own
+}
+
+/**
+ * The quiet after a pregnancy ended, as the partner reads it: the whole 42
+ * days (pregnancy.recentlyEnded) and the 'loss' rest (weekTogether.weekQuiet).
+ * Both follow the stage change pregnant → preparing (today.endPregnancy is
+ * the only place that starts the 'loss' rest), which both phones already
+ * showed — so this changes his screen on nothing she did not tell. Her
+ * turning the rest off early ends HER quiet; his card keeps it for the 42
+ * days (otherwise that switch would show on his screen).
+ */
+export function partnerQuiet(state: AppState, today: ISODate): boolean {
+  return state.stage === 'preparing' && weekQuiet(state, today)
+}
+
+/**
+ * Does `partnerId`'s "이번 달 할 일" show (the home's card and the link's)?
+ * Never for the person whose cycle it is, and never through the quiet after
+ * a pregnancy ended (partnerQuiet) — that time is for each other, not for
+ * tasks (docs/positioning.md §4 0번 B). The one rule for TodayTab and
+ * partnerSnapshot.
+ */
+export function partnerTaskVisible(state: AppState, today: ISODate, partnerId: MemberId): boolean {
+  if (canLogCycle(state, partnerId)) return false
+  return !partnerQuiet(state, today)
 }
 
 /**
@@ -589,7 +626,7 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opt
   // (dateIdeas.fertileHintsAllowed: not in low-pressure mode or with alerts
   // off, not while resting or waiting for the clinic).
   if (!fertileHintsAllowed(state, viewer, today)) {
-    if (m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') m = partnerNeutral()
+    if (m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') m = partnerNeutral(ctx)
     else if (m.dateIdeas) m = { ...m, dateIdeas: false }
   }
   // 잠금화면 숨김을 홈 카드까지: the card waits behind VEIL_COPY for this person
@@ -597,13 +634,17 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opt
   const veiled = homeDiscreetFor(state.settings, viewer)
   if (veiled && m.monthlyTask) m = { ...m, monthlyTask: false }
   m = oneEstimate(m)
+  // Her cycle's day, first day and confidence are her records: only for her and
+  // a partner she shares the details with (a partner's Moment carries nothing
+  // the '평소 주' would not). `kind` stays the day's phase for the screens'
+  // own branching (none of them renders it for a partner without details);
+  // the partner's after-loss card reads as 'after-loss' (partnerQuiet).
+  const internals = isOwner || details ? { cycleDay: phase.cycleDay, cycleStart: phase.cycleStart, confidence: phase.confidence } : {}
   return {
-    kind: phase.kind,
+    kind: !isOwner && m.copy === 'partner.after-loss' ? 'after-loss' : phase.kind,
     voice,
     details,
-    cycleDay: phase.cycleDay,
-    cycleStart: phase.cycleStart,
-    confidence: phase.confidence,
+    ...internals,
     ...m,
     ...(veiled ? { veiled: true } : {}),
   }
@@ -1171,107 +1212,133 @@ function ownerCalm(c: Ctx): MomentBody {
       }
 }
 
-function partnerNeutral(): MomentBody {
+/**
+ * The '평소 주' card (N19): the ONE card a partner without her details sees
+ * from the day after 우리의 주간 until the next '곧 우리의 주간' — through her
+ * period, the waiting weeks, a late period, a rest, a positive test she has
+ * not told and a negative one alike — and the card he sees all cycle long
+ * when she shares no dates ('날짜 없음', N23) or his own alerts are off. It
+ * reads nothing of hers: '이번 주 우리 둘' follows it (weekTogether flag — the
+ * screen draws this week's pick right under it, so the card's own eyebrow is
+ * '오늘의 우리', never that block's header again), and his month task can sit inside. With no
+ * cycle records at all it is the same card (never a dead end that waits on
+ * her, positioning §4: 기록 없이 도는 남편 화면).
+ */
+function partnerNeutral(c: Pick<Ctx, 'state' | 'today'>): MomentBody {
+  const week = weekTogetherOn(c.state, c.today)
   return {
     role: 'partner',
     copy: 'partner.neutral',
     tone: 'default',
     eyebrow: '오늘의 우리',
-    title: '오늘도 둘이 함께해요',
-    body: '서로의 하루를 챙겨 주세요.',
+    title: '이번 주도 둘이 함께해요',
+    body: week ? '이번 주에 내가 맡을 것 하나면 충분해요.' : '서로의 하루를 챙겨 주세요.',
     monthlyTask: true,
+    ...(week ? { weekTogether: true } : {}),
   }
 }
 
+/**
+ * The partner's card. Order (docs/positioning.md §4, '남편 루프의 규칙 다섯'):
+ *  1. what she TOLD with [알리기] — bleeding / a positive test (any sharing level);
+ *  2. the quiet after a pregnancy ended (partnerQuiet: a stage change he saw);
+ *  3. 병원과 함께 준비 중 — the couple's mode, its badge on both phones (N13)
+ *     and its schedule shared by both; an untold positive test keeps it;
+ *  4. a period she told (periodToldCard);
+ *  5. with her details ('자세히'): the phase-by-phase cards as before;
+ *  6. without them ('우리의 주간' / '날짜 없음'): the shared window
+ *     (cycleRing.sharedWeek) or the '평소 주' card — nothing in between.
+ */
 function partnerMoment(c: Ctx): MomentBody {
-  const { phase: p, voice, details, ownerName: owner } = c
+  const { phase: p, ownerName: owner } = c
+  const role = 'partner' as const
+  if (p.kind === 'positive-pending' || p.kind === 'positive-bleeding') {
+    // The partner hears about a positive test only when she tells them — and
+    // about bleeding only when she tells them that too (never through shared
+    // details: it is hers to say). Without either, the ordinary card.
+    const since = p.pending!.since
+    if (p.kind === 'positive-bleeding' && decided(c.state, bleedingToldKey(since))) {
+      return {
+        role,
+        copy: 'partner.bleeding-told',
+        tone: 'brand',
+        eyebrow: `${owner}님이 알려 줬어요`,
+        title: '병원에 같이 가 줄 수 있어요',
+        body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요. 결과가 어떻든 한 팀이에요.',
+        primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
+      }
+    }
+    if (decided(c.state, positiveToldKey(since))) {
+      return {
+        role,
+        copy: 'partner.positive-told',
+        tone: 'brand',
+        eyebrow: `${owner}님이 알려 줬어요`,
+        title: '병원 확인을 기다리고 있어요',
+        body: '결과가 어떻든 한 팀이에요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
+        primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
+      }
+    }
+  }
+  if (p.kind === 'after-loss' || partnerQuiet(c.state, c.today)) {
+    return {
+      role,
+      copy: 'partner.after-loss',
+      tone: 'muted',
+      eyebrow: '함께예요',
+      title: '서로를 천천히 챙겨요',
+      body: '지금은 곁에 있어 주는 것만으로 충분해요.',
+      support: true,
+    }
+  }
+  if (c.state.restCycle?.reason === 'clinic' && activeRest(c.state, c.today)) return clinicMoment(c, role)
+  const told = periodToldCard(c)
+  if (told) return told
+  return c.details ? partnerWithDetails(c) : partnerSharedWeek(c)
+}
+
+/**
+ * A period she told ([알리기]): '이번 달은 쉬어 가요' on days 1–3 of it — a
+ * fixed span, so a period end she logs later says nothing — and, when she
+ * told later than that (the home asks until day 7), on the day she told and
+ * the day after.
+ */
+function periodToldCard(c: Ctx): MomentBody | undefined {
+  const start = c.phase.cycleStart
+  if (!start) return undefined
+  const toldOn = decisionDay(c.state, periodToldKey(start))
+  if (!toldOn) return undefined
+  const cycleDay = diffDays(start, c.today) + 1
+  const fresh = toldOn <= c.today && diffDays(toldOn, c.today) <= 1 && cycleDay <= PERIOD_ASK_DAYS + 1
+  if (cycleDay > PERIOD_EARLY_DAYS && !fresh) return undefined
+  return {
+    role: 'partner',
+    copy: 'partner.period-told',
+    tone: 'default',
+    eyebrow: `${c.ownerName}님이 알려 줬어요`,
+    title: '이번 달은 쉬어 가요',
+    body: '따뜻한 차 한 잔, 컨디션을 챙겨 주세요.',
+    partnerTip: PERIOD_PARTNER_TIP,
+  }
+}
+
+/** '자세히' (N23): she shares her period, LH and test records, so the card follows the phase — as before N19. */
+function partnerWithDetails(c: Ctx): MomentBody {
+  const { phase: p, voice, ownerName: owner } = c
   const role = 'partner' as const
   const calm = voice === 'calm'
   switch (p.kind) {
-    case 'no-data':
-      return p.paused
-        ? partnerNeutral()
-        : {
-            role,
-            copy: 'partner.no-data',
-            tone: 'default',
-            eyebrow: '함께 준비해요',
-            title: `${owner}님이 주기를 기록하면 함께 알려 드릴게요`,
-            // The link page has no 설정: it says what fills it instead (partnerSnapshot passes surface 'link').
-            body: c.surface === 'link' ? `${owner}님의 기록이 시작되면 이 화면도 채워져요.` : '알림 방식은 설정에서 각자 고를 수 있어요.',
-            monthlyTask: true,
-          }
-
-    case 'after-loss':
+    case 'period-early':
+    case 'period':
       return {
         role,
-        copy: 'partner.after-loss',
-        tone: 'muted',
-        eyebrow: '함께예요',
-        title: '서로를 천천히 챙겨요',
-        body: '지금은 곁에 있어 주는 것만으로 충분해요.',
-        support: true,
+        copy: 'partner.period-shared',
+        tone: 'default',
+        eyebrow: voice === 'explicit' ? `${owner}님 생리 ${p.cycleDay ?? 1}일째` : `${owner}님의 하루`,
+        title: `${owner}님 컨디션을 챙겨 주세요`,
+        body: '따뜻한 말 한마디가 힘이 돼요.',
+        ...(p.kind === 'period-early' ? { partnerTip: PERIOD_PARTNER_TIP } : {}),
       }
-
-    case 'positive-pending':
-    case 'positive-bleeding': {
-      // The partner hears about a positive test only when she tells them — and
-      // about bleeding only when she tells them that too (never through shared
-      // details: it is hers to say). Without either, the ordinary card.
-      const since = p.pending!.since
-      if (p.kind === 'positive-bleeding' && decided(c.state, bleedingToldKey(since))) {
-        return {
-          role,
-          copy: 'partner.bleeding-told',
-          tone: 'brand',
-          eyebrow: `${owner}님이 알려 줬어요`,
-          title: '병원에 같이 가 줄 수 있어요',
-          body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요. 결과가 어떻든 한 팀이에요.',
-          primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
-        }
-      }
-      return decided(c.state, positiveToldKey(since))
-        ? {
-            role,
-            copy: 'partner.positive-told',
-            tone: 'brand',
-            eyebrow: `${owner}님이 알려 줬어요`,
-            title: '병원 확인을 기다리고 있어요',
-            body: '결과가 어떻든 한 팀이에요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
-            primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
-          }
-        : partnerNeutral()
-    }
-
-    case 'rest':
-      return p.rest?.reason === 'clinic' ? clinicMoment(c, role) : partnerNeutral()
-
-    case 'period-early':
-    case 'period': {
-      if (p.cycleStart && periodTellState(c.state, p.cycleStart) === 'told') {
-        return {
-          role,
-          copy: 'partner.period-told',
-          tone: 'default',
-          eyebrow: `${owner}님이 알려 줬어요`,
-          title: '이번 달은 쉬어 가요',
-          body: '따뜻한 차 한 잔, 컨디션을 챙겨 주세요.',
-          partnerTip: PERIOD_PARTNER_TIP,
-        }
-      }
-      if (details) {
-        return {
-          role,
-          copy: 'partner.period-shared',
-          tone: 'default',
-          eyebrow: voice === 'explicit' ? `${owner}님 생리 ${p.cycleDay ?? 1}일째` : `${owner}님의 하루`,
-          title: `${owner}님 컨디션을 챙겨 주세요`,
-          body: '따뜻한 말 한마디가 힘이 돼요.',
-          ...(p.kind === 'period-early' ? { partnerTip: PERIOD_PARTNER_TIP } : {}),
-        }
-      }
-      return partnerNeutral()
-    }
 
     case 'before-fertile':
       if (!calm && ourWeekSoon(p.status)) {
@@ -1286,13 +1353,13 @@ function partnerMoment(c: Ctx): MomentBody {
           secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
         }
       }
-      return partnerNeutral()
+      return partnerNeutral(c)
 
     case 'fertile': {
-      if (calm) return partnerNeutral()
+      if (calm) return partnerNeutral(c)
       const end = p.fertileEnd!
-      // Which days exactly (peak) only when she shares the details.
-      const peak = details && !!p.peak
+      // Which days exactly (peak): she shares the details.
+      const peak = !!p.peak
       const lastDay = end === c.today
       return {
         role,
@@ -1315,26 +1382,66 @@ function partnerMoment(c: Ctx): MomentBody {
     }
 
     case 'tww':
-      return calm ? partnerNeutral() : partnerTww()
+      return calm ? partnerNeutral(c) : partnerTww()
 
     case 'late':
-      if (details) {
-        // He can see the period is late — still no questions, no pushing for a test.
-        return {
-          role,
-          copy: 'partner.late-shared',
-          tone: 'default',
-          eyebrow: '함께예요',
-          title: '기다리는 시간이에요',
-          body: `재촉하지 말고, ${owner}님이 이야기하고 싶을 때 곁에 있어 주세요.`,
-          monthlyTask: true,
-        }
+      // He can see the period is late — still no questions, no pushing for a test.
+      return {
+        role,
+        copy: 'partner.late-shared',
+        tone: 'default',
+        eyebrow: '함께예요',
+        title: '기다리는 시간이에요',
+        body: `재촉하지 말고, ${owner}님이 이야기하고 싶을 때 곁에 있어 주세요.`,
+        monthlyTask: true,
       }
-      // Without the details a late period is hers to share — the waiting card stays.
-      return calm ? partnerNeutral() : partnerTww()
+
+    // No records yet, a rest, a positive test she has not told (details never
+    // include it), the paused days after a pregnancy: the '평소 주' card.
+    default:
+      return partnerNeutral(c)
   }
 }
 
+/**
+ * '우리의 주간' / '날짜 없음' (N19, N23): the shared window when it is on
+ * (cycleRing.sharedWeek — from her logged starts only, never on period days
+ * 1–3, never through a pause) and the '평소 주' card every other day. A
+ * partner with no window wording (alerts off, 부담 없이, or '날짜 없음' — calm
+ * voice) gets the '평소 주' card all cycle long.
+ */
+function partnerSharedWeek(c: Ctx): MomentBody {
+  if (c.voice === 'calm') return partnerNeutral(c)
+  const shared = sharedWeek(c.state, c.today)
+  if (!shared) return partnerNeutral(c)
+  const role = 'partner' as const
+  if (shared.kind === 'soon') {
+    return {
+      role,
+      copy: 'partner.our-week-soon',
+      tone: 'default',
+      eyebrow: '다가오는 우리의 주간',
+      title: '곧 우리의 주간이에요',
+      body: '둘만의 시간을 미리 계획해 볼까요?',
+      dateIdeas: true,
+      secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
+    }
+  }
+  return {
+    role,
+    copy: 'partner.our-week',
+    tone: 'fert',
+    // The eyebrow carries the one "(예상)". No peak days without her details.
+    eyebrow: `${day(shared.fertileEnd)}까지 (예상)`,
+    title: '이번 주는 우리의 주간이에요',
+    body: '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
+    dateIdeas: true,
+    secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
+    peak: false,
+  }
+}
+
+/** The waiting weeks, for a partner she shares the details with ('기다리는' only where he can know it). */
 function partnerTww(): MomentBody {
   return {
     role: 'partner',
@@ -1661,6 +1768,12 @@ export interface CycleStrip {
   view: FertilityView
   /** The drawn window's confidence (low = a wide range: no peak days). */
   confidence?: CycleConfidence
+  /**
+   * weeks mode: the shared window already ran on the Sunday before this week,
+   * so the band's left end is square (WeekRow reads this — never the cycle
+   * itself, which would carry her LH-tuned window).
+   */
+  bandBefore?: boolean
 }
 
 function windowTone(date: ISODate, w: CycleWindow, withPeak: boolean): Pick<StripDay, 'tone' | 'level'> | null {
@@ -1673,8 +1786,12 @@ function windowTone(date: ISODate, w: CycleWindow, withPeak: boolean): Pick<Stri
 /**
  * The strip at the top of the home screen. Owner (and a partner she shares
  * details with): this cycle, day 1..length, with logged period days and LH
- * marks. Partner without details: this week and next with only the shared
- * "우리의 주간" band — nothing that shows when her period started.
+ * marks. Partner without details: this week and next with the shared
+ * "우리의 주간" band ONLY while the shared window is on (cycleRing.sharedWeek:
+ * from '곧 우리의 주간' to the window's last day, from her logged starts
+ * alone) — the rest of the cycle, the '평소 주', there is no strip at all, so
+ * nothing is drawn ahead and an untold period, a late one, a rest or a
+ * positive test waiting for the clinic leave his screen exactly as it was.
  *
  * Peak days and LH marks follow the calendar's lens (calendarView.cycleLens):
  * the darker peak days for anyone with details (showsPeak — "특히 좋은 때
@@ -1688,86 +1805,88 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
   // worded like the moment card: an owner with alerts off and a partner without
   // shared details see only "우리의 주간" — no 가임기, no LH marks.
   const view: FertilityView = lens.view === 'hidden' ? 'hidden' : homeVoice(state, viewer) === 'explicit' ? 'explicit' : 'soft'
-  const details = lens.details
+  if (!lens.details) return sharedStrip(state, today, viewer, view)
+
   const positive = phase.kind === 'positive-pending' || phase.kind === 'positive-bleeding'
   const paused = phase.kind === 'rest' || positive
   // With a clinic (or a positive test waiting) no period is projected — logged data only, like the calendar.
   const noProjection = positive || (phase.kind === 'rest' && phase.rest?.reason === 'clinic')
   // Period days 1–3 are for "수고했어요" — the next window shows from day 4.
-  // (The partner without details keeps the shared band, so its absence says
-  // nothing — except once she has told him: then his strip rests for those
-  // days too, and "no band" gives nothing away he wasn't told.)
+  // Once she has told the partner (with details), his strip rests for those days too.
   const toldQuiet =
     viewer !== cycleOwnerId(state) &&
     (phase.kind === 'period-early' || phase.kind === 'period') &&
     !!phase.cycleStart &&
     (phase.cycleDay ?? 0) <= PERIOD_EARLY_DAYS &&
     periodTellState(state, phase.cycleStart) === 'told'
-  const showWindow = view !== 'hidden' && !paused && !(details && phase.kind === 'period-early') && !toldQuiet
+  const showWindow = view !== 'hidden' && !paused && phase.kind !== 'period-early' && !toldQuiet
   const withLH = showsLH(lens) && view === 'explicit'
 
-  if (details) {
-    // Always this cycle (the latest logged start): inside the expected range,
-    // past it (late), while resting or waiting for the clinic, the ring keeps
-    // counting the real days and never starts a projected cycle.
-    const start = phase.cycleStart
-    if (!start) return null
-    const w = cycleAt(state, start)
-    if (!w) return null
-    const length = Math.max(w.length, diffDays(start, today) + 1)
-    const label = showWindow ? windowLabel(view, w.confidence) : undefined
-    // No darker peak days when the calendar alone is all there is (low confidence).
-    const withPeak = showWindow && showsPeak(lens) && w.confidence !== 'low'
-    const days: StripDay[] = []
-    for (let i = 0; i < length; i++) {
-      const date = addDays(start, i)
-      const info = dayInfo(state, date, today)
-      let tone: StripTone = 'none'
-      let level = 0
-      if (info.phase === 'period') {
-        tone = 'period'
-        level = 1
-      } else if (info.phase === 'period-predicted' && !noProjection) {
-        tone = 'period-predicted'
-        level = 0.35
-      } else if (showWindow) {
-        const wt = windowTone(date, w, withPeak)
-        if (wt) ({ tone, level } = wt)
-      }
-      const lh = strongestLH(state.lhTests.filter((t) => t.date === date).map((t) => t.result))
-      // LH marks use the test's own name, so only in the explicit view.
-      const mark = lh && withLH ? { lh: isSurge(lh) ? ('surge' as const) : ('low' as const) } : {}
-      days.push({ date, tone, level, today: date === today, ...mark })
+  // Always this cycle (the latest logged start): inside the expected range,
+  // past it (late), while resting or waiting for the clinic, the ring keeps
+  // counting the real days and never starts a projected cycle.
+  const start = phase.cycleStart
+  if (!start) return null
+  const w = cycleAt(state, start)
+  if (!w) return null
+  const length = Math.max(w.length, diffDays(start, today) + 1)
+  const label = showWindow ? windowLabel(view, w.confidence) : undefined
+  // No darker peak days when the calendar alone is all there is (low confidence).
+  const withPeak = showWindow && showsPeak(lens) && w.confidence !== 'low'
+  const days: StripDay[] = []
+  for (let i = 0; i < length; i++) {
+    const date = addDays(start, i)
+    const info = dayInfo(state, date, today)
+    let tone: StripTone = 'none'
+    let level = 0
+    if (info.phase === 'period') {
+      tone = 'period'
+      level = 1
+    } else if (info.phase === 'period-predicted' && !noProjection) {
+      tone = 'period-predicted'
+      level = 0.35
+    } else if (showWindow) {
+      const wt = windowTone(date, w, withPeak)
+      if (wt) ({ tone, level } = wt)
     }
-    const hasPeak = days.some((d) => d.tone === 'peak')
-    return {
-      mode: 'cycle',
-      days,
-      todayIndex: Math.min(length - 1, diffDays(start, today)),
-      cycleDay: diffDays(start, today) + 1,
-      length,
-      startLabel: '1일',
-      endLabel: `${length}일`,
-      hasWindow: showWindow,
-      windowLabel: label,
-      ...(hasPeak ? { peakLabel: peakLabel(view) } : {}),
-      view,
-      confidence: w.confidence,
-    }
+    const lh = strongestLH(state.lhTests.filter((t) => t.date === date).map((t) => t.result))
+    // LH marks use the test's own name, so only in the explicit view.
+    const mark = lh && withLH ? { lh: isSurge(lh) ? ('surge' as const) : ('low' as const) } : {}
+    days.push({ date, tone, level, today: date === today, ...mark })
   }
+  const hasPeak = days.some((d) => d.tone === 'peak')
+  return {
+    mode: 'cycle',
+    days,
+    todayIndex: Math.min(length - 1, diffDays(start, today)),
+    cycleDay: diffDays(start, today) + 1,
+    length,
+    startLabel: '1일',
+    endLabel: `${length}일`,
+    hasWindow: showWindow,
+    windowLabel: label,
+    ...(hasPeak ? { peakLabel: peakLabel(view) } : {}),
+    view,
+    confidence: w.confidence,
+  }
+}
 
-  // Partner without details: only the shared window, two calendar weeks. A late
-  // period leaves nothing to show (the next window is unknown until it starts).
-  if (!showWindow || phase.kind === 'late') return null
+/**
+ * The partner without details: two calendar weeks with the shared window's
+ * days and nothing else — or null on every '평소 주' day, with his view hidden
+ * (alerts off, 부담 없이, '날짜 없음'), and before any record. Never a period
+ * day, never a projected cycle, never a window other than the one on now.
+ */
+function sharedStrip(state: AppState, today: ISODate, viewer: MemberId, view: FertilityView): CycleStrip | null {
+  if (view === 'hidden' || viewer === cycleOwnerId(state)) return null
+  const shared = sharedWeek(state, today)
+  if (!shared) return null
   const start = mondayOf(today)
-  const windows = upcomingWindows(state, start, 2)
   const days: StripDay[] = Array.from({ length: 14 }, (_, i) => {
     const date = addDays(start, i)
-    const w = windows.find((x) => isBetween(date, x.fertileStart, x.fertileEnd))
-    const wt = w ? windowTone(date, w, false) : null
-    return { date, tone: wt?.tone ?? 'none', level: wt?.level ?? 0, today: date === today }
+    const inBand = isBetween(date, shared.fertileStart, shared.fertileEnd)
+    return { date, tone: inBand ? ('fertile' as const) : ('none' as const), level: inBand ? 0.45 : 0, today: date === today }
   })
-  const confidence = windows[0]?.confidence
   return {
     mode: 'weeks',
     days,
@@ -1775,9 +1894,10 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
     startLabel: formatShort(start),
     endLabel: formatShort(addDays(start, 13)),
     hasWindow: days.some((d) => d.tone !== 'none'),
-    windowLabel: windowLabel(view, confidence),
+    windowLabel: windowLabel(view, shared.confidence),
     view,
-    ...(confidence ? { confidence } : {}),
+    confidence: shared.confidence,
+    ...(sharedBandBefore(shared, start) ? { bandBefore: true } : {}),
   }
 }
 
@@ -1786,12 +1906,21 @@ export function cycleStrip(state: AppState, today: ISODate, viewer: MemberId): C
 /**
  * The 준비 일기 prompt for the home screen, or null when none fits: no baby
  * talk on period days 1–3 or before the clinic confirms, and none right after
- * a loss.
+ * a loss. With `viewer`, a partner without her details reads only what she
+ * told (a period, a positive test, bleeding — [알리기]) — otherwise the
+ * prompt itself would change on the day of something she did not tell (N19).
  */
-export function homeDiaryPrompt(state: AppState, today: ISODate): string | null {
+export function homeDiaryPrompt(state: AppState, today: ISODate, viewer?: MemberId): string | null {
   const phase = ttcPhase(state, today)
   if (phase?.kind === 'after-loss' || (state.stage === 'preparing' && recentlyEnded(state, today))) return null
-  const avoidBaby = phase?.kind === 'period-early' || phase?.kind === 'positive-pending' || phase?.kind === 'positive-bleeding'
+  const partnerView = viewer !== undefined && viewer !== cycleOwnerId(state) && !canSeeCycleDetails(state, viewer)
+  const pending = phase?.pending
+  const avoidBaby = partnerView
+    ? (!!phase?.cycleStart &&
+        (phase.cycleDay ?? 0) <= PERIOD_EARLY_DAYS &&
+        periodTellState(state, phase.cycleStart) === 'told') ||
+      (!!pending && (decided(state, positiveToldKey(pending.since)) || decided(state, bleedingToldKey(pending.since))))
+    : phase?.kind === 'period-early' || phase?.kind === 'positive-pending' || phase?.kind === 'positive-bleeding'
   const list = PROMPTS[state.stage].filter((q) => !avoidBaby || !/아이|아기|태교/.test(q))
   if (list.length === 0) return null
   return list[Number(today.replace(/-/g, '')) % list.length]!

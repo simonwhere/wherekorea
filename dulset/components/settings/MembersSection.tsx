@@ -222,7 +222,7 @@ export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () =>
       </p>
       <p className="mt-2 text-xs leading-relaxed text-ink-3">
         지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 주기 탭에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지 않아요.
-        공유 범위는 ‘우리의 주간만’으로 돌아가고, {member.name}님이 다시 정해요.
+        공유 범위가 ‘자세히’였다면 ‘우리의 주간’으로 돌아가고(‘날짜 없음’은 그대로), {member.name}님이 다시 정해요.
       </p>
       <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
     </div>

@@ -7,7 +7,20 @@ import {
   normalizeLabel,
   suggestionsForRole,
 } from '@/lib/content/supplements'
-import { activeItems, addCheckItem, archiveCheckItem, toggleCheck } from '@/lib/logic/checks'
+import {
+  DRINK_LABELS,
+  activeItems,
+  addCheckItem,
+  archiveCheckItem,
+  checkInLabel,
+  restoreWeekly,
+  toggleCheck,
+  toggleWeekly,
+  toggleWeeklyUndoable,
+  weeklyCheckInName,
+  weeklyDone,
+} from '@/lib/logic/checks'
+import { DRINK_CHECK_LABELS } from '@/lib/initial'
 import { fertilityStatus } from '@/lib/logic/cycle'
 import { NUDGES_PER_DAY, inbox, nudgesSentToday, sendNudge } from '@/lib/logic/notifications'
 import { fertilityView } from '@/lib/logic/calendarView'
@@ -165,9 +178,61 @@ describe('checks on the home screen', () => {
     r = toggleWithCompletion(r.state, 'a', 'b', day, walk!.id, now)
     expect(r.completed).toBe(true)
     expect(firstUnchecked(r.state, 'a', day)).toBeUndefined()
-    // Tapping the done weekly row later that week clears the week's check-in.
-    const cleared = toggleWithCompletion(r.state, 'a', 'b', '2026-09-04', weekly!.id, now).state
+    // Tapping the done weekly row later that week clears the week's check-in…
+    const undoable = toggleWithCompletion(r.state, 'a', 'b', '2026-09-04', weekly!.id, now)
+    const cleared = undoable.state
     expect(cleared.checkLog[day]?.a).toEqual([walk!.id])
+    // …and says which days, so 되돌리기 can put it back exactly (N24).
+    expect(undoable.cleared).toEqual([day])
+    const restored = restoreWeekly(cleared, 'a', weekly!.id, undoable.cleared!)
+    expect([...(restored.checkLog[day]?.a ?? [])].sort()).toEqual([...(r.state.checkLog[day]?.a ?? [])].sort())
+    expect(weeklyDone(restored, 'a', weekly!.id, '2026-09-04')).toBe(true)
+    // Checking in reports nothing to undo.
+    expect(toggleWithCompletion(s, 'a', 'b', day, weekly!.id, now).cleared).toBeUndefined()
+  })
+})
+
+describe("weekly check-ins ask about the week (N24): '술 쉬기 · 이번 주 지켰어요?'", () => {
+  it('the row reads as a question; the stored label and the id stay', () => {
+    expect(checkInLabel({ label: '금주', cadence: 'weekly' })).toBe('술 쉬기 · 이번 주 지켰어요?')
+    expect(checkInLabel({ label: '술 안 마시기', cadence: 'weekly' })).toBe('술 쉬기 · 이번 주 지켰어요?')
+    expect(checkInLabel({ label: '술 쉬기', cadence: 'weekly' })).toBe('술 쉬기 · 이번 주 지켰어요?')
+    expect(checkInLabel({ label: '금연', cadence: 'weekly' })).toBe('금연 · 이번 주 지켰어요?')
+    expect(checkInLabel({ label: '사우나·뜨거운 탕 쉬기', cadence: 'weekly' })).toBe('사우나·뜨거운 탕 쉬기 · 이번 주 지켰어요?')
+    // A daily item keeps its own label.
+    expect(checkInLabel({ label: '금주' })).toBe('금주')
+    expect(weeklyCheckInName({ label: ' 금주 ' })).toBe('술 쉬기')
+    // The labels that mean 'keep not drinking' are the starter list's (lib/initial.ts).
+    expect([...DRINK_LABELS].sort()).toEqual([...DRINK_CHECK_LABELS].sort())
+    // The starter list's weekly 금주 row reads the new way, with its id untouched.
+    let s = fresh({ checkItems: [] })
+    s = addCheckItem(s, 'a', '금주', 'habit', '2026-09-01', '주 1회 체크인', 'weekly')
+    const [row] = activeItems(s, 'a')
+    expect(row!.label).toBe('금주')
+    expect(checkInLabel(row!)).toBe('술 쉬기 · 이번 주 지켰어요?')
+    expect(checkInLabel(row!)).not.toMatch(/숙제|실패|노력|오늘 꼭/)
+  })
+
+  it('taking a check-in back clears every day of this week it was on, and 되돌리기 restores exactly those', () => {
+    let s = fresh({ checkItems: [] })
+    s = addCheckItem(s, 'a', '금주', 'habit', '2026-09-01', '주 1회 체크인', 'weekly')
+    const [row] = activeItems(s, 'a')
+    // Checked on Monday and (a stray second tap from the link) on Wednesday of the same week.
+    s = toggleCheck(toggleCheck(s, 'a', '2026-08-31', row!.id), 'a', '2026-09-02', row!.id)
+    const t = toggleWeeklyUndoable(s, 'a', '2026-09-03', row!.id)
+    expect(t.cleared).toEqual(['2026-08-31', '2026-09-02'])
+    expect(weeklyDone(t.state, 'a', row!.id, '2026-09-03')).toBe(false)
+    expect(restoreWeekly(t.state, 'a', row!.id, t.cleared)).toEqual(s)
+    // Restoring twice changes nothing more; nothing to restore → the same object.
+    const back = restoreWeekly(t.state, 'a', row!.id, t.cleared)
+    expect(restoreWeekly(back, 'a', row!.id, t.cleared)).toBe(back)
+    expect(restoreWeekly(s, 'a', row!.id, [])).toBe(s)
+    // toggleWeekly is the same tap without the payload.
+    expect(toggleWeekly(s, 'a', '2026-09-03', row!.id)).toEqual(t.state)
+    // A daily item: an ordinary toggle, nothing to undo.
+    s = addCheckItem(s, 'a', '걷기 30분', 'habit', '2026-09-01')
+    const walk = activeItems(s, 'a').find((i) => i.label === '걷기 30분')!
+    expect(toggleWeeklyUndoable(s, 'a', '2026-09-03', walk.id).cleared).toEqual([])
   })
 })
 

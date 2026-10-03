@@ -1,15 +1,16 @@
 'use client'
 
-// 설정 › 공유 범위 — what the partner sees of the cycle. Only the person whose
+// 설정 › 공유 범위 — what the partner sees of the cycle, in three levels (N23:
+// 날짜 없음 / 우리의 주간 / 자세히 — settings.shareLevel). Only the person whose
 // cycle it is can change it; the partner sees the current choice, read-only.
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button, Card, cx, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
-import { SHARE_OPTIONS, ShareConsentNotice, type ShareChoice } from '@/components/onboarding/consentCopy'
+import { SHARE_OPTIONS, ShareConsentNotice, shareOption, widens, type ShareChoice } from '@/components/onboarding/consentCopy'
 import { formatKo } from '@/lib/dates'
 import { giveIntimacyConsent, hasIntimacyConsent, intimacyDays, intimacyHolder, revokeIntimacy } from '@/lib/logic/intimacy'
-import { canLogCycle, canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import { canLogCycle, setShareLevel, shareLevelOf } from '@/lib/logic/prefs'
 import { openLog } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
 import { ConfirmActions, Pill, RadioCard, SettingsSection } from './bits'
@@ -143,28 +144,35 @@ function OwnerChoice() {
   const toast = useToast()
   const headingId = useId()
   const group = useId()
-  const current: ShareChoice = state.settings.shareCycleDetails === true ? 'details' : 'week'
-  // Widening is a separate consent (who gets what, for how long): the notice is
-  // shown and confirmed here first. Narrowing back applies at once.
-  const [asking, setAsking] = useState(false)
+  const current: ShareChoice = shareLevelOf(state)
+  // Widening is a separate consent (who gets what, for how long): the notice
+  // for the level asked for is shown and confirmed here first. Narrowing
+  // (towards 날짜 없음) applies at once.
+  const [asking, setAsking] = useState<Exclude<ShareChoice, 'none'> | null>(null)
   const askRef = useRef<HTMLHeadingElement>(null)
   // Changed elsewhere (the other tab): a pending question no longer applies.
-  useEffect(() => setAsking(false), [current])
+  useEffect(() => setAsking(null), [current])
   useEffect(() => {
     if (asking) askRef.current?.focus()
   }, [asking])
 
   const apply = (next: ShareChoice) => {
-    setAsking(false)
+    setAsking(null)
     if (next === current) return
-    update((s) => setShareCycleDetails(s, viewer, next === 'details'))
-    toast.show(next === 'details' ? `${partner.name}님에게 자세한 기록까지 보여요` : `${partner.name}님에게는 ‘우리의 주간’만 보여요`)
+    update((s) => setShareLevel(s, viewer, next))
+    toast.show(
+      next === 'details'
+        ? `${partner.name}님에게 자세한 기록까지 보여요`
+        : next === 'week'
+          ? `${partner.name}님에게는 ‘우리의 주간’만 보여요`
+          : `${partner.name}님 화면에서 날짜를 모두 뺐어요`,
+    )
   }
   const choose = (next: ShareChoice) => {
-    if (next === 'details' && current !== 'details') setAsking(true)
+    if (next !== 'none' && widens(current, next)) setAsking(next)
     else apply(next)
   }
-  const shown: ShareChoice = asking ? 'details' : current
+  const shown: ShareChoice = asking ?? current
 
   return (
     <Card>
@@ -172,7 +180,7 @@ function OwnerChoice() {
         {partner.name}님 화면에 보이는 것
       </h3>
       <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
-        ‘우리의 주간’, 체크 현황, 병원 일정은 늘 함께 봐요. 생리일과 테스트 결과는 여기서 정해요.
+        체크 현황, 할 일, 신호, 병원 일정은 늘 함께 봐요. 날짜를 얼마나 보여 줄지는 여기서 정해요.
       </p>
       <div role="radiogroup" aria-labelledby={headingId} className="mt-3 grid gap-2">
         {SHARE_OPTIONS.map((o) => {
@@ -205,11 +213,11 @@ function OwnerChoice() {
       {asking ? (
         <div className="mt-3 rounded-xl bg-surface-2 p-3">
           <h4 ref={askRef} tabIndex={-1} className="mb-1.5 text-xs font-bold text-ink outline-none">
-            파트너 공유에 동의할까요?
+            {asking === 'details' ? '자세한 기록 공유에 동의할까요?' : '‘우리의 주간’ 공유에 동의할까요?'}
           </h4>
-          <ShareConsentNotice partner={partner.name} />
+          <ShareConsentNotice partner={partner.name} level={asking} />
           <SharePrototypeNote />
-          <ConfirmActions confirmLabel="동의하고 보여 줄게요" onConfirm={() => apply('details')} onCancel={() => setAsking(false)} />
+          <ConfirmActions confirmLabel="동의하고 보여 줄게요" onConfirm={() => apply(asking)} onCancel={() => setAsking(null)} />
         </div>
       ) : (
         <details className="group mt-2">
@@ -235,16 +243,21 @@ function SharePrototypeNote() {
   )
 }
 
+/** What each level means on the partner's own phone, read-only. */
+const PARTNER_LINE: Record<ShareChoice, (owner: string) => string> = {
+  none: (o) => `날짜 없이 함께해요. 체크·할 일·신호, 그리고 ${o}님이 알려 준 것만 보여요.`,
+  week: () => '‘우리의 주간’과 부드러운 안내만 함께 봐요.',
+  details: () => '생리일, 배테기·임테기 결과까지 함께 봐요.',
+}
+
 function PartnerView() {
-  const { state, viewer, cycleOwner } = useApp()
-  const details = canSeeCycleDetails(state, viewer)
+  const { state, cycleOwner } = useApp()
+  const level = shareLevelOf(state)
   return (
     <Card>
       <div className="flex items-start justify-between gap-3">
-        <p className="min-w-0 text-sm text-ink">
-          {details ? '생리일, 배테기·임테기 결과까지 함께 봐요.' : '‘우리의 주간’과 부드러운 안내만 함께 봐요.'}
-        </p>
-        <Pill tone={details ? 'brand' : 'muted'}>{details ? '자세한 기록까지' : '우리의 주간만'}</Pill>
+        <p className="min-w-0 text-sm text-ink">{PARTNER_LINE[level](cycleOwner.name)}</p>
+        <Pill tone={level === 'details' ? 'brand' : 'muted'}>{shareOption(level).short}</Pill>
       </div>
       <p className="mt-1.5 text-xs leading-relaxed text-ink-3">
         {cycleOwner.name}님의 주기 기록이라 {cycleOwner.name}님이 정해요. 기록도 {cycleOwner.name}님만 남길 수 있어요.

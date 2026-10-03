@@ -20,15 +20,21 @@ export default function FertilityGuide({
   view,
   ownerName,
   ownerAge,
+  owner = true,
 }: {
   view: FertilityView
   ownerName: string
   ownerAge?: number
+  /** The cycle owner's own tab. The partner's leaves out '얼마나 자주면 될까요?'. */
+  owner?: boolean
 }) {
   // The soft view promises "건강 용어 없이", so it gets the same set as the hidden
   // view (no 가임기/배란 or LH timing sections).
   const hidden = view !== 'explicit'
-  const sections = guideSections(hidden)
+  // The frequency section ('하루나 이틀에 한 번', '2~3일에 한 번') is hers to read in her own record
+  // tool, never put in front of the partner: on his side it reads as a quota (docs/positioning.md §6,
+  // the same rule as CycleSummary's NICE card).
+  const sections = guideSections(hidden).filter((s) => owner || s.id !== 'frequency')
   const sources = guideSources(sections)
 
   return (

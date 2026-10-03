@@ -3,8 +3,10 @@
 // Two cadences:
 //   daily  — the one-tap rows of the day (엽산, 걷기 30분 …). Default, and what an
 //            item without `cadence` (older data) means.
-//   weekly — a once-a-week check-in for "keep not doing it" habits (금연·금주·
-//            사우나 쉬기). One check anywhere in the ISO week (Mon–Sun) counts.
+//   weekly — a once-a-week check-in for "keep not doing it" habits (금연·술 쉬기·
+//            사우나 쉬기). One check anywhere in the ISO week (Mon–Sun) counts;
+//            the row asks '술 쉬기 · 이번 주 지켰어요?' (checkInLabel), and taking
+//            it back can be undone (toggleWeeklyUndoable / restoreWeekly).
 //            They never decide whether a day is "complete", never feed the weekly
 //            count, and are never the target of a 콕 — holding back isn't a chore.
 
@@ -96,6 +98,34 @@ export function isDueThisWeek(
   today: ISODate,
 ): boolean {
   return item.active && isWeekly(item) && !weeklyDone(state, member, item.id, today)
+}
+
+// ── The weekly check-in's words (N24) ───────────────────────
+//
+// A "keep not doing it" habit reads as an ask about the week, not a rule:
+// '술 쉬기 · 이번 주 지켰어요?' instead of '이번 주 금주'. Only the words on
+// the row change — the stored label and the item's id stay (old saves,
+// both phones and the link agree on the id).
+
+/**
+ * Labels that are the 'keep not drinking' row (lib/initial.ts
+ * DRINK_CHECK_LABELS — tests/today.test.ts keeps the two in step; read here
+ * without importing initial.ts).
+ */
+export const DRINK_LABELS: readonly string[] = ['금주', '술 쉬기', '술 안 마시기']
+
+/** The question every weekly row asks. */
+export const WEEKLY_QUESTION = '이번 주 지켰어요?'
+
+/** A weekly check-in's short name: '금주' / '술 안 마시기' → '술 쉬기'; any other label as it is. */
+export function weeklyCheckInName(item: Pick<CheckItem, 'label'>): string {
+  const label = item.label.trim()
+  return DRINK_LABELS.includes(label) ? '술 쉬기' : label
+}
+
+/** What a weekly row says: '술 쉬기 · 이번 주 지켰어요?'. A daily item keeps its label. */
+export function checkInLabel(item: Pick<CheckItem, 'label' | 'cadence'>): string {
+  return isWeekly(item) ? `${weeklyCheckInName(item)} · ${WEEKLY_QUESTION}` : item.label
 }
 
 /** Weekly check-ins still due this week (shown until they're done). */
@@ -230,12 +260,39 @@ export function toggleCheck(state: AppState, member: MemberId, date: ISODate, it
  * it's checked today. A daily item falls back to toggleCheck.
  */
 export function toggleWeekly(state: AppState, member: MemberId, today: ISODate, itemId: string): AppState {
+  return toggleWeeklyUndoable(state, member, today, itemId).state
+}
+
+/**
+ * Taking a weekly check-in back (N24): which days of this week it cleared, so
+ * the screen can offer 되돌리기 (restoreWeekly with the same days). Empty when
+ * the tap checked it in instead, or the item isn't a weekly one.
+ */
+export interface WeeklyToggle {
+  state: AppState
+  /** The days of this week the check-in was cleared from (Monday → today); [] when it was checked in. */
+  cleared: ISODate[]
+}
+
+/** toggleWeekly, telling what an un-check cleared (WeeklyToggle) — the 되돌리기 toast's payload. */
+export function toggleWeeklyUndoable(state: AppState, member: MemberId, today: ISODate, itemId: string): WeeklyToggle {
   const item = state.checkItems.find((i) => i.id === itemId)
-  if (!item || !isWeekly(item)) return toggleCheck(state, member, today, itemId)
+  if (!item || !isWeekly(item)) return { state: toggleCheck(state, member, today, itemId), cleared: [] }
   const days = weeklyCheckDays(state, member, itemId, today)
-  if (!days.length) return toggleCheck(state, member, today, itemId)
+  if (!days.length) return { state: toggleCheck(state, member, today, itemId), cleared: [] }
   let s = state
   for (const d of days) s = toggleCheck(s, member, d, itemId)
+  return { state: s, cleared: days }
+}
+
+/**
+ * 되돌리기 for an un-checked weekly check-in: put it back on exactly the days
+ * it was cleared from (WeeklyToggle.cleared). Days already holding it stay as
+ * they are; nothing to restore → the same state.
+ */
+export function restoreWeekly(state: AppState, member: MemberId, itemId: string, days: readonly ISODate[]): AppState {
+  let s = state
+  for (const d of days) if (!isDone(s, member, d, itemId)) s = toggleCheck(s, member, d, itemId)
   return s
 }
 

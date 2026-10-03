@@ -25,6 +25,7 @@ import {
   USES_LH_OPTIONS,
   canLogCycle,
   canSeeCycleDetails,
+  canSeeWeekBand,
   discreetFor,
   lhTestTimeFor,
   lowPressureFor,
@@ -241,9 +242,17 @@ function MyAlertStyle() {
   // 주간" wording even with "가임기라고" picked — the same rule the alerts,
   // home and calendar follow (no dates or peak days that give away an LH result).
   const limited = style === 'explicit' && !canSeeCycleDetails(state, viewer)
+  // '날짜 없음' (N23): she shares no dates, so no 우리의 주간 notice reaches this
+  // person at all (notifications.scheduledNotices) — the preview shows none.
+  const noBand = !canSeeWeekBand(state, viewer)
   // No dates in the preview while this cycle is paused (쉬어요 / 병원 확인 전).
-  const [w] = state.periods.length && !cyclePause(state, today) ? upcomingWindows(state, today, 1) : []
-  const preview = alertPreview(limited ? 'soft' : style, { lowPressure: low, isCycleOwner: isOwner, window: w })
+  const [w] = state.periods.length && !cyclePause(state, today) && !noBand ? upcomingWindows(state, today, 1) : []
+  const preview = noBand
+    ? {
+        message: null,
+        note: `${cycleOwner.name}님이 ‘날짜 없음’을 골라서 우리의 주간 알림은 오지 않아요. 체크·신호·할 일 알림은 그대로 와요.`,
+      }
+    : alertPreview(limited ? 'soft' : style, { lowPressure: low, isCycleOwner: isOwner, window: w })
   const lock = preview.message && discreetFor(state.settings, viewer) ? lockScreenText(preview.message, true) : null
 
   const choose = (next: AlertStyle) => update((s) => setAlertStyle(s, viewer, next))
@@ -307,7 +316,7 @@ function MyAlertStyle() {
           </div>
         ) : null}
         <p className="mt-1.5 text-xs leading-relaxed text-ink-2">{preview.note}</p>
-        {limited && !low ? (
+        {limited && !low && !noBand ? (
           <p className="mt-1 text-[11px] text-ink-3">
             {cycleOwner.name}님이 자세한 기록을 공유하기 전까지는 ‘우리의 주간’으로 알려 드려요.
           </p>

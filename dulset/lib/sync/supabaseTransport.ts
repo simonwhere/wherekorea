@@ -7,8 +7,8 @@
 // │ supabase/schema.sql + policies.sql. First run: expect to adjust.     │
 // └──────────────────────────────────────────────────────────────────────┘
 //
-// No SDK: four RPC calls over HTTPS are all the partner link needs, and a
-// dependency would add ~30 kB to a build that must stay small. Every call
+// No SDK: a handful of RPC calls over HTTPS are all the partner link needs,
+// and a dependency would add ~30 kB to a build that must stay small. Every call
 // goes through a security-definer function (supabase/schema.sql); the
 // tables themselves are not readable with the anon key (policies.sql).
 //
@@ -25,8 +25,8 @@
 import { localNowISO } from '../logic/notifications'
 import { cleanPartnerEvent, type PartnerEvent } from '../logic/partnerEvents'
 import type { PartnerSnapshot } from '../logic/partnerSnapshot'
-import type { ISODateTime } from '../types'
-import { eventId, pageEvents, type ReceivedEvent, type SupabaseEnv, type Transport } from './transport'
+import type { ISODate, ISODateTime } from '../types'
+import { eventId, pageReceived, type ReceivedEvent, type SupabaseEnv, type Transport } from './transport'
 
 /** localStorage key of this device's owner key (starts with 'dulset:' so a wipe clears it). */
 export const OWNER_KEY_STORAGE = 'dulset:sync:ownerKey'
@@ -143,6 +143,8 @@ export interface SupabaseTransport extends Transport {
   revokeToken(coupleId: string, token: string): Promise<void>
   /** Events the owner has handled, so a later pull can skip them (read_at). */
   markEventsRead(coupleId: string, ids: string[]): Promise<number>
+  /** Research only: distinct days in from…to the couple's link was opened (link_open_days). */
+  linkOpenDays(coupleId: string, from: ISODate, to: ISODate): Promise<number>
   /** The owner key in use (null = none available on this device: publishing will fail). */
   readonly ownerKey: string | null
 }
@@ -177,6 +179,18 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
 
   /** The one row a set-returning RPC gives back (PostgREST returns an array). */
   const firstRow = <T>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
+
+  /** pull_events, cleaned: rows were written by the partner's browser — strict shape before anything reads them. */
+  async function received(coupleId: string, since: ISODateTime): Promise<ReceivedEvent[]> {
+    const rows = await rpc<EventRow[]>('pull_events', { p_owner_key: needOwner(), p_couple_id: coupleId, p_since: since || null })
+    const kept: ReceivedEvent[] = []
+    for (const r of Array.isArray(rows) ? rows : []) {
+      const event = r && typeof r === 'object' ? cleanPartnerEvent(r.payload) : undefined
+      if (event && typeof r.created_at === 'string') kept.push({ receivedAt: r.created_at, event })
+    }
+    // The server already pages by created_at; this keeps the order and the one-per-id rule.
+    return pageReceived(kept, since)
+  }
 
   return {
     kind: 'supabase',
@@ -223,15 +237,27 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
     },
 
     async pullEvents(coupleId, since) {
-      const rows = await rpc<EventRow[]>('pull_events', { p_owner_key: needOwner(), p_couple_id: coupleId, p_since: since || null })
-      // Rows were written by the partner's browser: strict shape before anything reads them.
-      const kept: ReceivedEvent[] = []
-      for (const r of Array.isArray(rows) ? rows : []) {
-        const event = r && typeof r === 'object' ? cleanPartnerEvent(r.payload) : undefined
-        if (event && typeof r.created_at === 'string') kept.push({ receivedAt: r.created_at, event })
+      return (await received(coupleId, since)).map((r) => r.event)
+    },
+
+    async pullReceived(coupleId, since) {
+      return received(coupleId, since)
+    },
+
+    async recordLinkOpen(token) {
+      // The token only: the server resolves the couple from its hash and counts
+      // its own Seoul date (record_link_open) — no day, no device, no content
+      // from here. Never throws: the page must not break over a counter.
+      try {
+        await rpc<null>('record_link_open', { p_token: token })
+      } catch {
+        /* an unknown or expired link, a network blip: nothing is recorded */
       }
-      // The server already pages by created_at; this keeps the order and the one-per-id rule.
-      return pageEvents(kept, since)
+    },
+
+    async linkOpenDays(coupleId, from, to) {
+      const n = await rpc<number>('link_open_days', { p_owner_key: needOwner(), p_couple_id: coupleId, p_from: from, p_to: to })
+      return typeof n === 'number' ? n : 0
     },
 
     async markEventsRead(coupleId, ids) {

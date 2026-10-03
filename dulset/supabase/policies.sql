@@ -28,6 +28,7 @@ alter table public.couples enable row level security;
 alter table public.couple_tokens enable row level security;
 alter table public.partner_snapshots enable row level security;
 alter table public.partner_events enable row level security;
+alter table public.link_opens enable row level security;
 
 -- No policies on purpose (see above).
 
@@ -35,6 +36,7 @@ revoke all on table public.couples from anon, authenticated;
 revoke all on table public.couple_tokens from anon, authenticated;
 revoke all on table public.partner_snapshots from anon, authenticated;
 revoke all on table public.partner_events from anon, authenticated;
+revoke all on table public.link_opens from anon, authenticated;
 
 -- Functions: Postgres grants EXECUTE to PUBLIC by default, so the internal
 -- helpers are taken away explicitly and the entry points granted by name.
@@ -51,10 +53,14 @@ grant execute on function public.revoke_token(text, uuid, text) to anon, authent
 grant execute on function public.publish_snapshot(text, uuid, text, jsonb, timestamptz) to anon, authenticated;
 grant execute on function public.pull_events(text, uuid, timestamptz) to anon, authenticated;
 grant execute on function public.mark_events_read(text, uuid, text[]) to anon, authenticated;
+-- Research only: '링크 연 날' read back with the owner key (never shown in the app).
+grant execute on function public.link_open_days(text, uuid, date, date) to anon, authenticated;
 
 -- Partner side (his browser, with the link's token)
 grant execute on function public.snapshot_by_token(text) to anon, authenticated;
 grant execute on function public.send_event(text, text, text, jsonb) to anon, authenticated;
+-- '링크 연 날': the token only; the server files couple · Seoul date · count.
+grant execute on function public.record_link_open(text) to anon, authenticated;
 
 -- Optional housekeeping with pg_cron (Dashboard → Database → Extensions →
 -- pg_cron on), once a day at 04:00 KST (19:00 UTC):

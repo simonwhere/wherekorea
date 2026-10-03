@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDemoState } from '@/lib/demo'
 import type { PartnerEvent } from '@/lib/logic/partnerEvents'
@@ -24,6 +26,7 @@ import {
 import {
   TRANSPORT_LABEL,
   pageEvents,
+  pageReceived,
   pickSupabaseEnv,
   resetTransport,
   transport,
@@ -66,6 +69,16 @@ describe('picking the transport', () => {
 })
 
 describe('pageEvents', () => {
+  it('pageReceived keeps the receipt stamps; instants compare across offsets (a UTC created_at against a local since)', () => {
+    const list: ReceivedEvent[] = [
+      { receivedAt: '2026-10-02T00:30:00+00:00', event: ev('utc') }, // 09:30 in Seoul
+      { receivedAt: '2026-10-02T09:10:00+09:00', event: ev('local') },
+    ]
+    expect(pageReceived(list, '').map((r) => r.event.id)).toEqual(['local', 'utc'])
+    expect(pageReceived(list, '2026-10-02T09:20:00+09:00')).toEqual([list[0]])
+    expect(pageReceived(list, '2026-10-02T09:20:00+09:00')[0]!.receivedAt).toBe('2026-10-02T00:30:00+00:00')
+  })
+
   it('orders by receipt then id, keeps the first of a repeated id, and pages after `since`', () => {
     const list: ReceivedEvent[] = [
       { receivedAt: '2026-10-02T09:00:02+09:00', event: ev('c') },
@@ -139,6 +152,36 @@ describe('mock transport: two tabs over one storage', () => {
     expect(after[1]).toEqual({ id: 'e3', kind: 'cheer' })
   })
 
+  it('pullReceived carries each event’s receipt stamp (what her phone applies it by); pullEvents is the same page without it', async () => {
+    const { her, him } = twoTabs()
+    await her.publishSnapshot('couple-1', TOKEN, snapshot())
+    await him.sendEvent(TOKEN, ev('e1'))
+    await him.sendEvent(TOKEN, ev('e2', { kind: 'nudge' }))
+    const received = await her.pullReceived('couple-1', '')
+    expect(received.map((r) => [r.event.id, r.receivedAt])).toEqual([
+      ['e1', '2026-10-02T09:00:01+09:00'],
+      ['e2', '2026-10-02T09:00:02+09:00'],
+    ])
+    expect(await her.pullEvents('couple-1', '')).toEqual(received.map((r) => r.event))
+    expect(await her.pullReceived('couple-1', '2026-10-02T09:00:01+09:00')).toEqual([received[1]])
+  })
+
+  it('링크 연 날: recordLinkOpen files (couple, day) → count under the token’s couple; never throws; linkOpenDays counts distinct days', async () => {
+    const { her, him, storage } = twoTabs()
+    await him.recordLinkOpen(TOKEN, TODAY) // no token yet: nothing, no error
+    expect(await her.linkOpenDays('couple-1', TODAY, TODAY)).toBe(0)
+    await her.publishSnapshot('couple-1', TOKEN, snapshot())
+    for (const d of [TODAY, TODAY, TODAY, '2026-10-04', '2026-10-09']) await him.recordLinkOpen(TOKEN, d)
+    expect(await her.linkOpenDays('couple-1', '2026-09-28', '2026-10-04')).toBe(2)
+    expect(await her.linkOpenDays('couple-1', '2026-10-05', '2026-10-11')).toBe(1)
+    expect(await her.linkOpenDays('couple-1', '2026-10-11', '2026-10-05')).toBe(0)
+    expect(await her.linkOpenDays('couple-2', '2026-09-28', '2026-10-11')).toBe(0)
+    const store = parseMockStore(storage.getItem(MOCK_SYNC_KEY))
+    expect(store.opens).toEqual({ 'couple-1': { [TODAY]: 3, '2026-10-04': 1, '2026-10-09': 1 } })
+    // Without storage it is a no-op, not an error.
+    await expect(createMockTransport({ storage: null, channel: null }).recordLinkOpen(TOKEN, TODAY)).resolves.toBeUndefined()
+  })
+
   it('keeps at most MOCK_EVENTS_MAX events per couple (oldest dropped)', async () => {
     const { her, him } = twoTabs()
     await her.publishSnapshot('couple-1', TOKEN, snapshot())
@@ -168,9 +211,13 @@ describe('mock transport: two tabs over one storage', () => {
     const t = createMockTransport({ storage: null, channel: null })
     await expect(t.publishSnapshot('c', TOKEN, snapshot())).rejects.toMatchObject({ code: 'storage' })
     expect(await t.fetchSnapshot(TOKEN)).toBeNull()
-    expect(parseMockStore('{"snapshots":[],"tokens":null}')).toEqual({ snapshots: {}, tokens: {}, events: {} })
-    expect(parseMockStore('nope')).toEqual({ snapshots: {}, tokens: {}, events: {} })
-    expect(parseMockStore(null)).toEqual({ snapshots: {}, tokens: {}, events: {} })
+    expect(parseMockStore('{"snapshots":[],"tokens":null}')).toEqual({ snapshots: {}, tokens: {}, events: {}, opens: {} })
+    expect(parseMockStore('nope')).toEqual({ snapshots: {}, tokens: {}, events: {}, opens: {} })
+    expect(parseMockStore(null)).toEqual({ snapshots: {}, tokens: {}, events: {}, opens: {} })
+    // A forged counter map keeps only couple → day → positive whole counts.
+    expect(
+      parseMockStore(JSON.stringify({ opens: { c1: { '2026-10-02': 2, '2026-10-03': 0, bad: 1, '2026-10-04': 1.5 }, c2: 'x', c3: { '2026-10-02': -1 } } })).opens,
+    ).toEqual({ c1: { '2026-10-02': 2 } })
   })
 })
 
@@ -313,6 +360,53 @@ describe('supabase transport: request shaping with a fake fetch (never run again
     for (const c of calls) expect(JSON.stringify(c.body)).not.toContain(OWNER.slice(0, 8) + (c.url.includes('pull') ? '§' : ''))
   })
 
+  it('pullReceived keeps the server’s created_at with each cleaned event', async () => {
+    const { fetch } = fake((c) =>
+      c.url.endsWith('/pull_events')
+        ? {
+            body: [
+              { id: 'e1', kind: 'cheer', payload: { id: 'e1', kind: 'cheer' }, created_at: '2026-10-02T00:00:01+00:00', read_at: null },
+              { id: 'x', kind: 'period', payload: { id: 'x', kind: 'period' }, created_at: '2026-10-02T00:00:02+00:00', read_at: null },
+            ],
+          }
+        : { status: 404 },
+    )
+    const t = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch })
+    expect(await t.pullReceived('c1', '')).toEqual([{ receivedAt: '2026-10-02T00:00:01+00:00', event: { id: 'e1', kind: 'cheer' } }])
+  })
+
+  it('링크 연 날: record_link_open carries the token only (the server counts its own Seoul date); link_open_days carries the owner key; neither carries a day of his', async () => {
+    let fail = false
+    const { calls, fetch } = fake((c) => {
+      if (c.url.endsWith('/record_link_open')) return fail ? { status: 403, body: { message: 'x' } } : { status: 204 }
+      if (c.url.endsWith('/link_open_days')) return { body: 3 }
+      return { status: 404 }
+    })
+    const t = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch })
+    await t.recordLinkOpen(TOKEN, TODAY)
+    expect(calls[0]!.url).toBe('https://abc.supabase.co/rest/v1/rpc/record_link_open')
+    expect(calls[0]!.body).toEqual({ p_token: TOKEN })
+    expect(JSON.stringify(calls[0]!.body)).not.toContain(TODAY)
+    expect(calls[0]!.headers.apikey).toBe('anon-key')
+    // A dead link or a network blip records nothing and never throws on the page.
+    fail = true
+    await expect(t.recordLinkOpen(TOKEN, TODAY)).resolves.toBeUndefined()
+    const offline = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch: fake(() => new Error('offline')).fetch })
+    await expect(offline.recordLinkOpen(TOKEN, TODAY)).resolves.toBeUndefined()
+    // The study's read-back: owner key, couple, the two dates.
+    expect(await t.linkOpenDays('c1', '2026-09-28', '2026-10-04')).toBe(3)
+    expect(calls[2]!.url.endsWith('/link_open_days')).toBe(true)
+    expect(calls[2]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_from: '2026-09-28', p_to: '2026-10-04' })
+    // Without an owner key the read-back refuses before any call.
+    const before = calls.length
+    const noKey = createSupabaseTransport({ ...ENV, fetch, storage: null })
+    await expect(noKey.linkOpenDays('c1', '2026-09-28', '2026-10-04')).rejects.toBeInstanceOf(SupabaseTransportError)
+    expect(calls.length).toBe(before)
+    // The page side needs none.
+    await noKey.recordLinkOpen(TOKEN, TODAY)
+    expect(calls.length).toBe(before + 1)
+  })
+
   it('errors: an HTTP failure carries the status, a thrown fetch is "network", a non-JSON body is "bad-response", no owner key refuses before any call', async () => {
     const http = createSupabaseTransport({
       ...ENV,
@@ -348,5 +442,49 @@ describe('supabase transport: request shaping with a fake fetch (never run again
     const t = createSupabaseTransport({ ...ENV, storage, fetch: fake(() => ({ body: null })).fetch })
     expect(t.ownerKey).toBe(first)
     vi.restoreAllMocks()
+  })
+})
+
+describe('the SQL and the client agree (supabase/*.sql — read as text, never run here)', () => {
+  const schema = readFileSync(path.resolve(__dirname, '../supabase/schema.sql'), 'utf8')
+  const policies = readFileSync(path.resolve(__dirname, '../supabase/policies.sql'), 'utf8')
+  const CLIENT_RPCS = [
+    'create_couple',
+    'issue_token',
+    'revoke_token',
+    'publish_snapshot',
+    'pull_events',
+    'mark_events_read',
+    'snapshot_by_token',
+    'send_event',
+    'record_link_open',
+    'link_open_days',
+  ]
+
+  it('every function the client calls exists and is granted to the API roles; the helpers are not', () => {
+    for (const fn of CLIENT_RPCS) {
+      expect(schema, fn).toMatch(new RegExp(`create or replace function public\\.${fn}\\(`))
+      expect(policies, fn).toMatch(new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to anon, authenticated;`))
+    }
+    for (const helper of ['dulset_hash', 'dulset_owner_couple', 'dulset_token_couple', 'dulset_cleanup'])
+      expect(policies).not.toMatch(new RegExp(`grant execute on function public\\.${helper}`))
+  })
+
+  it('링크 연 날 keeps couple · day · count and nothing else, behind RLS with no policy; the page sends the token only', () => {
+    const table = /create table if not exists public\.link_opens \(([\s\S]*?)\n\);/.exec(schema)?.[1] ?? ''
+    const columns = table
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('primary key') && !l.startsWith('--'))
+      .map((l) => l.split(/\s+/)[0])
+    expect(columns).toEqual(['couple_id', 'day', 'count'])
+    expect(table).not.toMatch(/\bip\b|agent|device|token/i)
+    expect(schema).toMatch(/create or replace function public\.record_link_open\(p_token text\)/)
+    expect(schema).toMatch(/now\(\) at time zone 'Asia\/Seoul'/)
+    expect(policies).toMatch(/alter table public\.link_opens enable row level security;/)
+    expect(policies).toMatch(/revoke all on table public\.link_opens from anon, authenticated;/)
+    // A seven-day snapshot fits the server's limit.
+    expect(schema).toMatch(/octet_length\(p_payload::text\) > 131072/)
+    expect(JSON.stringify(snapshot()).length).toBeLessThan(131072)
   })
 })

@@ -71,11 +71,15 @@ import {
   ttcMoment,
   ttcPhase,
   vaccineRestHint,
+  partnerQuiet,
+  partnerTaskVisible,
   type Moment,
 } from '@/lib/logic/ttcFlow'
 import { cycleSummary } from '@/lib/logic/calendarView'
 import { plainLegendLabel, ringLegend } from '@/lib/logic/cycleRing'
-import { setUsesLH } from '@/lib/logic/prefs'
+import { setShareLevel, setUsesLH } from '@/lib/logic/prefs'
+import { weekOptions } from '@/lib/logic/weekTogether'
+import { PROMPTS } from '@/lib/logic/diary'
 import { canNudge, inbox, scheduledNotices, sendNudge } from '@/lib/logic/notifications'
 import { dueRange } from '@/lib/logic/periodDue'
 import { sanitizeBackup } from '@/lib/logic/settings'
@@ -108,7 +112,7 @@ function withStyle(s: AppState, member: 'a' | 'b', style: AlertStyle): AppState 
   return { ...s, settings: { ...s.settings, alertStyle: { ...s.settings.alertStyle, [member]: style } } }
 }
 
-const share = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, shareCycleDetails: true } })
+const share = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, shareLevel: 'details' } })
 /** She answered "알릴까요?" for the 09-01 period with 괜찮아요. */
 const answered = (s: AppState): AppState => skipTellPartnerPeriod(s, '2026-09-01', NOW)
 
@@ -315,8 +319,10 @@ describe('owner moments (explicit)', () => {
     expect(words(soft)).not.toMatch(FERTILE_WORDS)
     expect(soft.primary).toEqual({ type: 'log', kind: 'lh', label: '오늘 기록' })
     expect(ttcMoment(withStyle(st, OWNER, 'off'), '2026-09-16', OWNER)!.copy).toBe('owner.tww')
-    // The partner's card is the same waiting card as ever.
-    expect(ttcMoment(st, '2026-09-16', PARTNER)!.copy).toBe('partner.tww')
+    // The partner's card says nothing of her strips: (N19) the '평소 주' card
+    // without her details, the same waiting card as ever with them.
+    expect(ttcMoment(st, '2026-09-16', PARTNER)!.copy).toBe('partner.neutral')
+    expect(ttcMoment(share(st), '2026-09-16', PARTNER)!.copy).toBe('partner.tww')
     // A negative home test she took still wins ('다시 해 볼 날').
     expect(m('2026-09-16', { ...st, pregnancyTests: [test('2026-09-16', 'negative')] }).copy).toBe('owner.retest')
   })
@@ -509,8 +515,8 @@ describe('the expected period as a range on the home (N10)', () => {
     // A period logged later ends it: a fresh cycle.
     const logged = { ...waiting, periods: [...waiting.periods, { start: '2026-10-26' }] }
     expect(ttcPhase(logged, '2026-10-27')?.kind).toBe('period-early')
-    // The partner sees none of this (no details): the waiting card.
-    expect(ttcMoment(waiting, '2026-10-25', PARTNER)!.copy).toBe('partner.tww')
+    // The partner sees none of this (no details): (N19) the '평소 주' card.
+    expect(ttcMoment(waiting, '2026-10-25', PARTNER)!.copy).toBe('partner.neutral')
   })
 })
 
@@ -632,7 +638,7 @@ describe('병원과 함께 준비 중 (clinic mode, N13)', () => {
       expect(words(mo)).not.toMatch(FERTILE_WORDS)
       // No shared band for him; with her details, the ring shows her logged days only.
       const strip = cycleStrip(st, DAYS.peak, PARTNER)
-      if (st.settings.shareCycleDetails) expect(strip!.days.every((d) => d.tone === 'period' || d.tone === 'none')).toBe(true)
+      if (st.settings.shareLevel === 'details') expect(strip!.days.every((d) => d.tone === 'period' || d.tone === 'none')).toBe(true)
       else expect(strip).toBeNull()
     }
     expect(ttcMoment(clinic(), DAYS.peak, PARTNER)!.body).toContain('일정이 잡히면 여기서 알려 드려요')
@@ -718,10 +724,22 @@ describe('partner moments', () => {
     expect(p(s, DAYS.period).copy).toBe('partner.neutral')
     expect(p(s, DAYS.peak).peak).toBe(false)
     expect(p(s, DAYS.peak).body).toBe('둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.')
-    // A late period is hers to share: he keeps the waiting card.
-    expect(p(s, DAYS.late).copy).toBe('partner.tww')
+    // A late period is hers to share: (N19) he keeps the '평소 주' card he had in the waiting weeks.
+    expect(p(s, DAYS.late).copy).toBe('partner.neutral')
+    // Word for word (only `kind`, the day's internal phase, differs — no screen renders it for him).
+    const { kind: _late, ...late } = p(s, DAYS.late)
+    const { kind: _tww, ...tww } = p(s, DAYS.tww)
+    expect(late).toEqual(tww)
     const neg = fresh({ pregnancyTests: [test('2026-09-24', 'negative')] })
     expect(p(neg, '2026-09-24').retest).toBeUndefined()
+    // Her cycle's day, start and confidence are her records: not on his Moment.
+    for (const d of Object.values(DAYS)) {
+      const m = p(s, d)
+      expect(m.cycleDay, d).toBeUndefined()
+      expect(m.cycleStart, d).toBeUndefined()
+      expect(m.confidence, d).toBeUndefined()
+    }
+    expect(p(share(s), DAYS.tww).cycleDay).toBe(20)
   })
 
   it('with shared details: period care, peak days and a late period', () => {
@@ -760,16 +778,45 @@ describe('partner moments', () => {
     }
   })
 
-  it('waiting weeks: "기다리는 시간이에요" — no symptom questions', () => {
-    expect(p(fresh(), DAYS.tww)).toMatchObject({
+  it('waiting weeks: "기다리는 시간이에요" only with her details — no symptom questions', () => {
+    expect(p(share(fresh()), DAYS.tww)).toMatchObject({
       copy: 'partner.tww',
       title: '기다리는 시간이에요',
       body: '증상은 묻지 말고 평소처럼 보내요.',
     })
+    // (N19) '기다리는' is never said to a partner without her details.
+    for (const d of Object.values(DAYS)) expect(words(p(fresh(), d)), d).not.toMatch(/기다리/)
   })
 
-  it('no data yet: waits for her first record', () => {
-    expect(p(fresh({ periods: [] }), DAYS.tww)).toMatchObject({ copy: 'partner.no-data', monthlyTask: true })
+  it("the '평소 주' card: 이번 주 우리 둘 follows it (own eyebrow), his month task can sit inside, nothing of hers", () => {
+    const m = p(fresh(), DAYS.tww)
+    expect(m).toMatchObject({
+      role: 'partner',
+      copy: 'partner.neutral',
+      tone: 'default',
+      // The week block right under the card has the header '이번 주 우리 둘': the card never repeats it.
+      eyebrow: '오늘의 우리',
+      title: '이번 주도 둘이 함께해요',
+      body: '이번 주에 내가 맡을 것 하나면 충분해요.',
+      monthlyTask: true,
+      weekTogether: true,
+    })
+    expect(m.primary).toBeUndefined()
+    expect(m.dateIdeas).toBeUndefined()
+    expect(words(m)).not.toMatch(/우리의 주간|생리|기다리|테스트|가임/)
+  })
+
+  it('no data yet: the same card — never a dead end that waits on her record (N19 / N29)', () => {
+    const none = p(fresh({ periods: [] }), DAYS.tww)
+    expect(none).toMatchObject({ copy: 'partner.neutral', monthlyTask: true, weekTogether: true })
+    expect(words(none)).not.toMatch(/기록하면|기록해|기록이 시작/)
+    // Her first record (untold) changes nothing on his card that day.
+    const first = logPeriodStart(fresh({ periods: [] }), DAYS.tww, OWNER, DAYS.tww)
+    expect({ ...p(first, DAYS.tww), kind: none.kind }).toEqual(none)
+    // The link page reads the same card.
+    expect(ttcMoment(fresh({ periods: [] }), DAYS.tww, PARTNER, { surface: 'link' })!.copy).toBe('partner.neutral')
+    // With her details there is nothing to show yet either: the same card.
+    expect(p(share(fresh({ periods: [] })), DAYS.tww).copy).toBe('partner.neutral')
   })
 })
 
@@ -987,20 +1034,24 @@ describe('cycle strip', () => {
 
   it('keeps the next window off the strip on period days 1–3', () => {
     expect(cycleStrip(fresh(), DAYS.periodEarly, OWNER)!.hasWindow).toBe(false)
-    // …but the partner without details keeps the same two-week band (nothing to infer from).
-    expect(cycleStrip(fresh(), DAYS.periodEarly, PARTNER)!.mode).toBe('weeks')
+    // (N19) The partner without details: no strip on any '평소 주' day — the day
+    // before her untold period and its first days look the same (nothing drawn ahead).
+    expect(cycleStrip(fresh(), DAYS.periodEarly, PARTNER)).toBeNull()
+    expect(cycleStrip(fresh(), '2026-08-31', PARTNER)).toBeNull()
     expect(cycleStrip(share(fresh()), DAYS.periodEarly, PARTNER)!.hasWindow).toBe(false)
     expect(cycleStrip(answered(fresh()), DAYS.period, OWNER)!.hasWindow).toBe(true)
   })
 
-  it('once she told him, his strip rests on period days 1–3 too (and only then)', () => {
+  it('once she told him, his strip rests on period days 1–3 too — and the band comes back with 곧 우리의 주간', () => {
     const told = tellPartnerPeriod(fresh(), '2026-09-01', NOW)
     expect(ttcMoment(told, DAYS.periodEarly, PARTNER)!.copy).toBe('partner.period-told')
     expect(cycleStrip(told, DAYS.periodEarly, PARTNER)).toBeNull()
     expect(cycleStrip(told, '2026-09-03', PARTNER)).toBeNull()
-    // Day 4: the shared band is back; 괜찮아요 (not told) never hides it.
-    expect(cycleStrip(told, DAYS.period, PARTNER)!.mode).toBe('weeks')
-    expect(cycleStrip(answered(fresh()), DAYS.periodEarly, PARTNER)!.mode).toBe('weeks')
+    // (N19) Day 4 is a '평소 주' day either way; the shared band returns on the
+    // first day of 곧 우리의 주간 (09-07) — told or not (괜찮아요 never hides it).
+    expect(cycleStrip(told, DAYS.period, PARTNER)).toBeNull()
+    expect(cycleStrip(told, '2026-09-07', PARTNER)!.mode).toBe('weeks')
+    expect(cycleStrip(answered(fresh()), '2026-09-07', PARTNER)).toEqual(cycleStrip(told, '2026-09-07', PARTNER))
     // Her own strip is unchanged by the answer.
     expect(cycleStrip(told, DAYS.periodEarly, OWNER)!.hasWindow).toBe(false)
   })
@@ -1956,5 +2007,146 @@ describe('privacy property: bleeding, 관계일, personal chips and 나만 보�
     expect(words(m)).not.toMatch(NO_DIAGNOSIS)
     expect(words(m)).not.toMatch(new RegExp(`${PRIVATE_LINE}|${FEEL_LABEL.spotting}`))
     expect(JSON.stringify(stateForViewer(told, PARTNER))).not.toContain(PRIVATE_LINE)
+  })
+})
+
+describe("N23 '날짜 없음': no band, no 우리의 주간 words, no dates, no 곧 우리의 주간 notice", () => {
+  const none = (st: AppState) => setShareLevel(st, OWNER, 'none')
+
+  it('his card is the 평소 주 card (이번 주 우리 둘 leads it) on every day of the cycle, whatever his own style', () => {
+    for (const style of ['explicit', 'soft', 'off'] as const) {
+      const s = withStyle(none(fresh()), PARTNER, style)
+      expect(homeVoice(s, PARTNER), style).toBe('calm')
+      for (const d of [...Object.values(DAYS), '2026-09-07', '2026-09-09']) {
+        const m = ttcMoment(s, d, PARTNER)!
+        expect(m.copy, `${style} ${d}`).toBe('partner.neutral')
+        expect(m.weekTogether, `${style} ${d}`).toBe(true)
+        expect(m.dateIdeas, `${style} ${d}`).toBeUndefined()
+        expect(words(m), `${style} ${d}`).not.toMatch(/우리의 주간|가임|배란|LH|\d+월 \d+일/)
+        expect(cycleStrip(s, d, PARTNER), `${style} ${d}`).toBeNull()
+      }
+      // No heads-up of any kind for him, the whole cycle long; hers still comes.
+      for (let i = 0; i < 40; i++) {
+        const d = addDays('2026-09-01', i)
+        const his = scheduledNotices(s, d).filter((n) => n.to === PARTNER && (n.kind === 'fertile-start' || n.kind === 'peak'))
+        expect(his, d).toEqual([])
+      }
+      expect(scheduledNotices(s, '2026-09-10').some((n) => n.to === OWNER && n.kind === 'fertile-start')).toBe(true)
+    }
+  })
+
+  it('what she tells still reaches him, and her own screen is unchanged', () => {
+    const s = none(fresh())
+    const told = tellPartnerPeriod(s, '2026-09-01', NOW)
+    expect(ttcMoment(told, DAYS.periodEarly, PARTNER)!.copy).toBe('partner.period-told')
+    expect(ttcMoment(s, DAYS.fertile, OWNER)).toEqual(ttcMoment(fresh(), DAYS.fertile, OWNER))
+    expect(cycleStrip(s, DAYS.fertile, OWNER)).toEqual(cycleStrip(fresh(), DAYS.fertile, OWNER))
+  })
+
+  it("'우리의 주간' (week) keeps today's shared window; '자세히' keeps today's details", () => {
+    const week = setShareLevel(fresh(), OWNER, 'week')
+    expect(ttcMoment(week, DAYS.fertile, PARTNER)!.copy).toBe('partner.our-week')
+    expect(ttcMoment(week, DAYS.beforeLh, PARTNER)!.copy).toBe('partner.our-week-soon')
+    expect(cycleStrip(week, DAYS.fertile, PARTNER)!.mode).toBe('weeks')
+    const details = setShareLevel(fresh(), OWNER, 'details')
+    expect(ttcMoment(details, DAYS.peak, PARTNER)).toMatchObject({ copy: 'partner.our-week', peak: true })
+    expect(ttcMoment(details, DAYS.tww, PARTNER)!.copy).toBe('partner.tww')
+    expect(ttcMoment(details, DAYS.late, PARTNER)!.copy).toBe('partner.late-shared')
+    expect(cycleStrip(details, DAYS.fertile, PARTNER)!.mode).toBe('cycle')
+  })
+})
+
+describe("N19: the partner's 우리의 주간 comes from her logged starts only, never on period days 1–3", () => {
+  it('a short cycle whose window overlaps the period: nothing on days 1–3, the window from day 4', () => {
+    // 21-day cycles: the window 10-01…10-06 overlaps the period from 09-29.
+    const s = fresh({ periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }] })
+    for (const d of ['2026-09-29', '2026-09-30', '2026-10-01']) {
+      expect(ttcMoment(s, d, PARTNER)!.copy, d).toBe('partner.neutral')
+      expect(cycleStrip(s, d, PARTNER), d).toBeNull()
+    }
+    expect(ttcMoment(s, '2026-10-02', PARTNER)!.copy).toBe('partner.our-week')
+    expect(cycleStrip(s, '2026-10-02', PARTNER)).toMatchObject({ mode: 'weeks', hasWindow: true })
+    // Her card is hers: it runs on her own estimate (unchanged).
+    expect(ttcMoment(s, '2026-10-02', OWNER)!.kind).toMatch(/^period/)
+  })
+
+  it('an LH surge moves her window, never his', () => {
+    const lh = fresh({ lhTests: [{ date: '2026-09-07', result: 'faint' }, { date: '2026-09-08', result: 'positive' }] })
+    for (const d of ['2026-09-07', '2026-09-08', '2026-09-09', '2026-09-12', '2026-09-15', '2026-09-16']) {
+      const { kind: _a, ...his } = ttcMoment(lh, d, PARTNER)!
+      const { kind: _b, ...plain } = ttcMoment(fresh(), d, PARTNER)!
+      expect(his, d).toEqual(plain)
+      expect(cycleStrip(lh, d, PARTNER), d).toEqual(cycleStrip(fresh(), d, PARTNER))
+    }
+  })
+
+  it('a rest, a positive test waiting for the clinic, a late period: the same 평소 주 card and no strip', () => {
+    const base = fresh()
+    const cases: Array<[string, AppState, ISODate]> = [
+      ['rest', startRestCycle(base, '2026-09-20', 'rest'), '2026-09-22'],
+      ['vaccine rest', startRestCycle(base, '2026-09-20', 'vaccine'), '2026-09-22'],
+      ['positive', markPositivePending(base, '2026-09-27'), '2026-09-28'],
+      ['late', base, DAYS.late],
+      ['long late', base, DAYS.lateLong],
+    ]
+    const usual = ttcMoment(base, DAYS.tww, PARTNER)!
+    for (const [tag, st, d] of cases) {
+      const { kind: _k, ...m } = ttcMoment(st, d, PARTNER)!
+      const { kind: _u, ...u } = usual
+      expect(m, tag).toEqual(u)
+      expect(cycleStrip(st, d, PARTNER), tag).toBeNull()
+    }
+  })
+
+  it("the 평소 주 card's weekTogether flag follows the week (weekTogether.weekTogetherOn)", () => {
+    const m = ttcMoment(fresh(), DAYS.tww, PARTNER)!
+    expect(m.weekTogether).toBe(true)
+    expect(weekOptions(fresh(), DAYS.tww, PARTNER).length).toBe(3)
+    // The owner's card never carries it.
+    expect(ttcMoment(fresh(), DAYS.tww, OWNER)!.weekTogether).toBeUndefined()
+  })
+})
+
+describe('N19 ②: after a loss his month task rests (partnerTaskVisible — the home and the link)', () => {
+  const lost = endPregnancy(startPregnancy(fresh(), '2026-08-01', '2026-09-01'), '2026-09-20')
+
+  it('hidden for the 42 days, shown again after; never for the cycle owner', () => {
+    expect(partnerTaskVisible(fresh(), DAYS.tww, PARTNER)).toBe(true)
+    expect(partnerTaskVisible(fresh(), DAYS.tww, OWNER)).toBe(false)
+    expect(partnerTaskVisible(lost, '2026-09-21', PARTNER)).toBe(false)
+    expect(partnerTaskVisible(lost, addDays('2026-09-20', QUIET_DAYS_AFTER_END - 1), PARTNER)).toBe(false)
+    expect(partnerTaskVisible(lost, addDays('2026-09-20', QUIET_DAYS_AFTER_END), PARTNER)).toBe(true)
+    // The card agrees: the after-loss card carries no task.
+    const m = ttcMoment(lost, '2026-09-21', PARTNER)!
+    expect(m).toMatchObject({ kind: 'after-loss', copy: 'partner.after-loss', support: true })
+    expect(m.monthlyTask).toBeUndefined()
+    expect(partnerQuiet(lost, '2026-09-21')).toBe(true)
+  })
+
+  it('she ends her quiet early: her dates return, his card and task keep the 42 days', () => {
+    const off = endRestFromHome(lost, '2026-09-25', NOW)
+    const logged = logPeriodStart(off, '2026-10-10', OWNER, '2026-10-10')
+    expect(ttcMoment(logged, '2026-10-20', OWNER)!.copy).not.toBe('owner.after-loss')
+    const his = ttcMoment(logged, '2026-10-20', PARTNER)!
+    expect(his).toMatchObject({ kind: 'after-loss', copy: 'partner.after-loss' })
+    expect(partnerTaskVisible(logged, '2026-10-20', PARTNER)).toBe(false)
+  })
+})
+
+describe('N19: the 준비 일기 prompt reads only what she told on his phone', () => {
+  it('an untold period or positive test leaves his prompt as it was; a told one quiets the baby talk', () => {
+    const baby = /아이|아기|태교/
+    // A day whose plain prompt is a baby one; her (untold) period started the day before.
+    const list = PROMPTS.preparing
+    const d = Array.from({ length: 40 }, (_, i) => addDays('2026-09-02', i)).find((x) => baby.test(list[Number(x.replace(/-/g, '')) % list.length]!))!
+    expect(d).toBeDefined()
+    const start = addDays(d, -1)
+    const s = fresh({ periods: [{ start: addDays(start, -56) }, { start: addDays(start, -28) }, { start }] })
+    expect(homeDiaryPrompt(s, d, OWNER)).not.toMatch(baby)
+    expect(homeDiaryPrompt(s, d, PARTNER)).toMatch(baby)
+    expect(homeDiaryPrompt(tellPartnerPeriod(s, start, NOW), d, PARTNER)).not.toMatch(baby)
+    expect(homeDiaryPrompt(share(s), d, PARTNER)).not.toMatch(baby)
+    // Without a viewer: the couple's (her) rule, as before.
+    expect(homeDiaryPrompt(s, d)).not.toMatch(baby)
   })
 })

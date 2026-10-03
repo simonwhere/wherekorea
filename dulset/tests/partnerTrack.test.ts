@@ -24,15 +24,18 @@ import {
   ownerAge,
   partnerId,
   partnerTip,
+  partnerTipsFor,
   setClaimDocDone,
   setFertilityApplied,
   setFertilityClaimed,
   setShareCycleDetails,
   testIdFor,
 } from '@/lib/logic/partnerTrack'
-import { setPersonalPref } from '@/lib/logic/prefs'
+import { setPersonalPref, shareLevelOf } from '@/lib/logic/prefs'
 import { addCustomTask } from '@/lib/logic/roadmap'
 import { tickItem } from '@/lib/logic/plan'
+import { startPregnancy } from '@/lib/logic/pregnancy'
+import { endPregnancy } from '@/lib/logic/today'
 import { PERIOD_PARTNER_TIP, skipTellPartnerPeriod, tellPartnerPeriod, ttcMoment } from '@/lib/logic/ttcFlow'
 import type { AppState, MemberId } from '@/lib/types'
 
@@ -386,16 +389,50 @@ describe('오늘 해 줄 수 있는 것', () => {
 
   it('follows the moment for a soft viewer: our week, the waiting week — never the period he was not told about', () => {
     const s = cycle()
-    expect(partnerTip(s, '2026-09-22', 'a')).toBe('오늘 저녁은 둘만의 시간으로 비워 둬요.')
-    expect(partnerTip(s, '2026-09-28', 'a')).toBe('좋아하는 간식을 하나 챙겨 봐요.')
+    // (N24) The tips rotate by date within the moment's own list.
+    expect(partnerTipsFor('partner.our-week')).toContain(partnerTip(s, '2026-09-22', 'a'))
+    // (N19) Without her details the waiting weeks are the '평소 주': a neutral tip;
+    // with them, the waiting week's own list.
+    expect(NEUTRAL_PARTNER_TIPS).toContain(partnerTip(s, '2026-09-28', 'a'))
+    expect(partnerTipsFor('partner.tww')).toContain(partnerTip(shared(s), '2026-09-28', 'a'))
     // Period day 2, not told, not shared: a neutral tip, nothing about her period.
     const period = cycle({ periods: [...s.periods, { start: '2026-10-08', by: 'b' }] })
     const tip = partnerTip(period, '2026-10-09', 'a')!
     expect(NEUTRAL_PARTNER_TIPS).toContain(tip)
-    // Late, not shared: the waiting week's tip (he can't see it's late).
-    expect(partnerTip(s, '2026-10-12', 'a')).toBe('좋아하는 간식을 하나 챙겨 봐요.')
+    // Late, not shared: the same neutral rotation as any '평소 주' day (he can't see it's late).
+    expect(partnerTip(s, '2026-10-12', 'a')).toBe(neutralPartnerTip('2026-10-12'))
     // Late, shared: don't bring it up first.
     expect(partnerTip(shared(s), '2026-10-12', 'a')).toBe('먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.')
+  })
+
+  it('rotates the waiting week, 우리의 주간 and 곧 우리의 주간 by the date (N24): never one line for days on end', () => {
+    for (const copy of ['partner.tww', 'partner.our-week', 'partner.our-week-soon'] as const) {
+      const list = partnerTipsFor(copy)
+      expect(list.length, copy).toBeGreaterThanOrEqual(4)
+      expect(list.length, copy).toBeLessThanOrEqual(6)
+      expect(new Set(list).size, copy).toBe(list.length)
+      for (const t of list) {
+        expect(t, copy).not.toMatch(TIMING)
+        expect(t, copy).not.toMatch(BANNED)
+        // Relationship-side only: no symptom or test questions, no number of times.
+        expect(t, copy).not.toMatch(/증상|테스트|임신|결과|배란|가임|생리|(\d|한|두|세)\s?번/)
+        expect(t, copy).toMatch(/요\.$/)
+      }
+    }
+    // A shared waiting week (with details) changes its line from day to day.
+    const s = shared(cycle())
+    const days = ['2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30']
+    const tips = days.map((d) => partnerTip(s, d, 'a'))
+    for (const t of tips) expect(partnerTipsFor('partner.tww')).toContain(t)
+    expect(new Set(tips).size).toBeGreaterThan(3)
+    for (let i = 1; i < tips.length; i++) expect(tips[i]).not.toBe(tips[i - 1])
+    // The same date gives the same line on every phone and the link.
+    expect(partnerTip(s, '2026-09-27', 'a')).toBe(partnerTip(structuredClone(s), '2026-09-27', 'a'))
+  })
+
+  it('asks nothing through the quiet after a pregnancy ended', () => {
+    const lost = endPregnancy(startPregnancy(cycle(), '2026-09-10', '2026-10-01'), '2026-10-20')
+    expect(partnerTip(lost, '2026-10-21', 'a')).toBeUndefined()
   })
 
   it('gives a calm viewer (부담 없이 / 알림 끔) only neutral tips, all cycle long', () => {
@@ -446,10 +483,10 @@ describe('handing the cycle over', () => {
       ['a', true],
       ['b', false],
     ])
-    expect(moved.settings.shareCycleDetails).toBe(false)
+    expect(shareLevelOf(moved)).toBe('week')
     // Only 민수 (the new owner) may widen it now.
     expect(setShareCycleDetails(moved, 'b', true)).toBe(moved)
-    expect(setShareCycleDetails(moved, 'a', true).settings.shareCycleDetails).toBe(true)
+    expect(shareLevelOf(setShareCycleDetails(moved, 'a', true))).toBe('details')
     // Already the owner: nothing changes.
     expect(handOverCycle(shared, 'b', 'b')).toBe(shared)
     // The chain follows the roles: 지은 is the partner now.
@@ -477,11 +514,11 @@ describe('handing the cycle over', () => {
 describe('sharing the cycle details', () => {
   it('starts private and only the cycle owner can change it', () => {
     const s = fresh()
-    expect(s.settings.shareCycleDetails).toBe(false)
+    expect(shareLevelOf(s)).toBe('week')
     expect(setShareCycleDetails(s, 'a', true)).toBe(s) // 민수 can't open 지은's records
     const shared = setShareCycleDetails(s, 'b', true)
-    expect(shared.settings.shareCycleDetails).toBe(true)
+    expect(shareLevelOf(shared)).toBe('details')
     expect(setShareCycleDetails(shared, 'b', true)).toBe(shared)
-    expect(setShareCycleDetails(shared, 'b', false).settings.shareCycleDetails).toBe(false)
+    expect(shareLevelOf(setShareCycleDetails(shared, 'b', false))).toBe('week')
   })
 })

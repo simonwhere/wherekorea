@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { Card, SectionTitle, cx, useToast } from '@/components/ui'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { stampOn } from '@/lib/logic/today'
@@ -28,7 +29,7 @@ function useSend() {
 }
 
 /** '오후 6:12' from a local ISO time ('2026-09-29T18:12:…'); '' when it has none. */
-function timeKo(iso: string): string {
+export function timeKo(iso: string): string {
   const m = /T(\d{2}):(\d{2})/.exec(iso)
   if (!m) return ''
   const h = Number(m[1])
@@ -84,6 +85,51 @@ export function PendingSignal({ className }: { className?: string }) {
             className="relative inline-flex h-10 items-center gap-[5px] rounded-full border-[1.5px] border-line bg-surface px-3.5 text-[13.5px] font-bold text-ink transition-colors before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[''] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
           >
             <span aria-hidden>{r.emoji}</span> {r.text}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * '신호 보내기' as one compact row inside the home's 우리 한 줄 (Now 3 N21 ③ —
+ * out of 더 보기): the same signals as the card below (signalsFor: '이번 달은
+ * 아니었어요' only for the person whose cycle it is, a rest signal always),
+ * one tap each, the same daily limit (SIGNALS_PER_DAY). The row scrolls
+ * sideways inside itself; the page never does.
+ */
+export function SignalChips({ className }: { className?: string }) {
+  const { state, me } = useApp()
+  const { send, left } = useSend()
+  const signals = signalsFor(state.stage, canLogCycle(state, me.id))
+  const labelId = useId()
+  return (
+    <div className={className}>
+      <p className="flex items-center justify-between gap-2 text-xs font-semibold text-ink-3">
+        <span id={labelId}>신호 보내기</span>
+        <span className="tabular-nums">{left > 0 ? `오늘 ${left}번 더` : '오늘은 다 보냈어요'}</span>
+      </p>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        data-signal-chips
+        className="-mx-3.5 mt-1.5 flex gap-2 overflow-x-auto px-3.5 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {signals.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => send(s.id, s.text)}
+            disabled={left <= 0}
+            className={cx(
+              'inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors disabled:opacity-40',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand',
+              s.tone === 'rest' ? 'border-line bg-surface-2 text-ink-2 hover:bg-line/50' : 'border-line bg-surface text-ink hover:bg-surface-2',
+            )}
+          >
+            <span aria-hidden>{s.emoji}</span>
+            {s.text}
           </button>
         ))}
       </div>

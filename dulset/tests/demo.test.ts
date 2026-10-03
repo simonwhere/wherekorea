@@ -56,8 +56,9 @@ import { lhTestsOn } from '@/lib/logic/logs'
 import { giveIntimacyConsent, intimacyDays, stripIntimacy, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { lastCycleFeels, personalDays, stateForViewer } from '@/lib/logic/personalLog'
 import { FERTILITY_TEST_ID, completeMonthlyTask, fertilityChain, monthlyTask } from '@/lib/logic/partnerTrack'
-import { canLogCycle, canSeeCycleDetails, discreetFor, lowPressureFor } from '@/lib/logic/prefs'
+import { canLogCycle, canSeeCycleDetails, canSeeWeekBand, discreetFor, lowPressureFor, shareLevelOf } from '@/lib/logic/prefs'
 import { inbox, scheduledNotices } from '@/lib/logic/notifications'
+import { canThankWeek, partnerWeekSummary, thanksThisWeek, weekDone, weekOf, weekOptions, weekPick } from '@/lib/logic/weekTogether'
 import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
 import { buildItems, focusItems } from '@/lib/logic/roadmap'
 import { sanitizeBackup } from '@/lib/logic/settings'
@@ -237,19 +238,49 @@ describe('preparing demo: the preconception model', () => {
     expect(s.couple.members.find((m) => m.id === DEMO_START_VIEWER)!.tracksCycle).toBe(true)
   })
 
-  it('keeps cycle details with 지은 (shareCycleDetails off) — she logs everything herself', () => {
+  it('keeps cycle details with 지은 (shareLevel 우리의 주간) — she logs everything herself', () => {
     const s = createDemoState(today, NOW, 'preparing')
-    expect(s.settings.shareCycleDetails).toBe(false)
+    expect(s.settings.shareLevel).toBe('week')
+    expect(shareLevelOf(s)).toBe('week')
     expect(canSeeCycleDetails(s, 'b')).toBe(true)
     expect(canSeeCycleDetails(s, 'a')).toBe(false)
+    // 민수 sees the shared band (the preparing demo stays 'week', not 날짜 없음).
+    expect(canSeeWeekBand(s, 'a')).toBe(true)
+    expect('shareCycleDetails' in s.settings).toBe(false)
     expect(canLogCycle(s, 'b')).toBe(true)
     expect(canLogCycle(s, 'a')).toBe(false)
     expect(s.periods.every((p) => p.by === 'b')).toBe(true)
     expect(s.lhTests.every((t) => t.by === 'b')).toBe(true)
     expect(s.pregnancyTests.every((t) => t.by === 'b')).toBe(true)
     // Survives a reload and a backup file.
-    expect(parseState(JSON.stringify(s))!.settings.shareCycleDetails).toBe(false)
-    expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.shareCycleDetails).toBe(false)
+    expect(parseState(JSON.stringify(s))!.settings.shareLevel).toBe('week')
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.shareLevel).toBe('week')
+  })
+
+  it('shows 이번 주 우리 둘: 민수 picked one of this week’s three on Monday and did it on Thursday; 고마워요 is still 지은’s to give', () => {
+    const s = createDemoState(today, NOW, 'preparing')
+    const monday = weekOf(today)
+    const pick = weekPick(s, monday, 'a')
+    expect(pick).toBeDefined()
+    expect(weekOptions(s, today, 'a')).toContainEqual(pick)
+    expect(weekDone(s, monday, 'a')).toBe(addDays(monday, 3))
+    const summary = partnerWeekSummary(s, today, 'a')
+    expect(summary[0]).toEqual({ kind: 'week-done', text: pick!.doneText })
+    expect(summary.length).toBeGreaterThan(1)
+    expect(canThankWeek(s, 'b', today)).toBe(true)
+    expect(thanksThisWeek(s, 'a', today)).toBeUndefined()
+    // 지은 never picks (the picks are the partner's), and the marks survive a reload.
+    expect(weekPick(s, monday, 'b')).toBeUndefined()
+    expect(parseState(JSON.stringify(s))!.decisions).toEqual(s.decisions)
+    // On a Monday the pick is there, the [했어요] not yet.
+    const mon = createDemoState('2026-09-28', NOW, 'preparing')
+    expect(weekPick(mon, '2026-09-28', 'a')).toBeDefined()
+    expect(weekDone(mon, '2026-09-28', 'a')).toBeUndefined()
+    // The other stages have no week marks.
+    for (const stage of ['pregnant', 'parenting'] as const) {
+      const other = createDemoState(today, NOW, stage)
+      expect(Object.keys(other.decisions).some((k) => k.startsWith('week-'))).toBe(false)
+    }
   })
 
   it('has each person’s own preferences: 민수 soft and discreet, 지은 plain', () => {

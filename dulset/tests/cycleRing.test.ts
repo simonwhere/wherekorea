@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest'
+import { addDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { canSeeCycleDetails, setPersonalPref } from '@/lib/logic/prefs'
 import { backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import {
   LEGEND_MAX,
+  SHARED_QUIET_DAYS,
   arcAngles,
   describeStrip,
   fertileAlpha,
   ringArcs,
   ringGap,
   ringLegend,
+  sharedBandBefore,
+  sharedCycleInput,
+  sharedWeek,
   weekRows,
 } from '@/lib/logic/cycleRing'
 import { cycleStrip, homeVoice, ttcMoment, type CycleStrip, type StripDay } from '@/lib/logic/ttcFlow'
@@ -40,7 +45,7 @@ const withStyle = (s: AppState, member: 'a' | 'b', style: AlertStyle): AppState 
   ...s,
   settings: { ...s.settings, alertStyle: { ...s.settings.alertStyle, [member]: style } },
 })
-const share = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, shareCycleDetails: true } })
+const share = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, shareLevel: 'details' } })
 
 const FERTILE = '2026-09-11'
 const PEAK = '2026-09-14'
@@ -318,6 +323,8 @@ describe('ring / legend / week row across every phase and viewer', () => {
                 expect(rows.length).toBeLessThanOrEqual(2)
                 expect(rows.flatMap((r) => r.cells).filter((c) => c.today).map((c) => c.date)).toEqual([day])
                 for (const r of rows) for (const b of r.bands) for (let i = b.from; i <= b.to; i++) expect(r.cells[i]!.band).toBe(true)
+                // (N19) The week row exists only while the shared window is on — never an empty '평소 주' row.
+                expect(strip.hasWindow, label).toBe(true)
                 weeks++
               } else {
                 expect(strip.mode, label).toBe('cycle')
@@ -355,7 +362,67 @@ describe('ring / legend / week row across every phase and viewer', () => {
       }
     }
     expect(rings).toBeGreaterThan(100)
-    expect(weeks).toBeGreaterThan(20)
+    // (N19) Fewer week rows than before: the '평소 주' days draw none at all.
+    expect(weeks).toBeGreaterThan(5)
     expect(quiet).toBeGreaterThan(0)
   })
 })
+
+describe('sharedWeek — which window a partner without her details sees, and when (N19)', () => {
+  it("'곧 우리의 주간' from three days before, the window to its last day, nothing else", () => {
+    const s = fresh()
+    expect(sharedWeek(s, '2026-09-06')).toBeUndefined()
+    expect(sharedWeek(s, '2026-09-07')).toMatchObject({ kind: 'soon', fertileStart: '2026-09-10', fertileEnd: '2026-09-15', confidence: 'cycles' })
+    expect(sharedWeek(s, '2026-09-10')?.kind).toBe('window')
+    expect(sharedWeek(s, '2026-09-15')?.kind).toBe('window')
+    expect(sharedWeek(s, '2026-09-16')).toBeUndefined()
+    // The waiting weeks, the due days, a late period: off.
+    for (const d of ['2026-09-20', '2026-09-28', '2026-09-29', '2026-10-02', '2026-10-20']) expect(sharedWeek(s, d), d).toBeUndefined()
+    // The window's cycle start keys his one notice.
+    expect(sharedWeek(s, '2026-09-12')!.window.start).toBe('2026-09-01')
+  })
+
+  it('never on period days 1–3 (the home’s 수고했어요 days), even when a short cycle’s window covers them', () => {
+    expect(SHARED_QUIET_DAYS).toBe(3)
+    const short = fresh({ periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }] })
+    for (const d of ['2026-09-29', '2026-09-30', '2026-10-01']) expect(sharedWeek(short, d), d).toBeUndefined()
+    expect(sharedWeek(short, '2026-10-02')).toMatchObject({ kind: 'window', fertileEnd: '2026-10-06' })
+  })
+
+  it('reads her logged starts and the settings only — never LH strips or tests', () => {
+    const lh = fresh({
+      lhTests: [{ date: '2026-09-07', result: 'faint' }, { date: '2026-09-08', result: 'positive' }],
+      pregnancyTests: [{ id: 't', date: '2026-09-24', result: 'negative' }],
+    })
+    expect(sharedCycleInput(lh).lhTests).toEqual([])
+    for (let i = 0; i < 40; i++) {
+      const d = addDays('2026-09-01', i)
+      expect(sharedWeek(lh, d), d).toEqual(sharedWeek(fresh(), d))
+    }
+  })
+
+  it('off through every pause and the quiet after a pregnancy ended; off outside preparing', () => {
+    const s = fresh()
+    expect(sharedWeek(startRestCycle(s, '2026-09-05', 'rest'), '2026-09-12')).toBeUndefined()
+    expect(sharedWeek(startRestCycle(s, '2026-09-05', 'vaccine'), '2026-09-12')).toBeUndefined()
+    expect(sharedWeek({ ...s, restCycle: { since: '2026-09-05', reason: 'clinic' } }, '2026-09-12')).toBeUndefined()
+    expect(sharedWeek(markPositivePending(s, '2026-09-08'), '2026-09-12')).toBeUndefined()
+    const lost = backToPreparing(startPregnancy(s, '2026-08-01', '2026-09-01'), '2026-09-05')
+    expect(sharedWeek({ ...lost, periods: [...lost.periods, { start: '2026-09-20' }] }, '2026-09-30')).toBeUndefined()
+    expect(sharedWeek({ ...s, stage: 'pregnant' }, '2026-09-12')).toBeUndefined()
+    expect(sharedWeek(fresh({ periods: [] }), '2026-09-12')).toBeUndefined()
+  })
+
+  it("the week row's left end: square only when the shared window already ran before Monday", () => {
+    const w = sharedWeek(fresh(), '2026-09-14')!
+    expect(sharedBandBefore(w, '2026-09-14')).toBe(true) // window from 09-10, Monday 09-14
+    expect(sharedBandBefore(w, '2026-09-07')).toBe(false)
+    expect(sharedBandBefore(undefined, '2026-09-14')).toBe(false)
+    const strip = cycleStrip(fresh(), '2026-09-14', PARTNER)!
+    expect(strip).toMatchObject({ mode: 'weeks', bandBefore: true })
+    expect(cycleStrip(fresh(), '2026-09-08', PARTNER)!.bandBefore).toBeUndefined()
+    const rows = weekRows(strip, { bandBefore: strip.bandBefore })
+    expect(rows[0]!.bands[0]).toMatchObject({ from: 0, roundStart: false })
+  })
+})
+

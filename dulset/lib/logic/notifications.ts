@@ -8,11 +8,13 @@ import { uid } from '../id'
 import { MEMBER_IDS, type AppNotification, type AppState, type ISODate, type MemberId, type NotificationKind } from '../types'
 import { anniversaryNotices } from './anniversary'
 import { koreanDays } from './baby'
+import { mondayOf } from './checks'
 import { isClinicMode } from './clinic'
 import { LONG_LATE_DAYS, fertilityStatus, sortedStarts, upcomingWindows, type CycleWindow } from './cycle'
+import { sharedWeek } from './cycleRing'
 import { AMENORRHEA_NOTICE_DAYS, LATE_TEST_DAYS, PERIOD_DUE_COPY } from './periodDue'
 import { gestationalAge, recentlyEnded } from './pregnancy'
-import { canSeeCycleDetails, lhPrompting, lowPressureFor } from './prefs'
+import { canSeeCycleDetails, canSeeWeekBand, lhPrompting, lowPressureFor } from './prefs'
 import { activePositivePending, activeRest } from './ttc'
 
 export interface Notice {
@@ -132,14 +134,25 @@ export function doctorKey(ttcStart: ISODate): string {
   return `doctor:${ttcStart}`
 }
 
-const DOCTOR_KEY = /^doctor:(\d{4}-\d{2}-\d{2})(?::\d+)?:[ab]$/
+const DOCTOR_KEY_TO = /^doctor:(\d{4}-\d{2}-\d{2})(?::\d+)?:([ab])$/
 
-/** Was the 🩺 notice for this trying period already sent (under the current or an old threshold-bearing key)? */
-export function doctorTold(state: Pick<AppState, 'notifications'>, ttcStart: ISODate): boolean {
+/**
+ * Was the 🩺 notice for this trying period already sent (under the current or
+ * an old threshold-bearing key)? With `member`, to that person only — each
+ * person's copy goes out on its own day (the partner's never waits on a
+ * positive test she has not told him about).
+ */
+export function doctorTold(state: Pick<AppState, 'notifications'>, ttcStart: ISODate, member?: MemberId): boolean {
   return state.notifications.some((n) => {
-    const m = n.key ? DOCTOR_KEY.exec(n.key) : null
-    return !!m && m[1] === ttcStart
+    const m = n.key ? DOCTOR_KEY_TO.exec(n.key) : null
+    return !!m && m[1] === ttcStart && (member === undefined || m[2] === member)
   })
+}
+
+/** The day she told the partner about this positive test ([알리기], ttcFlow.positiveToldKey — read here without importing ttcFlow). */
+function positiveTold(state: Pick<AppState, 'decisions' | 'notifications'>, since: ISODate): boolean {
+  const key = `positive-told:${since}`
+  return state.decisions?.[key] !== undefined || state.notifications.some((n) => n.key === key)
 }
 
 /** 'amenorrhea:<cycle start>:<week>:<owner>' — the quiet 🩺 notice after '아직 안 왔어요' (one per week). */
@@ -159,6 +172,30 @@ export function softFertileBody(isCycleOwner: boolean): string {
   return isCycleOwner
     ? '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.'
     : '둘만의 시간을 챙겨 볼까요? 오늘 화면의 ‘우리의 주간’ 카드에 아이디어를 골라 뒀어요.'
+}
+
+/**
+ * The explicit '가장 좋은 날' body. The cycle owner keeps the frequency line
+ * (ASRM / NICE); the partner never gets a number of times — on his side it
+ * reads as a quota (docs/positioning.md §6, review-realuse B10; N24).
+ */
+export function peakBody(peakStart: ISODate, peakEnd: ISODate, isCycleOwner: boolean): string {
+  const range = `${formatKo(peakStart, { weekday: false })}~${formatKo(peakEnd, { weekday: false })} (예상).`
+  return isCycleOwner ? `${range} 이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.` : `${range} 부담은 내려놓아요.`
+}
+
+/**
+ * The explicit '가임기가 다가왔어요' body. Only the person who uses the strips is
+ * pointed at an LH test (`lh`: the owner, unless she said '안 써요'); the
+ * partner (with her details) reads the dates alone — no test homework for him.
+ */
+function explicitFertileBody(w: Pick<CycleWindow, 'fertileStart' | 'fertileEnd' | 'confidence'>, lh: boolean, isCycleOwner: boolean): string {
+  if (w.confidence === 'low') {
+    // Settings only, one or two cycles, or irregular: a wide calendar range, no peak days.
+    return `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지 무렵이 예상 범위예요 (넓음 · 달력 기준).${lh ? ' LH 배란테스트로 확인해 보면 좋아요.' : ''}`
+  }
+  const tail = lh ? '예상치라 LH 배란테스트로 확인하면 더 정확해요.' : isCycleOwner ? '달력 기준 예상이에요.' : '부담은 내려놓아요.'
+  return `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. ${tail}`
 }
 
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
@@ -215,63 +252,63 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     }
     // Rest cycles and a positive test awaiting the clinic send no fertile-day alerts
     // (activeRest / activePositivePending: a period logged since settles both).
-    if (
-      status.kind !== 'late' &&
-      status.kind !== 'no-data' &&
-      status.kind !== 'after-pregnancy' &&
-      !resting &&
-      !pending
-    ) {
-      const [w] = upcomingWindows(state, today, 1)
-      if (w) {
-        for (const m of state.couple.members) {
-          const style = state.settings.alertStyle?.[m.id] ?? 'soft'
-          // Low-pressure mode (NICE: every 2–3 days, all cycle long): no fertile-day alerts for that person.
-          if (style === 'off' || lowPressureFor(state.settings, m.id)) continue
-          // A partner the owner hasn't shared cycle details with gets only the
-          // shared "우리의 주간" wording — no window dates, no peak days (which
-          // would give away an LH result). Same rule as the home and calendar
-          // (ttcFlow.homeVoice, calendarView.cycleLens).
-          const soft = style === 'soft' || !canSeeCycleDetails(state, m.id)
-          // Someone who said '안 써요' to LH strips (prefs.lhPrompting) is not told to use them.
-          const lh = lhPrompting(state)
-          // Heads-up the day before the window, and on any day inside it — once
-          // per cycle (the key is the cycle's first day, so an LH-shifted window
-          // in the same cycle is not announced again).
-          if (
-            isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd) &&
-            !deliveredUnderOldKey(state.notifications, w, m.id, 'fertile')
-          ) {
-            out.push({
-              key: fertileKey(w.start, m.id),
-              to: m.id,
-              kind: 'fertile-start',
-              title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
-              body: soft
-                ? softFertileBody(m.id === owner.id)
-                : w.confidence === 'low'
-                  ? // Settings only, one or two cycles, or irregular: a wide calendar range, no peak days.
-                    `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지 무렵이 예상 범위예요 (넓음 · 달력 기준).${lh ? ' LH 배란테스트로 확인해 보면 좋아요.' : ''}`
-                  : `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. ${lh ? '예상치라 LH 배란테스트로 확인하면 더 정확해요.' : '달력 기준 예상이에요.'}`,
-            })
-          }
-          // Explicit style only: soft style already got its one gentle nudge above.
-          // No 🌟 with low confidence — the calendar alone can't name the best days.
-          if (
-            !soft &&
-            w.confidence !== 'low' &&
-            isBetween(today, w.peakStart, w.peakEnd) &&
-            !deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
-          ) {
-            out.push({
-              key: peakKey(w.start, m.id),
-              to: m.id,
-              kind: 'peak',
-              title: '🌟 가능성이 가장 높은 날들이에요',
-              body: `${formatKo(w.peakStart, { weekday: false })}~${formatKo(w.peakEnd, { weekday: false })} (예상). 이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.`,
-            })
-          }
-        }
+    const herWindow =
+      status.kind !== 'late' && status.kind !== 'no-data' && status.kind !== 'after-pregnancy' && !resting && !pending
+        ? upcomingWindows(state, today, 1)[0]
+        : undefined
+    // A partner without her details hears of 우리의 주간 only through the
+    // shared window (cycleRing.sharedWeek — her logged starts alone, never on
+    // period days 1–3, never through a pause): so no notice — or its absence —
+    // moves with an LH result, a test or an untold period (N19). With '날짜
+    // 없음' (N23: prefs.canSeeWeekBand) he gets none at all.
+    const shared = sharedWeek(state, today)
+    const lh = lhPrompting(state)
+    for (const m of state.couple.members) {
+      const style = state.settings.alertStyle?.[m.id] ?? 'soft'
+      // Low-pressure mode (NICE: every 2–3 days, all cycle long): no fertile-day alerts for that person.
+      if (style === 'off' || lowPressureFor(state.settings, m.id)) continue
+      const isOwner = m.id === owner.id
+      if (!isOwner && !canSeeWeekBand(state, m.id)) continue
+      const details = canSeeCycleDetails(state, m.id)
+      const w = details ? herWindow : shared?.window
+      if (!w) continue
+      // A partner the owner hasn't shared cycle details with gets only the
+      // shared "우리의 주간" wording — no window dates, no peak days (which
+      // would give away an LH result). Same rule as the home and calendar
+      // (ttcFlow.homeVoice, calendarView.cycleLens).
+      const soft = style === 'soft' || !details
+      // Heads-up the day before the window, and on any day inside it — once
+      // per cycle (the key is the cycle's first day, so an LH-shifted window
+      // in the same cycle is not announced again).
+      if (
+        isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd) &&
+        !deliveredUnderOldKey(state.notifications, w, m.id, 'fertile')
+      ) {
+        out.push({
+          key: fertileKey(w.start, m.id),
+          to: m.id,
+          kind: 'fertile-start',
+          title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
+          body: soft
+            ? softFertileBody(isOwner)
+            : explicitFertileBody(w, isOwner && lh, isOwner),
+        })
+      }
+      // Explicit style only: soft style already got its one gentle nudge above.
+      // No 🌟 with low confidence — the calendar alone can't name the best days.
+      if (
+        !soft &&
+        w.confidence !== 'low' &&
+        isBetween(today, w.peakStart, w.peakEnd) &&
+        !deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
+      ) {
+        out.push({
+          key: peakKey(w.start, m.id),
+          to: m.id,
+          kind: 'peak',
+          title: '🌟 가능성이 가장 높은 날들이에요',
+          body: peakBody(w.peakStart, w.peakEnd, isOwner),
+        })
       }
     }
     // While a positive test waits for the clinic, "tomorrow is your period" and
@@ -298,34 +335,34 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     // while after a pregnancy ended (same rules as the home DoctorCard). A couple
     // already preparing with a clinic (N13) is not told to see one.
     const ttcStart = ttcClockStart(state)
-    if (ttcStart && !recentlyEnded(state, today) && !pending && !isClinicMode(state)) {
+    if (ttcStart && !recentlyEnded(state, today) && !isClinicMode(state)) {
       const ownerAge = ageFromBirthYear(owner.birthYear, today)
       const threshold = doctorThresholdMonths(ownerAge)
       const months = monthsBetween(ttcStart, today)
-      // One doctor notice per trying period: the key carries only its start, so a
-      // threshold that changes with her age on 1 January (12 → 6 months) doesn't
-      // send the same 🩺 again. Notices sent under the old threshold-bearing key
-      // still count (doctorTold).
-      if (doctorTold(state, ttcStart)) {
-        /* already told */
-      } else if (threshold > 0 && months >= threshold && !checkupsDone(state)) {
-        out.push(
-          ...toBoth({
-            key: doctorKey(ttcStart),
-            kind: 'doctor',
-            title: '🩺 전문의 상담을 고려해 볼 때예요',
-            body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아보길 권해요. 보건소 '임신 사전건강관리' 지원도 확인해 보세요.`,
-          }),
-        )
-      } else if (threshold === 0) {
-        out.push(
-          ...toBoth({
-            key: doctorKey(ttcStart),
-            kind: 'doctor',
-            title: '🩺 준비 초기에 검사를 받아 보세요',
-            body: '40세 이상이라면 시작하면서 바로 전문의 상담을 받는 게 좋아요. 보건소 임신 사전건강관리 지원도 확인해 보세요.',
-          }),
-        )
+      const notice =
+        threshold > 0 && months >= threshold && !checkupsDone(state)
+          ? {
+              title: '🩺 전문의 상담을 고려해 볼 때예요',
+              body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아보길 권해요. 보건소 '임신 사전건강관리' 지원도 확인해 보세요.`,
+            }
+          : threshold === 0
+            ? {
+                title: '🩺 준비 초기에 검사를 받아 보세요',
+                body: '40세 이상이라면 시작하면서 바로 전문의 상담을 받는 게 좋아요. 보건소 임신 사전건강관리 지원도 확인해 보세요.',
+              }
+            : undefined
+      // One doctor notice per trying period and person: the key carries only its
+      // start, so a threshold that changes with her age on 1 January (12 → 6
+      // months) doesn't send the same 🩺 again (old threshold-bearing keys still
+      // count — doctorTold). While a positive test waits for the clinic it holds
+      // for the person who knows of it: her, and the partner once she told him —
+      // a partner she has not told gets his copy as on any other day (N19).
+      if (notice) {
+        for (const to of MEMBER_IDS) {
+          const knows = to === owner.id || (!!pending && positiveTold(state, pending.since))
+          if ((pending && knows) || doctorTold(state, ttcStart, to)) continue
+          out.push({ key: `${doctorKey(ttcStart)}:${to}`, to, kind: 'doctor', ...notice })
+        }
       }
     }
   }
@@ -466,6 +503,29 @@ export function sendCheer(state: AppState, from: MemberId, to: MemberId, nowISO:
     read: false,
   }
   return { ...state, notifications: trim([n, ...state.notifications]) }
+}
+
+/** The 🔔 that goes with [고마워요] (N21): what it says. */
+export const WEEK_THANKS_BODY = '이번 주 고마워요'
+
+/** 'thanks:<monday>:<from>' — one 🔔 per giver per week (weekTogether.thankWeek keeps the decision). */
+export function weekThanksNoticeKey(today: ISODate, from: MemberId): string {
+  return `thanks:${mondayOf(today)}:${from}`
+}
+
+/**
+ * [고마워요] (once a week, weekTogether.thankWeek): one 🔔 that says so —
+ * '💛 지은님이 고마워했어요 · 이번 주 고마워요' — keyed by the week, so a second
+ * tap (another tab, a re-render) adds nothing. A cheer for the inbox and the
+ * cover (cover.heroLine reads the week's thanks as '고마워했어요').
+ */
+export function sendWeekThanks(state: AppState, from: MemberId, to: MemberId, today: ISODate, nowISO: string): AppState {
+  const name = memberName(state, from)
+  return mergeNotices(
+    state,
+    [{ key: weekThanksNoticeKey(today, from), to, from, kind: 'cheer', title: `💛 ${name}님이 고마워했어요`, body: WEEK_THANKS_BODY }],
+    nowISO,
+  ).state
 }
 
 /** Tell the partner once per day when someone finishes all their checks. */

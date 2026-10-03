@@ -3,7 +3,7 @@
 // (`hideCover` — the cover photo on my phone — is read and set in ./cover.ts.)
 // Also the couple's one answer about LH strips (settings.usesLH, N17).
 
-import type { AppState, MemberId, Settings } from '../types'
+import { SHARE_LEVELS, type AppState, type MemberId, type Settings, type ShareLevel } from '../types'
 
 // ── 배란테스트기 (LH) ────────────────────────────────────────
 
@@ -83,26 +83,76 @@ export function setPersonalPref(state: AppState, member: MemberId, key: Personal
   return { ...state, settings: { ...state.settings, personal } }
 }
 
-/** The cycle owner always sees their own details; the partner only when shared. */
+// ── 공유 범위 (N23: 날짜 없음 / 우리의 주간 / 자세히) ─────────
+
+/** A new couple's level, and what an unreadable or missing one reads as: 우리의 주간 only. */
+export const DEFAULT_SHARE_LEVEL: ShareLevel = 'week'
+
+export function isShareLevel(value: unknown): value is ShareLevel {
+  return (SHARE_LEVELS as readonly unknown[]).includes(value)
+}
+
+/** How much the cycle owner shares (settings.shareLevel); anything else reads as the default. */
+export function shareLevelOf(state: Pick<AppState, 'settings'>): ShareLevel {
+  const v = state.settings.shareLevel
+  return isShareLevel(v) ? v : DEFAULT_SHARE_LEVEL
+}
+
+function ownerOf(state: Pick<AppState, 'couple'>): MemberId {
+  return state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
+}
+
+/**
+ * May `viewer` see the shared 우리의 주간 band — the window's days, its
+ * wording, anything that moves with the cycle's phase? The cycle owner always;
+ * the partner unless she chose 날짜 없음. (Each person's own alert style can
+ * hide it further: calendarView.cycleLens.)
+ */
+export function canSeeWeekBand(state: Pick<AppState, 'couple' | 'settings'>, viewer: MemberId): boolean {
+  return viewer === ownerOf(state) || shareLevelOf(state) !== 'none'
+}
+
+/** The cycle owner always sees their own details; the partner only when she chose 자세히. */
 export function canSeeCycleDetails(state: Pick<AppState, 'couple' | 'settings'>, viewer: MemberId): boolean {
-  const owner = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
-  return viewer === owner || state.settings.shareCycleDetails === true
+  return viewer === ownerOf(state) || shareLevelOf(state) === 'details'
 }
 
 /** Only the person whose cycle it is logs periods, LH and pregnancy tests. */
 export function canLogCycle(state: Pick<AppState, 'couple'>, viewer: MemberId): boolean {
-  const owner = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
-  return viewer === owner
+  return viewer === ownerOf(state)
 }
 
 /**
- * Share the cycle details (생리일·배테기·임테기 결과) with the partner, or keep
- * to "우리의 주간" only (the default: privacy first). Only the person whose
- * cycle it is can change it; anyone else's call is a no-op.
+ * Choose how much the partner sees (날짜 없음 / 우리의 주간 / 자세히). Only the
+ * person whose cycle it is can change it; anyone else's call, or a value that
+ * is not a level, is a no-op. The same level → the same state object.
+ */
+export function setShareLevel(state: AppState, by: MemberId, level: ShareLevel): AppState {
+  if (!canLogCycle(state, by) || !isShareLevel(level)) return state
+  if (state.settings.shareLevel === level) return state
+  return { ...state, settings: { ...state.settings, shareLevel: level } }
+}
+
+/**
+ * The state with the level narrowed to at most `max` (never widened) — for a
+ * lens that must not show more than a given level (the link's strip:
+ * partnerSnapshot.linkState → 'week'; a new cycle owner: settings.setCycleOwner).
+ * The same object when nothing narrows.
+ */
+export function withShareLevelAtMost<S extends Pick<AppState, 'settings'>>(state: S, max: ShareLevel): S {
+  const level = shareLevelOf(state)
+  const next = SHARE_LEVELS.indexOf(level) > SHARE_LEVELS.indexOf(max) ? max : level
+  return state.settings.shareLevel === next ? state : { ...state, settings: { ...state.settings, shareLevel: next } }
+}
+
+/**
+ * @deprecated The old yes/no (schema ≤ 3) — use setShareLevel. `true` is
+ * 자세히; `false` takes 자세히 back to 우리의 주간 and never widens 날짜 없음.
+ * Kept so older callers (partnerTrack's re-export, tests) keep their meaning.
  */
 export function setShareCycleDetails(state: AppState, by: MemberId, share: boolean): AppState {
-  if (!canLogCycle(state, by) || state.settings.shareCycleDetails === share) return state
-  return { ...state, settings: { ...state.settings, shareCycleDetails: share } }
+  if (share) return setShareLevel(state, by, 'details')
+  return shareLevelOf(state) === 'details' ? setShareLevel(state, by, 'week') : state
 }
 
 // ── 링크에 표지 사진 (Next A ①) ─────────────────────────────
@@ -118,7 +168,7 @@ export function coverOnLink(settings: Pick<Settings, 'coverOnLink'>): boolean {
 
 /**
  * Let the link carry the cover photo, or not (the default). The cycle
- * owner's choice, like setShareCycleDetails: anyone else's call is a no-op.
+ * owner's choice, like setShareLevel: anyone else's call is a no-op.
  * Off removes the field, so an older save and a new one stay byte-identical.
  */
 export function setCoverOnLink(state: AppState, by: MemberId, on: boolean): AppState {

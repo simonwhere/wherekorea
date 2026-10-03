@@ -79,7 +79,8 @@ export default function CycleSummary({
             </Button>
           </div>
         ) : null}
-        <Disclaimer>{ESTIMATE_DISCLAIMER}</Disclaimer>
+        {/* A partner on 날짜 없음 is shown no estimate at all, so there is nothing to disclaim. */}
+        {view === 'hidden' && !lens.owner ? null : <Disclaimer>{ESTIMATE_DISCLAIMER}</Disclaimer>}
         {onRest && !pause ? (
           <button
             type="button"
@@ -100,7 +101,10 @@ export default function CycleSummary({
         </Card>
       ) : null}
 
-      {view === 'hidden' ? (
+      {/* NICE's '2~3일에 한 번' is a frequency line: hers to read in her own record tool, never pushed
+          at the partner (docs/positioning.md §6 — on his side it reads as a quota; '날짜 없음' would
+          otherwise put it on every partner's 주기 tab). */}
+      {view === 'hidden' && lens.owner ? (
         <Card tone="muted" as="div">
           <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
             <Icon name="sprout" className="h-4 w-4 shrink-0 text-ink-2" />

@@ -12,24 +12,14 @@
 
 import { useCallback, useState } from 'react'
 import HabitQuestions, { EMPTY_HABITS, habitAnswers, habitProblem, type HabitDraft } from '@/components/onboarding/HabitQuestions'
-import { ChoiceGroup, type Option } from '@/components/onboarding/parts'
+import { ChoiceGroup } from '@/components/onboarding/parts'
+import { STYLE_OPTIONS } from '@/components/onboarding/partnerChoices'
 import { Button, Sheet, useToast } from '@/components/ui'
 import { completePartnerFirstRun, needsPartnerFirstRun, starterItemsFor } from '@/lib/logic/onboarding'
 import { alertStyleOf } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { AlertStyle } from '@/lib/types'
-
-/**
- * The three styles (lib/logic/settings ALERT_STYLE_OPTIONS) named without
- * health words: the person choosing starts on 은근하게, so their first screen
- * says nothing a soft viewer shouldn't read. 설정 › 내 알림 has the full names.
- */
-const STYLE_OPTIONS: Option<AlertStyle>[] = [
-  { value: 'explicit', label: '날짜와 함께 알려 주세요' },
-  { value: 'soft', label: '‘우리의 주간’처럼 은근하게' },
-  { value: 'off', label: '받지 않을래요' },
-]
 
 export default function PartnerFirstRunSheet() {
   const { state, update, today, viewer, me, partner } = useApp()

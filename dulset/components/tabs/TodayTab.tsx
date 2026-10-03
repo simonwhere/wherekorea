@@ -7,7 +7,11 @@
 //   0. 우리 표지 — date · 함께한 지 D+N, one line, the cover photo (never the cycle)
 //   1. today's moment — ring / week row, one title, one sentence, one action
 //   2. 오늘 할 일 — my checks, a weekly check-in when due, today's/tomorrow's appointment
-//   3. 우리 한 줄 — the partner's month task, the other's progress, a signal to answer
+//   (partner) 이번 주 우리 둘 — the same weekly block as his link (N21): three
+//      picks → [했어요], 내 준비, her [고마워요] for the rest of the week
+//   3. 우리 한 줄 — the partner's month task, the other's progress, '이번 주 민수님'
+//      + [고마워요] on her home (N21), a signal to answer, the reply to mine,
+//      and '신호 보내기' as one row (out of 더 보기)
 //   + 기록 지키기 (BackupBanner): a compact line under ③ while the app isn't on
 //     the home screen or the backup is over a week old, and on the first period's day
 // The partner's "이번 달 할 일" goes right under the cover when it's urgent
@@ -24,8 +28,7 @@ import { useMemo } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import { SectionTitle } from '@/components/ui'
 import { monthlyTask } from '@/lib/logic/partnerTrack'
-import { canLogCycle } from '@/lib/logic/prefs'
-import { ttcMoment } from '@/lib/logic/ttcFlow'
+import { partnerTaskVisible, ttcMoment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import BackupBanner from '@/components/system/BackupBanner'
 import InstallBackupCard from '@/components/system/InstallBackupCard'
@@ -41,6 +44,7 @@ import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
 import TodayTasks from '@/components/today/TodayTasks'
 import UsLine from '@/components/today/UsLine'
+import WeekTogether from '@/components/today/WeekTogether'
 import { useFoldFit } from '@/components/today/useFoldFit'
 import SignalsCard from '@/components/signals/SignalsCard'
 
@@ -55,8 +59,9 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
   const { state, today, me } = useApp()
   const moment = ttcMoment(state, today, me.id)
   // The partner's one meaningful task this month (not the cycle owner's).
-  // Not right after a loss — that time is for each other, not for tasks.
-  const showTask = !canLogCycle(state, me.id) && moment?.kind !== 'after-loss'
+  // Not through the quiet after a loss — that time is for each other, not for
+  // tasks. One rule for the home and the link (ttcFlow.partnerTaskVisible).
+  const showTask = partnerTaskVisible(state, today, me.id)
   const task = useMemo(() => (showTask ? monthlyTask(state, today, me.id) : undefined), [showTask, state, today, me.id])
   const { done, toast } = useMonthlyTaskDone()
   // Urgent: the partner's first line — unless today's moment has an action of
@@ -89,6 +94,8 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
         />
       ) : null}
       {task && where === 'after' ? <MonthlyTaskCard task={task} onDone={done} className="mt-3.5" /> : null}
+      {/* His '이번 주 우리 둘' (N21) — nothing for the cycle owner, nor in the quiet after a loss. */}
+      <WeekTogether withChain={showTask} className="mt-3.5" />
       <TodayTasks onNavigate={onNavigate} className="mt-7" />
       <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
       {/* 설정 마저 하기: what the short onboarding left for later (N15). */}

@@ -53,7 +53,7 @@ import { cleanCover } from './cover'
 import { cleanIntimacy } from './intimacy'
 import { cleanCoupleLink } from './partnerLink'
 import { cleanPersonalLog } from './personalLog'
-import { discreetFor } from './prefs'
+import { discreetFor, isShareLevel, withShareLevelAtMost } from './prefs'
 import { cleanLeaveDays, cleanTreatments } from './treatments'
 import { maxCycleLength, type CycleStats } from './cycle'
 import { SOFT_FERTILE_TITLE, localNowISO, softFertileBody } from './notifications'
@@ -129,20 +129,22 @@ export function updateMember(state: AppState, id: MemberId, patch: MemberPatch):
 
 /**
  * Make `id` the one member whose cycle is tracked (the other one never is).
- * Whether the partner sees the details (settings.shareCycleDetails) was the
- * previous owner's choice about their own records: a new owner hasn't agreed
- * to anything, so it goes back to private ("우리의 주간만") unless `id` already
- * was the only owner.
+ * How much the partner sees (settings.shareLevel) was the previous owner's
+ * choice about their own records: a new owner hasn't agreed to anything, so
+ * 자세히 goes back to 우리의 주간 unless `id` already was the only owner. A
+ * narrower choice (날짜 없음) is kept — nothing automatic ever widens sharing.
  */
 export function setCycleOwner(state: AppState, id: MemberId): AppState {
   const owners = state.couple.members.filter((m) => m.tracksCycle)
   const unchanged = owners.length === 1 && owners[0]!.id === id
   const members = state.couple.members.map((m) => ({ ...m, tracksCycle: m.id === id })) as [Member, Member]
   const next = { ...state, couple: { ...state.couple, members } }
-  return unchanged || state.settings.shareCycleDetails !== true
-    ? next
-    : { ...next, settings: { ...state.settings, shareCycleDetails: false } }
+  return unchanged ? next : withShareLevelAtMost(next, 'week')
 }
+
+// 공유 범위 (N23): set by the cycle owner only — lib/logic/prefs.ts, re-exported
+// here with the other settings writers.
+export { setShareLevel } from './prefs'
 
 // ── Linking (simulated in the prototype) ────────────────────
 
@@ -582,9 +584,12 @@ export function sanitizeBackup(raw: AppState): AppState | null {
     }
     settings.personal = personal
   } else delete settings.personal
-  // Privacy by default (like storage.normalize and a new couple): only an
-  // explicit opt-in by the cycle owner shares the details.
-  settings.shareCycleDetails = st.shareCycleDetails === true
+  // 공유 범위 (N23): one of the three levels, else 우리의 주간 — the privacy
+  // default of a new couple and storage.normalize. The input is already at
+  // schema 4 (migrated above), so a legacy yes/no left beside it is dropped
+  // unread: only the level the owner chose counts.
+  settings.shareLevel = isShareLevel(st.shareLevel) ? st.shareLevel : 'week'
+  delete (settings as unknown as Loose).shareCycleDetails
 
   const list = <T>(v: unknown, ok: (x: Loose) => boolean): T[] => (Array.isArray(v) ? (v.filter((x) => isObj(x) && ok(x)) as T[]) : [])
   /** Sync marks (lib/types.ts SyncMarks): a real stamp or nothing — a record is never dropped for them. */

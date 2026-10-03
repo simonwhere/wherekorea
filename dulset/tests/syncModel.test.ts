@@ -3,7 +3,7 @@ import { createDemoState } from '@/lib/demo'
 import { createInitialState } from '@/lib/initial'
 import { sanitizeBackup } from '@/lib/logic/settings'
 import { periodToldKey, periodTellState, skipTellPartnerPeriod, tellPartnerPeriod } from '@/lib/logic/ttcFlow'
-import { MIGRATIONS, SCHEMA_VERSION, legacyStamp, migrate, schemaVersionOf } from '@/lib/sync/migrations'
+import { MIGRATIONS, SCHEMA_VERSION, legacyStamp, migrate, schemaVersionOf, shareLevelFromSettings } from '@/lib/sync/migrations'
 import {
   DECISION_KEY_RE,
   cleanDecisions,
@@ -30,7 +30,7 @@ import type { AppNotification, AppState, LHTest, PeriodLog } from '@/lib/types'
 const TODAY = '2026-10-02'
 const NOW = new Date('2026-10-02T09:00:00+09:00')
 
-/** A fresh (schema 2) state: 민수 a, 지은 b (cycle owner). */
+/** A fresh (current schema) state: 민수 a, 지은 b (cycle owner). */
 function fresh(): AppState {
   return createInitialState(
     {
@@ -63,9 +63,12 @@ const stub = (key: string, createdAt: string, to: 'a' | 'b' = 'b'): AppNotificat
 function v1Blob(): Record<string, unknown> {
   const s = fresh()
   const { schemaVersion: _v, decisions: _d, ...rest } = s
+  // The sharing choice as the app wrote it before schema 4: the yes/no.
+  const { shareLevel: _l, ...settings } = s.settings
   return JSON.parse(
     JSON.stringify({
       ...rest,
+      settings: { ...settings, shareCycleDetails: false },
       periods: [{ start: '2026-08-23', end: '2026-08-27', by: 'b' }, { start: '2026-09-20' }],
       lhTests: [
         { date: '2026-09-02', time: '08:30', result: 'faint', by: 'b' },
@@ -102,7 +105,7 @@ function v1Blob(): Record<string, unknown> {
 
 describe('migrations: the ordered chain', () => {
   it('is contiguous from 1 to SCHEMA_VERSION and reads a missing version as 1', () => {
-    expect(SCHEMA_VERSION).toBe(3)
+    expect(SCHEMA_VERSION).toBe(4)
     let v = 1
     for (const m of MIGRATIONS) {
       expect(m.from).toBe(v)
@@ -157,7 +160,7 @@ describe('migrations: the ordered chain', () => {
         stub('rest-suggest:pre-varicella:2026-09-01', '2026-09-02T09:00:00+09:00'),
       ],
     } as AppState
-    const out = migrate(between)
+    const out = migrate(between, MIGRATIONS.slice(0, 2))
     expect(out.schemaVersion).toBe(3)
     expect('sync' in out).toBe(false)
     // Every stub became a decision on its day; the stubs are gone; the notices someone reads stay.
@@ -189,7 +192,59 @@ describe('migrations: the ordered chain', () => {
     // An existing decision wins over a stub's day; a v3 state is left alone.
     const kept = migrate({ ...between, decisions: { 'period-told:2026-08-23': '2026-08-20' } } as AppState)
     expect(kept.decisions['period-told:2026-08-23']).toBe('2026-08-20')
-    expect(migrate(out)).toBe(out)
+    expect(migrate(out, MIGRATIONS.slice(0, 2))).toEqual(out)
+  })
+
+  it('v3 → v4: the yes/no shareCycleDetails becomes shareLevel (false / unset → 우리의 주간, true → 자세히)', () => {
+    const v3 = migrate(v1Blob() as unknown as AppState, MIGRATIONS.slice(0, 2))
+    expect(v3.schemaVersion).toBe(3)
+    const withLegacy = (legacy: Record<string, unknown>) => {
+      const { shareCycleDetails: _o, ...settings } = v3.settings as unknown as Record<string, unknown>
+      return { ...v3, settings: { ...settings, ...legacy } } as unknown as AppState
+    }
+    const cases: Array<[Record<string, unknown>, string]> = [
+      [{ shareCycleDetails: false }, 'week'],
+      [{ shareCycleDetails: true }, 'details'],
+      [{}, 'week'],
+      [{ shareCycleDetails: 'true' }, 'week'],
+      [{ shareCycleDetails: 1 }, 'week'],
+    ]
+    for (const [legacy, level] of cases) {
+      const before = withLegacy(legacy)
+      const out = migrate(before)
+      expect(out.schemaVersion, JSON.stringify(legacy)).toBe(4)
+      expect(out.settings.shareLevel, JSON.stringify(legacy)).toBe(level)
+      expect('shareCycleDetails' in out.settings).toBe(false)
+      // Only the settings change: every other field is the same object.
+      for (const k of Object.keys(before) as Array<keyof AppState>) {
+        if (k !== 'settings' && k !== 'schemaVersion') expect(out[k], k).toBe(before[k])
+      }
+      const { shareLevel: _n, ...restOut } = out.settings
+      const { shareCycleDetails: _p, ...restIn } = before.settings as unknown as Record<string, unknown>
+      expect(restOut).toEqual(restIn)
+      // Idempotent: a second pass is the same object; through parseState the same level.
+      expect(migrate(out)).toBe(out)
+      expect(parseState(JSON.stringify(before))!.settings.shareLevel).toBe(level)
+    }
+    // A level already there (a hand-edited v3 save) is kept; the old key still goes.
+    const both = migrate(withLegacy({ shareLevel: 'none', shareCycleDetails: true }))
+    expect(both.settings.shareLevel).toBe('none')
+    expect('shareCycleDetails' in both.settings).toBe(false)
+    // A damaged settings value passes through untouched for sanitizeBackup to repair.
+    const broken = { ...v3, settings: 'x' } as unknown as AppState
+    expect(migrate(broken).settings).toBe('x')
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(broken)))!.settings.shareLevel).toBe('week')
+  })
+
+  it('shareLevelFromSettings: a level wins, else the old yes/no, else 우리의 주간', () => {
+    expect(shareLevelFromSettings({ shareLevel: 'none' })).toBe('none')
+    expect(shareLevelFromSettings({ shareLevel: 'details', shareCycleDetails: false })).toBe('details')
+    expect(shareLevelFromSettings({ shareLevel: 'bogus', shareCycleDetails: true })).toBe('details')
+    expect(shareLevelFromSettings({ shareCycleDetails: true })).toBe('details')
+    expect(shareLevelFromSettings({ shareCycleDetails: false })).toBe('week')
+    expect(shareLevelFromSettings({})).toBe('week')
+    expect(shareLevelFromSettings(null)).toBe('week')
+    expect(shareLevelFromSettings('x')).toBe('week')
   })
 
   it('is idempotent and byte-stable: a second pass returns the same object; parseState twice gives the same bytes', () => {
@@ -453,7 +508,11 @@ describe('the demo exercises the model (5-place rule)', () => {
     }
     const prep = createDemoState(TODAY, NOW, 'preparing')
     const last = [...prep.periods].sort((a, b) => (a.start < b.start ? 1 : -1))[0]!.start
-    expect(prep.decisions).toEqual({ [periodToldKey(last)]: last })
+    // 알렸어요 for this cycle, plus 민수's 이번 주 우리 둘 pick and [했어요] (N21, lib/logic/weekTogether.ts).
+    const { [periodToldKey(last)]: told, ...week } = prep.decisions
+    expect(told).toBe(last)
+    expect(Object.keys(week).every((k) => /^week-(pick|done):\d{4}-\d{2}-\d{2}:a(:[a-z0-9-]+)?$/.test(k))).toBe(true)
+    expect(Object.keys(week).some((k) => k.startsWith('week-pick:'))).toBe(true)
     expect(periodTellState(prep, last)).toBe('told')
     expect(prep.notifications.find((n) => n.key === periodToldKey(last))).toMatchObject({ to: 'a', read: true })
   })

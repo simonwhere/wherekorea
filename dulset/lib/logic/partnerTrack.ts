@@ -475,15 +475,39 @@ export const CLINIC_PARTNER_TIP = '결과를 묻지 말고, 병원 일정만 같
  * encodes what this viewer may know: a soft / calm viewer, or one without
  * shared details, never gets a copy that names the cycle's timing). Keys that
  * aren't here fall back to the neutral tips.
+ *
+ * The waiting weeks, 우리의 주간 and 곧 우리의 주간 rotate by the date (N24):
+ * the same line must not sit on his card for thirteen days. Every line is
+ * relationship-side (rule #3: dinner, a walk, a chore, a free evening) — no
+ * symptom questions, no test words, no timing homework, no number of times.
+ * The founder reads the list once (positioning §4 #9).
  */
-const TIP_BY_COPY: Partial<Record<MomentCopyKey, string>> = {
+const TIPS_BY_COPY: Partial<Record<MomentCopyKey, readonly string[]>> = {
   // (The moment card's body already says '증상은 묻지 말고 평소처럼 보내요' — not twice on one screen.)
-  'partner.tww': '좋아하는 간식을 하나 챙겨 봐요.',
-  'partner.late-shared': '먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.',
-  'partner.our-week': '오늘 저녁은 둘만의 시간으로 비워 둬요.',
-  'partner.our-week-soon': '이번 주말 계획을 먼저 물어봐요.',
-  'partner.positive-told': '병원에 같이 갈 수 있는 날을 먼저 비워 둬요.',
-  'partner.period-shared': '가벼운 산책을 제안해 봐요.',
+  'partner.tww': [
+    '좋아하는 간식을 하나 챙겨 봐요.',
+    '이번 주말에 같이 할 일을 먼저 정해 봐요.',
+    '오늘 저녁 설거지는 먼저 맡아 봐요.',
+    '따뜻한 차 한 잔을 먼저 내려 봐요.',
+    '요즘 재미있었던 일을 하나 이야기해 봐요.',
+  ],
+  'partner.our-week': [
+    '오늘 저녁은 둘만의 시간으로 비워 둬요.',
+    '좋아하는 메뉴로 저녁을 같이 골라 봐요.',
+    '산책하면서 하루 이야기를 나눠 봐요.',
+    '오늘은 휴대폰을 잠시 내려놓고 이야기해요.',
+    '좋아하는 음악을 틀어 놓고 저녁을 같이 먹어요.',
+  ],
+  'partner.our-week-soon': [
+    '이번 주말 계획을 먼저 물어봐요.',
+    '같이 가 보고 싶었던 곳을 하나 골라 봐요.',
+    '이번 주에 먹고 싶은 걸 물어봐요.',
+    '집안일 하나를 미리 끝내 둬요.',
+    '평일 저녁 하나를 비워 둘 수 있는지 살펴봐요.',
+  ],
+  'partner.late-shared': ['먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.'],
+  'partner.positive-told': ['병원에 같이 갈 수 있는 날을 먼저 비워 둬요.'],
+  'partner.period-shared': ['가벼운 산책을 제안해 봐요.'],
 }
 
 /** Day-to-day things that fit any day of the cycle (rotated by date, so the card changes). */
@@ -497,11 +521,21 @@ export const NEUTRAL_PARTNER_TIPS: readonly string[] = [
   '내일 아침 일정을 먼저 물어봐요.',
 ]
 
+/** The rotation by date: the same index on both phones and the link, whatever the cycle says. */
+function byDate<T>(list: readonly T[], today: ISODate): T {
+  const n = list.length
+  const i = ((diffDays('2000-01-01', today) % n) + n) % n
+  return list[i]!
+}
+
 /** Rotates with the date, so the same tip doesn't sit on the card for weeks. */
 export function neutralPartnerTip(today: ISODate): string {
-  const n = NEUTRAL_PARTNER_TIPS.length
-  const i = ((diffDays('2000-01-01', today) % n) + n) % n
-  return NEUTRAL_PARTNER_TIPS[i]!
+  return byDate(NEUTRAL_PARTNER_TIPS, today)
+}
+
+/** Every tip a partner card may show for `copy` (the rotation's list; the neutral list for keys without their own). */
+export function partnerTipsFor(copy: MomentCopyKey): readonly string[] {
+  return TIPS_BY_COPY[copy] ?? NEUTRAL_PARTNER_TIPS
 }
 
 /**
@@ -509,22 +543,24 @@ export function neutralPartnerTip(today: ISODate): string {
  * the partner's own moment (ttcMoment): the copy key already passes this
  * viewer's alert style, 부담 줄이기 and the sharing choice, so a calm viewer
  * only ever gets a neutral tip. None when the moment card carries its own
- * (period days 1–3: '‘고생했어’ 한마디면 충분해요'), so it isn't said twice.
+ * (period days 1–3: '‘고생했어’ 한마디면 충분해요'), so it isn't said twice, and
+ * none through the quiet after a pregnancy ended (the card asks nothing then).
  */
 export function partnerTip(state: AppState, today: ISODate, member: MemberId): string | undefined {
   if (state.stage !== 'preparing' || canLogCycle(state, member)) return undefined
   if (isClinicMode(state)) return CLINIC_PARTNER_TIP
   const m = ttcMoment(state, today, member)
   if (!m || m.role !== 'partner') return undefined
-  if (m.partnerTip) return undefined
-  return TIP_BY_COPY[m.copy] ?? neutralPartnerTip(today)
+  if (m.partnerTip || m.copy === 'partner.after-loss') return undefined
+  return byDate(partnerTipsFor(m.copy), today)
 }
 
 // ── What the partner sees ───────────────────────────────────
 
-// setShareCycleDetails lives in prefs.ts (with canSeeCycleDetails); re-exported
-// here for callers that imported it from the partner track.
-export { setShareCycleDetails } from './prefs'
+// setShareLevel (N23) and the deprecated yes/no setShareCycleDetails live in
+// prefs.ts (with canSeeCycleDetails); re-exported here for callers that
+// imported them from the partner track.
+export { setShareCycleDetails, setShareLevel } from './prefs'
 
 /**
  * May `by` change who tracks the cycle? The person whose cycle it is always may.

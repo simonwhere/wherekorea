@@ -5,7 +5,7 @@ import { cleanCover } from './logic/cover'
 import { cleanCoupleLink } from './logic/partnerLink'
 import { BACKUP_MAX_BYTES, extraStorageKeys, sanitizeBackup } from './logic/settings'
 import { clearAllPhotos } from './photos'
-import { migrate } from './sync/migrations'
+import { migrate, shareLevelFromSettings } from './sync/migrations'
 import type { AppState, MemberId } from './types'
 
 export const STORAGE_KEY = 'dulset:state:v1'
@@ -137,10 +137,12 @@ export function normalize(state: AppState): AppState {
       },
       ttcStart: settings.ttcStart,
       ...(personal ? { personal } : {}),
-      // Privacy by default, same as a new couple and sanitizeBackup: until the
-      // cycle owner opts in (설정 › 공유 범위), the partner sees only 우리의 주간.
-      // Data saved before this setting existed never recorded that consent.
-      shareCycleDetails: settings.shareCycleDetails ?? false,
+      // 공유 범위 (N23): 날짜 없음 / 우리의 주간 / 자세히. A save from before
+      // schema 4 holds the old yes/no instead — read the same way the v3 → v4
+      // migration reads it (true → 자세히, false or never asked → 우리의 주간,
+      // the privacy default a new couple and sanitizeBackup also get) — and
+      // the old key is not carried on.
+      shareLevel: shareLevelFromSettings(settings),
       // 써요 / 안 써요 / 나중에 — unset means not asked yet (N17).
       ...(typeof usesLH === 'boolean' || usesLH === 'later' ? { usesLH } : {}),
       ...(memories !== undefined ? { memories } : {}),

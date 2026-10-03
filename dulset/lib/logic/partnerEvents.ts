@@ -20,20 +20,57 @@
 // twice changes nothing the second time; marks older than EVENT_MEMORY_DAYS
 // are forgotten (no transport re-delivers that late: lib/useLinkSync
 // PULL_WINDOW_DAYS, supabase dulset_cleanup), so the map stays small.
-// Date-bearing events ('check', 'task-done') are "set" events, not toggles,
-// so even without the mark a repeat would be a no-op.
+// Date-bearing events ('check', 'task-done', 'week-pick', 'week-done') are
+// "set" events, not toggles, so even without the mark a repeat would be a no-op.
+//
+// Now 3 adds three kinds, still ids, dates and fixed values only:
+//  • 'week-pick' {optionId, date} / 'week-done' {date} — '이번 주 우리 둘'
+//    (N21): his pick among the week's three (weekTogether.weekOptions) and his
+//    [했어요], applied with weekTogether.pickWeek / markWeekDone and kept in
+//    `decisions` like the app's own taps;
+//  • 'setup' {habits: {smokes?, drinks?}, alertStyle?} — the link's first run
+//    (N22): the two habit answers change his weekly check-ins without
+//    rebuilding his list (initial.applyHabitAnswers), and 소식 받는 방식 sets
+//    his own alert style (settings.setAlertStyle). Only the enumerated values
+//    get through cleanPartnerEvent; anything else drops the whole event.
 
 import { addDays, diffDays, isISODate } from '../dates'
+import { applyHabitAnswers, type HabitPatch } from '../initial'
 import { decide, decided } from '../sync/model'
-import type { AppState, ISODate, MemberId } from '../types'
+import type { AlertStyle, AppState, ISODate, MemberId } from '../types'
 import { isDone, isWeekly, nudgeableItem, weeklyDone } from './checks'
 import { canNudge, sendCheer, sendNudge } from './notifications'
+import { PARTNER_SETUP_KEY } from './onboarding'
 import { completeMonthlyTask, monthlyTask, partnerId } from './partnerTrack'
+import { setAlertStyle } from './settings'
 import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalIdOf, signalsFor, signalsSentToday } from './signals'
 import { stampOn, toggleWithCompletion } from './today'
+import { markWeekDone, pickWeek, weekDone, weekOf, weekOptions, weekPick, weekTogetherOn } from './weekTogether'
 
-export type PartnerEventKind = 'check' | 'reply' | 'signal' | 'nudge' | 'cheer' | 'task-done'
-export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = ['check', 'reply', 'signal', 'nudge', 'cheer', 'task-done'] as const
+export type PartnerEventKind = 'check' | 'reply' | 'signal' | 'nudge' | 'cheer' | 'task-done' | 'week-pick' | 'week-done' | 'setup'
+export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
+  'check',
+  'reply',
+  'signal',
+  'nudge',
+  'cheer',
+  'task-done',
+  'week-pick',
+  'week-done',
+  'setup',
+] as const
+
+/** The link's drinking answer (N22): 거의 안 마셔요 / 가끔 / 자주. */
+export type SetupDrinks = 'no' | 'sometimes' | 'often'
+export const SETUP_DRINKS: readonly SetupDrinks[] = ['no', 'sometimes', 'often'] as const
+/** 소식 받는 방식 — the partner's own alert style. */
+export const SETUP_ALERT_STYLES: readonly AlertStyle[] = ['explicit', 'soft', 'off'] as const
+
+/** The link's two habit questions; an unanswered one is absent. */
+export interface SetupHabits {
+  smokes?: boolean
+  drinks?: SetupDrinks
+}
 
 interface EventBase {
   /** The page's own id for the event (unique per tap) — the idempotency key. */
@@ -49,6 +86,9 @@ export type PartnerEvent =
   | (EventBase & { kind: 'nudge' })
   | (EventBase & { kind: 'cheer' })
   | (EventBase & { kind: 'task-done'; taskId: string; date: ISODate })
+  | (EventBase & { kind: 'week-pick'; optionId: string; date: ISODate })
+  | (EventBase & { kind: 'week-done'; date: ISODate })
+  | (EventBase & { kind: 'setup'; habits: SetupHabits; alertStyle?: AlertStyle })
 
 /** Ids are short tokens (uuid, nanoid, 'signal:…'); anything longer or stranger is not an id. */
 export const EVENT_ID_MAX = 64
@@ -87,8 +127,31 @@ export function cleanPartnerEvent(raw: unknown): PartnerEvent | undefined {
     case 'task-done':
       if (!isId(raw.taskId) || !isISODate(raw.date)) return undefined
       return { ...base, kind: 'task-done', taskId: raw.taskId, date: raw.date }
+    case 'week-pick':
+      if (!isId(raw.optionId) || !isISODate(raw.date)) return undefined
+      return { ...base, kind: 'week-pick', optionId: raw.optionId, date: raw.date }
+    case 'week-done':
+      if (!isISODate(raw.date)) return undefined
+      return { ...base, kind: 'week-done', date: raw.date }
+    case 'setup': {
+      const habits = cleanSetupHabits(raw.habits)
+      if (!habits) return undefined
+      if (raw.alertStyle !== undefined && !SETUP_ALERT_STYLES.includes(raw.alertStyle as AlertStyle)) return undefined
+      return { ...base, kind: 'setup', habits, ...(raw.alertStyle !== undefined ? { alertStyle: raw.alertStyle as AlertStyle } : {}) }
+    }
     default:
       return undefined
+  }
+}
+
+/** {smokes?: boolean, drinks?: SetupDrinks} rebuilt key by key; a wrong value (or not an object) → undefined. */
+function cleanSetupHabits(raw: unknown): SetupHabits | undefined {
+  if (!isObj(raw)) return undefined
+  if (raw.smokes !== undefined && typeof raw.smokes !== 'boolean') return undefined
+  if (raw.drinks !== undefined && !SETUP_DRINKS.includes(raw.drinks as SetupDrinks)) return undefined
+  return {
+    ...(typeof raw.smokes === 'boolean' ? { smokes: raw.smokes } : {}),
+    ...(raw.drinks !== undefined ? { drinks: raw.drinks as SetupDrinks } : {}),
   }
 }
 
@@ -141,6 +204,8 @@ export type EventProblem =
   | 'nudge'
   /** Not his current month task. */
   | 'task'
+  /** '이번 주 우리 둘': not one of the week's picks, no pick to mark done, the week's pick already done, or the quiet. */
+  | 'week'
 
 function cheersSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'cheer' && n.from === from && !n.key && n.createdAt.startsWith(today)).length
@@ -189,6 +254,23 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
       if (!isISODate(ev.date) || ev.date > today || (task.minDoneAt !== undefined && ev.date < task.minDoneAt)) return 'date'
       return null
     }
+    case 'week-pick': {
+      if (!isISODate(ev.date) || ev.date > today || diffDays(ev.date, today) > CHECK_BACK_DAYS) return 'date'
+      // The quiet is read on her day too: a tap from before a loss is not applied inside it.
+      if (!weekTogetherOn(state, today)) return 'week'
+      if (!weekOptions(state, ev.date, partner).some((o) => o.id === ev.optionId)) return 'week'
+      if (weekDone(state, weekOf(ev.date), partner) !== undefined) return 'week'
+      return null
+    }
+    case 'week-done': {
+      if (!isISODate(ev.date) || ev.date > today || diffDays(ev.date, today) > CHECK_BACK_DAYS) return 'date'
+      if (!weekTogetherOn(state, today) || !weekTogetherOn(state, ev.date)) return 'week'
+      if (!weekPick(state, weekOf(ev.date), partner)) return 'week'
+      return null
+    }
+    case 'setup':
+      // Only fixed values got through cleanPartnerEvent; they are his own rows and his own alert style.
+      return null
     default:
       return 'kind'
   }
@@ -232,6 +314,24 @@ export function applyPartnerEvent(state: AppState, ev: PartnerEvent, today: ISOD
     case 'task-done': {
       const task = monthlyTask(state, today, partner)!
       next = completeMonthlyTask(state, task, ev.date, partner)
+      break
+    }
+    case 'week-pick':
+      next = pickWeek(state, partner, ev.optionId, ev.date)
+      break
+    case 'week-done':
+      next = markWeekDone(state, partner, ev.date)
+      break
+    case 'setup': {
+      const h = ev.habits
+      const patch: HabitPatch = {
+        ...(h.smokes !== undefined ? { smokes: h.smokes } : {}),
+        ...(h.drinks !== undefined ? { drinks: h.drinks === 'no' ? 'rarely' : h.drinks } : {}),
+      }
+      next = applyHabitAnswers(state, partner, patch, today)
+      if (ev.alertStyle && next.settings.alertStyle[partner] !== ev.alertStyle) next = setAlertStyle(next, partner, ev.alertStyle)
+      // He answered the first run on the link: the in-app sheet does not ask again (onboarding.needsPartnerFirstRun).
+      next = decide(next, PARTNER_SETUP_KEY, today)
       break
     }
   }

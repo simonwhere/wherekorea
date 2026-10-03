@@ -301,7 +301,7 @@ describe('starter check items', () => {
       new Date(2026, 8, 28, 9),
     )
     expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['걷기 30분', '금연', '사우나·뜨거운 탕 쉬기'])
-    expect(s.settings.shareCycleDetails).toBe(false)
+    expect(s.settings.shareLevel).toBe('week')
   })
 })
 
@@ -323,11 +323,12 @@ describe('onboarding extras', () => {
     expect(s.checkItems.every((i) => i.createdAt === '2026-09-28')).toBe(true)
   })
 
-  it('lets only the cycle owner share the cycle details (private by default)', () => {
-    expect(applyOnboardingExtras(base('a'), {}, '2026-09-28').settings.shareCycleDetails).toBe(false)
-    expect(applyOnboardingExtras(base('a'), { shareCycleDetails: true }, '2026-09-28').settings.shareCycleDetails).toBe(true)
+  it('lets only the cycle owner share the cycle details (우리의 주간 by default, N23)', () => {
+    expect(applyOnboardingExtras(base('a'), {}, '2026-09-28').settings.shareLevel).toBe('week')
+    expect(applyOnboardingExtras(base('a'), { shareLevel: 'details' }, '2026-09-28').settings.shareLevel).toBe('details')
+    expect(applyOnboardingExtras(base('a'), { shareLevel: 'none' }, '2026-09-28').settings.shareLevel).toBe('none')
     // The person onboarding isn't the cycle owner: the owner decides later.
-    expect(applyOnboardingExtras(base('b'), { shareCycleDetails: true }, '2026-09-28').settings.shareCycleDetails).toBe(false)
+    expect(applyOnboardingExtras(base('b'), { shareLevel: 'details' }, '2026-09-28').settings.shareLevel).toBe('week')
   })
 
   it('saves 부담 없이 / 잠금화면 숨김 for the person onboarding only', () => {

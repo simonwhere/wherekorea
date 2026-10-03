@@ -12,9 +12,11 @@
 import { addDays, diffDays, isISODate } from '../dates'
 import type { AppState, Appointment, CoverPhoto, DiaryEntry, ISODate, MemberId, PeriodLog, Pregnancy, PregnancyTest } from '../types'
 import { anniversariesBetween, daysSince } from './anniversary'
+import { canSeeCycleDetails } from './prefs'
 import { QUIET_DAYS_AFTER_END, recentlyEnded } from './pregnancy'
 import { isSignal, pendingSignal } from './signals'
 import { greetingFor, rowProgress } from './today'
+import { thanksThisWeek } from './weekTogether'
 
 // ── Caption ─────────────────────────────────────────────────
 
@@ -222,6 +224,19 @@ function onPeriodStart(periods: readonly PeriodLog[], date: ISODate): boolean {
 }
 
 /**
+ * Day 1–3 of a period she TOLD the partner about ([알리기]: the decision
+ * 'period-told:<start>' — ttcFlow.periodToldKey, read inline: see the import
+ * note). What a partner without her details may know of today.
+ */
+function onToldPeriodStart(state: Pick<AppState, 'periods'> & Partial<Pick<AppState, 'decisions' | 'notifications'>>, date: ISODate): boolean {
+  return state.periods.some((p) => {
+    if (!(date >= p.start && date <= addDays(p.start, PERIOD_QUIET_DAYS - 1))) return false
+    const key = `period-told:${p.start}`
+    return state.decisions?.[key] !== undefined || !!state.notifications?.some((n) => n.key === key)
+  })
+}
+
+/**
  * A home test on that day that did not lead anywhere: a negative or faint
  * one, or a positive outside a pregnancy that went on (it was settled by a
  * period, or the pregnancy ended — insideEndedPregnancy covers the latter's
@@ -257,22 +272,27 @@ function insideEndedPregnancy(p: Pregnancy | undefined, date: ISODate): boolean 
  * lib/initial.ts SETTINGS_DEFAULTS has it — read inline, see the import note).
  * Hard filters, so nothing painful or private resurfaces (설정 › 첫 화면
  * promises exactly these): no '나만 보기' entry at all — not even the viewer's
- * own, it is not a shared memory (`viewer` is kept for a later per-person
- * rule); no entry written while pregnant; none dated inside an ended pregnancy
- * or its 42 quiet days; none from period days 1–3, a home test's day that led
- * nowhere (sadTestOn) or a clinic day (clinicDayOn); none with a health word
- * (COVER_WORDS). And no memory at all on a quiet day, a period day 1–3 or the
- * day of such a test.
+ * own, it is not a shared memory; no entry written while pregnant; none dated
+ * inside an ended pregnancy or its 42 quiet days; none from period days 1–3, a
+ * home test's day that led nowhere (sadTestOn) or a clinic day (clinicDayOn);
+ * none with a health word (COVER_WORDS). And no memory at all on a quiet day,
+ * a period day 1–3 or the day of such a test — as `viewer` may know of them:
+ * a partner without her details only skips the days of a period she told (N19).
+ * (The entry filters look a year or more back; that history is not today's news.)
  */
 export function memoryFor(
-  state: Pick<AppState, 'stage' | 'settings' | 'diary' | 'periods' | 'pregnancyTests' | 'pregnancy'> & Partial<Pick<AppState, 'appointments'>>,
+  state: Pick<AppState, 'stage' | 'settings' | 'diary' | 'periods' | 'pregnancyTests' | 'pregnancy'> &
+    Partial<Pick<AppState, 'appointments' | 'couple' | 'decisions' | 'notifications'>>,
   today: ISODate,
   viewer: MemberId,
 ): Memory | undefined {
-  void viewer
   if (state.settings.memories !== true) return undefined
   if (!isISODate(today) || recentlyEnded(state, today)) return undefined
-  if (onPeriodStart(state.periods, today) || sadTestOn(state, today)) return undefined
+  // Today's own gates read only what this viewer may know (N19): on a phone
+  // without her details, a line that vanished on the day of an untold period
+  // or test would tell it. There, only a period she told counts.
+  const sees = !state.couple || canSeeCycleDetails({ couple: state.couple, settings: state.settings }, viewer)
+  if (sees ? onPeriodStart(state.periods, today) || sadTestOn(state, today) : onToldPeriodStart(state, today)) return undefined
   const monthDay = today.slice(5)
   const year = Number(today.slice(0, 4))
   let best: (Memory & { createdAt: string }) | undefined
@@ -332,7 +352,7 @@ export function copula(word: string): string {
  *     message itself stays in 우리 한 줄, never on the first line);
  *  2. the partner finished today's checks — the 'complete:' notice, and the
  *     day still complete (not on quiet days);
- *  3. the partner sent a cheer today;
+ *  3. the partner said [고마워요] today ('고마워했어요', N21) or sent a cheer today;
  *  4. 'N년 전 오늘' (settings.memories, off by default): a diary entry from
  *     exactly 1–3 years ago today that passes memoryFor's filters (not on
  *     quiet days);
@@ -374,6 +394,10 @@ export function heroLine(state: AppState, today: ISODate, viewer: MemberId, hour
       !isSignal(n) &&
       !n.key?.startsWith('complete:'),
   )
+  // [고마워요] said today (N21, weekTogether.thankWeek): the line says what it was, whatever 🔔 went with it.
+  if (thanksThisWeek(state, viewer, today)?.day === today) {
+    return { kind: 'cheer', text: `${p}님이 고마워했어요`, avatar: partnerId, target: 'us' }
+  }
   if (cheered) return { kind: 'cheer', text: `${p}님이 응원을 보냈어요`, avatar: partnerId, target: 'us' }
 
   if (!quiet) {

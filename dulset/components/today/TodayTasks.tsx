@@ -1,25 +1,28 @@
 'use client'
 
 // Home block 2: my daily checks as one-tap rows, a weekly check-in when it's
-// due, and today's / tomorrow's appointment.
+// due ('술 쉬기 · 이번 주 지켰어요?' — checks.checkInLabel; taking it back offers
+// 되돌리기, N24), and today's / tomorrow's appointment.
 
 import { useCallback, useState } from 'react'
 import type { TabKey } from '@/components/AppShell'
 import { cx, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
-import { doneIds, isWeekly } from '@/lib/logic/checks'
+import { WEEKLY_QUESTION, doneIds, isWeekly, weeklyCheckInName } from '@/lib/logic/checks'
 import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
 import { stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem } from '@/lib/types'
 import { KIND_ICON, KIND_LABEL, PillButton } from './bits'
 import CheckEditor from './CheckEditor'
+import { useWeeklyUndo } from './useWeeklyUndo'
 import { dailyItems, dailyProgress, dayLabel, homeAppointments, soonAppointments, weeklyRows, whoLabel } from './model'
 
 export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab: TabKey) => void; className?: string }) {
   const { state, update, today, me, partner } = useApp()
   const toast = useToast()
+  const weeklyUndo = useWeeklyUndo()
   const [editorOpen, setEditorOpen] = useState(false)
   // Stable, so the Sheet doesn't re-run its open effect (and steal focus) after each edit.
   const closeEditor = useCallback(() => setEditorOpen(false), [])
@@ -36,6 +39,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
     const preview = toggleWithCompletion(state, me.id, partner.id, today, item.id, now)
     update((s) => toggleWithCompletion(s, me.id, partner.id, today, item.id, now).state)
     if (preview.completed) toast.show(alreadyTold ? '오늘 체크 완료!' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+    else if (preview.cleared?.length) weeklyUndo.offer(item, preview.cleared)
     else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인 완료!')
   }
 
@@ -118,6 +122,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
         </p>
       ) : null}
       <CheckEditor open={editorOpen} onClose={closeEditor} />
+      {weeklyUndo.toast}
     </section>
   )
 }
@@ -145,15 +150,23 @@ function Row({ item, checked, weekly = false, onToggle }: { item: CheckItem; che
         <Icon name={b.icon} className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span
-          className={cx(
-            'block truncate text-base font-bold leading-[1.3] tracking-[-0.025em]',
-            checked ? 'text-ink-2' : 'text-ink',
-          )}
-        >
-          {weekly ? <span className="mr-1 text-xs font-bold tracking-normal text-brand-ink">이번 주</span> : null}
-          {item.label}
-        </span>
+        {weekly ? (
+          // '술 쉬기 · 이번 주 지켰어요?' (checks.checkInLabel): may wrap to two lines on a narrow phone.
+          <span className={cx('block text-base font-bold leading-[1.3] tracking-[-0.025em]', checked ? 'text-ink-2' : 'text-ink')}>
+            {weeklyCheckInName(item)}
+            {/* The question moves to the next line whole rather than breaking in the middle. */}{' '}
+            <span className="whitespace-nowrap text-[14px] font-semibold tracking-[-0.02em] text-ink-2">· {WEEKLY_QUESTION}</span>
+          </span>
+        ) : (
+          <span
+            className={cx(
+              'block truncate text-base font-bold leading-[1.3] tracking-[-0.025em]',
+              checked ? 'text-ink-2' : 'text-ink',
+            )}
+          >
+            {item.label}
+          </span>
+        )}
         <span className="mt-px block truncate text-[12.5px] text-ink-3">
           {weekly ? '주 1회 체크인' : item.note ? `${KIND_LABEL[item.kind]} · ${item.note}` : KIND_LABEL[item.kind]}
         </span>

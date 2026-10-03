@@ -368,6 +368,20 @@ export interface MilestoneRecord {
  */
 export type AlertStyle = 'explicit' | 'soft' | 'off'
 
+/**
+ * What the cycle owner shares with the partner (N23, set by her alone —
+ * lib/logic/prefs.ts setShareLevel; read with shareLevelOf / canSeeWeekBand /
+ * canSeeCycleDetails, never directly):
+ *  • 'none'    날짜 없음 — no 우리의 주간 band, no dates, no cycle phase at all;
+ *  • 'week'    우리의 주간 — the shared band only (the default for a new couple);
+ *  • 'details' 자세히 — also period days, LH and pregnancy-test results.
+ * Schema 4 replaced the old boolean `shareCycleDetails` (false → 'week',
+ * true → 'details'; lib/sync/migrations.ts).
+ */
+export type ShareLevel = 'none' | 'week' | 'details'
+/** Narrowest first: an index comparison says which of two levels shares less. */
+export const SHARE_LEVELS: readonly ShareLevel[] = ['none', 'week', 'details'] as const
+
 export interface Settings {
   /** Lock-screen-safe wording: "우리의 날" instead of "가임기". */
   discreet: boolean
@@ -387,11 +401,12 @@ export interface Settings {
    */
   personal?: Partial<Record<MemberId, PersonalPrefs>>
   /**
-   * Set by the person who tracks the cycle: whether the partner sees the details
-   * (period days, LH and pregnancy-test results). The shared "우리의 주간" is
-   * always visible. New couples start with false (privacy by default).
+   * Set by the person who tracks the cycle: how much of her cycle the partner
+   * sees (ShareLevel — 날짜 없음 / 우리의 주간 / 자세히). New couples start
+   * with 'week'; a state the app wrote always has it (createInitialState,
+   * storage.normalize, sanitizeBackup). Read through lib/logic/prefs.ts.
    */
-  shareCycleDetails?: boolean
+  shareLevel?: ShareLevel
   /**
    * Does the cycle owner use LH strips (배란테스트기)? true 써요 / false 안 써요 /
    * 'later' 나중에 — undefined means the question hasn't been asked yet (N17).
@@ -413,7 +428,7 @@ export interface Settings {
    * '링크에 표지 사진' (Next A ①): the cycle owner lets the no-install partner
    * link carry the cover photo's id (lib/logic/partnerSnapshot.ts). Unset =
    * off; only `true` is ever stored (lib/logic/prefs.ts coverOnLink /
-   * setCoverOnLink — the owner's choice, like shareCycleDetails).
+   * setCoverOnLink — the owner's choice, like shareLevel).
    */
   coverOnLink?: boolean
 }
@@ -559,8 +574,9 @@ export interface AppState {
   version: 1
   /**
    * Shape version of this state (lib/sync/migrations.ts SCHEMA_VERSION, now
-   * 3). parseState runs the ordered migrations from the saved number up to
-   * the current one before sanitizeBackup; a state without the field is 1.
+   * 4 — v3 → v4 turned settings.shareCycleDetails into settings.shareLevel).
+   * parseState runs the ordered migrations from the saved number up to the
+   * current one before sanitizeBackup; a state without the field is 1.
    */
   schemaVersion: number
   createdAt: ISODateTime
@@ -618,8 +634,11 @@ export interface AppState {
    * Answers that are not records: the cycle owner's 'period-told:<start>'
    * (알렸어요), 'period-told:<start>:skip' (괜찮아요), 'positive-told:<since>',
    * 'bleeding-told:<since>', 'rest-suggest:<itemId>:<at>' (생백신 제안 닫음),
-   * and the partner link's 'partner-event:<id>' (an event applied once,
-   * lib/logic/partnerEvents.ts) → the day it was decided. Read and written
+   * the partner link's 'partner-event:<id>' (an event applied once,
+   * lib/logic/partnerEvents.ts), and '이번 주 우리 둘' (N21,
+   * lib/logic/weekTogether.ts — weeks named by their Monday):
+   * 'week-pick:<monday>:<member>:<optionId>', 'week-done:<monday>:<member>',
+   * 'week-thanks:<monday>:<by>' → the day it was decided. Read and written
    * through lib/sync/model.ts decided / decide (until schema 2 these lived as
    * dismissed notification stubs; the v1 → v2 migration copies them here and
    * v2 → v3 drops the stubs). The two-tab rebase marks live outside the state

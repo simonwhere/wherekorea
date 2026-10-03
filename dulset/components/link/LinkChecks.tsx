@@ -8,7 +8,7 @@
 import { Badge, KIND_LABEL, KindIcon, ProgressBar } from '@/components/today/bits'
 import { Card, cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
-import { weekCountLabel } from '@/lib/logic/checks'
+import { WEEKLY_QUESTION, weekCountLabel, weeklyCheckInName } from '@/lib/logic/checks'
 import type { SnapshotCheck, SnapshotChecks, SnapshotMember } from '@/lib/logic/partnerSnapshot'
 import { Bubble } from './bits'
 
@@ -38,11 +38,15 @@ function Row({ item, onToggle }: { item: SnapshotCheck; onToggle: () => void }) 
       </span>
       <KindIcon kind={item.kind} className="text-ink-2" />
       <span className="min-w-0 flex-1">
-        <span className={cx('block truncate text-[15px] font-semibold', checked ? 'text-ink-2' : 'text-ink')}>{item.label}</span>
+        <span className={cx('block truncate text-[15px] font-semibold', checked ? 'text-ink-2' : 'text-ink')}>
+          {/* Weekly rows read like the app's (N24): '술 쉬기' + '이번 주 지켰어요? · 주 1회'. */}
+          {item.weekly ? weeklyCheckInName(item) : item.label}
+        </span>
         <span className="block truncate text-xs text-ink-3">
           {item.weekly ? (
             <>
-              <span className="sr-only">{KIND_LABEL[item.kind]} · </span>주 1회 체크인
+              <span className="sr-only">{KIND_LABEL[item.kind]} · </span>
+              {WEEKLY_QUESTION} · 주 1회
             </>
           ) : item.note ? (
             <>

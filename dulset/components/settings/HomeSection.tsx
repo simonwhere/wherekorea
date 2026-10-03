@@ -12,7 +12,7 @@ import CoverSheet from '@/components/cover/CoverSheet'
 import { Card, Toggle, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { coverView, setHideCover } from '@/lib/logic/cover'
-import { canLogCycle } from '@/lib/logic/prefs'
+import { canLogCycle, canSeeCycleDetails } from '@/lib/logic/prefs'
 import { anniversaryAlertsOn, memoriesOn, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
 import { useApp } from '@/lib/store'
 import { SettingsSection } from './bits'
@@ -108,7 +108,7 @@ export default function HomeSection() {
               }}
               label="주기 기록에 몇 번째 주기인지 보이기"
               description={`기본은 숨김이에요. 켜면 주기 탭의 주기 기록에 ‘주기 N’으로 보여요${
-                state.settings.shareCycleDetails ? ` · 자세한 기록을 공유 중이라 ${partner.name}님 화면에도 보여요` : ''
+                canSeeCycleDetails(state, partner.id) ? ` · 자세한 기록을 공유 중이라 ${partner.name}님 화면에도 보여요` : ''
               }. 병원에 보여 줄 요약에는 늘 들어가요.`}
             />
           </Card>

@@ -23,6 +23,7 @@ import {
   cycleHistory,
   cycleLens,
   cycleSummary,
+  hiddenReason,
   icsAvailability,
   showsLH,
   strongestTest,
@@ -31,7 +32,7 @@ import {
 import { endClinicMode, isClinicMode, setClinicMode } from '@/lib/logic/clinic'
 import { intimacyDays } from '@/lib/logic/intimacy'
 import { ageFromBirthYear, ttcClockStart } from '@/lib/logic/notifications'
-import { canLogCycle, canSeeCycleDetails, discreetFor, settingsFor } from '@/lib/logic/prefs'
+import { canLogCycle, discreetFor, settingsFor, shareLevelOf } from '@/lib/logic/prefs'
 import { showTryCountOn } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { startRestCycle } from '@/lib/logic/ttc'
@@ -59,11 +60,12 @@ export default function CycleTab() {
   const { state, update, today, viewer, partner, cycleOwner } = useApp()
   const toast = useToast()
   const mine = settingsFor(state.settings, viewer)
-  const { couple, settings, restCycle, positivePending, periods, stage } = state
-  // `today` lets the loss quiet (restCycle.until) end on its last day here too.
+  const { couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes } = state
+  // `today` lets the loss quiet (restCycle.until) end on its last day here too. cycle, pregnancy and
+  // cycleNotes give a partner without details his one shared window (Lens.band, cycleRing.sharedWeek).
   const lens = useMemo(
-    () => cycleLens({ couple, settings, restCycle, positivePending, periods, stage }, viewer, today),
-    [couple, settings, restCycle, positivePending, periods, stage, viewer, today],
+    () => cycleLens({ couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes }, viewer, today),
+    [couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes, viewer, today],
   )
   const [month, setMonth] = useState<ISODate>(() => startOfMonth(today))
   const [selected, setSelected] = useState<ISODate | null>(null)
@@ -79,7 +81,7 @@ export default function CycleTab() {
     if (takeOpenClinicSummary()) setSummaryOpen(true)
   }, [])
 
-  const { lhTests, cycle, pregnancy, pregnancyTests, cycleNotes, personalLog, intimacy } = state
+  const { lhTests, pregnancyTests, personalLog, intimacy } = state
   // 관계한 날 (Next B): a plain dot on the holder's own calendar only — intimacyDays is [] for anyone else.
   const privateDays = useMemo(() => new Set(intimacyDays({ intimacy }, viewer)), [intimacy, viewer])
   // The pregnancy record lets predictions pause after a pregnancy ended (see
@@ -96,7 +98,9 @@ export default function CycleTab() {
     return out
   }, [pregnancyTests])
 
-  const hasData = periods.length > 0
+  // A partner without details reads only his one window (N19), so her first record must not swap
+  // his card: he gets the same summary (the '평소 주' line) with or without her records.
+  const hasData = periods.length > 0 || (!lens.owner && !lens.details)
   const summary = useMemo(() => (hasData ? cycleSummary(input, today, lens.view, lens) : null), [hasData, input, today, lens])
   const ttcStart = ttcClockStart(state)
   const history = useMemo(() => (lens.details ? cycleHistory(input, today, ttcStart) : null), [lens.details, input, today, ttcStart])
@@ -110,11 +114,16 @@ export default function CycleTab() {
     [lens, input, today, mine.lowPressure],
   )
   const canLog = canLogCycle(state, viewer)
-  const sharedWithPartner = canSeeCycleDetails(state, partner.id)
+  // What the partner sees (N23: 날짜 없음 / 우리의 주간 / 자세히) — the owner's header line.
+  const shareLevel = shareLevelOf(state)
   const clinic = isClinicMode(state)
   // A partner without details keeps their own "hidden" notice, but not the
   // soft one — soft wording is forced by sharing there, not their choice.
-  const notice = lens.details || lens.view === 'hidden' ? viewNotice(lens.view, mine) : null
+  // Her own view is never hidden by what she shares, so the 'share' reason is the partner's alone.
+  const noticeSettings = lens.owner ? { lowPressure: mine.lowPressure } : mine
+  const notice = lens.details || lens.view === 'hidden' ? viewNotice(lens.view, noticeSettings) : null
+  // 날짜 없음 is hers to change: the partner's '바꾸기' opens 공유 범위 (read-only there), not his alerts.
+  const noticeAnchor = lens.view === 'hidden' && hiddenReason(noticeSettings) === 'share' ? 'share' : 'alerts'
 
   const select = (date: ISODate) => {
     if (canLog && date <= today) openLog({ date })
@@ -142,7 +151,8 @@ export default function CycleTab() {
             {lens.owner ? (
               <>
                 <span>
-                  {partner.name}님에게는 {sharedWithPartner ? '기록도 함께 보여요' : '우리의 주간만 보여요'}
+                  {partner.name}님에게는{' '}
+                  {shareLevel === 'details' ? '기록도 함께 보여요' : shareLevel === 'week' ? '우리의 주간만 보여요' : '날짜가 보이지 않아요'}
                 </span>
                 <SettingsLink className="-my-3" anchor="share">
                   바꾸기
@@ -181,8 +191,8 @@ export default function CycleTab() {
             <Icon name={NOTICE_ICON[notice.icon] ?? 'info'} className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             {notice.text}
           </span>
-          <SettingsLink className="px-1" anchor="alerts">
-            바꾸기
+          <SettingsLink className="px-1" anchor={noticeAnchor}>
+            {noticeAnchor === 'share' ? '보기' : '바꾸기'}
           </SettingsLink>
         </p>
       ) : null}
@@ -293,7 +303,12 @@ export default function CycleTab() {
         </div>
       ) : null}
 
-      <FertilityGuide view={lens.view} ownerName={cycleOwner.name} ownerAge={ageFromBirthYear(cycleOwner.birthYear, today)} />
+      <FertilityGuide
+        view={lens.view}
+        ownerName={cycleOwner.name}
+        ownerAge={ageFromBirthYear(cycleOwner.birthYear, today)}
+        owner={lens.owner}
+      />
 
       <DaySheet date={selected} onClose={closeSheet} lens={lens} />
       {lens.owner ? <ClinicSummarySheet open={summaryOpen} onClose={closeSummary} /> : null}

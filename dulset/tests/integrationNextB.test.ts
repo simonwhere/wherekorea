@@ -38,7 +38,7 @@ import { FEEL_LABEL, setEntryPrivacy, setFeel, setPrivateNote, stateForViewer } 
 import { NOTICE_EXPIRY_REMINDER_DAYS, appointmentReminders, noticeExpiryNotices, planDeadlineNotices } from '@/lib/logic/planNotices'
 import { isBleedingDuringPositive, markBleeding } from '@/lib/logic/positiveBleeding'
 import { QUIET_DAYS_AFTER_END, backToPreparing, quietEndsOn, startPregnancy } from '@/lib/logic/pregnancy'
-import { setPersonalPref, setShareCycleDetails } from '@/lib/logic/prefs'
+import { setPersonalPref, setShareCycleDetails, shareLevelOf } from '@/lib/logic/prefs'
 import { anniversaryAlertsOn, memoriesOn, sanitizeBackup, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
 import { doctorAdvice, endPregnancy, noticeTarget } from '@/lib/logic/today'
 import {
@@ -247,7 +247,7 @@ describe('privacy property (Next B): owner-only data never reaches the partner a
 
       // 병원 요약: only with her consent, and then only shared records.
       const summary = clinicSummary(s, PARTNER, day)
-      if (!s.settings.shareCycleDetails) expect(summary, tag).toBeNull()
+      if (shareLevelOf(s) !== 'details') expect(summary, tag).toBeNull()
       else {
         expect(summary, tag).not.toBeNull()
         summaries++
@@ -425,7 +425,7 @@ describe('notice-expiry reminders', () => {
     const engine = readFileSync(join(ROOT, 'lib/useNotificationEngine.ts'), 'utf8')
     const at = engine.indexOf('}, [today,')
     const deps = engine.slice(at, engine.indexOf('])', at))
-    for (const dep of ['treatments', 'settings.anniversaryAlerts', 'settings.shareCycleDetails', 'settings.personal', 'restCycle', 'positivePending']) {
+    for (const dep of ['treatments', 'settings.anniversaryAlerts', 'settings.shareLevel', 'settings.personal', 'restCycle', 'positivePending']) {
       expect(deps, dep).toContain(dep)
     }
   })

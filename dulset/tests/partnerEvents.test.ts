@@ -20,6 +20,8 @@ import {
   CHEERS_PER_DAY,
   EVENT_ID_MAX,
   PARTNER_EVENT_KINDS,
+  SETUP_ALERT_STYLES,
+  SETUP_DRINKS,
   appliedEventIds,
   appliedEventKey,
   applyPartnerEvent,
@@ -35,6 +37,8 @@ import { setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { setPersonalPref } from '@/lib/logic/prefs'
 import { SIGNALS_PER_DAY, pendingSignal, sendSignal, signalIdOf, signalsSentToday } from '@/lib/logic/signals'
 import { startRestCycle } from '@/lib/logic/ttc'
+import { backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
+import { WEEK_OPTIONS, weekDone, weekOf, weekOptions, weekPick, weekPickKey } from '@/lib/logic/weekTogether'
 import type { AppState, ISODate, MemberId } from '@/lib/types'
 
 // 'a' = 민수 (partner), 'b' = 지은 (cycle owner).
@@ -323,7 +327,7 @@ describe('task-done events', () => {
 describe('what the partner can never do', () => {
   it('has no event for a period, an LH strip, a test, a rest cycle or a share switch — forged ones are dropped unread', () => {
     const s = fresh()
-    expect(PARTNER_EVENT_KINDS).toEqual(['check', 'reply', 'signal', 'nudge', 'cheer', 'task-done'])
+    expect(PARTNER_EVENT_KINDS).toEqual(['check', 'reply', 'signal', 'nudge', 'cheer', 'task-done', 'week-pick', 'week-done', 'setup'])
     const forged = [
       { id: 'f1', kind: 'period', date: '2026-09-10' },
       { id: 'f2', kind: 'lh', date: '2026-09-10', result: 'positive' },
@@ -430,5 +434,188 @@ describe('what the partner can never do', () => {
     const partner: MemberId = PARTNER
     expect(next.decisions[appliedEventKey('c1')]).toBe(TODAY)
     expect(partner).toBe('a')
+  })
+})
+
+describe('이번 주 우리 둘 events (week-pick / week-done, N21)', () => {
+  const MONDAY = weekOf(TODAY) // 2026-09-07
+  const pickEv = (id: string, optionId: string, date: ISODate = TODAY): PartnerEvent => ({ id, kind: 'week-pick', optionId, date })
+  const doneEv = (id: string, date: ISODate = TODAY): PartnerEvent => ({ id, kind: 'week-done', date })
+
+  it('takes one of the week’s three picks and its [했어요] — kept in decisions, nothing of hers touched', () => {
+    const s = fresh()
+    const [o1, o2] = weekOptions(s, TODAY, PARTNER)
+    expect(partnerEventProblem(s, pickEv('w1', o1!.id), TODAY)).toBeNull()
+    const picked = applyPartnerEvent(s, pickEv('w1', o1!.id, '2026-09-08'), TODAY, NOW)
+    expect(weekPick(picked, MONDAY, PARTNER)).toBe(o1)
+    expect(picked.decisions[weekPickKey(MONDAY, PARTNER, o1!.id)]).toBe('2026-09-08')
+    expect(hasAppliedEvent(picked, 'w1')).toBe(true)
+    expect(applyPartnerEvent(picked, pickEv('w1', o1!.id), TODAY, NOW)).toBe(picked)
+    // Another pick before [했어요] replaces it.
+    const repicked = applyPartnerEvent(picked, pickEv('w2', o2!.id), TODAY, NOW)
+    expect(weekPick(repicked, MONDAY, PARTNER)).toBe(o2)
+    const done = applyPartnerEvent(repicked, doneEv('w3'), TODAY, NOW)
+    expect(weekDone(done, MONDAY, PARTNER)).toBe(TODAY)
+    // A second [했어요] (new id) is a no-op apart from remembering it; the day stays.
+    const again = applyPartnerEvent(done, doneEv('w4'), TODAY, NOW)
+    expect(weekDone(again, MONDAY, PARTNER)).toBe(TODAY)
+    expect(hasAppliedEvent(again, 'w4')).toBe(true)
+    sameCycleData(s, again)
+    expect(again.checkLog).toBe(s.checkLog)
+    expect(again.notifications).toBe(s.notifications)
+  })
+
+  it('rejects a pick that is not offered, a pick after [했어요], [했어요] without a pick, and dates out of range', () => {
+    const s = fresh()
+    const offered = weekOptions(s, TODAY, PARTNER).map((o) => o.id)
+    const other = WEEK_OPTIONS.find((o) => !offered.includes(o.id))!.id
+    expect(partnerEventProblem(s, pickEv('x1', other), TODAY)).toBe('week')
+    expect(partnerEventProblem(s, pickEv('x2', 'made-up'), TODAY)).toBe('week')
+    expect(partnerEventProblem(s, doneEv('x3'), TODAY)).toBe('week')
+    expect(partnerEventProblem(s, pickEv('x4', offered[0]!, addDays(TODAY, 1)), TODAY)).toBe('date')
+    expect(partnerEventProblem(s, pickEv('x5', offered[0]!, addDays(TODAY, -CHECK_BACK_DAYS - 1)), TODAY)).toBe('date')
+    expect(partnerEventProblem(s, doneEv('x6', addDays(TODAY, 1)), TODAY)).toBe('date')
+    const done = applyPartnerEvents(s, [pickEv('p1', offered[0]!), doneEv('p2')], TODAY, NOW)
+    expect(partnerEventProblem(done, pickEv('x7', offered[1]!), TODAY)).toBe('week')
+    expect(applyPartnerEvent(done, pickEv('x7', offered[1]!), TODAY, NOW)).toBe(done)
+    // Never as the cycle owner.
+    expect(partnerEventProblem(s, { ...pickEv('x8', offered[0]!), from: OWNER }, TODAY)).toBe('actor')
+  })
+
+  it('a tap from Sunday night that arrives on Monday counts for the week it was made in', () => {
+    const sunday = addDays(MONDAY, 6) // 2026-09-13
+    const monday = addDays(MONDAY, 7)
+    const s = fresh()
+    const option = weekOptions(s, sunday, PARTNER)[0]!
+    const next = applyPartnerEvents(s, [pickEv('s1', option.id, sunday), doneEv('s2', sunday)], monday, NOW)
+    expect(weekPick(next, MONDAY, PARTNER)).toBe(option)
+    expect(weekDone(next, MONDAY, PARTNER)).toBe(sunday)
+    expect(weekPick(next, monday, PARTNER)).toBeUndefined()
+  })
+
+  it('rests in the 42 days after a pregnancy ended — even a tap made before the loss', () => {
+    const s = fresh()
+    const option = weekOptions(s, TODAY, PARTNER)[0]!
+    const picked = applyPartnerEvent(s, pickEv('q0', option.id, '2026-09-08'), TODAY, NOW)
+    const ended = backToPreparing(startPregnancy(picked, '2026-07-01', '2026-08-10'), TODAY)
+    expect(partnerEventProblem(ended, pickEv('q1', option.id), TODAY)).toBe('week')
+    expect(partnerEventProblem(ended, doneEv('q2', '2026-09-08'), TODAY)).toBe('week')
+    expect(applyPartnerEvent(ended, doneEv('q2', '2026-09-08'), TODAY, NOW)).toBe(ended)
+  })
+
+  it('cleanPartnerEvent: an id-like option and a real date only; extra fields are dropped', () => {
+    expect(cleanPartnerEvent({ id: 'w1', kind: 'week-pick', optionId: 'chore', date: TODAY, text: '내가 할게', from: 'a' })).toEqual({
+      id: 'w1',
+      from: 'a',
+      kind: 'week-pick',
+      optionId: 'chore',
+      date: TODAY,
+    })
+    expect(cleanPartnerEvent({ id: 'w2', kind: 'week-done', date: TODAY, optionId: 'chore' })).toEqual({ id: 'w2', kind: 'week-done', date: TODAY })
+    for (const bad of [
+      { id: 'w', kind: 'week-pick', optionId: 'chore' },
+      { id: 'w', kind: 'week-pick', date: TODAY },
+      { id: 'w', kind: 'week-pick', optionId: '집안일 하나', date: TODAY },
+      { id: 'w', kind: 'week-pick', optionId: 'chore', date: '2026-9-10' },
+      { id: 'w', kind: 'week-done' },
+      { id: 'w', kind: 'week-done', date: 20260910 },
+    ]) {
+      expect(cleanPartnerEvent(bad), JSON.stringify(bad)).toBeUndefined()
+    }
+  })
+})
+
+describe('setup events (the link’s first run, N22)', () => {
+  /** Only his three rows (30분 걷기 · 7시간 자기 · 금주 weekly) and her 엽산 — no starter defaults. */
+  function linkFresh(): AppState {
+    const s = fresh()
+    const keep = new Set(['30분 걷기', '7시간 자기', '금주', '엽산'])
+    return { ...s, checkItems: s.checkItems.filter((i) => keep.has(i.label)) }
+  }
+  const setup = (id: string, habits: Record<string, unknown>, alertStyle?: string): PartnerEvent =>
+    ({ id, kind: 'setup', habits, ...(alertStyle ? { alertStyle } : {}) }) as unknown as PartnerEvent
+  const labels = (s: AppState, active = true) =>
+    s.checkItems
+      .filter((i) => i.owner === PARTNER && i.active === active)
+      .map((i) => `${i.label}${i.cadence === 'weekly' ? '(주)' : ''}`)
+      .sort()
+
+  it('adds the weekly check-ins his answers call for and sets his own alert style — her rows and settings untouched', () => {
+    const s = linkFresh()
+    expect(labels(s)).toEqual(['30분 걷기', '7시간 자기', '금주(주)'])
+    const next = applyPartnerEvent(s, setup('s1', { smokes: true, drinks: 'often' }, 'off'), TODAY, NOW)
+    expect(labels(next)).toEqual(['30분 걷기', '7시간 자기', '금연(주)', '금주(주)'])
+    const added = next.checkItems.find((i) => i.label === '금연')!
+    expect(added).toMatchObject({ owner: PARTNER, kind: 'habit', cadence: 'weekly', active: true, createdAt: TODAY })
+    expect(next.settings.alertStyle).toEqual({ ...s.settings.alertStyle, [PARTNER]: 'off' })
+    expect(next.checkItems.filter((i) => i.owner === OWNER)).toEqual(s.checkItems.filter((i) => i.owner === OWNER))
+    expect(next.settings.shareLevel).toBe(s.settings.shareLevel)
+    expect(next.checkLog).toBe(s.checkLog)
+    for (const k of ['periods', 'lhTests', 'pregnancyTests', 'intimacy', 'personalLog', 'couple', 'diary', 'cycle', 'stage'] as const) {
+      expect(next[k], k).toBe(s[k])
+    }
+    expect(hasAppliedEvent(next, 's1')).toBe(true)
+    expect(applyPartnerEvent(next, setup('s1', { smokes: true, drinks: 'often' }, 'off'), TODAY, NOW)).toBe(next)
+    // The same answers again under a new id change nothing but the applied mark.
+    const again = applyPartnerEvent(next, setup('s2', { smokes: true, drinks: 'sometimes' }, 'off'), TODAY, NOW)
+    expect(again.checkItems).toBe(next.checkItems)
+    expect(again.settings).toBe(next.settings)
+  })
+
+  it('‘거의 안 마셔요’ archives 금주 (history kept); a later ‘가끔’ brings the same row back', () => {
+    let s = linkFresh()
+    const drink = s.checkItems.find((i) => i.label === '금주')!
+    s = applyPartnerEvent(s, check('c1', drink.id, true, '2026-09-08'), TODAY, NOW)
+    const off = applyPartnerEvent(s, setup('s1', { drinks: 'no' }), TODAY, NOW)
+    expect(labels(off)).toEqual(['30분 걷기', '7시간 자기'])
+    expect(off.checkItems.find((i) => i.id === drink.id)).toMatchObject({ active: false, archivedAt: TODAY })
+    expect(weeklyDone(off, PARTNER, drink.id, '2026-09-08')).toBe(true)
+    const back = applyPartnerEvent(off, setup('s2', { drinks: 'sometimes' }), TODAY, NOW)
+    expect(labels(back)).toEqual(['30분 걷기', '7시간 자기', '금주(주)'])
+    expect(back.checkItems.filter((i) => i.label === '금주')).toHaveLength(1)
+    expect(back.checkItems.find((i) => i.label === '금주')!.id).toBe(drink.id)
+  })
+
+  it('an unanswered question leaves its row alone; ‘안 피워요’ with no smoking row changes nothing', () => {
+    const s = linkFresh()
+    const next = applyPartnerEvent(s, setup('s1', {}), TODAY, NOW)
+    expect(next.checkItems).toBe(s.checkItems)
+    expect(next.settings).toBe(s.settings)
+    expect(hasAppliedEvent(next, 's1')).toBe(true)
+    expect(applyPartnerEvent(s, setup('s2', { smokes: false }), TODAY, NOW).checkItems).toBe(s.checkItems)
+    // With the starter's daily '담배 안 피우기' (the original list), ‘안 피워요’ archives it.
+    const starter = fresh()
+    const archived = applyPartnerEvent(starter, setup('s3', { smokes: false }), TODAY, NOW)
+    expect(archived.checkItems.find((i) => i.label === '담배 안 피우기')).toMatchObject({ active: false, archivedAt: TODAY })
+  })
+
+  it('cleanPartnerEvent: only the fixed values get through; unknown keys are dropped, a wrong value drops the event', () => {
+    expect(SETUP_DRINKS).toEqual(['no', 'sometimes', 'often'])
+    expect(SETUP_ALERT_STYLES).toEqual(['explicit', 'soft', 'off'])
+    expect(
+      cleanPartnerEvent({ id: 's1', kind: 'setup', habits: { smokes: false, drinks: 'no', exercises: true, note: '자유' }, alertStyle: 'soft', name: 'x' }),
+    ).toEqual({ id: 's1', kind: 'setup', habits: { smokes: false, drinks: 'no' }, alertStyle: 'soft' })
+    expect(cleanPartnerEvent({ id: 's1', kind: 'setup', habits: {} })).toEqual({ id: 's1', kind: 'setup', habits: {} })
+    for (const bad of [
+      { id: 's', kind: 'setup' },
+      { id: 's', kind: 'setup', habits: null },
+      { id: 's', kind: 'setup', habits: [] },
+      { id: 's', kind: 'setup', habits: 'smokes' },
+      { id: 's', kind: 'setup', habits: { smokes: 'yes' } },
+      { id: 's', kind: 'setup', habits: { drinks: 'rarely' } },
+      { id: 's', kind: 'setup', habits: { drinks: 'lots' } },
+      { id: 's', kind: 'setup', habits: {}, alertStyle: 'loud' },
+      { id: 's', kind: 'setup', habits: {}, alertStyle: null },
+    ]) {
+      expect(cleanPartnerEvent(bad), JSON.stringify(bad)).toBeUndefined()
+    }
+  })
+
+  it('never acts as the cycle owner and never touches her alert style', () => {
+    const s = linkFresh()
+    expect(partnerEventProblem(s, { ...setup('s1', { smokes: true }, 'off'), from: OWNER }, TODAY)).toBe('actor')
+    const next = applyPartnerEvent(s, setup('s2', { smokes: true }, 'explicit'), TODAY, NOW)
+    expect(next.settings.alertStyle[OWNER]).toBe(s.settings.alertStyle[OWNER])
+    expect(next.settings.alertStyle[PARTNER]).toBe('explicit')
   })
 })

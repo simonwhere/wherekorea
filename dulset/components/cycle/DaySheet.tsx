@@ -67,7 +67,8 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
   // `today` stops projections past a missed period / an ended pregnancy, like the grid.
   const info = useMemo(() => dayInfo(state, date, today), [state, date, today])
   const cycle = useMemo(() => cycleAt(state, date), [state, date])
-  const phase = lensPhase(info.phase, lens)
+  // The date lets a partner without details read his one window (Lens.band) for this day.
+  const phase = lensPhase(info.phase, lens, date)
   const label = phaseLabel(phase, lens.view)
   const chance = dayChanceFor(info, lens)
   const cycleDay = lens.details ? knownCycleDay(info) : undefined

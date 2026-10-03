@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '@/lib/initial'
-import { partnerTip } from '@/lib/logic/partnerTrack'
+import { partnerTip, partnerTipsFor } from '@/lib/logic/partnerTrack'
 import { canSeeCycleDetails } from '@/lib/logic/prefs'
 import { doctorAdvice } from '@/lib/logic/today'
 import { markStillWaiting, ttcMoment } from '@/lib/logic/ttcFlow'
@@ -56,25 +56,31 @@ describe('waiting-week eyebrow at low confidence (N12: no ovulation day is named
 
 describe("partner tip vs the moment body (one screen never says the same sentence twice)", () => {
   it('tww: the tip no longer repeats 증상은 묻지 말고', () => {
-    const s = fresh({ periods: REGULAR })
+    // (N19) The waiting card is for a partner she shares the details with; without
+    // them the waiting weeks are the '평소 주' card.
+    const s = { ...fresh({ periods: REGULAR }), settings: { ...fresh().settings, shareLevel: 'details' as const } }
     const m = ttcMoment(s, '2026-09-20', PARTNER)
     expect(m?.copy).toBe('partner.tww')
     expect(m?.body).toContain('증상은 묻지 말고')
     const tip = partnerTip(s, '2026-09-20', PARTNER)
-    expect(tip).toBe('좋아하는 간식을 하나 챙겨 봐요.')
+    // (N24) One of the waiting week's rotating lines.
+    expect(partnerTipsFor('partner.tww')).toContain(tip)
     expect(tip).not.toContain('증상은 묻지')
+    expect(ttcMoment(fresh({ periods: REGULAR }), '2026-09-20', PARTNER)?.copy).toBe('partner.neutral')
   })
 
   it('every day of a cycle: no sentence of the tip appears in the card', () => {
-    const s = fresh({ periods: REGULAR })
-    for (let i = 1; i <= 30; i++) {
-      const d = `2026-09-${String(i).padStart(2, '0')}` as ISODate
-      const m = ttcMoment(s, d, PARTNER)
-      const tip = partnerTip(s, d, PARTNER)
-      if (!m || !tip) continue
-      const card = [m.eyebrow, m.title, m.body, m.note, m.partnerTip].filter(Boolean).join(' ')
-      for (const sentence of tip.split(/[.,] ?/).map((x) => x.trim()).filter((x) => x.length > 4)) {
-        expect(card, `${d}: "${sentence}"`).not.toContain(sentence)
+    const plain = fresh({ periods: REGULAR })
+    for (const s of [plain, { ...plain, settings: { ...plain.settings, shareLevel: 'details' as const } }]) {
+      for (let i = 1; i <= 30; i++) {
+        const d = `2026-09-${String(i).padStart(2, '0')}` as ISODate
+        const m = ttcMoment(s, d, PARTNER)
+        const tip = partnerTip(s, d, PARTNER)
+        if (!m || !tip) continue
+        const card = [m.eyebrow, m.title, m.body, m.note, m.partnerTip].filter(Boolean).join(' ')
+        for (const sentence of tip.split(/[.,] ?/).map((x) => x.trim()).filter((x) => x.length > 4)) {
+          expect(card, `${d}: "${sentence}"`).not.toContain(sentence)
+        }
       }
     }
   })
@@ -98,7 +104,7 @@ describe("DoctorCard 'amenorrhea' reason is her period data (viewer gate)", () =
   })
 
   it('with shared details he reads it', () => {
-    const s = { ...waiting(), settings: { ...waiting().settings, shareCycleDetails: true } }
+    const s = { ...waiting(), settings: { ...waiting().settings, shareLevel: 'details' as const } }
     expect(canSeeCycleDetails(s, PARTNER)).toBe(true)
     expect(doctorAdvice(s, DAY, PARTNER)?.reasons).toContain('amenorrhea')
   })
@@ -110,7 +116,7 @@ describe('irregular-cycle doctor line follows the sharing lens (lead decision af
   })
   it('the owner and a partner with shared details read it', () => {
     expect(doctorAdvice(irregular, '2026-09-10', OWNER)?.reasons).toContain('irregular')
-    const shared = { ...irregular, settings: { ...irregular.settings, shareCycleDetails: true } }
+    const shared = { ...irregular, settings: { ...irregular.settings, shareLevel: 'details' as const } }
     expect(canSeeCycleDetails(shared, PARTNER)).toBe(true)
     expect(doctorAdvice(shared, '2026-09-10', PARTNER)?.reasons).toContain('irregular')
   })

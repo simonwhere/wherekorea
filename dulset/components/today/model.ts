@@ -161,3 +161,9 @@ export function soonAppointment(list: Appointment[], today: ISODate): Appointmen
 export function soonAppointments(list: Appointment[], today: ISODate): Appointment[] {
   return upcomingAppointments(list, today, 1).filter((a) => diffDays(today, a.date) <= 1)
 }
+
+// ── 우리 한 줄: the other person's reply to my signal (N21 ③) ───────
+
+// One rule, in lib (pure, tested in tests/signals.test.ts): the latest reply
+// `me` received within the reply window, gone once `me` asks again.
+export { receivedReply, type ReceivedReply } from '@/lib/logic/signals'

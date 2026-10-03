@@ -11,11 +11,12 @@
 import { useState } from 'react'
 import LossSupport from '@/components/today/LossSupport'
 import { cx } from '@/components/ui'
-import type { PartnerSnapshot, SnapshotIdea, SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import type { PartnerPage, SnapshotIdea, SnapshotTask } from '@/lib/logic/partnerSnapshot'
 import { VEIL_COPY, estimateMarks, type MomentTone } from '@/lib/logic/ttcFlow'
 import { Pill } from './bits'
 import { LinkTaskBody } from './LinkTask'
 import LinkWeekRow from './LinkWeekRow'
+import { cardEyebrow } from './model'
 
 const EYEBROW: Record<MomentTone, string> = {
   default: 'text-ink-2',
@@ -66,12 +67,15 @@ export default function LinkMoment({
   snapshot,
   task,
   onTaskDone,
+  weekBelow = false,
   className,
 }: {
-  snapshot: PartnerSnapshot
+  snapshot: PartnerPage
   /** The month task when the card features it (moment.monthlyTask), with his local mark. */
   task?: { task: SnapshotTask; done: boolean }
   onTaskDone: (task: SnapshotTask) => void
+  /** '이번 주 우리 둘' (LinkWeek) comes right after this card: the eyebrow does not repeat its header. */
+  weekBelow?: boolean
   className?: string
 }) {
   const m = snapshot.moment
@@ -81,6 +85,7 @@ export default function LinkMoment({
   const inner = cx('mt-3.5 rounded-[18px] p-3.5', muted ? 'bg-surface' : 'bg-surface-2')
   // "(예상)" once per card (components/today/CycleBlock): the band legend drops its own when the copy has it.
   const estimate = [m.eyebrow, m.title, m.body, m.note, m.partnerTip].some((t) => estimateMarks(t) > 0) ? 'none' : 'one'
+  const eyebrow = cardEyebrow(m.eyebrow, weekBelow)
 
   if (m.veiled && !revealed) {
     return (
@@ -113,7 +118,7 @@ export default function LinkMoment({
         className,
       )}
     >
-      {m.eyebrow ? <p className={cx('min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{m.eyebrow}</p> : null}
+      {eyebrow ? <p className={cx('min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{eyebrow}</p> : null}
       <h2 className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">{m.title}</h2>
       <div className="mt-1">
         <p className="text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{m.body}</p>

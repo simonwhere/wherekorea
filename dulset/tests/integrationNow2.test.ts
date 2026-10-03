@@ -134,7 +134,7 @@ function withStyle(s: AppState, member: MemberId, style: AlertStyle): AppState {
 function withPersonal(s: AppState, member: MemberId, lowPressure: boolean): AppState {
   return { ...s, settings: { ...s.settings, personal: { ...(s.settings.personal ?? {}), [member]: { lowPressure } } } }
 }
-const share = (s: AppState, on = true): AppState => ({ ...s, settings: { ...s.settings, shareCycleDetails: on } })
+const share = (s: AppState, on = true): AppState => ({ ...s, settings: { ...s.settings, shareLevel: on ? 'details' : 'week' } })
 
 function* days(from: ISODate, to: ISODate): Generator<ISODate> {
   for (let d = from; d <= to; d = addDays(d, 1)) yield d
@@ -508,7 +508,8 @@ describe("'아직 안 왔어요' (stillWaiting): the day keeps counting, a quiet
   it('the partner: without details a waiting card with no cycle words; with details the shared waiting card; nothing in a backup leaks', () => {
     const d = addDays(DAY15, 4)
     const his = ttcMoment(waiting, d, PARTNER)!
-    expect(his.copy).toBe('partner.tww')
+    // N19: without her details a late wait is the one 평소 주 card (nothing changes on the due day).
+    expect(his.copy).toBe('partner.neutral')
     expect(words(his)).not.toMatch(/늦|생리|주기|테스트/)
     expect(ttcMoment(share(waiting), d, PARTNER)?.copy).toBe('partner.late-shared')
     expect(cycleStrip(waiting, d, PARTNER)).toBeNull()

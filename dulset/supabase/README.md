@@ -4,7 +4,7 @@
 
 | 파일 | 하는 일 | 실행 순서 |
 |---|---|---|
-| `schema.sql` | 표 4개 + 함수(RPC) 10개 | 1 |
+| `schema.sql` | 표 5개 + API 함수(RPC) 10개 + 내부 도우미 4개 | 1 |
 | `policies.sql` | RLS 켜기, 표 접근 전부 막기, 함수만 열기 | 2 |
 
 둘 다 여러 번 실행해도 괜찮아요(`if not exists` / `create or replace`).
@@ -16,7 +16,9 @@
 | `couples` | 커플 공간 하나에 한 줄 | 주인(주기를 기록하는 폰) 기기 키의 SHA-256만 |
 | `couple_tokens` | 아내가 보내는 링크의 토큰 | 해시만, 만료일(`expires_at`), 해제(`revoked_at`) |
 | `partner_snapshots` | 아내 폰이 **개인정보 렌즈를 거쳐** 만든 `PartnerSnapshot` (`lib/logic/partnerSnapshot.ts`) — 남편 화면에 보이는 것 그대로 | 생리·LH·임테기 기록, 나만 보기, 컨디션, 관계일은 애초에 들어오지 않아요 |
-| `partner_events` | 남편 화면이 보내는 것: 체크·답장·신호·콕·응원·이번 달 할 일 — id와 날짜만 (`lib/logic/partnerEvents.ts`) | 자유 텍스트 없음 |
+| `partner_snapshots`의 모양 | v2(2026-10-03, N20): 오늘~+6일 7칸(`days[]`), 칸마다 그날의 남편 화면. 약 25 KB, 서버 한도 128 KB | 미래 칸도 같은 렌즈를 거쳐요(예측으로만 바뀌는 '늦음'은 앞 칸을 그대로 둬요) |
+| `partner_events` | 남편 화면이 보내는 것: 체크·답장·신호·콕·응원·이번 달 할 일·이번 주 하나(`week-pick`/`week-done`)·첫 설정(`setup`) — id·날짜·정해진 값만 (`lib/logic/partnerEvents.ts`) | 자유 텍스트 없음 |
+| `link_opens` | **'링크 연 날' — 연구용**(2026-10-03 결정): 커플 id · 서울 날짜 · 그날 연 횟수 | IP·기기·시각·토큰·내용 없음. 아내 화면에는 어떤 형태로도 안 보여요(`positioning.md` §6). 연구가 끝나면 지워요(아래) |
 
 ## 함수(RPC) — `POST /rest/v1/rpc/<이름>`
 
@@ -30,6 +32,8 @@
 | 아내 폰 | `mark_events_read(p_owner_key, p_couple_id, p_ids)` → 바뀐 수 | 주인 키 |
 | 남편 브라우저 | `snapshot_by_token(p_token)` → 최신 1줄 또는 0줄 | 살아 있는 토큰(만료·해제 아님) — 아니면 **오류가 아니라 0줄** |
 | 남편 브라우저 | `send_event(p_token, p_event_id, p_kind, p_payload)` | 살아 있는 토큰, id 64자·kind 40자·4 KB, 하루 200개, 같은 id는 무시 |
+| 남편 브라우저 | `record_link_open(p_token)` | 페이지를 열 때 한 번. 토큰만 보내요 — 서버가 토큰 해시로 커플을 찾고 **서버의 서울 날짜**로 (커플, 날짜) 횟수를 올려요. 죽은 토큰이면 아무것도 안 남기고 오류도 안 내요 |
+| 연구(주인 키) | `link_open_days(p_owner_key, p_couple_id, p_from, p_to)` → 서로 다른 날 수 | 주인 키 일치. 앱 화면에는 쓰지 않아요 — 연구 기간에 숫자를 뽑을 때만 |
 
 내부 도우미(`dulset_hash`, `dulset_owner_couple`, `dulset_token_couple`, `dulset_cleanup`)는 API에서 부를 수 없어요(`policies.sql`).
 
@@ -55,7 +59,31 @@
 
 ## 정리 작업 (선택)
 
-`dulset_cleanup()`은 30일 지난 이벤트, 7일 지난 옛 스냅샷(최신 1개는 남김), 만료 뒤 30일 지난 토큰을 지워요. Dashboard → Database → Extensions에서 `pg_cron`을 켜고 `policies.sql` 끝의 주석처럼 하루 한 번 걸어 두면 돼요.
+`dulset_cleanup()`은 30일 지난 이벤트, 7일 지난 옛 스냅샷(최신 1개는 남김), 만료 뒤 30일 지난 토큰을 지워요. Dashboard → Database → Extensions에서 `pg_cron`을 켜고 `policies.sql` 끝의 주석처럼 하루 한 번 걸어 두면 돼요. `link_opens`는 건드리지 않아요.
+
+### 연구 중에는 (5쌍 검증, N25·N26)
+
+- `dulset_cleanup`을 **걸지 않아요**(걸어 두었다면 `select cron.unschedule('dulset-cleanup');`). 검증은 옛 스냅샷(`partner_snapshots.published_at` ≈ 아내가 앱을 연 날)과 이벤트(`partner_events.created_at`)를 읽어요(`docs/positioning.md` §7).
+- '링크 연 날'은 이렇게 뽑아요(SQL Editor, 서비스 역할):
+  ```sql
+  select couple_id, count(*) as days_opened, sum(count) as loads
+    from public.link_opens
+   where day between date '2026-11-02' and date '2026-11-29'
+   group by couple_id;
+  ```
+  페이지는 5초마다 다시 읽지만 `count`는 **페이지를 연 횟수**만 세요. 판단은 서로 다른 날 수(`days_opened`)로 해요.
+
+### 연구가 끝나면
+
+`link_opens`는 연구 기간에만 둬요. 끝나는 날:
+
+```sql
+drop table if exists public.link_opens;
+drop function if exists public.record_link_open(text);
+drop function if exists public.link_open_days(text, uuid, date, date);
+```
+
+(검증 계획대로 프로젝트째 지우면 이 단계는 필요 없어요.) 앱은 `record_link_open`이 없어도 깨지지 않아요 — 호출이 실패해도 남편 페이지는 그대로예요(`lib/sync/supabaseTransport.ts` `recordLinkOpen`).
 
 ## 클라이언트와 맞춰야 하는 것
 

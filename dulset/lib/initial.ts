@@ -1,8 +1,9 @@
 import { todayISO } from './dates'
 import { inviteCode, uid } from './id'
+import { addCheckItem, archiveCheckItem, isWeekly, restoreCheckItem } from './logic/checks'
 import { localNowISO } from './logic/notifications'
 import { SCHEMA_VERSION } from './sync/migrations'
-import type { AppState, CheckItem, ISODate, Member, MemberId, PersonalPrefs, Role, Settings } from './types'
+import type { AppState, CheckItem, ISODate, Member, MemberId, PersonalPrefs, Role, Settings, ShareLevel } from './types'
 
 export const DEFAULT_CYCLE_LENGTH = 28
 export const DEFAULT_PERIOD_LENGTH = 5
@@ -125,6 +126,53 @@ export function defaultCheckItems(members: [Member, Member], today = todayISO(),
   return items
 }
 
+/**
+ * Habit answers that change one member's existing rows (N22: the link's two
+ * questions — 담배, 술 — arrive as a 'setup' event, lib/logic/partnerEvents.ts).
+ * Unset = not answered (that row is left alone).
+ */
+export interface HabitPatch {
+  smokes?: boolean
+  drinks?: HabitAnswers['drinks']
+}
+
+/** Labels that are the 'keep not smoking' row — the starter's weekly 금연, and the original daily one. */
+export const SMOKE_CHECK_LABELS: readonly string[] = ['금연', '담배 안 피우기']
+/** Labels that are the 'keep not drinking' row (금주 · 술 쉬기 · the original daily one). */
+export const DRINK_CHECK_LABELS: readonly string[] = ['금주', '술 쉬기', '술 안 마시기']
+
+/**
+ * Apply habit answers to `member`'s rows WITHOUT rebuilding the list (unlike
+ * onboarding's starterItemsFor / setStarterItems, which replace every row and
+ * are only for a first run): a 'yes' adds the weekly check-in the starter list
+ * would have (금연 / 금주, '주 1회 체크인') — restoring an archived one instead
+ * of adding a twin — and a 'no' archives an active one (archived, never
+ * deleted, so its history stays). Daily rows, timers and every other row are
+ * untouched; the cycle owner's rows never change here. Nothing to do → the
+ * same state object.
+ */
+export function applyHabitAnswers(state: AppState, member: MemberId, habits: HabitPatch, today: ISODate): AppState {
+  const m = state.couple.members.find((x) => x.id === member)
+  if (!m || m.tracksCycle) return state
+  let s = state
+  const want = (labels: readonly string[], on: boolean | undefined, label: string) => {
+    if (on === undefined) return
+    const mine = s.checkItems.filter((i) => i.owner === member && labels.includes(i.label))
+    const active = mine.filter((i) => i.active)
+    if (!on) {
+      for (const i of active) s = archiveCheckItem(s, i.id, today)
+      return
+    }
+    if (active.length) return
+    // The most recently archived weekly one comes back with its history.
+    const back = [...mine].reverse().find((i) => isWeekly(i))
+    s = back ? restoreCheckItem(s, back.id) : addCheckItem(s, member, label, 'habit', today, '주 1회 체크인', 'weekly')
+  }
+  want(SMOKE_CHECK_LABELS, habits.smokes, '금연')
+  want(DRINK_CHECK_LABELS, habits.drinks === undefined ? undefined : habits.drinks !== 'rarely', '금주')
+  return s
+}
+
 export interface OnboardingInput {
   me: { name: string; role: Role; birthYear?: number }
   partner: { name: string; role: Role; birthYear?: number }
@@ -203,8 +251,9 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
       lowPressure: false,
       alertStyle: { a: members[0].tracksCycle ? 'explicit' : 'soft', b: members[1].tracksCycle ? 'explicit' : 'soft' },
       ttcStart: input.ttcStart ?? today,
-      // Privacy by default: the partner sees the shared 우리의 주간, not the details.
-      shareCycleDetails: false,
+      // Privacy by default: the partner sees the shared 우리의 주간, not the
+      // details (N23 공유 범위 — the owner may narrow it to 날짜 없음 or widen it).
+      shareLevel: 'week',
       // memories / anniversaryAlerts / showTryCount stay unset (SETTINGS_DEFAULTS),
       // and so does coverOnLink (off until the owner says yes — prefs.setCoverOnLink);
       // so do treatments, leaveDays and intimacy at the root — nothing until the
@@ -219,7 +268,9 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
 export interface OnboardingExtras {
   /** The partner's habits (builds their starter list). */
   habits?: HabitAnswers
-  /** Chosen by the cycle owner: the partner also sees period days and LH / test results. */
+  /** 공유 범위 chosen by the cycle owner (날짜 없음 / 우리의 주간 / 자세히); unset = 우리의 주간. */
+  shareLevel?: ShareLevel
+  /** @deprecated The pre-N23 yes/no: true reads as shareLevel 'details' (only when shareLevel is unset). */
   shareCycleDetails?: boolean
   /** The onboarding person's own (member 'a') 부담 없이 / 잠금화면 숨김 — per person, never couple-wide. */
   myPrefs?: { lowPressure?: boolean; discreet?: boolean }
@@ -227,8 +278,8 @@ export interface OnboardingExtras {
 
 /**
  * Apply the extra onboarding answers on top of a freshly built state:
- * rebuild the starter checklist from the habit answers, set the sharing choice
- * (only the cycle owner's answer counts — otherwise it stays private), and save
+ * rebuild the starter checklist from the habit answers, set the sharing level
+ * (only the cycle owner's answer counts — otherwise it stays 우리의 주간), and save
  * the person's own prefs under settings.personal.a.
  */
 export function applyOnboardingExtras(state: AppState, extras: OnboardingExtras, today: ISODate): AppState {
@@ -237,7 +288,13 @@ export function applyOnboardingExtras(state: AppState, extras: OnboardingExtras,
     s = { ...s, checkItems: defaultCheckItems(s.couple.members, today, extras.habits), checkLog: {} }
   }
   const ownerIsMe = s.couple.members.find((m) => m.tracksCycle)?.id === 'a'
-  const share = ownerIsMe ? extras.shareCycleDetails === true : false
+  const chosen: ShareLevel | undefined =
+    extras.shareLevel === 'none' || extras.shareLevel === 'week' || extras.shareLevel === 'details'
+      ? extras.shareLevel
+      : extras.shareCycleDetails === true
+        ? 'details'
+        : undefined
+  const shareLevel: ShareLevel = ownerIsMe && chosen ? chosen : 'week'
   const mine = extras.myPrefs
   const personal = mine
     ? {
@@ -253,7 +310,7 @@ export function applyOnboardingExtras(state: AppState, extras: OnboardingExtras,
     ...s,
     settings: {
       ...s.settings,
-      shareCycleDetails: share,
+      shareLevel,
       ...(personal ? { personal } : {}),
     },
   }

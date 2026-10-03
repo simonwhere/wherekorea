@@ -1,12 +1,13 @@
 'use client'
 
 // "더 보기" — everything that isn't needed every day, folded under the three
-// home blocks: signals, habit timers, this week's roadmap, the doctor card,
-// a diary prompt, backup/install and the rest-cycle / clinic switches.
+// home blocks: habit timers (in full, with their sources — his 내 준비 line on
+// the week block is the short form), this week's roadmap, the doctor card, a
+// diary prompt and the rest-cycle / clinic switches. 우리 신호 moved out to
+// 우리 한 줄 (Now 3 N21 ③: components/signals/SignalChips).
 
 import type { TabKey } from '@/components/AppShell'
 import ClinicSwitch from '@/components/cycle/ClinicSwitch'
-import SignalsCard from '@/components/signals/SignalsCard'
 import { Card, Toggle, cx, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
@@ -36,7 +37,8 @@ export default function MoreSection({
   const { state, today, me } = useApp()
   const owner = canLogCycle(state, me.id)
   const support = recentlyEnded(state, today) && moment?.kind !== 'after-loss'
-  const prompt = homeDiaryPrompt(state, today)
+  // me.id: a partner without her details reads only what she told (no prompt that moves on an untold day).
+  const prompt = homeDiaryPrompt(state, today, me.id)
   const clinic = isClinicMode(state)
 
   return (
@@ -59,8 +61,6 @@ export default function MoreSection({
         <UpcomingCard onNavigate={onNavigate} />
         <PlanFocusCard onNavigate={onNavigate} />
       </div>
-
-      <SignalsCard showPending={false} />
 
       <HabitTimers />
 

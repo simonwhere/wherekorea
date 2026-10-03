@@ -11,11 +11,11 @@
 // here, and add the new field in the usual five places (lib/types.ts,
 // lib/initial.ts, storage.normalize, settings.sanitizeBackup, lib/demo.ts).
 
-import type { AppState, ISODateTime, SyncMarks } from '../types'
+import { SHARE_LEVELS, type AppState, type ISODateTime, type Settings, type ShareLevel, type SyncMarks } from '../types'
 import { decisionsFromNotifications, ensureRecordIds, isDecisionStub, isRecord, isStamp } from './model'
 
 /** The shape every state is brought to. */
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 export interface Migration {
   from: number
@@ -77,6 +77,36 @@ function v2to3(state: AppState): AppState {
 }
 
 /**
+ * The sharing level a settings object stands for: its `shareLevel` when that
+ * is one (schema 4), else the old yes/no `shareCycleDetails` (schema ≤ 3) —
+ * true → 'details' (자세히), anything else → 'week' (우리의 주간, the old
+ * default meaning of false and of "never asked"). Pure; storage.normalize
+ * and the v3 → v4 step share it, so both read a legacy save the same way.
+ */
+export function shareLevelFromSettings(settings: unknown): ShareLevel {
+  if (!isRecord(settings)) return 'week'
+  const level = settings.shareLevel
+  if ((SHARE_LEVELS as readonly unknown[]).includes(level)) return level as ShareLevel
+  return settings.shareCycleDetails === true ? 'details' : 'week'
+}
+
+/**
+ * v3 → v4 (Now 3 N23): the sharing choice grows a third level, 날짜 없음, so
+ * the boolean `settings.shareCycleDetails` becomes `settings.shareLevel`
+ * ('none' | 'week' | 'details'): false or unset → 'week', true → 'details'.
+ * The old key is dropped. A damaged settings value passes through for
+ * sanitizeBackup to repair.
+ */
+function v3to4(state: AppState): AppState {
+  const settings: unknown = state.settings
+  if (!isRecord(settings)) return state
+  const shareLevel = shareLevelFromSettings(settings)
+  const { shareCycleDetails: _old, ...rest } = settings as Record<string, unknown>
+  if (!('shareCycleDetails' in settings) && settings.shareLevel === shareLevel) return state
+  return { ...state, settings: { ...(rest as unknown as Settings), shareLevel } }
+}
+
+/**
  * The lower-bound stamp legacy records get: the space's createdAt when it is
  * a real stamp (local-offset form), else the first moment of its day, else
  * the epoch of this app — anything a real edit is certainly later than.
@@ -90,6 +120,7 @@ export function legacyStamp(state: Pick<AppState, 'createdAt'>): ISODateTime {
 export const MIGRATIONS: readonly Migration[] = [
   { from: 1, to: 2, up: v1to2 },
   { from: 2, to: 3, up: v2to3 },
+  { from: 3, to: 4, up: v3to4 },
 ]
 
 /**

@@ -16,7 +16,7 @@ import { cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { usePhotoURL } from '@/components/us/usePhotoURL'
 import { formatKo, weekdayKo } from '@/lib/dates'
-import type { PartnerSnapshot } from '@/lib/logic/partnerSnapshot'
+import type { PartnerPage } from '@/lib/logic/partnerSnapshot'
 import { greetingFor } from '@/lib/logic/today'
 import type { ISODate } from '@/lib/types'
 import { Bubble, isHer } from './bits'
@@ -27,7 +27,7 @@ export default function LinkCover({
   today,
   onLine,
 }: {
-  snapshot: PartnerSnapshot
+  snapshot: PartnerPage
   today: ISODate
   /** The line is a signal to answer: scroll to the replies. */
   onLine?: () => void

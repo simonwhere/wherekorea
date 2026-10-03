@@ -12,13 +12,21 @@
 //
 // Storage and the channel are injectable, so tests drive two "tabs" over
 // one fake storage without a browser.
+//
+// The '링크 연 날' counter (lib/sync/linkOpens.ts) lives in the same key:
+// couple id → day → count, nothing else. The stamp an event gets follows the
+// page's `?today=` pin when there is one (demos and screenshots pin both tabs
+// to the same date — lib/store, components/link/LinkPage), so an event is
+// taken in on the date the page shows.
 
-import { addDays } from '../dates'
+import { addDays, isISODate } from '../dates'
 import { localNowISO } from '../logic/notifications'
 import { cleanPartnerEvent, type PartnerEvent } from '../logic/partnerEvents'
 import type { PartnerSnapshot } from '../logic/partnerSnapshot'
+import { stampOn } from '../logic/today'
 import type { ISODateTime } from '../types'
-import { eventId, pageEvents, type ReceivedEvent, type SnapshotEnvelope, type Transport } from './transport'
+import { cleanLinkOpenCounts, countLinkOpen, openDaysBetween, type LinkOpenCounts, type LinkOpenEvent } from './linkOpens'
+import { eventId, pageReceived, type ReceivedEvent, type SnapshotEnvelope, type Transport } from './transport'
 
 export const MOCK_SYNC_KEY = 'dulset:mock-sync:v1'
 export const MOCK_CHANNEL = 'dulset:mock-sync'
@@ -51,9 +59,11 @@ export interface MockStore {
   tokens: Record<string, { coupleId: string; issuedAt: ISODateTime }>
   /** Events per couple, in arrival order, each with the moment this device took it in. */
   events: Record<string, ReceivedEvent[]>
+  /** '링크 연 날': couple → day → how many opens (lib/sync/linkOpens.ts). */
+  opens: LinkOpenCounts
 }
 
-const EMPTY: MockStore = { snapshots: {}, tokens: {}, events: {} }
+const EMPTY: MockStore = { snapshots: {}, tokens: {}, events: {}, opens: {} }
 
 /** Read the store (an unreadable or foreign value counts as empty). */
 export function parseMockStore(raw: string | null): MockStore {
@@ -63,7 +73,7 @@ export function parseMockStore(raw: string | null): MockStore {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ...EMPTY }
     const p = parsed as Partial<MockStore>
     const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, never>) : {})
-    return { snapshots: obj(p.snapshots), tokens: obj(p.tokens), events: obj(p.events) }
+    return { snapshots: obj(p.snapshots), tokens: obj(p.tokens), events: obj(p.events), opens: cleanLinkOpenCounts(p.opens) }
   } catch {
     return { ...EMPTY }
   }
@@ -146,8 +156,19 @@ export function memoryStorage(): StorageLike & { keys(): string[] } {
 export interface MockTransportOptions {
   storage?: StorageLike | null
   channel?: ChannelLike | null
-  /** The stamp a publish gets (stampOn(today) from the caller's point of view; defaults to the clock). */
+  /** The stamp a publish or an event gets (defaults to the clock, on the page's `?today=` date when pinned). */
   now?: () => ISODateTime
+}
+
+/** This device's clock, on the `?today=YYYY-MM-DD` date when the page is pinned (as lib/store reads it). */
+export function pinnedNowISO(search: string | undefined = typeof window !== 'undefined' ? window.location.search : undefined): ISODateTime {
+  try {
+    const v = search ? new URLSearchParams(search).get('today') : null
+    if (v && isISODate(v)) return stampOn(v)
+  } catch {
+    /* no pin */
+  }
+  return localNowISO()
 }
 
 export interface MockTransport extends Transport {
@@ -161,7 +182,7 @@ export interface MockTransport extends Transport {
 export function createMockTransport(opts: MockTransportOptions = {}): MockTransport {
   const storage = opts.storage === undefined ? browserStorage() : opts.storage
   const channel = opts.channel === undefined ? browserChannel() : opts.channel
-  const now = opts.now ?? (() => localNowISO())
+  const now = opts.now ?? (() => pinnedNowISO())
 
   const read = (): MockStore => {
     try {
@@ -188,6 +209,16 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     const t = store.tokens[token]
     if (t && t.coupleId !== coupleId) throw new MockTransportError('foreign-token')
     return t ?? { coupleId, issuedAt: at }
+  }
+
+  /** The couple's events after `since`, cleaned: what the other tab wrote is as untrusted as a server row. */
+  const received = (coupleId: string, since: ISODateTime): ReceivedEvent[] => {
+    const kept: ReceivedEvent[] = []
+    for (const r of read().events[coupleId] ?? []) {
+      const event = r && typeof r === 'object' ? cleanPartnerEvent(r.event) : undefined
+      if (event && typeof r.receivedAt === 'string') kept.push({ receivedAt: r.receivedAt, event })
+    }
+    return pageReceived(kept, since)
   }
 
   return {
@@ -243,13 +274,28 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     },
 
     async pullEvents(coupleId, since) {
-      // What the other tab wrote is as untrusted as a server row: strict shape first.
-      const kept: ReceivedEvent[] = []
-      for (const r of read().events[coupleId] ?? []) {
-        const event = r && typeof r === 'object' ? cleanPartnerEvent(r.event) : undefined
-        if (event && typeof r.receivedAt === 'string') kept.push({ receivedAt: r.receivedAt, event })
+      return received(coupleId, since).map((r) => r.event)
+    },
+
+    async pullReceived(coupleId, since) {
+      return received(coupleId, since)
+    },
+
+    async recordLinkOpen(token, day) {
+      // Never throws: an unknown or revoked token, a bad day or a full storage records nothing.
+      try {
+        const store = read()
+        const t = store.tokens[token]
+        if (!t || !isISODate(day)) return
+        const ev: LinkOpenEvent = { coupleId: t.coupleId, day }
+        write({ ...store, opens: countLinkOpen(store.opens, ev) })
+      } catch {
+        /* the page never breaks over a counter */
       }
-      return pageEvents(kept, since)
+    },
+
+    async linkOpenDays(coupleId, from, to) {
+      return openDaysBetween(read().opens, coupleId, from, to)
     },
 
     watch(coupleId, onChange) {

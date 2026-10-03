@@ -48,7 +48,7 @@ describe('SettingsTab', () => {
     const choices = within(owner).getAllByRole('radio') as HTMLInputElement[]
     expect(choices.length).toBeGreaterThanOrEqual(2)
     // Privacy by default: the demo keeps the details to herself.
-    expect(within(owner).getByRole('radio', { name: /우리의 주간만/ })).toHaveProperty('checked', true)
+    expect(within(owner).getByRole('radio', { name: /우리의 주간 \(기본\)/ })).toHaveProperty('checked', true)
 
     cleanup()
     renderApp(<SettingsTab />, { state: demoState(T0), viewer: 'a', today: T0 })

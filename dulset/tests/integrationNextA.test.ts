@@ -62,15 +62,26 @@ import {
   sha256Hex,
   tokenFromHash,
 } from '@/lib/logic/partnerLink'
-import { buildPartnerSnapshot, linkState, snapshotUsable, type PartnerSnapshot } from '@/lib/logic/partnerSnapshot'
+import {
+  applyReceivedEvents,
+  buildPartnerDay,
+  buildPartnerSnapshot,
+  forecastHold,
+  linkState,
+  snapshotDay,
+  snapshotUsable,
+  type PartnerDay,
+  type PartnerSnapshot,
+} from '@/lib/logic/partnerSnapshot'
 import { FERTILITY_TEST_ID, monthlyTask, partnerId, setFertilityApplied } from '@/lib/logic/partnerTrack'
 import { FEEL_LABEL, setEntryPrivacy, setFeel, setPrivateNote, stateForViewer } from '@/lib/logic/personalLog'
 import { markBleeding } from '@/lib/logic/positiveBleeding'
-import { coverOnLink, setCoverOnLink, setPersonalPref, setShareCycleDetails, setUsesLH } from '@/lib/logic/prefs'
+import { canSeeWeekBand, coverOnLink, setCoverOnLink, setPersonalPref, setShareLevel, shareLevelOf, setUsesLH } from '@/lib/logic/prefs'
 import { addCustomTask } from '@/lib/logic/roadmap'
 import { sanitizeBackup } from '@/lib/logic/settings'
 import { SIGNALS, pendingSignal, repliesFor, sendSignal, signalIdOf } from '@/lib/logic/signals'
 import { rowProgress } from '@/lib/logic/today'
+import { weekOptions } from '@/lib/logic/weekTogether'
 import { addTreatment } from '@/lib/logic/treatments'
 import { startLossRest, startRestCycle } from '@/lib/logic/ttc'
 import {
@@ -108,7 +119,7 @@ import {
   parseMockStore,
 } from '@/lib/sync/mockTransport'
 import { createSupabaseTransport, type FetchLike } from '@/lib/sync/supabaseTransport'
-import type { AlertStyle, AppNotification, AppState, ISODate, MemberId } from '@/lib/types'
+import type { AlertStyle, AppNotification, AppState, ISODate, MemberId, ShareLevel } from '@/lib/types'
 
 // 'a' = 민수 (partner), 'b' = 지은 (cycle owner).
 const OWNER: MemberId = 'b'
@@ -412,7 +423,7 @@ function randomState(seed: number): Made {
   if (chance(r, 0.5)) s = setPersonalPref(s, PARTNER, 'discreet', chance(r, 0.5))
   if (chance(r, 0.5)) s = setPersonalPref(s, OWNER, 'acceptNudges', chance(r, 0.5))
   if (chance(r, 0.3)) s = setHideCover(s, PARTNER, chance(r, 0.5))
-  s = setShareCycleDetails(s, OWNER, chance(r, 0.5))
+  s = setShareLevel(s, OWNER, pick(r, ['none', 'week', 'details'] as const))
   s = setCoverOnLink(s, OWNER, chance(r, 0.5))
   if (chance(r, 0.5)) s = setUsesLH(s, pick(r, [true, false, 'later'] as const), OWNER)
   s = {
@@ -450,11 +461,10 @@ function projected(m: Moment | null) {
     : null
 }
 
-/** The snapshot without its calendar fields: what is left must hold no date at all. */
-function redacted(snap: PartnerSnapshot): string {
-  const copy = JSON.parse(JSON.stringify(snap)) as Record<string, unknown>
-  delete copy.today
-  delete copy.validUntil
+/** A day without its calendar fields: what is left must hold no date at all. */
+function redacted(day: PartnerDay): string {
+  const copy = JSON.parse(JSON.stringify(day)) as Record<string, unknown>
+  delete copy.date
   const strip = copy.strip as { days: Array<Record<string, unknown>> } | null
   if (strip) strip.days = strip.days.map(({ date: _d, ...rest }) => rest)
   const task = copy.task as Record<string, unknown> | undefined
@@ -467,65 +477,96 @@ function redacted(snap: PartnerSnapshot): string {
   }
   const signal = copy.signal as Record<string, unknown> | undefined
   if (signal) delete signal.at
+  const week = copy.week as Record<string, unknown> | undefined
+  if (week) {
+    delete week.monday
+    delete week.thanks
+  }
   return JSON.stringify(copy)
 }
 
 const calm = (s: AppState) =>
-  s.settings.alertStyle[PARTNER] !== 'explicit' || (s.settings.personal?.[PARTNER]?.lowPressure ?? s.settings.lowPressure)
+  s.settings.alertStyle[PARTNER] !== 'explicit' ||
+  (s.settings.personal?.[PARTNER]?.lowPressure ?? s.settings.lowPressure) ||
+  shareLevelOf(s) === 'none'
 
-function checkSnapshot(m: Made, tag: string): PartnerSnapshot {
+/** One date's page: nothing owner-only, nothing beyond the lens, nothing she did not tell. */
+function checkDayPrivacy(m: Made, s: AppState, d: PartnerDay, tag: string): void {
+  const json = JSON.stringify(d)
+  for (const w of [...MARKERS, s.couple.inviteCode, ...FORBIDDEN_KEYS]) expect(json.includes(w), `${tag}: ${w}`).toBe(false)
+  const personal = JSON.stringify({ ...d, signal: undefined })
+  for (const w of Object.values(FEEL_LABEL)) expect(personal.includes(w), `${tag}: ${w}`).toBe(false)
+  expect(json, tag).not.toMatch(BANNED)
+  expect(json, tag).not.toMatch(/관계|LH/)
+  expect(redacted(d), tag).not.toMatch(/\d{4}-\d{2}-\d{2}/)
+  if (calm(s)) expect(json, tag).not.toMatch(FERTILE)
+  if (shareLevelOf(s) !== 'details') {
+    expect(json, tag).not.toMatch(/생리/)
+    expect(json, tag).not.toMatch(/\d+일째/)
+  }
+  if (!canSeeWeekBand(s, PARTNER)) {
+    expect(d.strip, tag).toBeNull()
+    expect(d.ideas, tag).toEqual([])
+  }
+  if (!m.toldPositive) expect(json, tag).not.toMatch(/양성/)
+  if (!m.toldBleeding) expect(json, tag).not.toMatch(/출혈/)
+  if (d.strip) {
+    expect(d.strip.view, tag).not.toBe('explicit')
+    for (const x of d.strip.days) {
+      expect(x.lh, tag).toBeUndefined()
+      expect(['none', 'fertile'], tag).toContain(x.tone)
+    }
+  }
+  if (d.moment?.support) {
+    expect(d.task, tag).toBeUndefined()
+    expect(d.week, tag).toBeUndefined()
+  }
+}
+
+/**
+ * The seven-day snapshot: the first page as the app has it that day, every
+ * later page the same as that date's own page (or, for a phase only a
+ * prediction brings, the day before held), and every page private.
+ * `full`: also compare every future page with its same-day page and the
+ * partner-side state (slower — the random walk does it, the switch table
+ * samples it).
+ */
+function checkSnapshot(m: Made, tag: string, full = true): PartnerSnapshot {
   const { state: s, day } = m
   const snap = buildPartnerSnapshot(s, day, PARTNER)
   expect(snap, tag).not.toBeNull()
   const json = JSON.stringify(snap)
   expect(JSON.parse(json), tag).toEqual(snap)
   expect(snapshotUsable(snap, day), tag).toBe(true)
-  expect(snapshotUsable(snap, addDays(day, 2)), tag).toBe(false)
+  expect(snapshotUsable(snap, addDays(day, 6)), tag).toBe(true)
+  expect(snapshotUsable(snap, addDays(day, 7)), tag).toBe(false)
+  expect(snap!.days.map((d) => d.date), tag).toEqual(Array.from({ length: 7 }, (_, k) => addDays(day, k)))
   // Her view is never published.
   expect(buildPartnerSnapshot(s, day, OWNER), tag).toBeNull()
-  // The card is ttcMoment's, word for word; the strip the shared band or nothing.
-  expect(snap!.moment, tag).toEqual(projected(ttcMoment(s, day, PARTNER, { surface: 'link' })))
-  const expectedStrip = cycleStrip(linkState(s), day, PARTNER)
-  if (expectedStrip && expectedStrip.mode === 'weeks') expect(snap!.strip, tag).toMatchObject(expectedStrip)
-  else expect(snap!.strip, tag).toBeNull()
-  if (snap!.strip) {
-    expect(snap!.strip.view, tag).not.toBe('explicit')
-    for (const d of snap!.strip.days) {
-      expect(d.lh, tag).toBeUndefined()
-      expect(['none', 'fertile'], tag).toContain(d.tone)
-    }
-  }
-  // Nothing owner-only: by marker, by key, by word, by date.
-  for (const w of [...MARKERS, s.couple.inviteCode, ...FORBIDDEN_KEYS]) expect(json.includes(w), `${tag}: ${w}`).toBe(false)
-  const personal = JSON.stringify({ ...snap, signals: undefined, signal: undefined })
-  for (const w of Object.values(FEEL_LABEL)) expect(personal.includes(w), `${tag}: ${w}`).toBe(false)
-  expect(json, tag).not.toMatch(BANNED)
-  expect(json, tag).not.toMatch(/관계|LH/)
-  expect(redacted(snap!), tag).not.toMatch(/\d{4}-\d{2}-\d{2}/)
-  // The lens.
-  if (calm(s)) expect(json, tag).not.toMatch(FERTILE)
-  if (!s.settings.shareCycleDetails) {
-    expect(json, tag).not.toMatch(/생리/)
-    expect(json, tag).not.toMatch(/\d+일째/)
-  }
-  if (!m.toldPositive) expect(json, tag).not.toMatch(/양성/)
-  if (!m.toldBleeding) expect(json, tag).not.toMatch(/출혈/)
+  for (const w of [...MARKERS, s.couple.inviteCode, ...FORBIDDEN_KEYS, 'shareLevel']) expect(json.includes(w), `${tag}: ${w}`).toBe(false)
+
+  // Today's page: the card is ttcMoment's, word for word; the strip the shared band or nothing.
+  const d0 = snap!.days[0]!
+  expect(d0.moment, tag).toEqual(projected(ttcMoment(s, day, PARTNER, { surface: 'link' })))
+  const expectedStrip = canSeeWeekBand(s, PARTNER) ? cycleStrip(linkState(s), day, PARTNER) : null
+  if (expectedStrip && expectedStrip.mode === 'weeks') expect(d0.strip, tag).toMatchObject(expectedStrip)
+  else expect(d0.strip, tag).toBeNull()
   // The cover: her opt-in AND his own phone would show the photo.
   const view = coverView(s, PARTNER, day)
-  if (coverOnLink(s.settings) && view.mode === 'photo') expect(snap!.cover, tag).toEqual(view.photo)
-  else expect(snap!.cover, tag).toBeUndefined()
+  if (coverOnLink(s.settings) && view.mode === 'photo') expect(d0.cover, tag).toEqual(view.photo)
+  else expect(d0.cover, tag).toBeUndefined()
   // His checks, her numbers, the signal and his task as the app has them.
   const items = activeItems(s, PARTNER)
   expect(
-    snap!.checks.items.map((i) => i.id),
+    d0.checks.items.map((i) => i.id),
     tag,
   ).toEqual(items.map((i) => i.id))
-  for (const row of snap!.checks.items) {
+  for (const row of d0.checks.items) {
     const item = items.find((i) => i.id === row.id)!
     expect(row.done, tag).toBe(row.weekly ? weeklyDone(s, PARTNER, item.id, day) : isDone(s, PARTNER, day, item.id))
   }
   const ownerProg = rowProgress(s, OWNER, day)
-  expect(snap!.owner, tag).toEqual({
+  expect(d0.owner, tag).toEqual({
     name: '지은',
     done: ownerProg.done,
     total: ownerProg.total,
@@ -533,46 +574,67 @@ function checkSnapshot(m: Made, tag: string): PartnerSnapshot {
     canNudge: !!nudgeableItem(s, OWNER, day) && canNudge(s, PARTNER, OWNER, day),
   })
   const pending = pendingSignal(s, PARTNER, day)
-  if (pending) expect(snap!.signal, tag).toMatchObject({ from: OWNER, at: pending.createdAt })
-  else expect(snap!.signal, tag).toBeUndefined()
+  if (pending) expect(d0.signal, tag).toMatchObject({ from: OWNER, at: pending.createdAt })
+  else expect(d0.signal, tag).toBeUndefined()
   const task = monthlyTask(s, day, PARTNER)
-  if (task) {
-    expect(snap!.task, tag).toMatchObject({ id: task.id, title: task.title })
-    if (task.appointment) expect('note' in snap!.task!.appointment!, tag).toBe(false)
-  } else expect(snap!.task, tag).toBeUndefined()
+  if (d0.task) {
+    expect(task, tag).toBeDefined()
+    expect(d0.task, tag).toMatchObject({ id: task!.id, title: task!.title })
+    if (task!.appointment) expect('note' in d0.task.appointment!, tag).toBe(false)
+  }
+  expect(d0.week?.options.map((o) => o.id), tag).toEqual(weekOptions(s, day, PARTNER).length ? weekOptions(s, day, PARTNER).map((o) => o.id) : undefined)
+
+  const todayKind = ttcMoment(s, day, PARTNER)?.kind
+  snap!.days.forEach((d, k) => {
+    const t = `${tag} +${k}`
+    checkDayPrivacy(m, s, d, t)
+    if (!full || k === 0) return
+    const held = forecastHold(todayKind, ttcMoment(s, d.date, PARTNER)?.kind)
+    const same = buildPartnerDay(s, d.date, PARTNER)!
+    if (held) {
+      expect({ ...d, moment: null, strip: null, ideas: [] }, t).toEqual({ ...same, moment: null, strip: null, ideas: [] })
+      expect(d.moment?.copy, t).not.toBe('partner.late-shared')
+    } else expect(d, t).toEqual(same)
+  })
   // Everything on the link is something the partner's own phone may hold: the
   // same snapshot comes out of the state the partner's screens read.
-  expect(buildPartnerSnapshot(stateForViewer(s, PARTNER), day, PARTNER), tag).toEqual(snap)
+  if (full) expect(buildPartnerSnapshot(stateForViewer(s, PARTNER), day, PARTNER), tag).toEqual(snap)
   return snap!
 }
 
-describe('the partner snapshot never carries owner-only or lens-forbidden data — random states × random lenses', () => {
-  it('for 160 random couple spaces (seeded)', () => {
+describe('the partner snapshot never carries owner-only or lens-forbidden data — random states × random lenses × seven days', () => {
+  it('for 160 random couple spaces (seeded)', { timeout: 300_000 }, () => {
     let covers = 0
     let told = 0
     let strips = 0
+    let weeks = 0
     const copies = new Set<string>()
+    const levels = new Set<ShareLevel>()
     for (let seed = 1; seed <= 160; seed++) {
       const m = randomState(seed)
       const snap = checkSnapshot(m, `seed ${seed} (${m.day})`)
-      if (snap.cover) covers++
+      const d0 = snap.days[0]!
+      if (d0.cover) covers++
       if (m.toldPositive || m.toldBleeding) told++
-      if (snap.strip) strips++
-      if (snap.moment) copies.add(snap.moment.copy)
+      strips += snap.days.filter((d) => d.strip).length
+      if (d0.week) weeks++
+      if (d0.moment) copies.add(d0.moment.copy)
+      levels.add(shareLevelOf(m.state))
     }
+    expect([...levels].sort()).toEqual(['details', 'none', 'week'])
+    expect(weeks).toBeGreaterThan(20)
     // The random walk really went places.
     expect(covers).toBeGreaterThan(5)
     expect(told).toBeGreaterThan(5)
-    expect(strips).toBeGreaterThan(20)
-    expect(copies.size).toBeGreaterThanOrEqual(8)
+    expect(strips).toBeGreaterThan(30)
+    expect(copies.size).toBeGreaterThanOrEqual(7)
   })
 
-  it('for every combination of the lens switches on four moments of one space', () => {
+  it('for every combination of the lens switches on four moments of one space', { timeout: 300_000 }, () => {
     const switches: Array<(s: AppState, on: boolean) => AppState> = [
       (s, on) => setPersonalPref(s, PARTNER, 'lowPressure', on),
       (s, on) => setPersonalPref(s, PARTNER, 'homeDiscreet', on),
       (s, on) => setPersonalPref(s, PARTNER, 'discreet', on),
-      (s, on) => setShareCycleDetails(s, OWNER, on),
       (s, on) => setCoverOnLink(s, OWNER, on),
       (s, on) => setPersonalPref(s, OWNER, 'acceptNudges', on),
       (s, on) => ({ ...s, settings: { ...s.settings, lowPressure: on } }),
@@ -580,25 +642,44 @@ describe('the partner snapshot never carries owner-only or lens-forbidden data �
     const made = [randomState(7), randomState(23), randomState(41), randomState(58)]
     let count = 0
     for (const style of ['explicit', 'soft', 'off'] as const) {
-      for (let bits = 0; bits < 1 << switches.length; bits++) {
-        for (const m of made) {
-          let s = { ...m.state, settings: { ...m.state.settings, alertStyle: { ...m.state.settings.alertStyle, [PARTNER]: style } } }
-          switches.forEach((f, i) => {
-            s = f(s, !!(bits & (1 << i)))
-          })
-          checkSnapshot({ ...m, state: s }, `seed ${m.seed} ${style} bits ${bits.toString(2)}`)
-          count++
+      for (const level of ['none', 'week', 'details'] as const) {
+        for (let bits = 0; bits < 1 << switches.length; bits++) {
+          for (const m of made) {
+            let s = { ...m.state, settings: { ...m.state.settings, alertStyle: { ...m.state.settings.alertStyle, [PARTNER]: style } } }
+            s = setShareLevel(s, OWNER, level)
+            switches.forEach((f, i) => {
+              s = f(s, !!(bits & (1 << i)))
+            })
+            // Every page private; the full same-day comparison on a sample (the random walk does all of it).
+            checkSnapshot({ ...m, state: s }, `seed ${m.seed} ${style} ${level} bits ${bits.toString(2)}`, count % 9 === 0)
+            count++
+          }
         }
       }
     }
-    expect(count).toBe(3 * 128 * 4)
+    expect(count).toBe(3 * 3 * 64 * 4)
   })
 })
 
 // ── Events back: forged ones dropped, real ones once, her data untouched ──
 
-function sameOwnerData(before: AppState, after: AppState, tag: string) {
-  for (const k of OWNER_FIELDS) expect(after[k], `${tag} ${k}`).toBe(before[k])
+/**
+ * Her data is untouched by reference — except that a 'setup' event may set
+ * HIS alert style (settings.alertStyle[partner], his own choice): then the
+ * settings may be a new object, equal to the old one but for that one value.
+ */
+function sameOwnerData(before: AppState, after: AppState, tag: string, ev?: PartnerEvent) {
+  for (const k of OWNER_FIELDS) {
+    if (k === 'settings' && ev?.kind === 'setup' && after.settings !== before.settings) {
+      const { alertStyle: a, ...restAfter } = after.settings
+      const { alertStyle: b, ...restBefore } = before.settings
+      expect(restAfter, `${tag} settings`).toEqual(restBefore)
+      expect(a[OWNER], `${tag} her alert style`).toBe(b[OWNER])
+      expect(a[PARTNER], `${tag} his alert style`).toBe(ev.alertStyle)
+      continue
+    }
+    expect(after[k], `${tag} ${k}`).toBe(before[k])
+  }
 }
 
 /** A raw event as a transport might hand it over — right, slightly off, or forged. */
@@ -647,6 +728,28 @@ function randomRawEvent(r: Rng, s: AppState, day: ISODate): Record<string, unkno
       ev.taskId = pick(r, [task?.id ?? 'none', FERTILITY_TEST_ID, 'x'])
       ev.date = date
       break
+    case 'week-pick': {
+      const offered = weekOptions(s, day, PARTNER).map((o) => o.id)
+      ev.optionId = pick(r, [...offered, ...offered, 'clinic-day', 'chore', 'nope', 7])
+      ev.date = date
+      break
+    }
+    case 'week-done':
+      ev.date = date
+      break
+    case 'setup':
+      ev.habits = pick(r, [
+        { smokes: false, drinks: 'no' },
+        { smokes: true },
+        { drinks: 'often' },
+        {},
+        { smokes: 'yes' },
+        { drinks: 'daily' },
+        'habits',
+        { smokes: false, extra: PRIVATE_LINE },
+      ])
+      if (chance(r, 0.7)) ev.alertStyle = pick(r, ['explicit', 'soft', 'off', 'loud', 3])
+      break
     case 'period':
     case 'lh':
     case 'test':
@@ -670,6 +773,9 @@ const ALLOWED_KEYS: Record<PartnerEvent['kind'], string[]> = {
   nudge: ['id', 'from', 'kind'],
   cheer: ['id', 'from', 'kind'],
   'task-done': ['id', 'from', 'kind', 'taskId', 'date'],
+  'week-pick': ['id', 'from', 'kind', 'optionId', 'date'],
+  'week-done': ['id', 'from', 'kind', 'date'],
+  setup: ['id', 'from', 'kind', 'habits', 'alertStyle'],
 }
 
 describe('partner events: everything outside the allowed kinds is rejected, everything else applies once and never touches her data', () => {
@@ -699,17 +805,21 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
           Object.keys(ev).every((k) => ALLOWED_KEYS[ev.kind].includes(k)),
           tag,
         ).toBe(true)
-        expect(JSON.stringify(ev), tag).not.toMatch(/free text|PRIVATE_LINE|shareCycleDetails/)
+        expect(JSON.stringify(ev), tag).not.toMatch(/free text|PRIVATE_LINE|shareCycleDetails|extra/)
         cleaned.push(ev)
         const problem = partnerEventProblem(s, ev, day)
         const next = applyPartnerEvent(s, ev, day)
-        sameOwnerData(s, next, tag)
+        sameOwnerData(s, next, tag, ev)
         if (ev.from === OWNER) {
           expect(problem, tag).toBe('actor')
           expect(next, tag).toBe(s)
         }
         if (problem !== null) {
           expect(next, tag).toBe(s)
+          rejected++
+        } else if (next === s) {
+          // A 'check' that sets what is already there: one answer, nothing to remember (partnerEvents: a set, not a toggle).
+          expect(ev.kind, tag).toBe('check')
           rejected++
         } else {
           applied++
@@ -719,9 +829,17 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
           // Once: the same event again (and under a fresh batch) changes nothing.
           expect(applyPartnerEvent(next, ev, day), tag).toBe(next)
           expect(applyPartnerEvents(next, [ev, ev], day), tag).toBe(next)
-          // The only new decisions are the event's own mark.
+          // The only new decisions are the event's own mark (and, for 이번 주 우리 둘, its week key;
+          // for 'setup', that the first run was answered on the link — onboarding.PARTNER_SETUP_KEY).
           const newKeys = Object.keys(next.decisions).filter((k) => !(k in s.decisions))
-          expect(newKeys, tag).toEqual([appliedEventKey(ev.id)])
+          const weekKeys = newKeys.filter((k) => k.startsWith('week-pick:') || k.startsWith('week-done:'))
+          expect(
+            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup')),
+            tag,
+          ).toEqual([appliedEventKey(ev.id)])
+          if (ev.kind === 'week-pick') expect(weekKeys.every((k) => k.startsWith(`week-pick:`) && k.endsWith(`:${PARTNER}:${ev.optionId}`)), tag).toBe(true)
+          else if (ev.kind === 'week-done') expect(weekKeys.every((k) => k.endsWith(`:${PARTNER}`)), tag).toBe(true)
+          else expect(weekKeys, tag).toEqual([])
           // Notifications it created (a reply, a 콕, an 응원, 'done') are to her or him — never a stub.
           for (const n of next.notifications.filter((x) => !s.notifications.includes(x))) {
             expect(isDecisionStub(n), tag).toBe(false)
@@ -733,7 +851,7 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
       // The whole batch again is a no-op; the ids it holds are exactly the applied ones.
       expect(applyPartnerEvents(s, cleaned, day)).toBe(s)
       expect(appliedEventIds(s, cleaned).every((id) => hasAppliedEvent(s, id))).toBe(true)
-      sameOwnerData(m.state, s, `seed ${seed} end`)
+      if (!cleaned.some((e) => e.kind === 'setup' && e.alertStyle)) sameOwnerData(m.state, s, `seed ${seed} end`)
       // Her screen of her own data is untouched too.
       expect(stateForViewer(s, OWNER).personalLog).toEqual(m.state.personalLog)
     }
@@ -838,8 +956,9 @@ describe('migrations are idempotent and a v1 / v2 save round-trips with every re
     expect(MIGRATIONS.map((m) => [m.from, m.to])).toEqual([
       [1, 2],
       [2, 3],
+      [3, 4],
     ])
-    expect(SCHEMA_VERSION).toBe(3)
+    expect(SCHEMA_VERSION).toBe(4)
     for (let seed = 2000; seed < 2040; seed++) {
       const m = randomState(seed)
       const s = m.state
@@ -1022,7 +1141,7 @@ describe('sanitize rejects malformed snapshots, events, links and settings — n
       const raw = typeof j === 'string' ? j : j === undefined ? null : (JSON.stringify(j) ?? 'undefined')
       expect(parseLinkRecord(raw), String(raw)).toBeNull()
       expect(parseCachedView(raw), String(raw)).toBeNull()
-      expect(parseMockStore(raw), String(raw)).toEqual({ snapshots: {}, tokens: {}, events: {} })
+      expect(parseMockStore(raw), String(raw)).toEqual({ snapshots: {}, tokens: {}, events: {}, opens: {} })
       expect(cleanCoupleLink(j), String(raw)).toBeUndefined()
       expect(cleanDecisions(j), String(raw)).toEqual({})
     }

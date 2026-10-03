@@ -192,3 +192,56 @@ export function pendingSignal(state: AppState, me: MemberId, today: ISODate): Ap
   )
   return replied ? undefined : received
 }
+
+// ── A reply to my signal, on my home (N21 ③) ────────────────
+
+export interface ReceivedReply {
+  reply: Signal
+  from: MemberId
+  /** When it was sent (local ISO time). */
+  at: string
+  /** The viewer's own signal it answers (the last one sent before it), when known. */
+  answered?: Signal
+}
+
+/**
+ * How long a reply `me` has not opened yet (its 🔔 unread) stays on the home
+ * after the reply window: a reply he sent from the link on Monday is applied
+ * on her phone only when she opens it — Thursday, say — stamped Monday (N20,
+ * partnerSnapshot.applyReceivedEvents). Without this it would reach only the
+ * 🔔. The same span as the event pull window (useLinkSync PULL_WINDOW_DAYS).
+ */
+export const REPLY_UNSEEN_DAYS = 7
+
+/**
+ * The latest reply `me` received to a signal of theirs within the reply
+ * window (SIGNAL_REPLY_DAYS: today and the two days before) — or, while its
+ * 🔔 is still unread, within REPLY_UNSEEN_DAYS — so the answer shows on the
+ * home ('우리 한 줄'), not only as a 🔔. Gone once `me` sends a new signal
+ * after it (a new question waits for its own answer), or once the window
+ * has passed and it was read. Only what the other person SENT: nothing is
+ * inferred (docs/positioning.md §4, 남편 루프의 규칙 1).
+ */
+export function receivedReply(state: Pick<AppState, 'notifications'>, me: MemberId, today: ISODate): ReceivedReply | undefined {
+  const from = addDays(today, -SIGNAL_REPLY_DAYS)
+  const unseenFrom = addDays(today, -REPLY_UNSEEN_DAYS)
+  const shown = (n: AppNotification) => {
+    const d = n.createdAt.slice(0, 10)
+    return d <= today && (d >= from || (!n.read && d >= unseenFrom))
+  }
+  const toneOf = (n: AppNotification) => signalById(signalIdOf(n) ?? '')?.tone
+  const latest = state.notifications
+    .filter((n) => isSignal(n) && n.to === me && typeof n.createdAt === 'string' && shown(n) && toneOf(n) === 'reply')
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0]
+  if (!latest) return undefined
+  const mine = state.notifications
+    .filter((n) => isSignal(n) && n.from === me && typeof n.createdAt === 'string' && toneOf(n) !== 'reply')
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  // A newer question of mine: this answer belongs to the previous one.
+  if (mine.some((n) => n.createdAt > latest.createdAt)) return undefined
+  const reply = signalById(signalIdOf(latest) ?? '')
+  if (!reply || !latest.from) return undefined
+  const asked = mine.find((n) => n.createdAt <= latest.createdAt)
+  const answered = asked ? signalById(signalIdOf(asked) ?? '') : undefined
+  return { reply, from: latest.from, at: latest.createdAt, ...(answered ? { answered } : {}) }
+}

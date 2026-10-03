@@ -50,7 +50,18 @@ import {
   validateTtcStart,
 } from '@/lib/logic/settings'
 import { FERTILITY_CLAIM_ID, chainKey, handOverCycle, setFertilityClaimed, setShareCycleDetails as viaPartnerTrack } from '@/lib/logic/partnerTrack'
-import { canSeeCycleDetails, setShareCycleDetails } from '@/lib/logic/prefs'
+import {
+  DEFAULT_SHARE_LEVEL,
+  canSeeCycleDetails,
+  canSeeWeekBand,
+  isShareLevel,
+  setShareCycleDetails,
+  setShareLevel,
+  shareLevelOf,
+  withShareLevelAtMost,
+} from '@/lib/logic/prefs'
+import { setShareLevel as viaSettings } from '@/lib/logic/settings'
+import { SHARE_LEVELS } from '@/lib/types'
 import { CUSTOM_TITLE_MAX } from '@/lib/logic/roadmap'
 import { setCover, setHideCover } from '@/lib/logic/cover'
 import { normalize } from '@/lib/storage'
@@ -141,22 +152,34 @@ describe('setCycleOwner', () => {
   })
 
   it('makes sharing private again for a new owner (they haven’t agreed to anything)', () => {
-    const shared = setShareCycleDetails(fresh(), 'b', true)
+    const shared = setShareLevel(fresh(), 'b', 'details')
     expect(canSeeCycleDetails(shared, 'a')).toBe(true)
     const moved = setCycleOwner(shared, 'a')
-    expect(moved.settings.shareCycleDetails).toBe(false)
+    expect(moved.settings.shareLevel).toBe('week')
     expect(canSeeCycleDetails(moved, 'b')).toBe(false)
+    expect(canSeeWeekBand(moved, 'b')).toBe(true)
     // Same owner again: her choice stands.
-    expect(setCycleOwner(shared, 'b').settings.shareCycleDetails).toBe(true)
+    expect(setCycleOwner(shared, 'b').settings.shareLevel).toBe('details')
     // Repairing a state with two owners is not a confirmed choice either.
     const both = {
       ...shared,
       couple: { ...shared.couple, members: shared.couple.members.map((m) => ({ ...m, tracksCycle: true })) as AppState['couple']['members'] },
     }
-    expect(setCycleOwner(both, 'b').settings.shareCycleDetails).toBe(false)
+    expect(setCycleOwner(both, 'b').settings.shareLevel).toBe('week')
     // handOverCycle (설정 › 두 사람) goes through the same rule.
-    expect(handOverCycle(shared, 'a', 'b').settings.shareCycleDetails).toBe(false)
+    expect(handOverCycle(shared, 'a', 'b').settings.shareLevel).toBe('week')
     expect(handOverCycle(shared, 'b', 'b')).toBe(shared)
+  })
+
+  it('never widens 날짜 없음 when the owner changes (nothing automatic widens sharing)', () => {
+    const none = setShareLevel(fresh(), 'b', 'none')
+    const moved = setCycleOwner(none, 'a')
+    expect(moved.settings.shareLevel).toBe('none')
+    expect(canSeeWeekBand(moved, 'b')).toBe(false)
+    expect(canSeeWeekBand(moved, 'a')).toBe(true)
+    // 우리의 주간 stays as it is (the same settings object).
+    const week = fresh()
+    expect(setCycleOwner(week, 'a').settings).toBe(week.settings)
   })
 })
 
@@ -624,34 +647,137 @@ describe('sharing & per-person prefs survive a backup', () => {
       },
       TODAY,
     )
-    s = setShareCycleDetails(s, 'b', true)
+    s = setShareLevel(s, 'b', 'details')
     s = setFertilityClaimed(s, true, TODAY, 'a')
     const back = parseState(JSON.stringify(s))!
     expect(back.checkItems.filter((i) => i.cadence === 'weekly').map((i) => i.label)).toEqual(['금연', '금주', '사우나·뜨거운 탕 쉬기'])
     // The claim is per person (N14): 민수's own key.
     expect(back.planDone[chainKey(FERTILITY_CLAIM_ID, 'a')]).toEqual({ at: TODAY, by: 'a' })
-    expect(back.settings.shareCycleDetails).toBe(true)
+    expect(back.settings.shareLevel).toBe('details')
     expect(back.settings.personal).toEqual({ a: { lowPressure: true } })
   })
 
-  it('never lets the partner widen what they see', () => {
+  it('never lets the partner widen (or narrow) what they see', () => {
     const s = fresh()
+    for (const level of SHARE_LEVELS) expect(setShareLevel(s, 'a', level)).toBe(s)
     expect(setShareCycleDetails(s, 'a', true)).toBe(s)
-    expect(setShareCycleDetails(s, 'a', true).settings.shareCycleDetails).toBe(false)
-    // The old import path still works.
+    expect(shareLevelOf(setShareCycleDetails(s, 'a', true))).toBe('week')
+    // The old import paths still work, and settings re-exports the new setter.
     expect(viaPartnerTrack).toBe(setShareCycleDetails)
+    expect(viaSettings).toBe(setShareLevel)
   })
 
-  it('keeps data from before the setting existed private (normalize, like sanitizeBackup)', () => {
+  it('round-trips each level through a reload and a backup', () => {
+    for (const level of SHARE_LEVELS) {
+      const s = setShareLevel(fresh(), 'b', level)
+      expect(shareLevelOf(s)).toBe(level)
+      expect(parseState(JSON.stringify(s))!.settings.shareLevel).toBe(level)
+      expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.shareLevel).toBe(level)
+      expect(normalize(JSON.parse(JSON.stringify(s))).settings.shareLevel).toBe(level)
+      // The state the app wrote comes back byte for byte.
+      expect(JSON.stringify(parseState(JSON.stringify(s)))).toBe(JSON.stringify(s))
+    }
+  })
+
+  it('an unknown or missing level reads as 우리의 주간 (the privacy default), never wider', () => {
     const s = fresh()
-    const { shareCycleDetails: _dropped, ...older } = setShareCycleDetails(s, 'b', true).settings
-    const legacy = { ...s, settings: older } as AppState
-    expect(normalize(legacy).settings.shareCycleDetails).toBe(false)
-    expect(sanitizeBackup(JSON.parse(JSON.stringify(legacy)))!.settings.shareCycleDetails).toBe(false)
-    expect(parseState(JSON.stringify(legacy))!.settings.shareCycleDetails).toBe(false)
-    expect(canSeeCycleDetails(parseState(JSON.stringify(legacy))!, 'a')).toBe(false)
-    // A stored choice is kept.
-    expect(parseState(JSON.stringify(setShareCycleDetails(s, 'b', true)))!.settings.shareCycleDetails).toBe(true)
+    expect(s.settings.shareLevel).toBe('week')
+    expect(DEFAULT_SHARE_LEVEL).toBe('week')
+    for (const bad of [undefined, 'all', true, 1, null, 'DETAILS']) {
+      const odd = { ...s, settings: { ...s.settings, shareLevel: bad as never } }
+      expect(shareLevelOf(odd)).toBe('week')
+      expect(isShareLevel(bad)).toBe(false)
+      expect(parseState(JSON.stringify(odd))!.settings.shareLevel).toBe('week')
+      expect(sanitizeBackup(JSON.parse(JSON.stringify(odd)))!.settings.shareLevel).toBe('week')
+      expect(canSeeCycleDetails(odd, 'a')).toBe(false)
+      expect(canSeeWeekBand(odd, 'a')).toBe(true)
+    }
+  })
+
+  it('reads the three levels for both viewers: the owner always sees everything', () => {
+    const at = (level: 'none' | 'week' | 'details') => setShareLevel(fresh(), 'b', level)
+    expect([canSeeWeekBand(at('none'), 'a'), canSeeCycleDetails(at('none'), 'a')]).toEqual([false, false])
+    expect([canSeeWeekBand(at('week'), 'a'), canSeeCycleDetails(at('week'), 'a')]).toEqual([true, false])
+    expect([canSeeWeekBand(at('details'), 'a'), canSeeCycleDetails(at('details'), 'a')]).toEqual([true, true])
+    for (const level of SHARE_LEVELS) {
+      expect(canSeeWeekBand(at(level), 'b')).toBe(true)
+      expect(canSeeCycleDetails(at(level), 'b')).toBe(true)
+    }
+  })
+
+  it('setShareLevel: same level → same object; a non-level is ignored', () => {
+    const s = setShareLevel(fresh(), 'b', 'none')
+    expect(setShareLevel(s, 'b', 'none')).toBe(s)
+    expect(setShareLevel(s, 'b', 'everything' as never)).toBe(s)
+    expect(setShareLevel(s, 'b', 'details').settings.shareLevel).toBe('details')
+  })
+
+  it('the old yes/no setter: true → 자세히; false narrows 자세히 to 우리의 주간 and never widens 날짜 없음', () => {
+    const s = fresh()
+    expect(setShareCycleDetails(s, 'b', true).settings.shareLevel).toBe('details')
+    expect(setShareCycleDetails(setShareLevel(s, 'b', 'details'), 'b', false).settings.shareLevel).toBe('week')
+    const none = setShareLevel(s, 'b', 'none')
+    expect(setShareCycleDetails(none, 'b', false)).toBe(none)
+    expect(setShareCycleDetails(s, 'b', false)).toBe(s)
+  })
+
+  it('withShareLevelAtMost narrows, never widens, and keeps the object when nothing changes', () => {
+    const details = setShareLevel(fresh(), 'b', 'details')
+    expect(withShareLevelAtMost(details, 'week').settings.shareLevel).toBe('week')
+    expect(withShareLevelAtMost(details, 'none').settings.shareLevel).toBe('none')
+    expect(withShareLevelAtMost(details, 'details')).toBe(details)
+    const none = setShareLevel(fresh(), 'b', 'none')
+    expect(withShareLevelAtMost(none, 'week')).toBe(none)
+    expect(withShareLevelAtMost(none, 'details')).toBe(none)
+  })
+
+  it('a pre-N23 save (schema 3, the yes/no) loads: false or never asked → 우리의 주간, true → 자세히', () => {
+    const s = fresh()
+    const { shareLevel: _l, ...rest } = s.settings
+    const v3 = (settings: object) => ({ ...s, schemaVersion: 3, settings: { ...rest, ...settings } }) as unknown as AppState
+    const cases: Array<[object, string]> = [
+      [{ shareCycleDetails: false }, 'week'],
+      [{ shareCycleDetails: true }, 'details'],
+      [{}, 'week'],
+      [{ shareCycleDetails: 'yes' }, 'week'],
+    ]
+    for (const [legacy, level] of cases) {
+      const raw = JSON.stringify(v3(legacy))
+      const back = parseState(raw)!
+      expect(back.settings.shareLevel, raw).toBe(level)
+      expect('shareCycleDetails' in back.settings).toBe(false)
+      expect(back.schemaVersion).toBe(4)
+      // A backup file read without normalize (sanitizeBackup migrates it) agrees.
+      const viaBackup = sanitizeBackup(JSON.parse(raw))!
+      expect(viaBackup.settings.shareLevel).toBe(level)
+      expect('shareCycleDetails' in viaBackup.settings).toBe(false)
+      // normalize alone already reads the old key the same way.
+      expect(normalize(JSON.parse(raw)).settings.shareLevel).toBe(level)
+    }
+    expect(canSeeCycleDetails(parseState(JSON.stringify(v3({ shareCycleDetails: true })))!, 'a')).toBe(true)
+    expect(canSeeCycleDetails(parseState(JSON.stringify(v3({ shareCycleDetails: false })))!, 'a')).toBe(false)
+  })
+
+  it('a current save with a stray old key beside a level keeps the level and drops the key', () => {
+    const s = setShareLevel(fresh(), 'b', 'none')
+    const odd = { ...s, settings: { ...s.settings, shareCycleDetails: true } }
+    const back = parseState(JSON.stringify(odd))!
+    expect(back.settings.shareLevel).toBe('none')
+    expect('shareCycleDetails' in back.settings).toBe(false)
+    expect(sanitizeBackup(JSON.parse(JSON.stringify(odd)))!.settings.shareLevel).toBe('none')
+  })
+
+  it('onboarding: only the cycle owner’s choice counts; the old yes/no still reads', () => {
+    // 'b' tracks the cycle in fresh(): the onboarding person ('a') can't choose for her.
+    expect(applyOnboardingExtras(fresh(), { shareLevel: 'details' }, TODAY).settings.shareLevel).toBe('week')
+    expect(applyOnboardingExtras(fresh(), { shareLevel: 'none' }, TODAY).settings.shareLevel).toBe('week')
+    const mine = { ...fresh(), couple: { ...fresh().couple, members: fresh().couple.members.map((m) => ({ ...m, tracksCycle: m.id === 'a' })) as AppState['couple']['members'] } }
+    expect(applyOnboardingExtras(mine, { shareLevel: 'none' }, TODAY).settings.shareLevel).toBe('none')
+    expect(applyOnboardingExtras(mine, { shareLevel: 'details' }, TODAY).settings.shareLevel).toBe('details')
+    expect(applyOnboardingExtras(mine, {}, TODAY).settings.shareLevel).toBe('week')
+    expect(applyOnboardingExtras(mine, { shareCycleDetails: true }, TODAY).settings.shareLevel).toBe('details')
+    expect(applyOnboardingExtras(mine, { shareLevel: 'none', shareCycleDetails: true }, TODAY).settings.shareLevel).toBe('none')
+    expect('shareCycleDetails' in applyOnboardingExtras(mine, { shareCycleDetails: true }, TODAY).settings).toBe(false)
   })
 })
 

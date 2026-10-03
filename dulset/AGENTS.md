@@ -75,7 +75,7 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - 터치 영역은 44px 이상이에요. 아이콘만 있는 버튼에는 `aria-label`을 붙여요.
 - **import 순환 주의**: `lib/logic/pregnancyView.ts` → `notifications.ts`로 이어지고, `lib/content/roadmap.ts`는 모듈 최상위에서 `prenatalKey` 같은 `const`를 호출해요. 그래서 `notifications.ts`, `appointments.ts`, `pregnancyView.ts`, `babyView.ts`에서 `content/roadmap`이나 `logic/plan`을 import하지 마세요. 로드맵이 필요한 알림은 `planNotices.ts`에 둬요. `lib/logic/settings.ts`는 다른 로직 파일을 많이 불러오니 `notifications.ts`, `anniversary.ts`, `cover.ts`, `pregnancy.ts`, `ttc.ts`, `prefs.ts`, `cycle.ts`, `positiveBleeding.ts`, `intimacy.ts`, `treatments.ts`, `logs.ts`에서 `settings.ts`를 import하지 마세요. `tests/integrationNextB.test.ts`가 `lib/logic` 안의 값 import 순환이 0개인지 검사해요.
 - 코드 서식은 `.prettierrc`(세미콜론 없음 · 작은따옴표 · 끝 쉼표 · 140칸)를 따라요. 설정 없이 `prettier --write`를 돌리면 파일 전체가 큰따옴표·세미콜론·80칸으로 바뀌니 하지 마세요.
-- 서버 호출, 분석·광고 SDK, 외부 폰트를 추가하지 않아요. 건강 데이터는 기기 밖으로 나가지 않아요(프로토타입 원칙).
+- 서버 호출은 두 가지만 해요: 남편 링크 전송(`lib/sync/transport.ts` — 아내 폰이 렌즈를 거쳐 만든 스냅숏과 남편의 이벤트)과 연구용 '링크 연 날' 카운터(커플 id·날짜·횟수만, 아내 화면에는 어떤 형태로도 보이지 않아요). 원본 건강 기록(생리·LH·임테기 기록, 컨디션·나만 보기·관계일)은 어느 쪽으로도 보내지 않아요. 분석·광고 SDK와 외부 폰트는 추가하지 않아요.
 
 ## 제품·문구 규칙 (꼭 지켜요)
 
@@ -83,7 +83,10 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - **금지어**: 숙제, 실패, 노력, "오늘 꼭", "관계를 가져야". 가임기는 "둘만의 시간 / 우리의 주간"으로 표현해요.
 - **예측은 항상 '예상'이에요.** 피임이나 진단 용도라고 쓰지 않아요. "정확한 배란일", "임신 성공률을 높여요" 같은 표현도 금지예요(의료기기 경계).
 - 각자의 **알림 방식**(`settings.alertStyle[viewer]` = explicit / soft / off)과 **부담 줄이기 모드**(`lowPressureFor(settings, viewer)`)를 지켜요. soft·off인 사람에게는 가임기·배란·LH 같은 단어가 보이면 안 돼요. 예외: 주기 주인의 달력(`주기` 탭)과 '+ 기록' 시트는 자기 기록 도구라서 알림을 꺼도 그대로 보여요. 홈 카드·띠·알림은 알림 방식을 따라요.
-- **공유 범위**: 주기 기록(생리·LH·임테기)은 주기 주인만 해요(`canLogCycle`). 상대는 주인이 동의했을 때만(`settings.shareCycleDetails`, 기본 꺼짐) 자세한 기록을 봐요(`canSeeCycleDetails`). 동의가 없으면 '우리의 주간'만 보여요. 화면을 새로 만들 때 `lib/logic/calendarView.ts`의 `cycleLens(state, viewer)`로 보이는 범위를 정해요.
+- **공유 범위**: 주기 기록(생리·LH·임테기)은 주기 주인만 해요(`canLogCycle`). 상대가 무엇을 볼지는 주인이 정해요(`settings.shareLevel` = `none` 날짜 없음 / `week` 우리의 주간(기본) / `details` 자세히, `lib/logic/prefs.ts`의 `shareLevelOf` · `canSeeWeekBand` · `canSeeCycleDetails`). 넓히는 쪽은 주인의 동의를 한 번 더 받고, 좁히는 쪽은 바로 적용돼요. 화면을 새로 만들 때 `lib/logic/calendarView.ts`의 `cycleLens(state, viewer)`로 보이는 범위를 정해요.
+  - 자세히가 아닌 상대의 화면은 `lib/logic/cycleRing.ts`의 `sharedWeek` 하나로 정해요(기록한 생리 시작일만 써요. LH·테스트는 안 쓰고, 생리 1~3일·쉬는 주기·병원과 함께·양성 확인 전에는 꺼져요). 날짜 없음이면 띠·날짜·주기 단계가 상대 화면 어디에도 없어요.
+  - **알리지 않은 기록은 상대 화면을 바꾸지 않아요**(앱, 링크의 7일 칸 모두). 남편이 보는 것은 아내가 보낸 것(신호·[알리기]·공유 동의)이나 자기 것뿐이고, 화면이 바뀌는 것도 정보예요. `tests/leakInference.test.ts`·`tests/integrationNow3.test.ts`가 지켜요.
+  - 상대에게는 횟수 문장('하루나 이틀에 한 번' 등)을 보이지 않아요(알림·달력·요약 모두).
 - **쉬는 주기·병원 확인 전**(`restCycle`, `positivePending`)에는 가임기 표시·알림·데이트 제안이 멈춰요. 판단은 `lib/logic/ttc.ts`의 `activeRest` / `activePositivePending`으로 해요.
 - 주기 기록은 `lib/logic/logs.ts`(기록자·되돌리기·쉬는 주기 해제가 함께 처리돼요)나 `openLog()`로만 바꿔요.
 - **잠금화면 숨김**(`discreet`)이 켜져 있으면 브라우저 알림과 .ics에 건강 용어를 넣지 않아요.

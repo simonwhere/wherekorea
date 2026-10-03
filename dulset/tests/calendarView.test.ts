@@ -53,6 +53,7 @@ import {
   explainDay,
   futureDayNote,
   fertilityView,
+  hiddenReason,
   icsAvailability,
   irregularMessage,
   legendItems,
@@ -71,6 +72,7 @@ import {
 import { createInitialState } from '@/lib/initial'
 import { startPregnancy } from '@/lib/logic/pregnancy'
 import { endPregnancy } from '@/lib/logic/today'
+import { startRestCycle } from '@/lib/logic/ttc'
 import type { AppState, Settings } from '@/lib/types'
 
 // Three regular 28-day cycles before the current period (confidence 'cycles'):
@@ -724,7 +726,7 @@ function couple(over: Partial<AppState> = {}, settingsOver: Partial<Settings> = 
     new Date(2026, 8, 1, 9, 0),
   )
   const periods = [{ start: '2026-09-01', end: '2026-09-05' }]
-  return { ...s, periods, ...over, settings: { ...s.settings, shareCycleDetails: false, ...settingsOver } }
+  return { ...s, periods, ...over, settings: { ...s.settings, shareLevel: 'week', ...settingsOver } }
 }
 
 describe('cycleLens', () => {
@@ -733,13 +735,16 @@ describe('cycleLens', () => {
   })
 
   it('a partner sees details only when shared; otherwise soft wording at most', () => {
+    // (N19) A partner without details also carries his one window (band) — null
+    // here: no `today` / cycle to compute it from, so nothing is drawn.
     expect(cycleLens(couple({}, { alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toEqual({
       view: 'soft',
       details: false,
       owner: false,
       lh: false,
+      band: null,
     })
-    expect(cycleLens(couple({}, { shareCycleDetails: true, alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toMatchObject({
+    expect(cycleLens(couple({}, { shareLevel: 'details', alertStyle: { a: 'explicit', b: 'explicit' } }), 'a')).toMatchObject({
       view: 'explicit',
       details: true,
       lh: true,
@@ -833,10 +838,10 @@ describe('what each viewer sees on the calendar', () => {
     expect(showsLH(owner({ alertStyle: { a: 'soft', b: 'explicit' }, personal: { b: { lowPressure: true } } }))).toBe(false)
     // The partner: LH only with details and explicit wording; the peak with details.
     const partner = (over: Partial<Settings>) => cycleLens(couple({}, over), 'a')
-    expect(showsLH(partner({ shareCycleDetails: true, alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(true)
-    expect(showsLH(partner({ shareCycleDetails: true, alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(false)
-    expect(showsPeak(partner({ shareCycleDetails: true, alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(true)
-    expect(showsPeak(partner({ shareCycleDetails: false, alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(false)
+    expect(showsLH(partner({ shareLevel: 'details', alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(true)
+    expect(showsLH(partner({ shareLevel: 'details', alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(false)
+    expect(showsPeak(partner({ shareLevel: 'details', alertStyle: { a: 'soft', b: 'explicit' } }))).toBe(true)
+    expect(showsPeak(partner({ shareLevel: 'week', alertStyle: { a: 'explicit', b: 'explicit' } }))).toBe(false)
   })
 
   it('a pause drops the fertile band (and, while waiting, the projected period)', () => {
@@ -1118,5 +1123,110 @@ describe('the loss quiet on the calendar (Next B)', () => {
     expect(summary.nextPeriod).toBeUndefined()
     const text = `${summary.headline.title} ${summary.headline.sub} ${summary.rows.map((r) => `${r.label} ${r.value} ${r.sub ?? ''}`).join(' ')}`
     expect(text).not.toMatch(/가임기|배란|LH|유산|예정/)
+  })
+})
+
+// ── N19 / N23: the partner's calendar draws his one window, nothing ahead, nothing behind ──
+
+describe('a partner without details: his one window (Lens.band), the 평소 주 everywhere else', () => {
+  // Four 28-day cycles to 09-01: the shared window 09-10…09-15, '곧' from 09-07.
+  const regular = (over: Partial<AppState> = {}, settingsOver: Partial<Settings> = {}) =>
+    couple({ periods: [{ start: '2026-06-09' }, { start: '2026-07-07' }, { start: '2026-08-04' }, { start: '2026-09-01' }], ...over }, settingsOver)
+  const input = (s: AppState): CycleInput => ({ periods: s.periods, lhTests: s.lhTests, cycle: s.cycle, pregnancy: s.pregnancy })
+  const lensOf = (s: AppState, d: string) => cycleLens(s, 'a', d)
+  const bandDays = (s: AppState, d: string) =>
+    range(addDays(d, -10), addDays(d, 25))
+      .map((date) => ({ date, cell: cellView(dayInfo(input(s), date, d), { month: '2026-09-01', today: d, view: lensOf(s, d).view, lens: lensOf(s, d) }) }))
+      .filter((x) => x.cell.phase !== 'none')
+      .map((x) => x.date)
+
+  it('the lens carries the window only while it is on — from 곧 우리의 주간 to its last day', () => {
+    const s = regular()
+    expect(lensOf(s, '2026-09-06').band).toBeNull()
+    expect(lensOf(s, '2026-09-07').band).toEqual({ kind: 'soon', from: '2026-09-10', to: '2026-09-15', confidence: 'cycles' })
+    expect(lensOf(s, '2026-09-12').band).toMatchObject({ kind: 'window' })
+    expect(lensOf(s, '2026-09-16').band).toBeNull()
+    // Never on period days 1–3, never through a pause, never for her (she sees her own calendar).
+    expect(lensOf(s, '2026-09-02').band).toBeNull()
+    expect(lensOf(startRestCycle(s, '2026-09-05', 'rest'), '2026-09-12').band).toBeNull()
+    expect(cycleLens(s, 'b', '2026-09-12').band).toBeUndefined()
+    // Without the cycle settings (an old caller) nothing is drawn.
+    const { cycle: _c, ...noCycle } = s
+    expect(cycleLens(noCycle, 'a', '2026-09-12').band).toBeNull()
+  })
+
+  it('the calendar draws exactly those days: nothing ahead in the 평소 주, nothing behind once it ends', () => {
+    const s = regular()
+    expect(bandDays(s, '2026-09-04')).toEqual([])
+    expect(bandDays(s, '2026-09-08')).toEqual(range('2026-09-10', '2026-09-15'))
+    expect(bandDays(s, '2026-09-20')).toEqual([])
+    // An LH surge moves her estimate, never his band.
+    const lh = regular({ lhTests: [{ date: '2026-09-07', result: 'faint' }, { date: '2026-09-08', result: 'positive' }] })
+    expect(bandDays(lh, '2026-09-08')).toEqual(range('2026-09-10', '2026-09-15'))
+    // Without a date (an old caller) nothing is band for him.
+    expect(lensPhase('fertile', lensOf(s, '2026-09-12'))).toBe('none')
+    expect(lensPhase('none', lensOf(s, '2026-09-12'), '2026-09-12')).toBe('fertile')
+    // A hand-built lens keeps the old reading.
+    expect(lensPhase('peak', { view: 'soft', details: false, owner: false })).toBe('fertile')
+  })
+
+  it('the summary card says only what the band says: its status, headline and row', () => {
+    const s = regular()
+    const sum = (d: string, st = s) => cycleSummary(input(st), d, lensOf(st, d).view, lensOf(st, d))
+    expect(sum('2026-09-04').headline).toEqual({ title: '편안한 날들이에요', sub: '우리의 주간이 가까워지면 여기에 보여요.' })
+    expect(sum('2026-09-04').status).toEqual({ kind: 'no-data' })
+    expect(sum('2026-09-04').rows).toEqual([])
+    expect(sum('2026-09-08').headline.title).toBe('다음 우리의 주간: 9월 10일 (목)부터 (예상)')
+    expect(sum('2026-09-08').rows.map((r) => r.key)).toEqual(['window'])
+    expect(sum('2026-09-12').headline.title).toBe('지금은 우리의 주간이에요 (예상)')
+    expect(sum('2026-09-12').status).toMatchObject({ kind: 'fertile', fertileEnd: '2026-09-15', peak: false })
+    // Late, during her (untold) period, under an untold positive: the same 평소 주 line.
+    for (const [d, st] of [
+      ['2026-10-02', s],
+      ['2026-09-30', regular({ periods: [...s.periods, { start: '2026-09-29' }] })],
+      ['2026-09-28', regular({ positivePending: { since: '2026-09-27' } })],
+    ] as const) {
+      expect(sum(d, st).headline, d).toEqual(sum('2026-09-04').headline)
+      expect(sum(d, st).status, d).toEqual({ kind: 'no-data' })
+    }
+    // The partner's hidden view says no 'every 2–3 days' either (positioning §6).
+    expect(sharedHeadline({ kind: 'no-data' }, 'hidden').sub).not.toMatch(/\d~\d일|번/)
+  })
+
+  it('a pause that is hers (a rest, an untold positive) does not show on his lens; the clinic mode does', () => {
+    expect(lensOf(regular({ restCycle: { since: '2026-09-03', reason: 'rest' } }), '2026-09-12').pause).toBeUndefined()
+    const pending = lensOf(regular({ positivePending: { since: '2026-09-27' } }), '2026-09-28')
+    expect(pending.pause).toBeUndefined()
+    expect(pending.pendingSince).toBeUndefined()
+    expect(lensOf(regular({ restCycle: { since: '2026-09-03', reason: 'clinic' } }), '2026-09-12').pause).toBe('clinic')
+    // Clinic + an untold positive: still just the clinic for him.
+    expect(lensOf(regular({ restCycle: { since: '2026-09-03', reason: 'clinic' }, positivePending: { since: '2026-09-27' } }), '2026-09-28').pause).toBe(
+      'clinic',
+    )
+    // With her details he sees her pauses as before.
+    expect(cycleLens(regular({ positivePending: { since: '2026-09-27' } }, { shareLevel: 'details' }), 'a', '2026-09-28').pause).toBe('positive')
+  })
+
+  it('the legend lists the band only while it is drawn', () => {
+    const s = regular()
+    expect(legendItems('soft', lensOf(s, '2026-09-04'))).toEqual([])
+    expect(legendItems('soft', lensOf(s, '2026-09-12')).map((i) => i.key)).toEqual(['fertile'])
+  })
+})
+
+describe("'날짜 없음' (N23): the partner's calendar is hidden and says why", () => {
+  it('view hidden whatever his own style; the notice names the sharing, not his alerts', () => {
+    for (const style of ['explicit', 'soft', 'off'] as const) {
+      const s = couple({}, { shareLevel: 'none', alertStyle: { a: style, b: 'explicit' } })
+      expect(cycleLens(s, 'a', '2026-09-12'), style).toMatchObject({ view: 'hidden', details: false, lh: false, band: null })
+    }
+    expect(hiddenReason({ lowPressure: false, shareLevel: 'none' })).toBe('share')
+    expect(hiddenReason({ lowPressure: true, shareLevel: 'none' })).toBe('low-pressure')
+    expect(hiddenReason({ lowPressure: false })).toBe('off')
+    const notice = viewNotice('hidden', { lowPressure: false, shareLevel: 'none' })!
+    expect(notice.text).toBe('날짜 없이 함께 준비해요 · 이번 주 우리 둘에 집중해요.')
+    expect(notice.text).not.toMatch(/가임|배란|우리의 주간/)
+    // Her own calendar is untouched by her choice.
+    expect(cycleLens(couple({}, { shareLevel: 'none' }), 'b', '2026-09-12')).toMatchObject({ view: 'explicit', details: true })
   })
 })

@@ -56,7 +56,7 @@ describe('Onboarding · four screens', () => {
 
     // ③ 동의 + 공유: the default keeps the details private; both consents are required
     expect(screen.getByRole('heading', { level: 1, name: '기록은 이렇게 지켜요' })).toBeTruthy()
-    const share = screen.getByRole('radio', { name: /우리의 주간만/ }) as HTMLInputElement
+    const share = screen.getByRole('radio', { name: /우리의 주간 \(기본\)/ }) as HTMLInputElement
     expect(share.checked).toBe(true)
     const consent = screen.getByRole('button', { name: '동의하고 계속하기' }) as HTMLButtonElement
     expect(consent.disabled).toBe(true)
@@ -81,7 +81,7 @@ describe('Onboarding · four screens', () => {
     ])
     expect(s!.periods.map((p) => p.start)).toEqual([addDays(T0, -7)])
     expect(s!.settings.usesLH).toBe(true)
-    expect(s!.settings.shareCycleDetails).toBe(false)
+    expect(s!.settings.shareLevel).toBe('week')
     // The default voices: explicit for the owner, soft for the partner.
     expect(s!.settings.alertStyle).toEqual({ a: 'explicit', b: 'soft' })
     // This phone is 지은's, and the state is saved for the next open.

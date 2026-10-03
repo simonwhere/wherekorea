@@ -5,7 +5,7 @@
 // the signal she sent with its replies.
 
 import { cx } from '@/components/ui'
-import type { PartnerSnapshot } from '@/lib/logic/partnerSnapshot'
+import type { PartnerPage } from '@/lib/logic/partnerSnapshot'
 import type { Signal } from '@/lib/logic/signals'
 import { Bubble, isHer } from './bits'
 import { LinkPendingSignal } from './LinkSignals'
@@ -27,8 +27,8 @@ export default function LinkUsLine({
   onReply,
   className,
 }: {
-  snapshot: PartnerSnapshot
-  signal: PartnerSnapshot['signal'] | undefined
+  snapshot: PartnerPage
+  signal: PartnerPage['signal'] | undefined
   canNudge: boolean
   cheersLeft: number
   signalsLeft: number
@@ -54,10 +54,11 @@ export default function LinkUsLine({
           <p className="truncate text-[14.5px] font-bold tracking-[-0.02em] text-ink">
             {owner.name}
             <span className="ml-1.5 text-[13px] font-semibold tabular-nums text-ink-3">
-              {prog.total > 0 ? `${prog.done}/${prog.total}` : ''}
+              {/* No '0' about her (positioning §4 rule 2). */}
+              {prog.total > 0 && prog.done > 0 ? `${prog.done}/${prog.total}` : ''}
             </span>
           </p>
-          {prog.total > 0 && prog.total <= DOTS_MAX ? (
+          {prog.total > 0 && prog.done > 0 && prog.total <= DOTS_MAX ? (
             <p aria-hidden className="mt-1 flex gap-1">
               {Array.from({ length: prog.total }, (_, i) => (
                 <span key={i} className={cx('h-1.5 w-5 rounded-full', i < prog.done ? dot : 'bg-line')} />
@@ -65,7 +66,7 @@ export default function LinkUsLine({
             </p>
           ) : (
             <p className="mt-0.5 text-[12.5px] text-ink-3">
-              {prog.complete ? '오늘 체크를 모두 마쳤어요' : prog.total === 0 ? '오늘은 체크 항목이 없어요' : '오늘 체크 중이에요'}
+              {prog.complete ? '오늘 체크를 모두 마쳤어요' : prog.total === 0 ? '오늘은 체크 항목이 없어요' : prog.done > 0 ? '오늘 체크 중이에요' : ''}
             </p>
           )}
         </div>

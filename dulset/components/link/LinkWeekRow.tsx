@@ -37,7 +37,8 @@ export default function LinkWeekRow({
   estimate?: 'none' | 'one'
   className?: string
 }) {
-  const rows = weekRows(strip)
+  // Square left end when the same shared window ran on the Sunday before (strip.bandBefore), like the app.
+  const rows = weekRows(strip, { bandBefore: !!strip.bandBefore })
   if (!rows[0]) return null
   const bandLabel = strip.windowLabel && estimate === 'none' ? plainLegendLabel(strip.windowLabel) : strip.windowLabel
   return (

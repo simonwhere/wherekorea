@@ -11,6 +11,8 @@ import {
   nudgeableItem,
   weekCount,
   weekCountLabel,
+  WEEKLY_QUESTION,
+  weeklyCheckInName,
   weeklyDone,
 } from '@/lib/logic/checks'
 import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
@@ -20,6 +22,7 @@ import { useApp } from '@/lib/store'
 import type { AppState, CheckItem, ISODate, MemberId } from '@/lib/types'
 import { Badge, KIND_LABEL, KindIcon, ProgressBar } from './bits'
 import CheckEditor from './CheckEditor'
+import { useWeeklyUndo } from './useWeeklyUndo'
 
 /** Daily items: checked today. Weekly check-ins: checked any day this week. */
 function checkedNow(state: Pick<AppState, 'checkLog'>, member: MemberId, item: CheckItem, today: ISODate, done: string[]): boolean {
@@ -31,6 +34,7 @@ function checkedNow(state: Pick<AppState, 'checkLog'>, member: MemberId, item: C
 export function MyChecks() {
   const { state, update, today, me, partner } = useApp()
   const toast = useToast()
+  const weeklyUndo = useWeeklyUndo()
   const [editorOpen, setEditorOpen] = useState(false)
   // Stable, so the Sheet doesn't re-run its open effect (and steal focus) after each edit.
   const closeEditor = useCallback(() => setEditorOpen(false), [])
@@ -48,6 +52,9 @@ export function MyChecks() {
     update((s) => toggleWithCompletion(s, me.id, partner.id, today, id, now).state)
     if (preview.completed) {
       toast.show(alreadyTold ? '오늘 체크 완료! 👏' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+    } else if (preview.cleared?.length) {
+      const item = items.find((i) => i.id === id)
+      if (item) weeklyUndo.offer(item, preview.cleared)
     }
   }
 
@@ -99,6 +106,7 @@ export function MyChecks() {
         </>
       )}
       <CheckEditor open={editorOpen} onClose={closeEditor} />
+      {weeklyUndo.toast}
     </Card>
   )
 }
@@ -128,12 +136,13 @@ function CheckRow({ item, checked, onToggle }: { item: CheckItem; checked: boole
       <KindIcon kind={item.kind} className="text-ink-2" />
       <span className="min-w-0 flex-1">
         <span className={cx('block truncate text-[15px] font-semibold', checked ? 'text-ink-2' : 'text-ink')}>
-          {item.label}
+          {isWeekly(item) ? weeklyCheckInName(item) : item.label}
         </span>
         <span className="block truncate text-xs text-ink-3">
           {isWeekly(item) ? (
             <>
-              <span className="sr-only">{KIND_LABEL[item.kind]} · </span>주 1회 체크인
+              <span className="sr-only">{KIND_LABEL[item.kind]} · </span>
+              {WEEKLY_QUESTION} · 주 1회
             </>
           ) : item.note ? (
             <>
@@ -213,7 +222,7 @@ export function PartnerChecks() {
                   )}
                 >
                   {isDone ? <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> : <KindIcon kind={item.kind} className="h-3.5 w-3.5" />}
-                  {item.label}
+                  {isWeekly(item) ? weeklyCheckInName(item) : item.label}
                   {isWeekly(item) ? <span className="text-[11px] font-normal text-ink-3">· 주 1회</span> : null}
                   <span className="sr-only">{isDone ? ' 완료' : ' 아직'}</span>
                 </li>
