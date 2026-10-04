@@ -26,6 +26,14 @@
 // a '홈 화면에 두기' card elsewhere. Each open records '링크 연 날' once per day
 // (transport.recordLinkOpen — the token only; research, never shown to her).
 // Nothing else is requested — no app state, no cycle data, no other origin.
+//
+// Now 3 adds: his clinic week's [같이 갈게요] ('join-appointment', N32), the
+// '내 준비' bar (N30), '매주 이 시간에 알려 받기' — a weekly .ics made right
+// here that links to '/link/' WITHOUT the token (N31); a token-less open on
+// this phone uses the token this browser remembers (model LINK_TOKEN_KEY) —
+// and, when the transport cannot be reached while a page is on screen, a
+// slim '지금은 불러올 수 없어요' line over the kept page (the mock transport
+// can simulate it: ?mockOffline=1 or the 'dulset:mock-offline' flag).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
@@ -33,8 +41,17 @@ import Polaroid from '@/components/cover/Polaroid'
 import { ToastProvider, useToast } from '@/components/ui'
 import { isISODate, todayISO } from '@/lib/dates'
 import { uid } from '@/lib/id'
+import { downloadText, weeklyLinkIcs, type WeeklyDay } from '@/lib/logic/ics'
+import { isToken } from '@/lib/logic/partnerLink'
 import { CHEERS_PER_DAY, type PartnerEvent } from '@/lib/logic/partnerEvents'
-import { snapshotDay, type PartnerPage, type PartnerSnapshot, type SnapshotCheck, type SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import {
+  snapshotDay,
+  type PartnerPage,
+  type PartnerSnapshot,
+  type SnapshotAppointment,
+  type SnapshotCheck,
+  type SnapshotTask,
+} from '@/lib/logic/partnerSnapshot'
 import { SIGNALS_PER_DAY, type Signal } from '@/lib/logic/signals'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import { transport } from '@/lib/sync/transport'
@@ -50,14 +67,19 @@ import {
   LINK_INSTALL_KEY,
   LINK_INTRO_KEY,
   LINK_OUTSIDE_KEY,
+  LINK_TOKEN_KEY,
   LINK_VIEW_KEY,
   NO_MARKS,
+  OFFLINE_LINE,
+  clinicWhen,
   noticeCopy,
   ownerOf,
   parseCachedView,
   parseDeviceMark,
+  pickToken,
   pruneMarks,
   viewerOf,
+  weeklyLinkOrigin,
   type CachedView,
   type LocalMarks,
   type setupFields,
@@ -71,7 +93,7 @@ const AFTER_SEND_MS = [1_500, 3_500, 7_000] as const
 type View =
   | { kind: 'loading' }
   | { kind: 'notice'; notice: NoticeKind; ownerName?: string }
-  | { kind: 'snapshot'; snapshot: PartnerSnapshot; fetchedAt: number; fromCache: boolean }
+  | { kind: 'snapshot'; snapshot: PartnerSnapshot; fetchedAt: number; fromCache: boolean; offline?: boolean }
 
 function safeLocal(): Storage | null {
   try {
@@ -142,10 +164,28 @@ function useToday(): ISODate {
   return today
 }
 
+/**
+ * The token to open with: the address's '#t=…'; on a token-less open (the
+ * weekly calendar links to '/link/' without it) the one this browser
+ * remembers. A token from the address is remembered for next time.
+ */
 function useHashToken(): string | null | undefined {
   const [token, setToken] = useState<string | null | undefined>(undefined)
   useEffect(() => {
-    const read = () => setToken(tokenFromHash(window.location.hash))
+    const read = () => {
+      const fromHash = tokenFromHash(window.location.hash)
+      let remembered: string | null = null
+      let cached: string | null = null
+      try {
+        const ls = safeLocal()
+        if (fromHash) ls?.setItem(LINK_TOKEN_KEY, fromHash)
+        remembered = ls?.getItem(LINK_TOKEN_KEY) ?? null
+        cached = parseCachedView(ls?.getItem(LINK_VIEW_KEY) ?? null)?.token ?? null
+      } catch {
+        /* blocked storage: only the address counts */
+      }
+      setToken(pickToken(fromHash, remembered, cached, isToken))
+    }
     read()
     window.addEventListener('hashchange', read)
     return () => window.removeEventListener('hashchange', read)
@@ -229,10 +269,11 @@ function LinkScreen() {
         const snapshot = await t.fetchSnapshot(tok)
         applySnapshot(snapshot, tok, true)
       } catch {
-        // Unreachable: keep what is on screen; with nothing cached, say so.
+        // Unreachable: keep what is on screen (with the slim offline line); with nothing kept, say so.
         const prev = viewRef.current
-        if (prev.kind === 'snapshot') setView({ ...prev, fromCache: true })
-        else if (prev.kind !== 'notice' || prev.notice === 'offline') setView({ kind: 'notice', notice: 'offline' })
+        if (prev.kind === 'snapshot') {
+          if (!prev.offline || !prev.fromCache) setView({ ...prev, fromCache: true, offline: true })
+        } else if (prev.kind !== 'notice' || prev.notice === 'offline') setView({ kind: 'notice', notice: 'offline' })
       }
     },
     [applySnapshot],
@@ -354,6 +395,27 @@ function LinkScreen() {
         setMarks((m) => ({ ...m, weekDone: { monday: w.monday, at: Date.now() } }))
         void send({ id: uid(), from: p.viewer, kind: 'week-done', date: today }, `했어요! ${owner.name}님에게 전해져요`)
       },
+      onJoin: (a: SnapshotAppointment) => {
+        if (a.with !== 'both') return
+        setMarks((m) => ({ ...m, joins: { ...(m.joins ?? {}), [a.id]: Date.now() } }))
+        void send(
+          { id: uid(), from: p.viewer, kind: 'join-appointment', appointmentId: a.id },
+          `${clinicWhen(a.date, a.time, today)} 같이 간다고 ${owner.name}님에게 전했어요`,
+        )
+      },
+      onTold: (s: Signal) => {
+        setMarks((m) => ({ ...m, told: { signalId: s.id, at: Date.now() }, signals: [...m.signals, Date.now()] }))
+        void send({ id: uid(), from: p.viewer, kind: 'signal', signalId: s.id }, `${owner.name}님에게 “${s.text}” 보냈어요`)
+      },
+      onWeekly: (day: WeeklyDay) => {
+        try {
+          const origin = weeklyLinkOrigin(window.location.origin, window.location.pathname)
+          downloadText('dulset-weekly.ics', weeklyLinkIcs(day, today, { origin }))
+          toast.show('캘린더 파일을 받았어요. 열어서 캘린더에 추가해 주세요')
+        } catch {
+          toast.show('이 브라우저에서는 파일을 받을 수 없어요')
+        }
+      },
     }
   }
 
@@ -395,6 +457,22 @@ function LinkScreen() {
       </header>
 
       <main className="flex-1 px-4 pb-8 pt-4">
+        {view.kind === 'snapshot' && view.offline ? (
+          <div role="status" data-offline-line className="mb-3 flex items-center gap-3 rounded-2xl border border-warn/25 bg-warn-soft py-2 pl-3.5 pr-2">
+            <span className="min-w-0 flex-1 text-[12.5px] leading-[1.45] text-ink-2">
+              <b className="font-bold text-ink">{OFFLINE_LINE.title}</b> · {OFFLINE_LINE.body}
+            </span>
+            {token ? (
+              <button
+                type="button"
+                onClick={() => void fetchNow(token)}
+                className="inline-flex min-h-[44px] shrink-0 items-center px-2 text-[13px] font-bold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                다시 시도
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {view.kind === 'loading' ? (
           <div className="flex min-h-[50vh] items-center justify-center text-ink-3" aria-busy="true">
             <span className="animate-pulse text-sm">불러오는 중…</span>

@@ -1,7 +1,8 @@
 'use client'
 
 // "설정 마저 하기" — the four-screen onboarding (N15) no longer asks for the
-// birth year, 함께 준비를 시작한 날 or 결혼한 날, so the home offers them once:
+// birth year or 함께 준비를 시작한 날, so the home offers them once (결혼한 날
+// is the 기록장's question now — UsHero, docs/positioning.md §3-3 N27):
 // a compact line under 우리 한 줄 naming what is still empty, with a way to
 // 설정. Closing it hides it on this device (a convenience, not record data).
 // Wording never names the cycle: both phones show the same card.
@@ -43,7 +44,6 @@ export default function SetupCard({ className }: { className?: string }) {
   const missing: string[] = []
   if (!me.birthYear) missing.push('내 출생연도')
   if (!isISODate(state.settings.ttcStart)) missing.push('함께 준비를 시작한 날')
-  if (!isISODate(state.couple.marriedDate)) missing.push('결혼한 날 (있다면)')
   if (dismissed || missing.length === 0) return null
 
   const dismiss = () => {

@@ -18,6 +18,7 @@ import {
   clearNotifications,
   mergeNotices,
   monthsBetween,
+  nudgesPerDay,
   nudgesSentToday,
   scheduledNotices,
   sendNudge,
@@ -50,14 +51,17 @@ function preparing(over: Partial<AppState> = {}): AppState {
   return { ...s, ...over }
 }
 
-/** Advance `days` days of ordinary use: 3 read nudges each way per day. */
+/**
+ * Advance `days` days of ordinary use: every read 콕 each one may send that
+ * day (nudgesPerDay — the partner 1, the cycle owner 3 since N30).
+ */
 function chatter(s: AppState, from: string, days: number): AppState {
   let st = s
   for (let d = 0; d < days; d++) {
     const day = addDays(from, d)
     for (let i = 0; i < 3; i++) {
-      st = sendNudge(st, 'a', 'b', day, `${day}T0${i + 1}:00:00+09:00`)
-      st = sendNudge(st, 'b', 'a', day, `${day}T0${i + 1}:30:00+09:00`)
+      if (i < nudgesPerDay(st, 'a')) st = sendNudge(st, 'a', 'b', day, `${day}T0${i + 1}:00:00+09:00`)
+      if (i < nudgesPerDay(st, 'b')) st = sendNudge(st, 'b', 'a', day, `${day}T0${i + 1}:30:00+09:00`)
     }
     st = { ...st, notifications: st.notifications.map((n) => ({ ...n, read: true })) }
   }
@@ -266,19 +270,30 @@ describe('notification records that are also state', () => {
   it('a 좋아요 on a date plan survives the inbox cap', () => {
     let s = proposeDatePlan(preparing(), { date: '2026-11-20', title: '산책', createdBy: 'a' }, NOW, 'p1')
     s = acceptDatePlan(s, 'p1', 'b', NOW)
-    s = chatter(s, '2026-09-27', 40)
+    s = chatter(s, '2026-09-27', 60) // 4 콕 a day since N30 (1 + 3): 60 days pass the 200 cap
     expect(s.notifications.some((n) => n.key === 'date-ok:p1:b')).toBe(false) // trimmed away…
     expect(isPlanAccepted(s, 'p1', 'b')).toBe(true) // …but the plan remembers
     expect(acceptDatePlan(s, 'p1', 'b', NOW)).toBe(s)
   })
 
   it('clearing the inbox does not reset the sender’s daily 콕 limit', () => {
+    // The cycle owner ('b') may 콕 three times a day…
     let s = preparing()
-    for (let i = 0; i < 3; i++) s = sendNudge(s, 'a', 'b', '2026-09-26', NOW)
-    expect(nudgesSentToday(s, 'a', '2026-09-26')).toBe(3)
-    s = clearNotifications(s, 'b')
-    expect(nudgesSentToday(s, 'a', '2026-09-26')).toBe(3)
-    expect(sendNudge(s, 'a', 'b', '2026-09-26', NOW)).toBe(s)
+    expect(nudgesPerDay(s, 'b')).toBe(3)
+    for (let i = 0; i < 3; i++) s = sendNudge(s, 'b', 'a', '2026-09-26', NOW)
+    expect(nudgesSentToday(s, 'b', '2026-09-26')).toBe(3)
+    s = clearNotifications(s, 'a')
+    expect(nudgesSentToday(s, 'b', '2026-09-26')).toBe(3)
+    expect(sendNudge(s, 'b', 'a', '2026-09-26', NOW)).toBe(s)
+    // …and the partner ('a') once (N30); clearing her inbox does not give it back.
+    let p = preparing()
+    expect(nudgesPerDay(p, 'a')).toBe(1)
+    p = sendNudge(p, 'a', 'b', '2026-09-26', NOW)
+    expect(nudgesSentToday(p, 'a', '2026-09-26')).toBe(1)
+    expect(sendNudge(p, 'a', 'b', '2026-09-26', NOW)).toBe(p)
+    p = clearNotifications(p, 'b')
+    expect(sendNudge(p, 'a', 'b', '2026-09-26', NOW)).toBe(p)
+    expect(sendNudge(p, 'a', 'b', '2026-09-27', NOW)).not.toBe(p)
   })
 
   it('replying to a signal marks it read for the one replying', () => {

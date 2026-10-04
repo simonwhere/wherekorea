@@ -45,9 +45,9 @@ import {
 } from '@/lib/logic/calendarView'
 import { startClinicMode } from '@/lib/logic/clinic'
 import { heroLine } from '@/lib/logic/cover'
-import { dayInfo, setPeriodEnd, type CycleInput } from '@/lib/logic/cycle'
-import { sharedWeek } from '@/lib/logic/cycleRing'
-import { dateBanner, fertileHintsAllowed } from '@/lib/logic/dateIdeas'
+import { cycleAt, dayInfo, fertilityStatus, setPeriodEnd, type CycleInput } from '@/lib/logic/cycle'
+import { sharedCycleInput, sharedWeek } from '@/lib/logic/cycleRing'
+import { dateBanner, fertileHintsAllowed, partnerHintState } from '@/lib/logic/dateIdeas'
 import { addEntry } from '@/lib/logic/diary'
 import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { logPeriodStart } from '@/lib/logic/logs'
@@ -77,9 +77,9 @@ import {
 } from '@/lib/logic/prefs'
 import { sanitizeBackup } from '@/lib/logic/settings'
 import { receivedReply, sendSignal } from '@/lib/logic/signals'
-import { doctorAdvice, endPregnancy } from '@/lib/logic/today'
+import { doctorAdvice, endPregnancy, stampOn } from '@/lib/logic/today'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
-import { cycleStrip, markStillWaiting, skipTellPartnerPeriod, ttcMoment } from '@/lib/logic/ttcFlow'
+import { cycleStrip, markStillWaiting, skipTellPartnerPeriod, tellPartnerPeriod, ttcMoment } from '@/lib/logic/ttcFlow'
 import {
   CLINIC_DAY_OPTION,
   WEEK_OPTIONS,
@@ -179,11 +179,12 @@ type Untold = { name: string; when?: (s: AppState, d: ISODate) => boolean; add: 
 
 /** Records she did not tell him about (the ones a date can carry). */
 /**
- * Outside the shared window: a period logged inside it, or a pause she starts inside it (a rest, a
- * positive test), ends it for him too — the documented residuals (lib/logic/cycleRing.ts
- * 'Residuals', pinned in tests/leakInference.test.ts). A test inside the window is too early anyway.
+ * Outside the shared window (the original N19 records); the inside-the-span ones follow below (Now 3
+ * leftover: once his span has started, a period, a rest or a positive test she logs inside it and
+ * does not tell keeps it to its last day — lib/logic/cycleRing.ts).
  */
 const offWindow = (s: AppState, d: ISODate) => !sharedWeek(s, d) && !sharedWeek(s, addDays(d, -1))
+const inSpan = (s: AppState, d: ISODate) => !!sharedWeek(s, d)
 
 const UNTOLD: readonly Untold[] = [
   { name: 'period start (today)', when: offWindow, add: (s, d) => logPeriodStart(s, d, OWNER, d) },
@@ -210,6 +211,14 @@ const UNTOLD: readonly Untold[] = [
     add: (s, d) => setEntryPrivacy(addEntry(s, { id: `secret-${d}`, date: d, author: OWNER, text: '혼자만 볼 이야기' }, stamp(d)), `secret-${d}`, OWNER, true),
   },
   { name: 'rest (outside the shared window)', when: (s, d) => !sharedWeek(s, d), add: (s, d) => startRestCycle(s, d, 'rest') },
+  { name: 'rest inside the span', when: inSpan, add: (s, d) => startRestCycle(s, d, 'rest') },
+  { name: 'period start inside the span', when: inSpan, add: (s, d) => logPeriodStart(s, d, OWNER, d) },
+  {
+    name: 'positive test inside the span',
+    when: inSpan,
+    add: (s, d) =>
+      markPositivePending({ ...s, pregnancyTests: [...s.pregnancyTests, { id: `in-${d}`, date: d, result: 'positive' as const, by: OWNER }] }, d, `in-${d}`),
+  },
   { name: '아직 안 왔어요', when: (s, d) => !!lastStart(s, d), add: (s, d) => markStillWaiting(s, lastStart(s, d)!, d) },
   { name: '관계일', add: (s, d) => toggleIntimacyDay(giveIntimacyConsent(s, OWNER, d), OWNER, d, d) },
   { name: '알릴까요? — 괜찮아요', when: (s, d) => !!lastStart(s, d), add: (s, d) => skipTellPartnerPeriod(s, lastStart(s, d)!, stamp(d)) },
@@ -222,6 +231,13 @@ function cycleFace(day: PartnerDay) {
 }
 
 const sameShared = (a: AppState, b: AppState, d: ISODate) => JSON.stringify(sharedWeek(a, d) ?? null) === JSON.stringify(sharedWeek(b, d) ?? null)
+
+/**
+ * A rest or a positive test she starts inside his span keeps the span, the card, its words, the
+ * link's idea list and the #date banner: every reader of the 둘만의 시간 gate goes through
+ * dateIdeas.partnerHintState (ttcFlow.ttcMoment, partnerSnapshot.linkIdeas, dateIdeas.dateBanner)
+ * — so these records are compared exactly like every other (no loosening since Now 3b).
+ */
 
 // ── 1. The inference-leak property on the link (N19 × N20) ──
 
@@ -243,14 +259,15 @@ describe('N19 × N20: an untold record never changes any day of the seven-day li
               if (s1 === s0) continue
               const snap1 = buildPartnerSnapshot(s1, d, PARTNER)!
               const where = `${base.name} · ${tag(lens)} · ${d} · ${r.name}`
+              const face = (day: PartnerDay | undefined) => day
               // The day it happens: the whole page is the same.
-              expect(snap1.days[0], where).toEqual(snap0.days[0])
+              expect(face(snap1.days[0]), where).toEqual(face(snap0.days[0]))
               // Every later day of the snapshot: the same unless the one shared window itself moved
               // (a new period start moves the next 우리의 주간 — that window is what she shares).
               for (let k = 1; k < snap0.days.length; k++) {
                 const x = addDays(d, k)
                 if (!sameShared(s0, s1, x) || !sameShared(s0, s1, addDays(x, -1))) continue
-                expect(snap1.days[k], `${where} · day +${k}`).toEqual(snap0.days[k])
+                expect(face(snap1.days[k]), `${where} · day +${k}`).toEqual(face(snap0.days[k]))
                 futureCompared++
               }
               // The shared fields too (stage, members, the signals he may send).
@@ -289,7 +306,7 @@ describe('N19 × N20: an untold record never changes any day of the seven-day li
     expect(held).toBeGreaterThan(1000)
   })
 
-  it('a pre-rendered day equals the page built on that day (the forecast never says more than the day itself)', () => {
+  it('a pre-rendered day equals the page built on that day (the forecast never says more than the day itself)', { timeout: 120_000 }, () => {
     for (const base of BASES) {
       for (const lens of NO_DETAIL_LENSES) {
         const s = withLens(base.state, lens)
@@ -314,7 +331,8 @@ describe('N19: the in-app surfaces leakInference does not read hold still too', 
   function extraView(s: AppState, d: ISODate) {
     return {
       banner: dateBanner(s, d, PARTNER),
-      hints: !!sharedWeek(s, d) && fertileHintsAllowed(s, PARTNER, d),
+      // The gate as every screen reads it (through partnerHintState).
+      hints: !!sharedWeek(s, d) && fertileHintsAllowed(partnerHintState(s, PARTNER), PARTNER, d),
       week: weekOptions(s, d, PARTNER).map((o) => o.id),
       linkWeek: linkWeek(s, d, PARTNER, true) ?? null,
       doctor: doctorAdvice(s, d, PARTNER),
@@ -341,7 +359,8 @@ describe('N19: the in-app surfaces leakInference does not read hold still too', 
             if (r.when && !r.when(s0, d)) continue
             const s1 = r.add(s0, d)
             if (s1 === s0) continue
-            expect(extraView(s1, d), `${base.name} · ${tag(lens)} · ${d} · ${r.name}`).toEqual(before)
+            const after = extraView(s1, d)
+            expect(after, `${base.name} · ${tag(lens)} · ${d} · ${r.name}`).toEqual(before)
             compared++
           }
         }
@@ -398,6 +417,74 @@ describe('N19: the in-app surfaces leakInference does not read hold still too', 
         expect(ourWeek, `${base.name} · ${d}`).toBe(!!sharedWeek(s, d))
       }
     }
+  })
+  it('his 주기 tab band is his one shared window — told or untold, every base, lens and day (QA Now 3b)', () => {
+    // cycleLens draws his band from sharedWeek; that needs what she TOLD (period-told:<start>, in
+    // `decisions` and his inbox). A told early start moves it everywhere at once; untold, it holds.
+    let compared = 0
+    let moved = 0
+    let held = 0
+    for (const base of BASES) {
+      for (const lens of NO_DETAIL_LENSES) {
+        const s0 = withLens(base.state, lens)
+        for (const d of DAYS('2026-08-27', '2026-10-24', 3)) {
+          // A new latest start, a cycle's length after the last one (never one slipped between
+          // starts already logged, never a second start inside the same period).
+          const last = lastStart(s0, d)
+          if (sharedWeek(s0, d) || !last || !s0.periods.every((p) => p.start < d) || diffDays(last, d) < 15) continue
+          const expected = cycleAt(sharedCycleInput(s0), last)?.nextPeriod ?? d
+          const untold = logPeriodStart(s0, d, OWNER, d)
+          if (untold === s0) continue
+          const told = tellPartnerPeriod(untold, d, stampOn(d))
+          for (const x of DAYS(d, addDays(d, 24), 4)) {
+            for (const st of [untold, told]) {
+              const w = sharedWeek(st, x)
+              const want = w && cycleLens(st, PARTNER, x).view !== 'hidden' ? { kind: w.kind, from: w.fertileStart, to: w.fertileEnd } : null
+              const band = cycleLens(st, PARTNER, x).band
+              expect(band ? { kind: band.kind, from: band.from, to: band.to } : null, `${base.name} · ${tag(lens)} · ${d} → ${x}`).toEqual(want)
+              compared++
+            }
+            if (JSON.stringify(cycleLens(told, PARTNER, x).band ?? null) !== JSON.stringify(cycleLens(untold, PARTNER, x).band ?? null)) moved++
+            // Untold, the start leaves his band where it was until the day his view expected her
+            // period (the inference-leak rule; after that his next window follows her real start —
+            // the residual documented in cycleRing.ts, as tests/integrationNow3b checks).
+            if (x < expected) {
+              expect(cycleLens(untold, PARTNER, x).band ?? null, `${base.name} · ${tag(lens)} · ${d} → ${x} untold`).toEqual(
+                cycleLens(s0, PARTNER, x).band ?? null,
+              )
+              held++
+            }
+          }
+        }
+      }
+    }
+    expect(compared).toBeGreaterThan(200)
+    expect(held).toBeGreaterThan(50)
+    expect(moved, 'telling her start moved his band at least once (the check is not vacuous)').toBeGreaterThan(0)
+  }, 120_000)
+
+  it('every screen that builds his lens from a slice of the state passes what she told (decisions, notifications)', () => {
+    // CycleTab once passed { couple, settings, … cycleNotes } only, so his 주기 tab read a told start as untold.
+    const files: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name)
+        if (statSync(p).isDirectory()) walk(p)
+        else if (/\.(ts|tsx)$/.test(name)) files.push(p)
+      }
+    }
+    walk(join(ROOT, 'app'))
+    walk(join(ROOT, 'components'))
+    let literals = 0
+    for (const f of files) {
+      const code = readFileSync(f, 'utf8')
+      for (const m of code.matchAll(/cycleLens\(\s*\{([^}]*)\}/g)) {
+        literals++
+        expect(m[1], f).toMatch(/\bdecisions\b/)
+        expect(m[1], f).toMatch(/\bnotifications\b/)
+      }
+    }
+    expect(literals).toBeGreaterThan(0)
   })
 })
 
@@ -985,5 +1072,47 @@ describe('the partner snapshot is still built from the lenses alone', () => {
     expect(buildPartnerSnapshot(s, '2026-10-03', OWNER)).toBeNull()
     const viewer: MemberId = PARTNER
     expect(buildPartnerSnapshot(s, '2026-10-03', viewer)!.viewer).toBe(PARTNER)
+  })
+})
+
+// ── 7. Now 3 leftovers on the link: the span holds, an untold early period moves nothing ──
+
+describe('Now 3 leftovers on the seven-day link', () => {
+  it('an untold early period changes no day of the link before the day her period was expected — the 곧 never comes early', { timeout: 120_000 }, () => {
+    let compared = 0
+    for (const base of BASES.filter((b) => b.name !== 'no records')) {
+      for (const lens of NO_DETAIL_LENSES) {
+        const s0 = withLens(base.state, lens)
+        for (const d of DAYS('2026-08-27', '2026-10-20', 2)) {
+          const st = fertilityStatus(s0, d)
+          if (st.kind !== 'after-fertile' || sharedWeek(s0, d)) continue
+          const s1 = logPeriodStart(s0, d, OWNER, d)
+          const snap0 = buildPartnerSnapshot(s0, d, PARTNER)!
+          const snap1 = buildPartnerSnapshot(s1, d, PARTNER)!
+          for (let k = 0; k < snap0.days.length; k++) {
+            if (addDays(d, k) >= st.nextPeriod) break
+            expect(cycleFace(snap1.days[k]!), `${base.name} · ${tag(lens)} · ${d} +${k}`).toEqual(cycleFace(snap0.days[k]!))
+            compared++
+          }
+        }
+      }
+    }
+    expect(compared).toBeGreaterThan(200)
+  })
+
+  it('inside his span an untold rest, period or positive test leaves all seven days as they were', () => {
+    const s0 = withLens(BASES[0]!.state, NO_DETAIL_LENSES[0]!)
+    const d = DAYS('2026-08-27', '2026-10-20').find((x) => sharedWeek(s0, x)?.kind === 'window')!
+    expect(d).toBeDefined()
+    const snap0 = buildPartnerSnapshot(s0, d, PARTNER)!
+    for (const r of UNTOLD.filter((u) => u.name.endsWith('inside the span'))) {
+      const snap1 = buildPartnerSnapshot(r.add(s0, d), d, PARTNER)!
+      const face = (day: PartnerDay) => cycleFace(day)
+      for (let k = 0; k < snap0.days.length; k++) {
+        const x = addDays(d, k)
+        if (!sharedWeek(s0, x)) break // after the span: the pause is hers to keep (absence only)
+        expect(face(snap1.days[k]!), `${r.name} · +${k}`).toEqual(face(snap0.days[k]!))
+      }
+    }
   })
 })

@@ -1,18 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialState } from '@/lib/initial'
 import { addAppointment } from '@/lib/logic/appointments'
+import { logPeriodStart } from '@/lib/logic/logs'
+import { FERTILITY_TEST_ID, setFertilityApplied, setFertilityClaimed } from '@/lib/logic/partnerTrack'
 import {
+  MONTHLY_TASK_KEY_SAFE,
   NOTICE_EXPIRY_REMINDER_DAYS,
   NOTICE_EXPIRY_TITLE,
   appointmentReminders,
   isForEndedPregnancy,
+  monthlyTaskNotices,
   noticeExpiryKey,
   noticeExpiryNotices,
   planDeadlineNotices,
+  taskDueKey,
+  taskVisitKey,
 } from '@/lib/logic/planNotices'
 import { tickItem } from '@/lib/logic/plan'
 import { backToPreparing, recordBirth, startPregnancy } from '@/lib/logic/pregnancy'
-import { noticeTarget } from '@/lib/logic/today'
+import { endPregnancy, noticeTarget } from '@/lib/logic/today'
+import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import { addTreatment } from '@/lib/logic/treatments'
 import type { AppState } from '@/lib/types'
 
@@ -104,5 +111,71 @@ describe('지원결정통지서 만료 reminders (Next B)', () => {
     const ended = backToPreparing(pregnant, '2026-12-01')
     expect(expiry(ended, '2026-12-16')).toEqual([])
     expect(expiry(ended, '2027-01-14')).toHaveLength(2)
+  })
+})
+
+// ── 이번 달 할 일 (N30): his month task's dates, preparing ──────────────────
+
+
+describe('his month task: 예약일 지남 · 검사 3개월 · 청구 1개월 (N30)', () => {
+  // 민수 (a) applied 09-28 → test by 12-27 (신청 후 3개월, the day is day 1).
+  const applied = () => setFertilityApplied(base(), 'a', true, '2026-09-28')
+  const keysOn = (s: AppState, d: string) => monthlyTaskNotices(s, d).map((n) => n.key)
+
+  it('nothing before he applied, and nothing to her', () => {
+    expect(monthlyTaskNotices(base(), '2026-12-20')).toEqual([])
+    for (let d = 0; d < 120; d++) {
+      const day = new Date(Date.UTC(2026, 8, 28 + d)).toISOString().slice(0, 10)
+      expect(monthlyTaskNotices(applied(), day).every((n) => n.to === 'a'), day).toBe(true)
+    }
+  })
+
+  it('the 검사 deadline: D-7, D-1 and the last day — to him, keyed by the step and its deadline', () => {
+    const s = applied()
+    expect(keysOn(s, '2026-12-19')).toEqual([])
+    expect(keysOn(s, '2026-12-20')).toEqual([taskDueKey('test', '2026-12-27', 7, 'a')])
+    expect(keysOn(s, '2026-12-26')).toEqual(['deadline:task-test:2026-12-27:1:a'])
+    const last = monthlyTaskNotices(s, '2026-12-27')
+    expect(last.map((n) => n.key)).toEqual(['deadline:task-test:2026-12-27:0:a'])
+    expect(last[0]!.title).toContain('오늘까지예요')
+    expect(last[0]!.body).toContain('신청 후 3개월')
+    // After it lapsed: nothing more (the card says 보건소에 다시 확인해요).
+    expect(keysOn(s, '2026-12-28')).toEqual([])
+    // Routed to 오늘, where his month task card is (today.noticeTarget 'deadline:task-', Now 3b).
+    expect(noticeTarget('system', 'preparing', last[0]!.key)).toBe('today')
+  })
+
+  it('the day after a booked test with no 다녀왔어요 yet: one quiet question, once per booking', () => {
+    let s = addAppointment(applied(), { date: '2026-10-08', time: '09:30', title: '정액검사', place: '', who: 'a', kind: 'test', note: '', taskId: FERTILITY_TEST_ID }, 'a')
+    const id = s.appointments[s.appointments.length - 1]!.id
+    expect(keysOn(s, '2026-10-08')).toEqual([])
+    const q = monthlyTaskNotices(s, '2026-10-09')
+    expect(q.map((n) => n.key)).toEqual([taskVisitKey(id, 'a')])
+    expect(q[0]!.body).toContain('네, 다녀왔어요')
+    expect(keysOn(s, '2026-10-15')).toEqual([taskVisitKey(id, 'a')]) // same key: delivered once (mergeNotices)
+    // He marked the test done: no more question; the claim deadline takes over (검사 후 1개월).
+    s = tickItem(FERTILITY_TEST_ID, true, '2026-10-08', 'a')(s)
+    expect(keysOn(s, '2026-10-09')).toEqual([])
+    expect(monthlyTaskNotices(s, 'not-a-date')).toEqual([])
+    // Claim by 11-07 (the test day is day 1).
+    expect(keysOn(s, '2026-10-31')).toEqual(['deadline:task-claim:2026-11-07:7:a'])
+    expect(monthlyTaskNotices(s, '2026-11-07')[0]!.body).toContain('검사 후 1개월')
+    expect(keysOn(setFertilityClaimed(s, true, '2026-10-20', 'a'), '2026-11-06')).toEqual([])
+  })
+
+  it('reads nothing of her cycle, and rests in the quiet after a loss', () => {
+    const s = applied()
+    const before = monthlyTaskNotices(s, '2026-12-20')
+    for (const h of [logPeriodStart(s, '2026-12-18', 'b', '2026-12-20'), markPositivePending(s, '2026-12-19'), startRestCycle(s, '2026-12-01')]) {
+      expect(monthlyTaskNotices(h, '2026-12-20')).toEqual(before)
+    }
+    const lost = endPregnancy(startPregnancy(s, '2026-11-01', '2026-12-10'), '2026-12-15')
+    expect(monthlyTaskNotices(lost, '2026-12-20')).toEqual([])
+    // Keys never carry anything but the step, his deadline or booking id, and him.
+    for (const n of before) expect(MONTHLY_TASK_KEY_SAFE.test(n.key), n.key).toBe(true)
+  })
+
+  it('goes out through planDeadlineNotices while preparing', () => {
+    expect(planDeadlineNotices(applied(), '2026-12-20').map((n) => n.key)).toContain('deadline:task-test:2026-12-27:7:a')
   })
 })

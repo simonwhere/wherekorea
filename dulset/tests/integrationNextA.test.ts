@@ -37,6 +37,8 @@ import {
   CHEERS_PER_DAY,
   EVENT_MEMORY_DAYS,
   PARTNER_EVENT_KINDS,
+  appointmentJoinKey,
+  appointmentJoinNoticeKey,
   appliedEventIds,
   appliedEventKey,
   applyPartnerEvent,
@@ -79,7 +81,7 @@ import { markBleeding } from '@/lib/logic/positiveBleeding'
 import { canSeeWeekBand, coverOnLink, setCoverOnLink, setPersonalPref, setShareLevel, shareLevelOf, setUsesLH } from '@/lib/logic/prefs'
 import { addCustomTask } from '@/lib/logic/roadmap'
 import { sanitizeBackup } from '@/lib/logic/settings'
-import { SIGNALS, pendingSignal, repliesFor, sendSignal, signalIdOf } from '@/lib/logic/signals'
+import { SIGNALS, pendingSignal, repliesFor, sendSignal, signalById, signalIdOf } from '@/lib/logic/signals'
 import { rowProgress } from '@/lib/logic/today'
 import { weekOptions } from '@/lib/logic/weekTogether'
 import { addTreatment } from '@/lib/logic/treatments'
@@ -133,6 +135,8 @@ const SHARED_ENTRY = 'SHARED_ENTRY_1a11'
 const TREATMENT_NOTE = 'TREATMENT_NOTE_4e88'
 const APPT_NOTE = 'APPT_NOTE_5d1c'
 const HIS_APPT_NOTE = 'HIS_NOTE_2b7e'
+/** A '둘이 함께' clinic appointment's title — his clinic week (N32) carries a kind word, never this. */
+const CLINIC_TITLE = 'CLINIC_TITLE_3f9e'
 const OWNER_ITEM = 'OWNER_ITEM_8a2f'
 const CUSTOM_TASK = 'CUSTOM_TASK_3c3c'
 const LH_TIME = '04:43'
@@ -388,6 +392,14 @@ function randomState(seed: number): Made {
       )
     }
   }
+  // A clinic appointment they both go to (his clinic week shows it with a kind word; the title and note stay home).
+  if (chance(r, 0.5)) {
+    s = addAppointment(
+      s,
+      { date: addDays(day, int(r, -2, 8)), time: '08:30', title: CLINIC_TITLE, place: '○○의원', who: 'both', kind: 'hospital', note: APPT_NOTE },
+      OWNER,
+    )
+  }
   if (chance(r, 0.6)) s = setCover(s, { photoId: 'builtin:hangang', focusY: int(r, 0, 100), caption: '우리 둘' }, OWNER, starts[0]!)
   if (chance(r, 0.6)) s = setCoupleDates(s, { metDate: '2021-05-14', ...(chance(r, 0.5) ? { marriedDate: '2024-10-12' } : {}) })
   // Rests / clinic / after a loss / pregnant — now and then.
@@ -457,6 +469,17 @@ function projected(m: Moment | null) {
         veiled: !!m.veiled,
         support: !!m.support,
         monthlyTask: !!m.monthlyTask,
+        // 해 줄 말 (N30): only a card she told him about carries it; the answers as catalogue signals.
+        ...(m.say
+          ? {
+              say: {
+                say: m.say.say,
+                save: m.say.save,
+                replies: m.say.replies.map((id) => ({ ...signalById(id)! })),
+                ...(m.say.sent ? { sent: m.say.sent } : {}),
+              },
+            }
+          : {}),
       }
     : null
 }
@@ -482,6 +505,9 @@ function redacted(day: PartnerDay): string {
     delete week.monday
     delete week.thanks
   }
+  // His clinic week (N32): the couple's own appointment days — not cycle dates.
+  const clinic = copy.clinic as { appointments: Array<Record<string, unknown>> } | undefined
+  if (clinic) for (const a of clinic.appointments) delete a.date
   return JSON.stringify(copy)
 }
 
@@ -520,6 +546,20 @@ function checkDayPrivacy(m: Made, s: AppState, d: PartnerDay, tag: string): void
   if (d.moment?.support) {
     expect(d.task, tag).toBeUndefined()
     expect(d.week, tag).toBeUndefined()
+    expect(d.clinic, tag).toBeUndefined()
+    expect(d.myPrep, tag).toBeUndefined()
+  }
+  // His clinic week (N32): only his and '둘이 함께' appointments, as day · time · place · kind word — never a title or a note.
+  if (d.clinic) {
+    const cj = JSON.stringify(d.clinic)
+    for (const w of [CLINIC_TITLE, APPT_NOTE, HIS_APPT_NOTE, TREATMENT_NOTE, '정액검사', '"title"']) expect(cj.includes(w), `${tag}: clinic ${w}`).toBe(false)
+    for (const a of d.clinic.appointments) {
+      const src = s.appointments.find((x) => x.id === a.id)!
+      expect(src, tag).toBeDefined()
+      expect(src.who === 'both' || src.who === PARTNER, tag).toBe(true)
+      expect(Object.keys(a).every((k) => ['id', 'date', 'time', 'place', 'label', 'with', 'joined'].includes(k)), tag).toBe(true)
+    }
+    expect(d.clinic.leave.source.url, tag).toMatch(/^https:\/\//)
   }
 }
 
@@ -750,6 +790,9 @@ function randomRawEvent(r: Rng, s: AppState, day: ISODate): Record<string, unkno
       ])
       if (chance(r, 0.7)) ev.alertStyle = pick(r, ['explicit', 'soft', 'off', 'loud', 3])
       break
+    case 'join-appointment':
+      ev.appointmentId = pick(r, [...s.appointments.map((a) => a.id), ...s.appointments.map((a) => a.id), 'nope', 'has space', 9, undefined])
+      break
     case 'period':
     case 'lh':
     case 'test':
@@ -776,6 +819,7 @@ const ALLOWED_KEYS: Record<PartnerEvent['kind'], string[]> = {
   'week-pick': ['id', 'from', 'kind', 'optionId', 'date'],
   'week-done': ['id', 'from', 'kind', 'date'],
   setup: ['id', 'from', 'kind', 'habits', 'alertStyle'],
+  'join-appointment': ['id', 'from', 'kind', 'appointmentId'],
 }
 
 describe('partner events: everything outside the allowed kinds is rejected, everything else applies once and never touches her data', () => {
@@ -830,13 +874,26 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
           expect(applyPartnerEvent(next, ev, day), tag).toBe(next)
           expect(applyPartnerEvents(next, [ev, ev], day), tag).toBe(next)
           // The only new decisions are the event's own mark (and, for 이번 주 우리 둘, its week key;
-          // for 'setup', that the first run was answered on the link — onboarding.PARTNER_SETUP_KEY).
+          // for 'setup', that the first run was answered on the link — onboarding.PARTNER_SETUP_KEY;
+          // for [같이 갈게요], his answer to that one appointment — partnerEvents.appointmentJoinKey).
           const newKeys = Object.keys(next.decisions).filter((k) => !(k in s.decisions))
           const weekKeys = newKeys.filter((k) => k.startsWith('week-pick:') || k.startsWith('week-done:'))
+          const joinKey = ev.kind === 'join-appointment' ? appointmentJoinKey(ev.appointmentId, PARTNER) : undefined
           expect(
-            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup')),
+            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup') && k !== joinKey),
             tag,
           ).toEqual([appliedEventKey(ev.id)])
+          if (joinKey) {
+            expect(next.decisions[joinKey], tag).toBe(day)
+            const a = s.appointments.find((x) => x.id === (ev as { appointmentId: string }).appointmentId)!
+            expect(a.who, tag).toBe('both')
+            expect(a.date >= day, tag).toBe(true)
+            // Her one 🔔: day, time, place — never the title or the note.
+            const bell = next.notifications.find((n) => n.key === appointmentJoinNoticeKey(a.id, PARTNER))!
+            expect(bell, tag).toMatchObject({ to: OWNER, from: PARTNER, kind: 'system' })
+            expect(`${bell.title} ${bell.body}`, tag).not.toMatch(new RegExp(`${CLINIC_TITLE}|${APPT_NOTE}`))
+            expect(next.appointments, tag).toBe(s.appointments)
+          }
           if (ev.kind === 'week-pick') expect(weekKeys.every((k) => k.startsWith(`week-pick:`) && k.endsWith(`:${PARTNER}:${ev.optionId}`)), tag).toBe(true)
           else if (ev.kind === 'week-done') expect(weekKeys.every((k) => k.endsWith(`:${PARTNER}`)), tag).toBe(true)
           else expect(weekKeys, tag).toEqual([])
@@ -848,8 +905,10 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
         }
         s = next
       }
-      // The whole batch again is a no-op; the ids it holds are exactly the applied ones.
-      expect(applyPartnerEvents(s, cleaned, day)).toBe(s)
+      // The applied ones again are a no-op (once per id); the ids it holds are exactly the applied ones.
+      // (A rejected one may apply on a replay when an earlier refusal was about order — [했어요] before the
+      // pick — which is the transport's re-delivery working, not a repeat.)
+      expect(applyPartnerEvents(s, cleaned.filter((e) => hasAppliedEvent(s, e.id)), day)).toBe(s)
       expect(appliedEventIds(s, cleaned).every((id) => hasAppliedEvent(s, id))).toBe(true)
       if (!cleaned.some((e) => e.kind === 'setup' && e.alertStyle)) sameOwnerData(m.state, s, `seed ${seed} end`)
       // Her screen of her own data is untouched too.
@@ -1352,9 +1411,11 @@ describe('supabase transport (fake fetch): the wire carries the lens-built snaps
     const fetch: FetchLike = async (input, init) => {
       calls.push({ url: input, method: init.method, headers: init.headers, body: init.body ?? '' })
       const fn = input.split('/rpc/')[1]
+      // create_couple echoes the id her phone made (the app's way); without one, a fresh id.
+      const asked = fn === 'create_couple' ? ((JSON.parse(init.body ?? '{}') as { p_couple_id?: string }).p_couple_id ?? null) : null
       const body =
         fn === 'create_couple'
-          ? '"c0ffee00-0000-4000-8000-000000000001"'
+          ? JSON.stringify(asked ?? 'c0ffee00-0000-4000-8000-000000000001')
           : fn === 'issue_token'
             ? '"2026-11-01T00:00:00+00:00"'
             : fn === 'publish_snapshot'
@@ -1388,6 +1449,8 @@ describe('supabase transport (fake fetch): the wire carries the lens-built snaps
       await t.sendEvent(link.token, { id: 'e1', kind: 'check', itemId: 'i', date: m.day, done: true })
       expect(calls.map((c) => c.url.split('/rpc/')[1])).toEqual([
         'create_couple',
+        // Her phone's own couple id is registered once before the first issue / publish / pull (ensureCouple).
+        'create_couple',
         'issue_token',
         'publish_snapshot',
         'pull_events',
@@ -1396,6 +1459,7 @@ describe('supabase transport (fake fetch): the wire carries the lens-built snaps
         'snapshot_by_token',
         'send_event',
       ])
+      expect(JSON.parse(calls[1]!.body)).toEqual({ p_owner_key: OWNER_KEY, p_couple_id: link.coupleId })
       const stateJson = JSON.stringify(m.state)
       for (const c of calls) {
         const fn = c.url.split('/rpc/')[1]!

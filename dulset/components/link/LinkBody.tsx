@@ -9,31 +9,39 @@
 // Order, as his in-app home orders itself (components/tabs/TodayTab): a live
 // deadline of his month task (`top`) goes before the moment card, or right
 // after it when the card ends in a button; else inside the card when the card
-// features it; else in 우리 한 줄. Then '이번 주 우리 둘' (N21), his checks,
-// 우리 한 줄, 우리 신호.
+// features it; else in 우리 한 줄. His clinic week (N32) sits inside the
+// moment card while clinic mode is on. Then '이번 주 우리 둘' (N21) with his
+// '내 준비' bar under it (N30), his checks, 우리 한 줄, 우리 신호, and
+// '매주 이 시간에 알려 받기' (N31).
 
 import { useMemo } from 'react'
 import { CHEERS_PER_DAY } from '@/lib/logic/partnerEvents'
-import type { PartnerPage, SnapshotCheck, SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import type { WeeklyDay } from '@/lib/logic/ics'
+import type { PartnerPage, SnapshotAppointment, SnapshotCheck, SnapshotTask } from '@/lib/logic/partnerSnapshot'
 import type { Signal } from '@/lib/logic/signals'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import type { ISODate } from '@/lib/types'
 import { Heading } from './bits'
 import LinkChecks from './LinkChecks'
+import LinkClinic from './LinkClinic'
 import LinkCover from './LinkCover'
 import LinkMoment from './LinkMoment'
+import LinkPrep from './LinkPrep'
 import LinkSignals from './LinkSignals'
 import LinkTaskCard from './LinkTask'
 import LinkUsLine from './LinkUsLine'
 import LinkWeek from './LinkWeek'
+import LinkWeekly from './LinkWeekly'
 import {
   ownerOf,
   viewCanNudge,
   viewChecks,
+  viewClinic,
   viewerOf,
   viewSignal,
   viewSignalsLeft,
   viewTask,
+  viewTold,
   viewWeek,
   type LocalMarks,
 } from './model'
@@ -48,6 +56,12 @@ export interface LinkActions {
   onCheer: () => void
   onWeekPick: (id: WeekOptionId) => void
   onWeekDone: () => void
+  /** [같이 갈게요] on a '둘이 함께' appointment of his clinic week (N32). */
+  onJoin: (a: SnapshotAppointment) => void
+  /** '캘린더에 넣기' — the weekly reminder file for `day` (N31; nothing is sent). */
+  onWeekly: (day: WeeklyDay) => void
+  /** One of the two answers on a card she told him about (해 줄 말, N30) — a 'signal' event. */
+  onTold: (signal: Signal) => void
 }
 
 export const NO_ACTIONS: LinkActions = {
@@ -59,6 +73,9 @@ export const NO_ACTIONS: LinkActions = {
   onCheer: () => {},
   onWeekPick: () => {},
   onWeekDone: () => {},
+  onJoin: () => {},
+  onWeekly: () => {},
+  onTold: () => {},
 }
 
 export default function LinkBody({
@@ -89,6 +106,8 @@ export default function LinkBody({
   const canNudge = viewCanNudge(page, marks)
   const task = viewTask(page, marks)
   const week = viewWeek(page, marks)
+  const clinic = viewClinic(page, marks)
+  const told = viewTold(page, marks)
 
   const goToUsLine = () => {
     const el = document.getElementById('us-line')
@@ -114,24 +133,41 @@ export default function LinkBody({
       <LinkCover snapshot={page} today={today} onLine={pending ? goToUsLine : undefined} />
 
       <div className="mt-4 space-y-3">
-        {where === 'top' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} /> : null}
+        {where === 'top' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} /> : null}
         {page.moment ? (
           <LinkMoment
             snapshot={page}
             task={where === 'card' && task ? task : undefined}
             onTaskDone={actions.onTaskDone}
+            clinic={clinic}
+            today={today}
+            onJoin={actions.onJoin}
             weekBelow={!!week && where !== 'after'}
+            say={told}
+            ownerName={owner.name}
+            signalsLeft={signalsLeft}
+            onTold={actions.onTold}
           />
+        ) : clinic ? (
+          <section
+            aria-label="병원과 함께"
+            className="rounded-card bg-surface px-[18px] py-4 shadow-warm dark:border dark:border-line/70 dark:shadow-none"
+          >
+            <LinkClinic clinic={clinic} today={today} onJoin={actions.onJoin} />
+          </section>
         ) : null}
-        {where === 'after' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} /> : null}
-        {week ? <LinkWeek week={week} ownerName={owner.name} onPick={actions.onWeekPick} onDone={actions.onWeekDone} /> : null}
+        {where === 'after' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} /> : null}
+        {week ? (
+          <LinkWeek week={week} ownerName={owner.name} onPick={actions.onWeekPick} onDone={actions.onWeekDone} showPrep={!page.myPrep} />
+        ) : null}
+        {page.myPrep ? <LinkPrep prep={page.myPrep} /> : null}
       </div>
 
       <Heading>오늘 할 일</Heading>
       <LinkChecks me={me} her={me.id === page.cycleOwner} checks={checks} onToggle={actions.onToggle} />
 
       <Heading sub={pending ? `${owner.name}님의 신호에 답해 보세요` : undefined}>우리 한 줄</Heading>
-      {where === 'us' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} className="mb-3" /> : null}
+      {where === 'us' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} className="mb-3" /> : null}
       <LinkUsLine
         snapshot={page}
         signal={pending}
@@ -145,6 +181,10 @@ export default function LinkBody({
 
       <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
       <LinkSignals snapshot={page} left={signalsLeft} onSend={actions.onSignal} />
+
+      {page.stage === 'preparing' && !page.moment?.support ? (
+        <LinkWeekly today={today} onDownload={actions.onWeekly} className="mt-6" />
+      ) : null}
 
       {bottom ? <div className="mt-6">{bottom}</div> : null}
       {footer}

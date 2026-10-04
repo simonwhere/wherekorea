@@ -16,6 +16,7 @@ import {
   isPlanAccepted,
   mapLinks,
   mondayOf,
+  partnerHintState,
   pastPlans,
   pickIdeas,
   planDateHint,
@@ -37,6 +38,8 @@ import {
 } from '@/lib/logic/dateIdeas'
 import { fertilityStatus, upcomingWindows } from '@/lib/logic/cycle'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
+import { sharedWeek } from '@/lib/logic/cycleRing'
+import { setShareLevel } from '@/lib/logic/prefs'
 import type { AppState, DatePlan, Settings, Stage } from '@/lib/types'
 
 // Cycle: period 2026-09-01, 28 days → fertile 09-10..09-15 (ovulation 09-15),
@@ -389,11 +392,22 @@ describe('dateBanner', () => {
     const rest = startRestCycle(fresh(), '2026-09-05')
     const pending = markPositivePending(fresh(), '2026-09-09')
     for (const s of [rest, pending]) {
-      for (const viewer of ['a', 'b'] as const) {
-        expect(dateBanner(s, '2026-09-11', viewer).kind).toBe('preparing')
-        expect(fertileHintsAllowed(s, viewer)).toBe(false)
-      }
+      // Her own banner, and a partner she shares the details with: quiet.
+      expect(dateBanner(s, '2026-09-11', 'b').kind).toBe('preparing')
+      expect(dateBanner(setShareLevel(s, 'b', 'details'), '2026-09-11', 'a').kind).toBe('preparing')
+      // The bare gate reads the state as stored (no screen renders it alone).
+      for (const viewer of ['a', 'b'] as const) expect(fertileHintsAllowed(s, viewer)).toBe(false)
     }
+    // A partner without her details sees what his home card shows (partnerHintState, N19 leftover):
+    // a rest she started before his window keeps it off; a positive test she logged inside it
+    // (09-09, window from 09-07) and did not tell changes nothing — the banner keeps 우리의 주간.
+    expect(sharedWeek(rest, '2026-09-11')).toBeUndefined()
+    expect(dateBanner(rest, '2026-09-11', 'a').kind).toBe('preparing')
+    expect(sharedWeek(pending, '2026-09-11')).toBeDefined()
+    expect(dateBanner(pending, '2026-09-11', 'a').kind).toBe('our-week')
+    expect(dateBanner(pending, '2026-09-11', 'a')).toEqual(dateBanner(fresh(), '2026-09-11', 'a'))
+    expect(fertileHintsAllowed(partnerHintState(pending, 'a'), 'a', '2026-09-11')).toBe(true)
+    expect(partnerHintState(pending, 'b')).toBe(pending)
     // A clinic cycle too — and a logged period does not end that one.
     const clinic = startRestCycle(fresh(), '2026-09-05', 'clinic')
     const clinicLogged = { ...clinic, periods: [...clinic.periods, { start: '2026-09-29' }] }

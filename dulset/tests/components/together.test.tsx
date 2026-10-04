@@ -242,7 +242,10 @@ describe('his in-app home: the same 이번 주 우리 둘 block as the link', ()
     expect(block.textContent).toContain('지은님이 고마워했어요 (토)')
     // The line names her once: no '지은님에게서 ·' label in front of '지은님이 고마워했어요'.
     expect(block.textContent).not.toContain('지은님에게서')
-    expect(block.textContent).toContain('내 준비')
+    // 내 준비 is its own bar right under the week block (N30), not a line inside it.
+    expect(block.textContent).not.toContain('내 준비')
+    const prep = screen.getByRole('region', { name: '내 준비' })
+    expect(block.compareDocumentPosition(prep) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('is not on her home, and rests in the quiet after a loss', () => {

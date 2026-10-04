@@ -18,6 +18,14 @@
 // page's `?today=` pin when there is one (demos and screenshots pin both tabs
 // to the same date — lib/store, components/link/LinkPage), so an event is
 // taken in on the date the page shows.
+//
+// Offline, simulated (mock only): with `?mockOffline=1` on the page's address
+// or 'dulset:mock-offline' = '1' in this browser's storage, the PARTNER-side
+// calls fail as an unreachable server would (fetchSnapshot / sendEvent throw
+// 'offline'; recordLinkOpen records nothing) — so the link's '지금은 불러올 수
+// 없어요' can be seen and tested without a network. Her phone's calls
+// (publish, pull, revoke) are left alone: the mock is one browser, and the
+// point is to see HIS page with no connection. Nothing else reads the flag.
 
 import { addDays, isISODate } from '../dates'
 import { localNowISO } from '../logic/notifications'
@@ -34,6 +42,10 @@ export const MOCK_CHANNEL = 'dulset:mock-sync'
 export const MOCK_EVENTS_MAX = 200
 /** The expiry issueToken reports (the same default as the server's issue_token). */
 export const MOCK_TOKEN_DAYS = 30
+/** localStorage flag ('1') that makes the mock's partner-side calls fail as offline (a test / demo switch). */
+export const MOCK_OFFLINE_KEY = 'dulset:mock-offline'
+/** The page-address switch for the same: `?mockOffline=1`. */
+export const MOCK_OFFLINE_PARAM = 'mockOffline'
 
 export interface StorageLike {
   getItem(key: string): string | null
@@ -79,12 +91,32 @@ export function parseMockStore(raw: string | null): MockStore {
   }
 }
 
-export type MockErrorCode = 'unknown-token' | 'foreign-token' | 'storage'
+export type MockErrorCode = 'unknown-token' | 'foreign-token' | 'storage' | 'offline'
 
 const MOCK_ERROR_TEXT: Record<MockErrorCode, string> = {
   'unknown-token': '이 링크는 더 이상 유효하지 않아요',
   'foreign-token': '이 링크는 다른 두 사람의 것이에요',
   storage: '이 기기에 저장할 수 없어요',
+  offline: '지금은 연결할 수 없어요 (모의 오프라인)',
+}
+
+/**
+ * Is the mock simulating no network for this page? `?mockOffline=1` (or
+ * 'true') in `search`, or MOCK_OFFLINE_KEY = '1' in `storage`. Pure over its
+ * inputs; any read error counts as online.
+ */
+export function mockOfflineOn(search: string | undefined, storage: Pick<StorageLike, 'getItem'> | null | undefined): boolean {
+  try {
+    const v = search ? new URLSearchParams(search).get(MOCK_OFFLINE_PARAM) : null
+    if (v === '1' || v === 'true') return true
+  } catch {
+    /* no address */
+  }
+  try {
+    return storage?.getItem(MOCK_OFFLINE_KEY) === '1'
+  } catch {
+    return false
+  }
 }
 
 export class MockTransportError extends Error {
@@ -158,6 +190,8 @@ export interface MockTransportOptions {
   channel?: ChannelLike | null
   /** The stamp a publish or an event gets (defaults to the clock, on the page's `?today=` date when pinned). */
   now?: () => ISODateTime
+  /** Simulated offline for the partner-side calls (defaults to mockOfflineOn over the page's address and storage). */
+  offline?: () => boolean
 }
 
 /** This device's clock, on the `?today=YYYY-MM-DD` date when the page is pinned (as lib/store reads it). */
@@ -183,6 +217,11 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
   const storage = opts.storage === undefined ? browserStorage() : opts.storage
   const channel = opts.channel === undefined ? browserChannel() : opts.channel
   const now = opts.now ?? (() => pinnedNowISO())
+  const offline =
+    opts.offline ?? (() => mockOfflineOn(typeof window !== 'undefined' ? window.location.search : undefined, storage))
+  const failIfOffline = (): void => {
+    if (offline()) throw new MockTransportError('offline')
+  }
 
   const read = (): MockStore => {
     try {
@@ -257,6 +296,7 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     },
 
     async fetchSnapshot(token) {
+      failIfOffline()
       const store = read()
       const t = store.tokens[token]
       if (!t) return null
@@ -264,6 +304,7 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     },
 
     async sendEvent(token, ev) {
+      failIfOffline()
       const store = read()
       const coupleId = coupleOf(store, token)
       const list = store.events[coupleId] ?? []
@@ -282,8 +323,9 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     },
 
     async recordLinkOpen(token, day) {
-      // Never throws: an unknown or revoked token, a bad day or a full storage records nothing.
+      // Never throws: an unknown or revoked token, a bad day, a full storage or (simulated) offline records nothing.
       try {
+        if (offline()) return
         const store = read()
         const t = store.tokens[token]
         if (!t || !isISODate(day)) return

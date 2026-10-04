@@ -19,6 +19,13 @@ import {
   fertileKey,
   inbox,
   mergeNotices,
+  nudgesPerDay,
+  NUDGES_PER_DAY,
+  OWNER_NUDGES_PER_DAY,
+  nudgesSentToday,
+  partnerFertileKey,
+  partnerNoticeDelivered,
+  partnerPeakKey,
   peakBody,
   peakKey,
   scheduledNotices,
@@ -97,12 +104,15 @@ function legacy(key: string, to: 'a' | 'b', kind: AppNotification['kind']): AppN
   return { id: key, to, kind, title: 'old', body: 'old', createdAt: at('2026-09-09'), key, read: true }
 }
 
-describe('fertile notices are keyed by the cycle, not the window', () => {
-  it('uses the cycle start in both keys', () => {
+describe('fertile notices: hers keyed by the cycle, his by the week (never a date of her cycle in his key)', () => {
+  it('uses her cycle start in her keys and the window’s week in his', () => {
     expect(fertileKey('2026-09-01', 'a')).toBe('fertile:2026-09-01:a')
     expect(peakKey('2026-09-01', 'b')).toBe('peak:2026-09-01:b')
+    // The Monday of the week the window (09-10) / the best days (09-13) start in.
+    expect(partnerFertileKey('2026-09-10', 'a')).toBe('fertile-week:2026-09-07:a')
+    expect(partnerPeakKey('2026-09-13', 'a')).toBe('peak-week:2026-09-07:a')
     const n = scheduledNotices(fresh(), '2026-09-13')
-    expect(fertileTo(n, 'a').map((x) => x.key)).toEqual(['fertile:2026-09-01:a'])
+    expect(fertileTo(n, 'a').map((x) => x.key)).toEqual(['fertile-week:2026-09-07:a'])
     expect(fertileTo(n, 'b').map((x) => x.key)).toEqual(['fertile:2026-09-01:b'])
     expect(peakTo(n, 'b').map((x) => x.key)).toEqual(['peak:2026-09-01:b'])
     expect(peakTo(n, 'a')).toEqual([]) // soft style: one gentle notice only
@@ -135,7 +145,7 @@ describe('fertile notices are keyed by the cycle, not the window', () => {
     s = addPeriod(s, '2026-09-29', '2026-10-03', 'b')
     const next = run(s, ['2026-10-07', '2026-10-08', '2026-10-11'])
     expect(next.added.filter((x) => x.kind === 'fertile-start').map((x) => x.key).sort()).toEqual([
-      'fertile:2026-09-29:a',
+      'fertile-week:2026-10-05:a',
       'fertile:2026-09-29:b',
     ])
     expect(next.added.filter((x) => x.kind === 'peak').map((x) => x.key)).toEqual(['peak:2026-09-29:b'])
@@ -389,7 +399,9 @@ describe("a partner without the owner's cycle details", () => {
     const shared = fresh({ alertStyle: { a: 'explicit', b: 'explicit' }, shareLevel: 'details' })
     const n = scheduledNotices(shared, '2026-09-13')
     expect(fertileTo(n, 'a')[0]!.title).toBe('💞 가임기가 다가왔어요')
-    expect(peakTo(n, 'a').map((x) => x.key)).toEqual(['peak:2026-09-01:a'])
+    // His keys name the week, never her cycle's first day (Now 3 leftover).
+    expect(fertileTo(n, 'a').map((x) => x.key)).toEqual(['fertile-week:2026-09-07:a'])
+    expect(peakTo(n, 'a').map((x) => x.key)).toEqual(['peak-week:2026-09-07:a'])
   })
 
   it('still hears nothing with the style off or in low-pressure mode', () => {
@@ -423,8 +435,14 @@ describe('rest cycles and a positive test awaiting the clinic', () => {
   })
 
   it('send no fertile notice and no "take a test" prompt while a positive test awaits the clinic', () => {
-    const pending = markPositivePending(fresh(), '2026-09-26')
+    const pending = markPositivePending(fresh(), '2026-09-06')
+    // Hers stops. His (no details, test not told, logged before his span began) has nothing to stop:
+    // his span never started.
     expect(scheduledNotices(pending, '2026-09-13').some((x) => x.kind === 'fertile-start')).toBe(false)
+    // A positive she logs inside his span (not told): his notice is the same as without it (N19 — only hers stops).
+    const inside = markPositivePending(fresh(), '2026-09-11')
+    expect(fertileTo(scheduledNotices(inside, '2026-09-13'), 'b')).toEqual([])
+    expect(fertileTo(scheduledNotices(inside, '2026-09-13'), 'a')).toEqual(fertileTo(scheduledNotices(fresh(), '2026-09-13'), 'a'))
     // 10-01 is 2 days past the expected period: no late / test notice either.
     expect(scheduledNotices(pending, '2026-10-01').filter((x) => x.key.startsWith('late:'))).toEqual([])
     expect(scheduledNotices(fresh(), '2026-10-01').filter((x) => x.key.startsWith('late:'))).toHaveLength(1)
@@ -686,12 +704,17 @@ describe('Next B: the quiet after a pregnancy ended, and 콕 받기', () => {
     expect(inbox(sendNudge(yes, 'a', 'b', '2026-09-10', at('2026-09-10'), '엽산'), 'b').filter((n) => n.kind === 'nudge')).toHaveLength(1)
   })
 
-  it('기념일 알림 off: no anniv: notice from the engine on D-7 or the day, for either person; unset = on', () => {
+  it('기념일 알림 off: no anniv: notice from the engine on D-7 or the day, for either person (preparing: off unless chosen, then the day only — N27)', () => {
     expect(SETTINGS_DEFAULTS.anniversaryAlerts).toBe(true)
     let s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' })
     s = addAnniversary(s, { title: '첫 여행', date: '2026-09-10', yearly: false })
     const anniv = (state: AppState, d: string) => scheduledNotices(state, d).filter((n) => n.key.startsWith('anniv:'))
-    expect(anniv(s, '2026-09-07').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:7:a', 'anniv:married-year:2:2026-09-14:7:b'])
+    // While preparing, unset reads as off (anniversary.anniversaryAlertsDefault).
+    expect(anniv({ ...s, settings: { ...s.settings, anniversaryAlerts: undefined } }, '2026-09-10')).toEqual([])
+    s = { ...s, settings: { ...s.settings, anniversaryAlerts: true } }
+    // Turned on while preparing: the day itself only, no week-ahead notice.
+    expect(anniv(s, '2026-09-07')).toEqual([])
+    expect(anniv(s, '2026-09-14').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:0:a', 'anniv:married-year:2:2026-09-14:0:b'])
     expect(anniv(s, '2026-09-10')).toHaveLength(2)
     const off: AppState = { ...s, settings: { ...s.settings, anniversaryAlerts: false } }
     for (const d of ['2026-09-03', '2026-09-07', '2026-09-10', '2026-09-14']) expect(anniv(off, d), d).toEqual([])
@@ -717,7 +740,7 @@ describe('N19 / N24: the partner’s 우리의 주간 notice follows the shared 
     const s = fresh({ alertStyle: { a: 'soft', b: 'explicit' }, shareLevel: 'week' })
     // The day before the window (09-09) and inside it; never earlier, never after.
     expect(fertileTo(scheduledNotices(s, '2026-09-08'), 'a')).toEqual([])
-    expect(fertileTo(scheduledNotices(s, '2026-09-09'), 'a').map((x) => x.key)).toEqual(['fertile:2026-09-01:a'])
+    expect(fertileTo(scheduledNotices(s, '2026-09-09'), 'a').map((x) => x.key)).toEqual(['fertile-week:2026-09-07:a'])
     expect(fertileTo(scheduledNotices(s, '2026-09-15'), 'a')).toHaveLength(1)
     expect(fertileTo(scheduledNotices(s, '2026-09-16'), 'a')).toEqual([])
     // An LH surge moves her window (and her notice), never his.
@@ -730,12 +753,15 @@ describe('N19 / N24: the partner’s 우리의 주간 notice follows the shared 
   })
 
   it('a short cycle whose window covers the period: nothing to him on days 1–3 (they would date her untold period)', () => {
+    // 21-day cycles, and the settings say so (no start came earlier than his view expected).
+    const base = fresh({ alertStyle: { a: 'soft', b: 'explicit' }, shareLevel: 'week' })
     const short = {
-      ...fresh({ alertStyle: { a: 'soft', b: 'explicit' }, shareLevel: 'week' }),
+      ...base,
+      cycle: { ...base.cycle, cycleLength: 21 },
       periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }],
     }
     for (const d of ['2026-09-29', '2026-09-30', '2026-10-01']) expect(fertileTo(scheduledNotices(short, d), 'a'), d).toEqual([])
-    expect(fertileTo(scheduledNotices(short, '2026-10-02'), 'a').map((x) => x.key)).toEqual(['fertile:2026-09-29:a'])
+    expect(fertileTo(scheduledNotices(short, '2026-10-02'), 'a').map((x) => x.key)).toEqual(['fertile-week:2026-09-28:a'])
     // Hers comes on her own schedule.
     expect(fertileTo(scheduledNotices(short, '2026-09-30'), 'b')).toHaveLength(1)
   })
@@ -760,5 +786,80 @@ describe('N19 / N24: the partner’s 우리의 주간 notice follows the shared 
     expect(headsA!.body).toContain('예상 가임기')
     expect(fertileTo(n, 'b')[0]!.body).toContain('LH 배란테스트')
     for (const t of [peakA!.body, headsA!.body]) expect(t).not.toMatch(/숙제|실패|노력|오늘 꼭|관계를 가져야/)
+  })
+})
+
+describe('his notice keys carry no date of her cycle; the keys used before still count (Now 3 leftover)', () => {
+  const W = { start: '2026-09-01', nextPeriod: '2026-09-29', fertileStart: '2026-09-10', fertileEnd: '2026-09-15', length: 28 }
+  const keys = (...k: string[]) => k.map((key) => ({ key }))
+  const current = partnerFertileKey(W.fertileStart, 'a')
+
+  it('recognises his notice under the Now 3 key (her cycle start), the older window key and a neighbouring week', () => {
+    expect(partnerNoticeDelivered(keys('fertile:2026-09-01:a'), W, 'a', 'fertile', current, ['2026-09-01'])).toBe(true)
+    expect(partnerNoticeDelivered(keys('fertile-start:2026-09-10:a'), W, 'a', 'fertile', current)).toBe(true)
+    // An LH result moved her window (자세히 only) across a Monday: the week before counts.
+    expect(partnerNoticeDelivered(keys('fertile-week:2026-08-31:a'), W, 'a', 'fertile', current)).toBe(true)
+    expect(partnerNoticeDelivered(keys('peak:2026-09-01:a'), W, 'a', 'peak', partnerPeakKey('2026-09-13', 'a'), ['2026-09-01'])).toBe(true)
+    // The current key itself is mergeNotices' to dedupe — not a reason to stop saying it.
+    expect(partnerNoticeDelivered(keys(current), W, 'a', 'fertile', current)).toBe(false)
+  })
+
+  it("never takes another cycle's, another person's or another kind's key for this one", () => {
+    // The cycle before (its start, its week).
+    expect(partnerNoticeDelivered(keys('fertile:2026-08-04:a'), W, 'a', 'fertile', current, ['2026-08-04', '2026-09-01'])).toBe(false)
+    expect(partnerNoticeDelivered(keys('fertile-week:2026-08-10:a'), W, 'a', 'fertile', current)).toBe(false)
+    // A 'fertile:<date>' that is not one of her logged starts (the older peak dates, say).
+    expect(partnerNoticeDelivered(keys('fertile:2026-09-05:a'), W, 'a', 'fertile', current, ['2026-09-01'])).toBe(false)
+    expect(partnerNoticeDelivered(keys('fertile-week:2026-09-07:b'), W, 'a', 'fertile', current)).toBe(false)
+    expect(partnerNoticeDelivered(keys('peak-week:2026-09-07:a'), W, 'a', 'fertile', current)).toBe(false)
+    expect(partnerNoticeDelivered([{}], W, 'a', 'fertile', current)).toBe(false)
+  })
+
+  it('a save from before the change sends him nothing twice', () => {
+    // Delivered on 09-09 under the Now 3 key: nothing new for him through the window; hers unchanged.
+    const s: AppState = { ...fresh(), notifications: [legacy('fertile:2026-09-01:a', 'a', 'fertile-start')] }
+    for (const d of range('2026-09-09', '2026-09-15')) expect(fertileTo(scheduledNotices(s, d), 'a'), d).toEqual([])
+    expect(fertileTo(scheduledNotices(s, '2026-09-12'), 'b')).toHaveLength(1)
+  })
+
+  it('over many cycles and lenses his keys are a week’s Monday, never one of her logged starts', () => {
+    let s = fresh({ alertStyle: { a: 'explicit', b: 'explicit' } })
+    const starts = ['2026-09-29', '2026-10-25', '2026-11-24']
+    const seen: string[] = []
+    for (const share of ['week', 'details'] as const) {
+      let st: AppState = { ...s, settings: { ...s.settings, shareLevel: share } }
+      for (const d of range('2026-09-01', '2026-12-20')) {
+        if (starts.includes(d)) st = addPeriod(st, d, undefined, 'b')
+        for (const n of scheduledNotices(st, d)) {
+          if (n.to !== 'a' || (n.kind !== 'fertile-start' && n.kind !== 'peak')) continue
+          const m = /^(fertile|peak)-week:(\d{4}-\d{2}-\d{2}):a$/.exec(n.key)
+          expect(m, n.key).not.toBeNull()
+          expect(new Date(`${m![2]}T00:00:00Z`).getUTCDay(), n.key).toBe(1)
+          expect(st.periods.map((p) => p.start), n.key).not.toContain(m![2])
+          seen.push(n.key)
+        }
+      }
+      s = st
+    }
+    expect(new Set(seen).size).toBeGreaterThan(4)
+  })
+})
+
+describe('콕 a day: one from the partner, three from the cycle owner (N30 decision)', () => {
+  it('caps by who sends it; the receiver’s 콕 받기 still rules', () => {
+    const s = fresh()
+    expect(NUDGES_PER_DAY).toBe(1)
+    expect(OWNER_NUDGES_PER_DAY).toBe(3)
+    expect(nudgesPerDay(s, 'a')).toBe(1)
+    expect(nudgesPerDay(s, 'b')).toBe(3)
+    let p = s
+    for (let i = 0; i < 3; i++) p = sendNudge(p, 'a', 'b', '2026-09-10', `2026-09-10T10:0${i}:00+09:00`, '엽산')
+    expect(nudgesSentToday(p, 'a', '2026-09-10')).toBe(1)
+    expect(canNudge(p, 'a', 'b', '2026-09-10')).toBe(false)
+    expect(canNudge(p, 'a', 'b', '2026-09-11')).toBe(true)
+    let o = s
+    for (let i = 0; i < 5; i++) o = sendNudge(o, 'b', 'a', '2026-09-10', `2026-09-10T10:0${i}:00+09:00`)
+    expect(nudgesSentToday(o, 'b', '2026-09-10')).toBe(3)
+    expect(canNudge(setPersonalPref(s, 'b', 'acceptNudges', false), 'a', 'b', '2026-09-10')).toBe(false)
   })
 })

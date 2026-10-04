@@ -18,7 +18,7 @@ import type { AppState, DatePlan, ISODate, MemberId, Stage } from '../types'
 import { fertilityStatus, ourWeekSoon } from './cycle'
 import { sharedWeek } from './cycleRing'
 import { mergeNotices } from './notifications'
-import { canSeeCycleDetails, canSeeWeekBand, lowPressureFor } from './prefs'
+import { canLogCycle, canSeeCycleDetails, canSeeWeekBand, lowPressureFor } from './prefs'
 import { activePositivePending, activeRest } from './ttc'
 
 // ── Season / week ───────────────────────────────────────────
@@ -240,6 +240,26 @@ export function fertileHintsAllowed(
   return true
 }
 
+/**
+ * The state the 둘만의 시간 gate (fertileHintsAllowed) reads for `viewer`.
+ * For her and a partner she shares the details with: the state as it is. For
+ * a partner without them: her own rest (not the clinic mode, not the 'loss'
+ * quiet — both phones show those) and her positive test left out — his one
+ * window (cycleRing.sharedWeek) already stays off when one started before it,
+ * and one she starts inside it must not take his card or its ideas away (a
+ * screen change on the day of something she did not tell). Every screen that
+ * gates on it reads through this: the home card (ttcFlow.ttcMoment), its
+ * ideas (components/today/OurWeekIdeas → partnerSnapshot.linkIdeas), the
+ * link's ideas and the #date banner (dateBanner). Idempotent.
+ */
+export function partnerHintState<S extends Pick<AppState, 'couple' | 'settings' | 'restCycle' | 'positivePending'>>(state: S, viewer: MemberId): S {
+  if (canLogCycle(state, viewer) || canSeeCycleDetails(state, viewer)) return state
+  const r = state.restCycle
+  const keepRest = r?.reason === 'clinic' || r?.reason === 'loss'
+  if (!state.positivePending && (!r || keepRest)) return state
+  return { ...state, restCycle: keepRest ? r : undefined, positivePending: undefined }
+}
+
 export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId): DateBanner {
   if (state.stage === 'pregnant') {
     return {
@@ -267,7 +287,10 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       note: PREPARING_NOTE,
     }
   }
-  if (fertileHintsAllowed(state, viewer, today)) {
+  // Read through partnerHintState, as the home card is: a rest or a positive
+  // test she starts inside his window and does not tell never flips this
+  // banner (the window itself — sharedWeek, below — reads the stored state).
+  if (fertileHintsAllowed(partnerHintState(state, viewer), viewer, today)) {
     // Same rule as the home teaser and the "이번 주는 우리의 주간" notice: her
     // own (LH-tuned) estimate for her and a partner she shares the details
     // with; for a partner without them the one shared window (cycleRing

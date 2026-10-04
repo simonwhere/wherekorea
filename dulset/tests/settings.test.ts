@@ -22,6 +22,8 @@ import {
   alertPreview,
   alertStyleOf,
   anniversaryAlertsOn,
+  setAnniversaryAlerts,
+  setCoupleFlag,
   homeDiscreetFor,
   memoriesOn,
   showTryCountOn,
@@ -996,5 +998,44 @@ describe('sanitizeBackup: Next B fields (시술 · 휴가 · 관계일 · 출혈
     expect(homeDiscreetFor({ ...s.settings, personal: { b: { discreet: false, homeDiscreet: true } } }, 'b')).toBe(true)
     expect(acceptNudgesFor({ ...s.settings, personal: { a: { acceptNudges: false } } }, 'a')).toBe(false)
     expect(acceptNudgesFor({ ...s.settings, personal: { a: { acceptNudges: false } } }, 'b')).toBe(true)
+  })
+})
+
+describe('기념일 알림 default reader (N27: off while preparing, an explicit choice wins)', () => {
+  const STAGES = ['preparing', 'pregnant', 'parenting'] as const
+
+  it('unset follows the stage when the stage is given; without one it keeps SETTINGS_DEFAULTS (on)', () => {
+    const s = fresh()
+    expect(s.settings.anniversaryAlerts).toBeUndefined()
+    expect(anniversaryAlertsOn(s.settings, 'preparing')).toBe(false)
+    expect(anniversaryAlertsOn(s.settings, 'pregnant')).toBe(true)
+    expect(anniversaryAlertsOn(s.settings, 'parenting')).toBe(true)
+    expect(anniversaryAlertsOn(s.settings)).toBe(SETTINGS_DEFAULTS.anniversaryAlerts)
+  })
+
+  it('an explicit true / false wins in every stage', () => {
+    for (const stage of STAGES) {
+      expect(anniversaryAlertsOn(setAnniversaryAlerts(fresh(), true).settings, stage), stage).toBe(true)
+      expect(anniversaryAlertsOn(setAnniversaryAlerts(fresh(), false).settings, stage), stage).toBe(false)
+    }
+  })
+
+  it('setAnniversaryAlerts always stores the choice (an "on" is not dropped as a default), and is a no-op for the same value', () => {
+    const on = setAnniversaryAlerts(fresh(), true)
+    expect(on.settings.anniversaryAlerts).toBe(true)
+    expect(setAnniversaryAlerts(on, true)).toBe(on)
+    const off = setAnniversaryAlerts(on, false)
+    expect(off.settings.anniversaryAlerts).toBe(false)
+    // setCoupleFlag keeps its old byte-identical rule — which is why the switch does not use it for this flag.
+    expect(setCoupleFlag(fresh(), 'anniversaryAlerts', true).settings.anniversaryAlerts).toBeUndefined()
+    expect(anniversaryAlertsOn(setCoupleFlag(fresh(), 'anniversaryAlerts', true).settings, 'preparing')).toBe(false)
+  })
+
+  it('a stored choice survives a backup round trip and a reload', () => {
+    for (const v of [true, false]) {
+      const s = setAnniversaryAlerts(fresh(), v)
+      expect(sanitizeBackup(JSON.parse(JSON.stringify(s)))!.settings.anniversaryAlerts).toBe(v)
+      expect(parseState(JSON.stringify(s))!.settings.anniversaryAlerts).toBe(v)
+    }
   })
 })

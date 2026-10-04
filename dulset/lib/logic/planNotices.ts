@@ -10,9 +10,11 @@ import { diffDays, formatKo, isISODate } from '../dates'
 import { MEMBER_IDS, type AppState, type Appointment, type CustomTask, type ISODate, type MemberId } from '../types'
 import { appointmentNotices } from './appointments'
 import type { Notice } from './notifications'
+import { monthlyTask, partnerId } from './partnerTrack'
 import { planItems } from './plan'
 import { recentlyEnded } from './pregnancy'
 import { noticeStatus } from './treatments'
+import { partnerTaskVisible } from './ttcFlow'
 
 let phaseByTemplate: Map<string, string> | undefined
 function templatePhase(id: string): string | undefined {
@@ -93,11 +95,69 @@ export function noticeExpiryNotices(state: AppState, today: ISODate): Notice[] {
   }))
 }
 
+// ── 이번 달 할 일 (N30, preparing) ────────────────────────────
+//
+// His month task's three dates (docs/positioning.md §3-1, partnerTrack
+// fertilityChain): the day after a booked test with no '다녀왔어요' yet, the
+// 검사 deadline (신청 후 3개월) and the 청구 deadline (검사 후 1개월) — D-7 ·
+// D-1 · 당일. To the partner only, from his own chain and his own booking:
+// nothing here reads her cycle. Not in the quiet after a pregnancy ended
+// (ttcFlow.partnerTaskVisible — the task card rests then too). The keys name
+// the step, its deadline and his booking's id — no health data of hers — and
+// start with 'deadline:task-', so the notice opens his month task card on 오늘
+// while preparing (today.noticeTarget).
+
+/** Every key monthlyTaskNotices writes: the step, his deadline or booking id, and him — nothing else (tests read it). */
+export const MONTHLY_TASK_KEY_SAFE = /^deadline:task-(?:visit:[\w-]+|(?:test|claim):\d{4}-\d{2}-\d{2}:\d):[ab]$/
+
+/** 'deadline:task-visit:<appointment id>:<member>' — once per booking. */
+export function taskVisitKey(appointmentId: string, to: MemberId): string {
+  return `deadline:task-visit:${appointmentId}:${to}`
+}
+
+/** 'deadline:task-<test|claim>:<deadline>:<days left>:<member>'. */
+export function taskDueKey(step: 'test' | 'claim', dueBy: ISODate, until: number, to: MemberId): string {
+  return `deadline:task-${step}:${dueBy}:${until}:${to}`
+}
+
+export function monthlyTaskNotices(state: AppState, today: ISODate): Notice[] {
+  if (state.stage !== 'preparing' || !isISODate(today)) return []
+  const to = partnerId(state)
+  if (!partnerTaskVisible(state, today, to)) return []
+  const task = monthlyTask(state, today, to)
+  if (task?.step !== 'test' && task?.step !== 'claim') return []
+  const out: Notice[] = []
+  const a = task.appointment
+  if (task.step === 'test' && task.stage === 'visited' && a && a.date < today) {
+    out.push({
+      key: taskVisitKey(a.id, to),
+      to,
+      kind: 'system',
+      title: '📝 검사 다녀왔어요?',
+      body: `${formatKo(a.date)} 예약이었어요. 다녀왔다면 이번 달 할 일에서 ‘네, 다녀왔어요’를 눌러 주세요.`,
+    })
+  }
+  const until = task.dueBy && task.status !== 'overdue' ? diffDays(today, task.dueBy) : undefined
+  if (task.dueBy && until !== undefined && (DEADLINE_REMINDER_DAYS as readonly number[]).includes(until)) {
+    out.push({
+      key: taskDueKey(task.step, task.dueBy, until, to),
+      to,
+      kind: 'system',
+      title: `📝 ${task.title} ${until === 0 ? '오늘까지예요' : `D-${until}`}`,
+      body:
+        task.step === 'test'
+          ? `검사 마감 ${formatKo(task.dueBy)} · 신청 후 3개월 안이에요. 이미 받았다면 이번 달 할 일에서 체크해 주세요.`
+          : `청구 마감 ${formatKo(task.dueBy)} · 검사 후 1개월 안이에요. 이미 청구했다면 이번 달 할 일에서 체크해 주세요.`,
+    })
+  }
+  return out
+}
+
 export function planDeadlineNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
-  // The couple's own '기한' items go out in every stage — these and the
-  // 지원결정통지서 are the only deadline notices while preparing (every roadmap
-  // deadline is tied to the pregnancy or the birth).
+  // The couple's own '기한' items go out in every stage — these, the
+  // 지원결정통지서 and his month task's dates are the only deadline notices while
+  // preparing (every other roadmap deadline is tied to the pregnancy or the birth).
   for (const c of customDeadlineTasks(state)) {
     const until = diffDays(today, c.due)
     if (!(DEADLINE_REMINDER_DAYS as readonly number[]).includes(until)) continue
@@ -105,6 +165,8 @@ export function planDeadlineNotices(state: AppState, today: ISODate): Notice[] {
     for (const to of owners) out.push(deadlineNotice({ id: c.id, title: c.title, end: c.due }, until, to))
   }
   out.push(...noticeExpiryNotices(state, today))
+  // His month task's dates (N30) — the only roadmap-chain notices while preparing.
+  out.push(...monthlyTaskNotices(state, today))
   if (state.stage === 'preparing') return out
   for (const it of planItems(state, today)) {
     if (it.custom || !it.deadline || it.status === 'done' || it.lapsed || !it.end || it.pending) continue

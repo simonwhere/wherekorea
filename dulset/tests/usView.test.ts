@@ -4,13 +4,22 @@ import { addAnniversary, anniversaryNotices, setCoupleDates } from '@/lib/logic/
 import { addEntry } from '@/lib/logic/diary'
 import { setEntryPrivacy } from '@/lib/logic/personalLog'
 import { backToPreparing, startPregnancy, recordBirth } from '@/lib/logic/pregnancy'
-import { anniversaryAlertsOn, setSetting } from '@/lib/logic/settings'
+import { anniversaryAlertsOn, setAnniversaryAlerts, setSetting } from '@/lib/logic/settings'
+import { addAppointment } from '@/lib/logic/appointments'
+import { sendCheer } from '@/lib/logic/notifications'
+import { FERTILITY_TEST_ID, setFertilityApplied, setFertilityClaimed } from '@/lib/logic/partnerTrack'
+import { tickItem } from '@/lib/logic/plan'
+import { setPersonalPref } from '@/lib/logic/prefs'
 import {
   ALBUM_CAPTION_MAX,
+  PARTNER_PROGRESS_KEEP_DAYS,
   albumFeed,
   albumGroups,
   anniversaryEmoji,
   anniversaryLists,
+  bellInbox,
+  bellUnread,
+  clearBell,
   chapterContext,
   chapterLabel,
   chaptersWithEntries,
@@ -21,14 +30,18 @@ import {
   entryChapter,
   excerpt,
   filterStory,
+  isRecordBookNotice,
+  markRecordBookNotesRead,
   marriedLine,
   nextCustomOccurrence,
   ourDaysChain,
+  partnerProgressLine,
   prepStartOf,
   reactToEntry,
   reactionNoticeKey,
   reactionOf,
   receivedReactions,
+  recordBookNotes,
   removeStoryEntry,
   setReaction,
   toggleReaction,
@@ -347,36 +360,187 @@ describe('album feed (우리 › 앨범, Next B)', () => {
   })
 })
 
-describe('기념일 알림 switch (settings.anniversaryAlerts, Next B)', () => {
+describe('기념일 알림 switch (settings.anniversaryAlerts — stage default since N27)', () => {
   function withDays(): AppState {
     let s = setCoupleDates(fresh(), { metDate: '2021-05-14' })
     s = addAnniversary(s, { title: '첫 여행', date: '2022-10-09', yearly: true })
     return s
   }
+  const pregnant = (s: AppState): AppState => startPregnancy(s, '2026-08-20', '2026-09-20')
 
-  it('sends D-7 and 당일 notices to both by default (unset = on)', () => {
+  it('preparing, never chosen: off — no D-7 and no 당일 notice', () => {
     const s = withDays()
-    expect(anniversaryAlertsOn(s.settings)).toBe(true)
+    expect(s.stage).toBe('preparing')
+    expect(anniversaryAlertsOn(s.settings, s.stage)).toBe(false)
+    expect(anniversaryNotices(s, '2026-10-02')).toEqual([])
+    expect(anniversaryNotices(s, '2026-10-09')).toEqual([])
+  })
+
+  it('preparing, turned on: the day itself only, to both', () => {
+    const s = setAnniversaryAlerts(withDays(), true)
+    expect(anniversaryAlertsOn(s.settings, s.stage)).toBe(true)
+    expect(anniversaryNotices(s, '2026-10-02')).toEqual([])
+    const day = anniversaryNotices(s, '2026-10-09')
+    expect(day.map((n) => n.to).sort()).toEqual(['a', 'b'])
+    expect(day.every((n) => /오늘은 .*첫 여행/.test(n.title))).toBe(true)
+  })
+
+  it('pregnant, never chosen: on — D-7 and 당일 to both, as before', () => {
+    const s = pregnant(withDays())
+    expect(anniversaryAlertsOn(s.settings, s.stage)).toBe(true)
     const d7 = anniversaryNotices(s, '2026-10-02')
     expect(d7.map((n) => n.to).sort()).toEqual(['a', 'b'])
     expect(d7[0]!.title).toMatch(/첫 여행.*까지 일주일/)
-    const day = anniversaryNotices(s, '2026-10-09')
-    expect(day.some((n) => /오늘은 .*첫 여행/.test(n.title))).toBe(true)
+    expect(anniversaryNotices(s, '2026-10-09').some((n) => /오늘은 .*첫 여행/.test(n.title))).toBe(true)
   })
 
-  it('sends nothing once the couple turned it off, and again once it is back on', () => {
-    const off = setSetting(withDays(), 'anniversaryAlerts', false)
-    expect(anniversaryAlertsOn(off.settings)).toBe(false)
-    expect(anniversaryNotices(off, '2026-10-02')).toEqual([])
-    expect(anniversaryNotices(off, '2026-10-09')).toEqual([])
-    const on = setSetting(off, 'anniversaryAlerts', true)
-    expect(anniversaryNotices(on, '2026-10-02')).toHaveLength(2)
-  })
-
-  it('reads the switch the same way as settings.anniversaryAlertsOn for every stored value', () => {
-    for (const value of [undefined, true, false] as const) {
-      const s = value === undefined ? withDays() : setSetting(withDays(), 'anniversaryAlerts', value)
-      expect(anniversaryNotices(s, '2026-10-02').length > 0).toBe(anniversaryAlertsOn(s.settings))
+  it('sends nothing once the couple turned it off, in any stage, and again once it is back on', () => {
+    for (const base of [withDays(), pregnant(withDays())]) {
+      const off = setAnniversaryAlerts(base, false)
+      expect(anniversaryAlertsOn(off.settings, off.stage)).toBe(false)
+      expect(anniversaryNotices(off, '2026-10-02')).toEqual([])
+      expect(anniversaryNotices(off, '2026-10-09')).toEqual([])
+      const on = setAnniversaryAlerts(off, true)
+      expect(anniversaryNotices(on, '2026-10-09')).toHaveLength(2)
     }
+  })
+
+  it('reads the switch the same way as settings.anniversaryAlertsOn(settings, stage) for every stored value and stage', () => {
+    for (const value of [undefined, true, false] as const) {
+      for (const make of [(s: AppState) => s, pregnant]) {
+        const s = make(value === undefined ? withDays() : setSetting(withDays(), 'anniversaryAlerts', value))
+        expect(anniversaryNotices(s, '2026-10-09').length > 0, `${value} ${s.stage}`).toBe(anniversaryAlertsOn(s.settings, s.stage))
+      }
+    }
+    // Without a stage the reader keeps the old meaning (unset = on).
+    expect(anniversaryAlertsOn(withDays().settings)).toBe(true)
+  })
+})
+
+describe('reaction notes live in the 기록장 while preparing, not the 🔔 (N27)', () => {
+  const NOW = '2026-09-26T10:00:00+09:00'
+  const base = () => withEntries(fresh(), [entry({ id: 'x', date: '2026-09-01', author: 'b' }), entry({ id: 'y', date: '2026-09-02', author: 'b' })])
+
+  it('routes only reaction: keys, and only while preparing', () => {
+    expect(isRecordBookNotice({ key: reactionNoticeKey('x', 'a') }, 'preparing')).toBe(true)
+    expect(isRecordBookNotice({ key: reactionNoticeKey('x', 'a') }, 'pregnant')).toBe(false)
+    expect(isRecordBookNotice({ key: reactionNoticeKey('x', 'a') }, 'parenting')).toBe(false)
+    for (const key of ['anniv:met-days:100:2026-10-01:0:a', 'complete:a:2026-09-26', 'signal:x', undefined]) {
+      expect(isRecordBookNotice({ key }, 'preparing'), String(key)).toBe(false)
+    }
+  })
+
+  it('a reaction while preparing: in the 기록장 notes, out of the bell list and badge; a cheer stays in the bell', () => {
+    let s = reactToEntry(base(), 'x', 'a', '❤️', NOW)
+    s = sendCheer(s, 'a', 'b', NOW)
+    const notes = recordBookNotes(s, 'b')
+    expect(notes.map((n) => n.key)).toEqual([reactionNoticeKey('x', 'a')])
+    expect(notes[0]!.title).toContain('내 기록에 마음을 남겼어요')
+    expect(bellInbox(s, 'b').some((n) => n.key?.startsWith('reaction:'))).toBe(false)
+    expect(bellInbox(s, 'b').some((n) => n.kind === 'cheer')).toBe(true)
+    expect(bellUnread(s, 'b')).toBe(1)
+    // The reactor's own phone has nothing.
+    expect(recordBookNotes(s, 'a')).toEqual([])
+  })
+
+  it('the 기록장 marks them read once shown; only the record-book notes change', () => {
+    let s = reactToEntry(reactToEntry(base(), 'x', 'a', '❤️', NOW), 'y', 'a', '👏', NOW)
+    s = sendCheer(s, 'a', 'b', NOW)
+    expect(recordBookNotes(s, 'b')).toHaveLength(2)
+    const seen = markRecordBookNotesRead(s, 'b')
+    expect(recordBookNotes(seen, 'b')).toEqual([])
+    expect(seen.notifications.find((n) => n.kind === 'cheer')!.read).toBe(false)
+    expect(markRecordBookNotesRead(seen, 'b')).toBe(seen)
+    // Clearing a reaction the author already saw keeps the (read) note — the same rule as before.
+    expect(reactToEntry(seen, 'x', 'a', null, NOW).notifications.some((n) => n.key === reactionNoticeKey('x', 'a'))).toBe(true)
+  })
+
+  it('the 🔔 비우기 (clearBell) clears what the bell shows only — the 기록장 notes stay unread', () => {
+    let s = reactToEntry(base(), 'x', 'a', '❤️', NOW)
+    s = sendCheer(s, 'a', 'b', NOW)
+    s = sendCheer(s, 'b', 'a', NOW)
+    const cleared = clearBell(s, 'b')
+    expect(bellInbox(cleared, 'b')).toEqual([])
+    expect(bellUnread(cleared, 'b')).toBe(0)
+    // The reaction waits in the 기록장 as before; the other phone's inbox is untouched.
+    expect(recordBookNotes(cleared, 'b').map((n) => n.key)).toEqual([reactionNoticeKey('x', 'a')])
+    expect(bellInbox(cleared, 'a')).toEqual(bellInbox(s, 'a'))
+    // Keyed notes stay (dismissed) so they are not delivered again; nothing left → the same state.
+    for (const n of s.notifications.filter((n) => n.to === 'b' && n.key && !isRecordBookNotice(n, 'preparing'))) {
+      expect(cleared.notifications.find((m) => m.id === n.id)).toMatchObject({ read: true, dismissed: true })
+    }
+    expect(clearBell(cleared, 'b')).toBe(cleared)
+    // After the preparing stage the bell carries the reaction too, so 비우기 clears it.
+    const later = clearBell(startPregnancy(s, '2026-08-20', '2026-09-20'), 'b')
+    expect(bellInbox(later, 'b')).toEqual([])
+  })
+
+  it('after the preparing stage the same note is back in the bell (and not in the 기록장 list)', () => {
+    const s = startPregnancy(reactToEntry(base(), 'x', 'a', '❤️', NOW), '2026-08-20', '2026-09-20')
+    expect(recordBookNotes(s, 'b')).toEqual([])
+    expect(bellInbox(s, 'b').map((n) => n.key)).toEqual([reactionNoticeKey('x', 'a')])
+    expect(bellUnread(s, 'b')).toBe(1)
+  })
+})
+
+describe('partnerProgressLine (her home: his month task, the stage only — N28)', () => {
+  const OWNER = 'b' as const
+  const PARTNER = 'a' as const
+  const T = '2026-10-04'
+  const appointment = (s: AppState, date: string) =>
+    addAppointment(s, { date, time: '10:00', title: '정액검사', place: '보건소', who: PARTNER, kind: 'test', note: '', taskId: FERTILITY_TEST_ID }, PARTNER)
+
+  it('nothing before his first step, and never on his own phone', () => {
+    const s = fresh()
+    expect(partnerProgressLine(s, T, OWNER)).toBeUndefined()
+    const applied = setFertilityApplied(s, PARTNER, true, '2026-09-20')
+    expect(partnerProgressLine(applied, T, PARTNER)).toBeUndefined()
+  })
+
+  it('walks 신청 → 예약 → 받았어요 → 청구까지, by his own records only', () => {
+    let s = setFertilityApplied(fresh(), PARTNER, true, '2026-09-20')
+    expect(partnerProgressLine(s, T, OWNER)).toEqual({ member: PARTNER, text: '민수님 · 가임력 검사 지원 신청했어요' })
+    s = appointment(s, '2026-10-10')
+    expect(partnerProgressLine(s, T, OWNER)!.text).toBe('민수님 · 정액검사 예약했어요')
+    // Her own application or her own test never moves his line.
+    const hers = setFertilityApplied(s, OWNER, true, '2026-09-21')
+    expect(partnerProgressLine(hers, T, OWNER)!.text).toBe('민수님 · 정액검사 예약했어요')
+    s = tickItem(FERTILITY_TEST_ID, true, '2026-10-10', PARTNER)(s)
+    expect(partnerProgressLine(s, '2026-10-11', OWNER)!.text).toBe('민수님 · 정액검사 받았어요')
+    s = setFertilityClaimed(s, true, '2026-10-20', PARTNER)
+    expect(partnerProgressLine(s, '2026-10-20', OWNER)!.text).toBe('민수님 · 검사비 청구까지 마쳤어요')
+    // A finished chain rests after a while.
+    expect(PARTNER_PROGRESS_KEEP_DAYS).toBe(30)
+    expect(partnerProgressLine(s, '2026-11-18', OWNER)).toBeDefined()
+    expect(partnerProgressLine(s, '2026-11-19', OWNER)).toBeUndefined()
+  })
+
+  it('says the stage only: no date, time, place or deadline', () => {
+    const s = appointment(setFertilityApplied(fresh(), PARTNER, true, '2026-09-20'), '2026-10-10')
+    const text = partnerProgressLine(s, T, OWNER)!.text
+    expect(text).not.toMatch(/\d/)
+    expect(text).not.toContain('보건소')
+    expect(text).not.toContain('마감')
+  })
+
+  it('follows her voice: 가임력 only when explicit, and just 검사 when her home cards are discreet', () => {
+    const applied = setFertilityApplied(fresh(), PARTNER, true, '2026-09-20')
+    const soft: AppState = { ...applied, settings: { ...applied.settings, alertStyle: { ...applied.settings.alertStyle, [OWNER]: 'soft' } } }
+    expect(partnerProgressLine(soft, T, OWNER)!.text).toBe('민수님 · 임신 전 검사 지원 신청했어요')
+    const discreet = setPersonalPref(appointment(applied, '2026-10-10'), OWNER, 'homeDiscreet', true)
+    expect(partnerProgressLine(discreet, T, OWNER)!.text).toBe('민수님 · 검사 예약했어요')
+  })
+
+  it('rests in the 42 quiet days after a loss and outside the preparing stage', () => {
+    const applied = setFertilityApplied(fresh(), PARTNER, true, '2026-08-01')
+    const lost = backToPreparing(startPregnancy(applied, '2026-07-20', '2026-08-25'), '2026-09-20')
+    expect(partnerProgressLine(lost, T, OWNER)).toBeUndefined()
+    expect(partnerProgressLine(startPregnancy(applied, '2026-08-20', '2026-09-20'), T, OWNER)).toBeUndefined()
+  })
+
+  it('a long-lapsed step is not this month’s news any more', () => {
+    const s = setFertilityApplied(fresh(), PARTNER, true, '2026-03-02') // test window ended in early June
+    expect(partnerProgressLine(s, '2026-06-10', OWNER)).toBeDefined()
+    expect(partnerProgressLine(s, T, OWNER)).toBeUndefined()
   })
 })

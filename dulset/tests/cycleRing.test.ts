@@ -4,9 +4,16 @@ import { createInitialState } from '@/lib/initial'
 import { canSeeCycleDetails, setPersonalPref } from '@/lib/logic/prefs'
 import { backToPreparing, startPregnancy } from '@/lib/logic/pregnancy'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
+import { startClinicMode } from '@/lib/logic/clinic'
+import { logPeriodStart } from '@/lib/logic/logs'
+import { positiveToldKey, periodToldKey, tellPartnerPeriod, tellPartnerPositive } from '@/lib/logic/ttcFlow'
 import {
   LEGEND_MAX,
   SHARED_QUIET_DAYS,
+  anchoredWindow,
+  sharedPeriodToldKey,
+  sharedPositiveToldKey,
+  sharedSpanFrom,
   arcAngles,
   describeStrip,
   fertileAlpha,
@@ -384,7 +391,11 @@ describe('sharedWeek — which window a partner without her details sees, and wh
 
   it('never on period days 1–3 (the home’s 수고했어요 days), even when a short cycle’s window covers them', () => {
     expect(SHARED_QUIET_DAYS).toBe(3)
-    const short = fresh({ periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }] })
+    // (The settings say 21 days too: no start came earlier than his view expected.)
+    const short = fresh({
+      periods: [{ start: '2026-08-18' }, { start: '2026-09-08' }, { start: '2026-09-29' }],
+      cycle: { cycleLength: 21, periodLength: 5 },
+    })
     for (const d of ['2026-09-29', '2026-09-30', '2026-10-01']) expect(sharedWeek(short, d), d).toBeUndefined()
     expect(sharedWeek(short, '2026-10-02')).toMatchObject({ kind: 'window', fertileEnd: '2026-10-06' })
   })
@@ -401,12 +412,16 @@ describe('sharedWeek — which window a partner without her details sees, and wh
     }
   })
 
-  it('off through every pause and the quiet after a pregnancy ended; off outside preparing', () => {
+  it('off through every pause started before the span and the quiet after a pregnancy ended; off outside preparing', () => {
     const s = fresh()
+    // The span would start 09-07: a pause from before then holds it back.
     expect(sharedWeek(startRestCycle(s, '2026-09-05', 'rest'), '2026-09-12')).toBeUndefined()
     expect(sharedWeek(startRestCycle(s, '2026-09-05', 'vaccine'), '2026-09-12')).toBeUndefined()
+    expect(sharedWeek(startRestCycle(s, '2026-09-06', 'rest'), '2026-09-12')).toBeUndefined()
+    // One started on the span's first day finds it already shown: it runs on.
+    expect(sharedWeek(startRestCycle(s, '2026-09-07', 'rest'), '2026-09-12')).toEqual(sharedWeek(s, '2026-09-12'))
     expect(sharedWeek({ ...s, restCycle: { since: '2026-09-05', reason: 'clinic' } }, '2026-09-12')).toBeUndefined()
-    expect(sharedWeek(markPositivePending(s, '2026-09-08'), '2026-09-12')).toBeUndefined()
+    expect(sharedWeek(markPositivePending(s, '2026-09-06'), '2026-09-12')).toBeUndefined()
     const lost = backToPreparing(startPregnancy(s, '2026-08-01', '2026-09-01'), '2026-09-05')
     expect(sharedWeek({ ...lost, periods: [...lost.periods, { start: '2026-09-20' }] }, '2026-09-30')).toBeUndefined()
     expect(sharedWeek({ ...s, stage: 'pregnant' }, '2026-09-12')).toBeUndefined()
@@ -426,3 +441,88 @@ describe('sharedWeek — which window a partner without her details sees, and wh
   })
 })
 
+describe('his span holds once it has started; an untold early period does not pull the next one forward (Now 3 leftovers)', () => {
+  // Window 09-10…09-15, span from 09-07; the next period expected 09-29.
+  const s = fresh()
+
+  it('the decision keys are the ones ttcFlow writes', () => {
+    expect(sharedPeriodToldKey('2026-09-29')).toBe(periodToldKey('2026-09-29'))
+    expect(sharedPositiveToldKey('2026-09-26')).toBe(positiveToldKey('2026-09-26'))
+    expect(sharedSpanFrom({ start: '2026-09-01', fertileStart: '2026-09-10' })).toBe('2026-09-07')
+    // Never on that cycle's days 1–3.
+    expect(sharedSpanFrom({ start: '2026-09-01', fertileStart: '2026-09-03' })).toBe('2026-09-04')
+  })
+
+  it('a rest she starts inside the span keeps it to its last day; the dates rest after', () => {
+    for (const since of ['2026-09-08', '2026-09-10', '2026-09-13']) {
+      const rest = startRestCycle(s, since, 'rest')
+      for (const d of ['2026-09-13', '2026-09-15']) expect(sharedWeek(rest, d), `${since} ${d}`).toEqual(sharedWeek(s, d))
+      expect(sharedWeek(rest, '2026-09-16')).toBeUndefined()
+    }
+    // The vaccine rest the same.
+    expect(sharedWeek(startRestCycle(s, '2026-09-11', 'vaccine'), '2026-09-14')).toEqual(sharedWeek(s, '2026-09-14'))
+  })
+
+  it('a positive test inside the span keeps it — until she tells him', () => {
+    const pos = markPositivePending(
+      { ...s, pregnancyTests: [{ id: 'p', date: '2026-09-12', result: 'positive', by: OWNER }] },
+      '2026-09-12',
+      'p',
+    )
+    expect(sharedWeek(pos, '2026-09-14')).toEqual(sharedWeek(s, '2026-09-14'))
+    expect(sharedWeek(tellPartnerPositive(pos, '2026-09-12T21:00:00+09:00'), '2026-09-14')).toBeUndefined()
+  })
+
+  it('a period she logs inside the span (untold) waits until the span ends; told, it ends the span', () => {
+    const early = logPeriodStart(s, '2026-09-12', OWNER, '2026-09-12')
+    for (const d of ['2026-09-12', '2026-09-13', '2026-09-15']) expect(sharedWeek(early, d), d).toEqual(sharedWeek(s, d))
+    expect(sharedWeek(early, '2026-09-16')).toBeUndefined()
+    const told = tellPartnerPeriod(early, '2026-09-12', '2026-09-12T21:00:00+09:00')
+    expect(sharedWeek(told, '2026-09-13')).toBeUndefined()
+  })
+
+  it('the clinic mode (both phones show it) still ends the span', () => {
+    expect(sharedWeek(startClinicMode(s, '2026-09-12'), '2026-09-13')).toBeUndefined()
+  })
+
+  it('an untold early period: his next span stays where his view expected it; told, it follows her real day', () => {
+    // 09-20 instead of 09-29 (nine days early), not told.
+    const early = logPeriodStart(s, '2026-09-20', OWNER, '2026-09-20')
+    const starts = ['2026-06-09', '2026-07-07', '2026-08-04', '2026-09-01', '2026-09-20']
+    // Frozen to the cycle the 09-01 start projected: from 09-29, window 10-08…10-13.
+    expect(anchoredWindow(early, starts, 4)).toMatchObject({ start: '2026-09-29', fertileStart: '2026-10-08', fertileEnd: '2026-10-13' })
+    for (let i = 0; i < 40; i++) {
+      const d = addDays('2026-09-20', i)
+      // Exactly what he would have seen had her period come on the day his view expected.
+      const onTime = logPeriodStart(s, '2026-09-29', OWNER, '2026-09-29')
+      if (d >= '2026-09-29') expect(sharedWeek(early, d), d).toEqual(sharedWeek(onTime, d))
+      else expect(sharedWeek(early, d), d).toBeUndefined()
+    }
+    expect(sharedWeek(early, '2026-10-05')).toMatchObject({ kind: 'soon', fertileStart: '2026-10-08' })
+    // Told: his window follows her real start (09-20, the short cycle in the average: window
+    // 09-27…10-02, span from 09-24).
+    const told = tellPartnerPeriod(early, '2026-09-20', '2026-09-20T21:00:00+09:00')
+    expect(sharedWeek(told, '2026-09-23')).toBeUndefined()
+    expect(sharedWeek(told, '2026-09-24')).toMatchObject({ kind: 'soon', fertileStart: '2026-09-27', fertileEnd: '2026-10-02' })
+    // On time or late: his window follows her real start as before.
+    const late = logPeriodStart(s, '2026-10-02', OWNER, '2026-10-02')
+    // (The 31-day cycle in the average: 29 days → window 10-12…10-17, span from 10-09.)
+    expect(sharedWeek(late, '2026-10-08')).toBeUndefined()
+    expect(sharedWeek(late, '2026-10-09')).toMatchObject({ kind: 'soon', fertileStart: '2026-10-12', window: { start: '2026-10-02' } })
+  })
+
+  it('the freeze covers the next window only: the start after it anchors on its real day again', () => {
+    let st = logPeriodStart(s, '2026-09-20', OWNER, '2026-09-20')
+    st = logPeriodStart(st, '2026-10-18', OWNER, '2026-10-18')
+    // 10-18 is on time after 09-20 (28 days): his window counts from her real 10-18 again, in step with
+    // hers (the short 09-01→09-20 cycle now in the average: 26 days → window 10-25…10-30).
+    expect(sharedWeek(st, '2026-10-27')).toMatchObject({
+      kind: 'window',
+      fertileStart: '2026-10-25',
+      fertileEnd: '2026-10-30',
+      window: { start: '2026-10-18' },
+    })
+    // And the frozen window before it has ended by then: nothing between 10-14 and the new span (10-22).
+    for (const d of ['2026-10-14', '2026-10-18', '2026-10-21']) expect(sharedWeek(st, d), d).toBeUndefined()
+  })
+})

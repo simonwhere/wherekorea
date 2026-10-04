@@ -44,6 +44,7 @@ import {
 import { SettingsSection } from './bits'
 import { timeKo } from '@/components/link/bits'
 import LinkPreview from '@/components/link/LinkPreview'
+import { askCoverAfterLink } from '@/components/onboarding/coverAskAfterLink'
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -99,18 +100,23 @@ export default function LinkSection() {
     }
   }, [status, now, toast])
 
+  const hasCover = !!state.couple.cover
   const send = useCallback(async () => {
     if (!url) return
     const r = await shareLink(url, shareText(other.name))
+    // After the link went out, 오늘 asks once about a cover photo (N27 — never before the link).
+    if (r === 'shared' || r === 'copied') askCoverAfterLink(hasCover)
     if (r === 'shared') toast.show('보냈어요')
     else if (r === 'copied') toast.show('링크를 복사했어요. 카톡에 붙여 넣어 주세요')
     else toast.show('보내지 못했어요. 링크를 직접 복사해 주세요')
-  }, [url, other.name, toast])
+  }, [url, other.name, toast, hasCover])
 
   const copy = useCallback(async () => {
     if (!url) return
-    toast.show((await copyText(url)) ? '링크를 복사했어요' : '복사하지 못했어요. 링크를 길게 눌러 복사해 주세요')
-  }, [url, toast])
+    const ok = await copyText(url)
+    if (ok) askCoverAfterLink(hasCover)
+    toast.show(ok ? '링크를 복사했어요' : '복사하지 못했어요. 링크를 길게 눌러 복사해 주세요')
+  }, [url, toast, hasCover])
 
   const stop = useCallback(async () => {
     setBusy(true)

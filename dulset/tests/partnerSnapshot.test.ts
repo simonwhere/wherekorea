@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { DATE_IDEAS } from '@/lib/content/dateIdeas'
 import { addDays, range } from '@/lib/dates'
 import { createDemoState } from '@/lib/demo'
@@ -14,10 +16,25 @@ import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
 import { canNudge, sendCheer, sendNudge } from '@/lib/logic/notifications'
 import { FERTILITY_TEST_ID, completeMonthlyTask, monthlyTask, setFertilityApplied } from '@/lib/logic/partnerTrack'
-import { PARTNER_EVENT_KINDS, appliedEventKey, applyPartnerEvent, hasAppliedEvent, type PartnerEvent } from '@/lib/logic/partnerEvents'
 import {
+  PARTNER_EVENT_KINDS,
+  appliedEventKey,
+  applyPartnerEvent,
+  appointmentJoinKey,
+  hasAppliedEvent,
+  taskLocked,
+  type PartnerEvent,
+} from '@/lib/logic/partnerEvents'
+import { myPrep } from '@/lib/logic/myPrep'
+import { LEAVE_DAYS_PER_YEAR, PAID_LEAVE_CHANGE, PAID_LEAVE_DAYS } from '@/lib/logic/treatments'
+import {
+  CLINIC_KIND_WORD,
+  CLINIC_LEAVE_SOURCE,
+  CLINIC_WEEK_DAYS,
   LINK_DATE_IDEAS,
   LINK_FIRST_WEEKS_DAYS,
+  clinicLeaveLine,
+  linkClinic,
   PARTNER_SNAPSHOT_VERSION,
   SNAPSHOT_DAYS,
   SNAPSHOT_VALID_DAYS,
@@ -41,7 +58,7 @@ import {
 import { FEEL_LABEL, setEntryPrivacy, setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { markBleeding } from '@/lib/logic/positiveBleeding'
 import { canSeeWeekBand, coverOnLink, setPersonalPref, setShareLevel, shareLevelOf } from '@/lib/logic/prefs'
-import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalIdOf, signalsFor, signalsSentToday } from '@/lib/logic/signals'
+import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalById, signalIdOf, signalsFor, signalsSentToday } from '@/lib/logic/signals'
 import { habitTimer, rowProgress } from '@/lib/logic/today'
 import { startLossRest, startRestCycle } from '@/lib/logic/ttc'
 import { markWeekDone, pickWeek, thankWeek, thanksThisWeek, weekDone, weekOf, weekOptions, weekPick } from '@/lib/logic/weekTogether'
@@ -307,6 +324,17 @@ function projected(m: Moment | null) {
         veiled: !!m.veiled,
         support: !!m.support,
         monthlyTask: !!m.monthlyTask,
+        // 해 줄 말 (N30): only a card she told him about carries it; the answers as catalogue signals.
+        ...(m.say
+          ? {
+              say: {
+                say: m.say.say,
+                save: m.say.save,
+                replies: m.say.replies.map((id) => ({ ...signalById(id)! })),
+                ...(m.say.sent ? { sent: m.say.sent } : {}),
+              },
+            }
+          : {}),
       }
     : null
 }
@@ -332,6 +360,9 @@ function redacted(day: PartnerDay): string {
     delete week.monday
     delete week.thanks
   }
+  // His clinic week (N32): the couple's own appointment days — not cycle dates.
+  const clinic = copy.clinic as { appointments: Array<Record<string, unknown>> } | undefined
+  if (clinic) for (const a of clinic.appointments) delete a.date
   return JSON.stringify(copy)
 }
 
@@ -781,15 +812,28 @@ describe('이번 주 우리 둘 on the link (N21)', () => {
   it('내 준비 says only what is there: his timer while it counts, his complete days, his chain once a step is done', () => {
     const today = '2026-09-10'
     let s = fresh()
+    // The old line inside the week card is gone from the snapshot; the day carries myPrep (N30) — nothing yet.
     expect(day0(s, today).week?.prep).toBeUndefined()
+    expect(day0(s, today).myPrep).toBeUndefined()
     for (const i of activeItems(s, PARTNER)) if (i.cadence !== 'weekly') s = toggleCheck(s, PARTNER, '2026-09-08', i.id)
-    const prep = day0(s, today).week!.prep!
-    expect(prep.habit).toBe(habitTimer(s, PARTNER, today).label)
-    expect(prep.week).toBe(1)
-    expect(prep.chain).toBeUndefined()
+    const prep = day0(s, today).myPrep!
+    const own = myPrep(s, today, PARTNER)
+    expect(prep.timerLabel).toBe(own.timerLabel)
+    expect(prep.timerLabel).toContain(habitTimer(s, PARTNER, today).label)
+    expect(prep.timerProgress).toBeGreaterThan(0)
+    expect(prep.weekCount).toBe(own.weekCount)
+    expect(prep.chainStep).toBeUndefined()
+    expect(day0(s, today).week?.prep).toBeUndefined()
     s = setFertilityApplied(s, PARTNER, true, '2026-09-09')
+    expect(day0(s, today).myPrep!.chainStep).toBe(myPrep(s, today, PARTNER).chainStep)
+    expect(day0(s, today).myPrep!.chainStep).toContain('신청 ✓')
+    // The in-app home's week block still has its line (it strips it itself — components/today/WeekTogether).
     expect(prepChainText(s, today, PARTNER)).toBe('신청했어요, 다음은 검사')
-    expect(day0(s, today).week!.prep!.chain).toBe('신청했어요, 다음은 검사')
+    // Only the bar's own words travel: no chainSteps array, nothing about her.
+    expect(Object.keys(day0(s, today).myPrep!).every((k) => ['timerLabel', 'timerProgress', 'weekCount', 'chainStep'].includes(k))).toBe(true)
+    // For her, nothing (her view is never published); in the quiet after a loss, nothing.
+    const ended: AppState = { ...s, pregnancy: { lmp: '2026-07-01', confirmedAt: '2026-08-01', endedAt: '2026-09-01' } }
+    expect(day0(ended, today).myPrep).toBeUndefined()
   })
 
   it('rests outside the preparing stage and in the quiet after a loss', () => {
@@ -1102,9 +1146,12 @@ describe('date ideas, cover, line, signal, checks', () => {
       stage: 'booked',
       dueBy: '2026-11-23',
       top: true,
-      minDoneAt: '2026-08-24',
+      // Never before the booked day (N14 leftover): the page shows '예약일 9월 25일' until then.
+      minDoneAt: '2026-09-25',
     })
     expect(booked.appointment).toEqual(expect.objectContaining({ date: '2026-09-25', time: '10:00', place: '보건소' }))
+    expect(taskLocked(booked, booked.defaultDoneAt)).toBe(true)
+    expect(taskLocked(day0(s, '2026-09-25').task!, '2026-09-25')).toBe(false)
     expect('note' in booked.appointment!).toBe(false)
     expect(day0(s, '2026-09-26').task!.stage).toBe('visited')
     s = completeMonthlyTask(s, monthlyTask(s, '2026-09-26', PARTNER)!, '2026-09-25', PARTNER)
@@ -1112,6 +1159,110 @@ describe('date ideas, cover, line, signal, checks', () => {
     expect(claim).toMatchObject({ step: 'claim', stage: 'claim', title: '검사비 청구하기', dueBy: '2026-10-24' })
     expect(claim.docs!.map((d) => d.done)).toEqual([false, false, false, false])
     expect(claim.tip).toBeDefined()
+  })
+})
+
+describe('병원과 함께일 때 남편의 주 (N32)', () => {
+  const SINCE = '2026-09-02'
+  const DAY = '2026-09-04'
+  /** The filled couple in clinic mode, with one appointment of each kind of 'who' in the next week, and one beyond it. */
+  function clinicState(over: (s: AppState) => AppState = (x) => x): AppState {
+    let s = startClinicMode(filled(), SINCE)
+    s = addAppointment(s, { date: '2026-09-06', time: '08:30', title: '난포 초음파', place: '○○의원', who: 'both', kind: 'hospital', note: APPT_NOTE }, OWNER)
+    s = addAppointment(s, { date: '2026-09-05', time: '07:30', title: '배란주사', who: OWNER, kind: 'injection', note: APPT_NOTE }, OWNER)
+    s = addAppointment(s, { date: '2026-09-08', title: '정자 검사', place: '보건소', who: PARTNER, kind: 'test', note: HIS_APPT_NOTE }, PARTNER)
+    s = addAppointment(s, { date: '2026-09-09', time: '09:00', title: '이식', place: '○○의원', who: 'both', kind: 'medication' }, OWNER)
+    s = addAppointment(s, { date: '2026-09-20', time: '09:00', title: '피검사', place: '○○의원', who: 'both', kind: 'test' }, OWNER)
+    return over(s)
+  }
+
+  it('carries his and ‘둘이 함께’ appointments of the next seven days — day, time, place and a kind word, nothing else', () => {
+    const s = clinicState()
+    const c = day0(s, DAY).clinic!
+    expect(c).toBeDefined()
+    expect(c.appointments.map((a) => [a.date, a.time, a.place, a.label, a.with])).toEqual([
+      ['2026-09-06', '08:30', '○○의원', CLINIC_KIND_WORD.hospital, 'both'],
+      ['2026-09-08', undefined, '보건소', '검사', 'mine'],
+      // 주사·약 read as '병원 일정': the link names no treatment.
+      ['2026-09-09', '09:00', '○○의원', '병원 일정', 'both'],
+    ])
+    expect(c.appointments.every((a) => a.joined === false)).toBe(true)
+    const json = JSON.stringify(c)
+    // Never her own appointment, a title, a note, a treatment word or a count.
+    for (const w of ['배란주사', '난포', '초음파', '정자', '이식', '피검사', APPT_NOTE, HIS_APPT_NOTE, TREATMENT_NOTE, '"title"', '회차', '횟수', '/5', '/20'])
+      expect(json.includes(w), w).toBe(false)
+    expect(c.appointments.every((a) => a.date <= addDays(DAY, CLINIC_WEEK_DAYS - 1))).toBe(true)
+    // The week moves with the day: on the 9th, the 6th and the 8th are gone, the 20th is not yet there.
+    expect(day0(s, '2026-09-09').clinic!.appointments.map((a) => a.date)).toEqual(['2026-09-09'])
+    expect(day0(s, '2026-09-14').clinic!.appointments.map((a) => a.date)).toEqual(['2026-09-20'])
+    // Done ones drop out.
+    const done = { ...s, appointments: s.appointments.map((a) => (a.date === '2026-09-06' ? { ...a, done: true } : a)) }
+    expect(day0(done, DAY).clinic!.appointments.map((a) => a.date)).toEqual(['2026-09-08', '2026-09-09'])
+  })
+
+  it('the 난임치료휴가 line comes from the research files and lib/logic/treatments.ts, with its source and ‘회사마다 달라요’', () => {
+    const line = clinicLeaveLine('2026-10-04')
+    expect(line.text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요 · 2026년 11월 27일부터 유급 4일(연 6일)')
+    expect(line.text).toContain(`유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`)
+    expect(line.note).toBe('회사마다 달라요')
+    expect(line.source).toEqual({ label: CLINIC_LEAVE_SOURCE.label, url: CLINIC_LEAVE_SOURCE.url })
+    // From the day it takes effect, no future date in it.
+    expect(clinicLeaveLine(PAID_LEAVE_CHANGE).text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요 · 유급 4일(연 6일)')
+    // The source is one the research file lists for the finding (no number without a source).
+    const research = JSON.parse(readFileSync(path.resolve(__dirname, '../docs/research/kr-programs.json'), 'utf8')) as {
+      findings: Array<{ id?: string; sources?: string[]; effective?: string }>
+    }
+    const finding = research.findings.find((f) => f.id === 'infertility-leave-paid-4-days-2026-11-27')!
+    expect(finding.sources).toContain(CLINIC_LEAVE_SOURCE.url)
+    expect(finding.effective).toBe(PAID_LEAVE_CHANGE)
+    expect(day0(clinicState(), DAY).clinic!.leave).toEqual(clinicLeaveLine(DAY))
+  })
+
+  it('[같이 갈게요] comes back as join-appointment: the day after her phone applies it, the row says joined', () => {
+    let s = clinicState()
+    const both = day0(s, DAY).clinic!.appointments[0]!
+    s = applyPartnerEvent(s, { id: 'j1', from: PARTNER, kind: 'join-appointment', appointmentId: both.id }, DAY)
+    expect(s.decisions[appointmentJoinKey(both.id, PARTNER)]).toBe(DAY)
+    const c = day0(s, DAY).clinic!
+    expect(c.appointments.find((a) => a.id === both.id)!.joined).toBe(true)
+    // His own appointment never offers it (and never reads as joined).
+    expect(c.appointments.filter((a) => a.with === 'mine').every((a) => !a.joined)).toBe(true)
+  })
+
+  it('nothing outside clinic mode, after the stage moves on, in the quiet after a loss, or for her', () => {
+    const plain = filled()
+    for (let d = DAY; d <= addDays(DAY, 20); d = addDays(d, 1)) expect(day0(plain, d).clinic, d).toBeUndefined()
+    const s = clinicState()
+    expect(buildPartnerDay(s, DAY, OWNER)).toBeNull()
+    expect(linkClinic(s, DAY, OWNER)).toBeUndefined()
+    // Turned off: gone from his week at once.
+    expect(linkClinic({ ...s, restCycle: undefined }, DAY, PARTNER)).toBeUndefined()
+    const preg: AppState = { ...s, stage: 'pregnant', pregnancy: { lmp: '2026-08-20', confirmedAt: '2026-09-03' } }
+    expect(day0(preg, DAY).clinic).toBeUndefined()
+    const loss = startLossRest(
+      { ...s, pregnancy: { lmp: '2026-07-01', confirmedAt: '2026-08-01', endedAt: '2026-09-01' } },
+      '2026-09-01',
+    )
+    expect(day0(loss, DAY).clinic).toBeUndefined()
+  })
+
+  it('his clinic week is the same whatever her untold records say (규칙 1: 화면이 바뀌는 것도 정보)', () => {
+    const base = clinicState()
+    const untold: Array<[string, AppState]> = [
+      ['LH', addLHTest(base, { date: '2026-09-03', result: 'peak', time: LH_TIME, by: OWNER }, DAY)],
+      ['positive test', addPregnancyTest(base, { id: 'p', date: '2026-09-03', result: 'positive', by: OWNER }, DAY).state],
+      ['negative test', addPregnancyTest(base, { id: 'n', date: '2026-09-03', result: 'negative', by: OWNER }, DAY).state],
+      ['feel + private note', setPrivateNote(setFeel(base, OWNER, DAY, 'tired'), OWNER, DAY, PRIVATE_LINE)],
+      ['intimacy', toggleIntimacyDay(base, OWNER, '2026-09-03')],
+    ]
+    for (const lens of lenses().slice(0, 6)) {
+      const b = applyLens(base, lens, 0)
+      for (let k = 0; k < SNAPSHOT_DAYS; k++) {
+        const day = addDays(DAY, k)
+        const want = buildPartnerDay(b, day, PARTNER)!.clinic
+        for (const [name, st] of untold) expect(buildPartnerDay(applyLens(st, lens, 0), day, PARTNER)!.clinic, `${name} ${day}`).toEqual(want)
+      }
+    }
   })
 })
 

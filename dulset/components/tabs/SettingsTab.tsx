@@ -12,10 +12,25 @@ import MembersSection from '@/components/settings/MembersSection'
 import ProgramsSection from '@/components/settings/ProgramsSection'
 import SharingSection from '@/components/settings/SharingSection'
 import StageSection from '@/components/settings/StageSection'
-import { SETTINGS_TOC_LABEL, isSettingsAnchor, type SettingsAnchor } from '@/components/settings/anchors'
+import { SETTINGS_TOC_LABEL, isSettingsAnchor, settingsSections, type SettingsAnchor } from '@/components/settings/anchors'
 import { SectionsContext, type SectionsApi } from '@/components/settings/bits'
 import { cx } from '@/components/ui'
 import { useApp } from '@/lib/store'
+
+/** The component behind each section id. */
+const SECTION: Record<SettingsAnchor, () => React.ReactNode> = {
+  members: MembersSection,
+  link: LinkSection,
+  share: SharingSection,
+  alerts: AlertsSection,
+  home: HomeSection,
+  'cycle-numbers': CycleSection,
+  stage: StageSection,
+  programs: ProgramsSection,
+  ourdays: CoupleDaysSection,
+  data: DataSection,
+  about: AboutSection,
+}
 
 /** The section a deep link (#share, #alerts, #data …) asks for, if any. */
 function anchorFromHash(): SettingsAnchor | null {
@@ -28,24 +43,9 @@ export default function SettingsTab() {
   const { state } = useApp()
   const preparing = state.stage === 'preparing'
 
-  // Sections in screen order (the ones people reach for most sit near the top — review D-4).
-  const sections = useMemo<SettingsAnchor[]>(
-    () =>
-      [
-        'members',
-        preparing ? 'share' : null,
-        'alerts',
-        'home',
-        'ourdays',
-        preparing ? 'cycle-numbers' : null,
-        'stage',
-        'link',
-        'programs',
-        'data',
-        'about',
-      ].filter((s): s is SettingsAnchor => s !== null),
-    [preparing],
-  )
+  // Sections in screen order (the ones people reach for most sit near the top — review D-4):
+  // 연결 and 공유 범위 right after 우리 둘 (N28), 우리 둘의 날 low while preparing (N27).
+  const sections = useMemo<SettingsAnchor[]>(() => settingsSections(state.stage), [state.stage])
 
   // Everything but the first section opens folded to its heading; a deep link
   // or a chip opens that one. (Opening is additive: what you unfolded stays.)
@@ -114,7 +114,7 @@ export default function SettingsTab() {
       <header className="mb-3 px-1">
         <h1 className="text-xl font-extrabold tracking-tight text-ink outline-none">설정</h1>
         <p className="mt-1 text-sm text-ink-2">
-          {preparing ? '우리 둘 정보, 공유 범위, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요' : '우리 둘 정보, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요'}
+          {preparing ? '우리 둘 정보, 연결과 공유 범위, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요' : '우리 둘 정보, 연결, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요'}
         </p>
       </header>
       {/* Table of contents: one chip per section (sticky under the top bar while scrolling). */}
@@ -140,21 +140,13 @@ export default function SettingsTab() {
           </ul>
         </div>
       </nav>
+      {/* One component per anchor, in settingsSections order. 공유 범위 (what the partner sees of
+          the cycle) and the cycle numbers exist only while preparing, where the cycle is recorded. */}
       <div>
-        <MembersSection />
-        {/* What the partner sees of the cycle — only while preparing, where it's
-            recorded. Near the top: the 주기 tab's 바꾸기 links here (#share). */}
-        {preparing ? <SharingSection /> : null}
-        <AlertsSection />
-        <HomeSection />
-        <CoupleDaysSection />
-        {/* Cycle numbers only drive predictions while preparing. */}
-        {preparing ? <CycleSection /> : null}
-        <StageSection />
-        <LinkSection />
-        <ProgramsSection />
-        <DataSection />
-        <AboutSection />
+        {sections.map((id) => {
+          const Section = SECTION[id]
+          return <Section key={id} />
+        })}
       </div>
     </SectionsContext.Provider>
   )

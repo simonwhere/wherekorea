@@ -8,6 +8,7 @@ import {
   SIGNALS_PER_DAY,
   pendingSignal,
   repliesFor,
+  sayForSignal,
   sendSignal,
   signalById,
   signalIdOf,
@@ -15,6 +16,8 @@ import {
   signalsSentToday,
 } from '@/lib/logic/signals'
 import { useApp } from '@/lib/store'
+import { SayLines } from './SayLines'
+import { SIGNAL_TONE_CLASS } from './tone'
 
 function useSend() {
   const { state, update, today, me, partner } = useApp()
@@ -42,6 +45,9 @@ export function timeKo(iso: string): string {
  * '다음에 해요') — or nothing. Used on its own in the home's "우리 한 줄": who
  * sent it and when, the message as a chat bubble in the sender's colour, and
  * the replies (`data-reply`, so the cover's "답하기" can focus the first one).
+ * When the person whose cycle it is sent it to the partner, 해 줄 말 · 아껴 둘
+ * 말 sit between the bubble and the replies (signals.sayForSignal, N30 — a
+ * moment she sent, never one read from her records).
  */
 export function PendingSignal({ className }: { className?: string }) {
   const { state, today, me } = useApp()
@@ -53,6 +59,7 @@ export function PendingSignal({ className }: { className?: string }) {
   const sender = state.couple.members.find((m) => m.id === pending.from)
   const replies = repliesFor(id)
   const at = timeKo(pending.createdAt)
+  const lines = !canLogCycle(state, me.id) && !!sender?.tracksCycle ? sayForSignal(id) : undefined
   return (
     <div className={className}>
       <p className="text-xs font-semibold text-ink-3">
@@ -74,6 +81,7 @@ export function PendingSignal({ className }: { className?: string }) {
           pending.title
         )}
       </p>
+      {lines ? <SayLines say={lines.say} save={lines.save} className="mt-2.5 rounded-[14px] bg-surface-2 px-3 py-2" /> : null}
       <div className="mt-2.5 flex flex-wrap gap-2">
         {replies.map((r) => (
           <button
@@ -125,7 +133,7 @@ export function SignalChips({ className }: { className?: string }) {
             className={cx(
               'inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 text-[13px] font-semibold transition-colors disabled:opacity-40',
               'focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand',
-              s.tone === 'rest' ? 'border-line bg-surface-2 text-ink-2 hover:bg-line/50' : 'border-line bg-surface text-ink hover:bg-surface-2',
+              SIGNAL_TONE_CLASS(s.tone),
             )}
           >
             <span aria-hidden>{s.emoji}</span>
@@ -162,9 +170,7 @@ export default function SignalsCard({ showPending = true, title = true }: { show
               disabled={left <= 0}
               className={cx(
                 'flex min-h-[44px] items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors disabled:opacity-40',
-                s.tone === 'rest'
-                  ? 'border-line bg-surface-2 text-ink-2 hover:bg-line/50'
-                  : 'border-line bg-surface text-ink hover:bg-surface-2',
+                SIGNAL_TONE_CLASS(s.tone),
               )}
             >
               <span aria-hidden className="text-base">

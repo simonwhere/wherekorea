@@ -6,16 +6,21 @@
 // 우리 둘 whatever stage it was written in. Counters follow the Korean
 // convention used across the app (the first day is day 1).
 
-import { addDays, addMonths, formatKo, isISODate, todayISO } from '../dates'
-import type { AppState, Baby, CustomAnniversary, DiaryEntry, ISODate, MemberId, Pregnancy, Stage } from '../types'
+import { FERTILITY_CHECK_GUIDE } from '../content/programs'
+import { addDays, addMonths, diffDays, formatKo, isISODate, todayISO } from '../dates'
+import type { AppNotification, AppState, Baby, CustomAnniversary, DiaryEntry, ISODate, MemberId, Pregnancy, Stage } from '../types'
 import { anniversariesBetween, daysSince, type AnniversaryEvent } from './anniversary'
 import { dayOfLife } from './baby'
 import { DIARY_NAME, groupByMonth, removeEntry } from './diary'
 import { ALBUM_CAPTION_MAX, STAGE_SHORT, entryStageLabel, excerpt } from './diaryExport'
-import { mergeNotices, ttcClockStart } from './notifications'
+import { inbox, mergeNotices, ttcClockStart } from './notifications'
+import { fertilityChain, testIdFor } from './partnerTrack'
 import { canSeeEntry, visibleEntries } from './personalLog'
+import { stepAppointment } from './plan'
 import { PREGNANCY_DAYS, gestationalAge, recentlyEnded } from './pregnancy'
-import { lowPressureFor } from './prefs'
+import { canLogCycle, lowPressureFor } from './prefs'
+import { homeDiscreetFor } from './settings'
+import { fertilityVoice, isSpermSide } from './today'
 
 const fmt = (n: number) => n.toLocaleString('ko-KR')
 
@@ -184,10 +189,73 @@ export function reactionNoticeKey(entryId: string, from: MemberId): string {
   return `reaction:${entryId}:${from}`
 }
 
+// ── Where a note goes: the 🔔 or the 기록장 (N27) ──────────────
+
+/** Key prefix of the '내 기록에 마음을 남겼어요' notes. */
+export const REACTION_NOTICE_PREFIX = 'reaction:'
+
 /**
- * setReaction + a quiet inbox note to the author the first time (keyed, so
+ * While preparing, the record book's own news — a reaction on one of my
+ * entries — stays inside the 기록장 (우리 탭), not in the 🔔 or the badge
+ * (N27: the bell is for what the two of us are doing now). Other stages keep
+ * it in the bell as before. The note itself is the same keyed notice either
+ * way, so dedup, 되돌리기 and removeStoryEntry keep working.
+ */
+export function isRecordBookNotice(n: Pick<AppNotification, 'key'>, stage: Stage): boolean {
+  return stage === 'preparing' && typeof n.key === 'string' && n.key.startsWith(REACTION_NOTICE_PREFIX)
+}
+
+/** The 🔔 list for `member`: their inbox without the record book's notes (isRecordBookNotice). */
+export function bellInbox(state: AppState, member: MemberId): AppNotification[] {
+  return inbox(state, member).filter((n) => !isRecordBookNotice(n, state.stage))
+}
+
+/** The 🔔 badge: unread notes in bellInbox. */
+export function bellUnread(state: AppState, member: MemberId): number {
+  return bellInbox(state, member).filter((n) => !n.read).length
+}
+
+/**
+ * The 🔔 '비우기': clearNotifications for what the bell shows only — the
+ * record book's notes (isRecordBookNotice) stay as they are, so its unread
+ * '새로 받은 마음' still wait in the 기록장. Keyed notices stay (dismissed) so
+ * their key isn't delivered again; unkeyed ones go. Nothing to clear → the
+ * same state object.
+ */
+export function clearBell(state: AppState, member: MemberId): AppState {
+  const inBell = (n: AppNotification) => n.to === member && !isRecordBookNotice(n, state.stage)
+  if (!state.notifications.some((n) => inBell(n) && (!n.key || !n.dismissed || !n.read))) return state
+  return {
+    ...state,
+    notifications: state.notifications.filter((n) => !inBell(n) || n.key).map((n) => (inBell(n) ? { ...n, read: true, dismissed: true } : n)),
+  }
+}
+
+/**
+ * The record book's own notes for `member` that they haven't seen — the
+ * reactions on their entries, newest first. Empty outside the preparing stage
+ * (the bell carries them there) and for anything already read or cleared.
+ */
+export function recordBookNotes(state: AppState, member: MemberId): AppNotification[] {
+  return inbox(state, member).filter((n) => !n.read && isRecordBookNotice(n, state.stage))
+}
+
+/** Mark `member`'s record-book notes read (the 기록장 showed them). The same state when there is nothing to mark. */
+export function markRecordBookNotesRead(state: AppState, member: MemberId): AppState {
+  if (!recordBookNotes(state, member).length) return state
+  return {
+    ...state,
+    notifications: state.notifications.map((n) =>
+      n.to === member && !n.read && !n.dismissed && isRecordBookNotice(n, state.stage) ? { ...n, read: true } : n,
+    ),
+  }
+}
+
+/**
+ * setReaction + a quiet note to the author the first time (keyed, so
  * changing the emoji never sends another). Clearing a reaction the author
- * hasn't seen yet takes the note back.
+ * hasn't seen yet takes the note back. While preparing the note shows in the
+ * 기록장, not the 🔔 (isRecordBookNotice).
  */
 export function reactToEntry(
   state: AppState,
@@ -406,4 +474,58 @@ export function albumFeed(entries: DiaryEntry[], viewer?: MemberId): AlbumItem[]
   return albumGroups(entries, viewer).flatMap((g) =>
     g.entries.map((entry) => ({ entry, month: g.month, caption: excerpt(entry.text, ALBUM_CAPTION_MAX) })),
   )
+}
+
+// ── His month task, one line on her home (N28) ─────────────
+
+/** A finished step (검사 받았어요 · 청구까지) stays on her home this many days, then the line rests. */
+export const PARTNER_PROGRESS_KEEP_DAYS = 30
+
+export interface PartnerProgressLine {
+  /** Whose progress it is (the person who does not track the cycle). */
+  member: MemberId
+  /** '민수님 · 정액검사 예약했어요' — the stage only: no date, place, result or deadline. */
+  text: string
+}
+
+/**
+ * One line on the cycle owner's preparing home about the partner's 이번 달 할
+ * 일 (the 가임력 검사 chain, partnerTrack.fertilityChain): the last step he
+ * took — 지원 신청했어요 → 예약했어요 → 받았어요 → 검사비 청구까지 마쳤어요.
+ * Nothing before his first step (never a zero, never '아직'), nothing for his
+ * own phone (his card is the task itself), nothing in the 42 quiet days after
+ * a loss, and a finished or long-lapsed chain rests after
+ * PARTNER_PROGRESS_KEEP_DAYS. Only his own records feed it (his ticks and the
+ * test appointment linked to his row), so it tells her nothing new about
+ * anyone's health. The check's name follows her voice: 가임력 only for an
+ * explicit voice, and just '검사' when her home cards are discreet.
+ */
+export function partnerProgressLine(state: AppState, today: ISODate, viewer: MemberId): PartnerProgressLine | undefined {
+  if (state.stage !== 'preparing' || !canLogCycle(state, viewer)) return undefined
+  if (recentlyEnded(state, today)) return undefined
+  const partner = state.couple.members.find((m) => m.id !== viewer)
+  if (!partner) return undefined
+  const chain = fertilityChain(state, today, partner.id)
+  const recent = (at: ISODate | undefined): boolean => !!at && at <= today && diffDays(at, today) < PARTNER_PROGRESS_KEEP_DAYS
+  // A step whose deadline passed long ago is no longer this month's news (monthlyTask lets it go the same way).
+  const stale = (due: ISODate | undefined): boolean => chain.lapsed && !!due && diffDays(due, today) >= PARTNER_PROGRESS_KEEP_DAYS
+
+  const discreet = homeDiscreetFor(state.settings, viewer)
+  const explicit = fertilityVoice(state.settings, viewer, true) === 'explicit'
+  const checkName = discreet ? '검사' : explicit ? '가임력 검사' : '임신 전 검사'
+  const testName = discreet ? '검사' : isSpermSide(partner) ? FERTILITY_CHECK_GUIDE.test.partner.what : checkName
+
+  let step: string | undefined
+  if (chain.step === 'test') {
+    if (stale(chain.testBy)) return undefined
+    const booked = stepAppointment(state.appointments, testIdFor(state, partner.id), today)
+    step = booked ? `${testName} 예약했어요` : `${checkName} 지원 신청했어요`
+  } else if (chain.step === 'claim') {
+    if (stale(chain.claimBy)) return undefined
+    step = `${testName} 받았어요`
+  } else if (chain.step === 'done') {
+    if (chain.claimedAt) step = recent(chain.claimedAt) ? '검사비 청구까지 마쳤어요' : undefined
+    else if (recent(chain.testedAt)) step = `${testName} 받았어요`
+  }
+  return step ? { member: partner.id, text: `${partner.name}님 · ${step}` } : undefined
 }

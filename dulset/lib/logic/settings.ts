@@ -49,6 +49,7 @@ import {
   otherMember,
 } from '../initial'
 import { BUILTIN_PHOTO_IDS } from '../content/demoPhotos'
+import { anniversaryAlertsEnabled } from './anniversary'
 import { cleanCover } from './cover'
 import { cleanIntimacy } from './intimacy'
 import { cleanCoupleLink } from './partnerLink'
@@ -185,6 +186,8 @@ export type CoupleFlag = keyof typeof SETTINGS_DEFAULTS
  * defaults stays byte-identical to an older one; the same value → the same
  * state object. (setSetting writes the boolean as given — either reads the
  * same through memoriesOn / anniversaryAlertsOn / showTryCountOn.)
+ * 기념일 알림's default follows the stage since N27 (off while preparing):
+ * the switch writes through setAnniversaryAlerts, which keeps an "on".
  */
 export function setCoupleFlag(state: AppState, key: CoupleFlag, value: boolean): AppState {
   const current = state.settings[key]
@@ -201,9 +204,25 @@ export function memoriesOn(settings: Pick<Settings, 'memories'>): boolean {
   return settings.memories ?? SETTINGS_DEFAULTS.memories
 }
 
-/** 기념일 D-7·당일 알림 — on unless turned off. */
-export function anniversaryAlertsOn(settings: Pick<Settings, 'anniversaryAlerts'>): boolean {
-  return settings.anniversaryAlerts ?? SETTINGS_DEFAULTS.anniversaryAlerts
+/**
+ * 기념일 알림. Pass the stage: unset means off while preparing and on later
+ * (anniversary.anniversaryAlertsDefault, N27) — an explicit choice always wins.
+ * Without a stage, unset reads as SETTINGS_DEFAULTS (on: the later stages' value).
+ */
+export function anniversaryAlertsOn(settings: Pick<Settings, 'anniversaryAlerts'>, stage?: Stage): boolean {
+  if (typeof settings.anniversaryAlerts === 'boolean') return settings.anniversaryAlerts
+  return stage ? anniversaryAlertsEnabled({ stage, settings }) : SETTINGS_DEFAULTS.anniversaryAlerts
+}
+
+/**
+ * 설정 › 첫 화면's 기념일 알림 switch. The choice is always written (true or
+ * false): its default follows the stage, so only a stored value can win across
+ * stages ("켜 두었는데 임신 뒤에도 그대로"). setCoupleFlag would drop an "on"
+ * as the default and leave a preparing couple's switch off.
+ */
+export function setAnniversaryAlerts(state: AppState, on: boolean): AppState {
+  if (state.settings.anniversaryAlerts === on) return state
+  return { ...state, settings: { ...state.settings, anniversaryAlerts: on } }
 }
 
 /** '시도 N번째 주기' in the history — hidden (neutral wording) unless turned on. */

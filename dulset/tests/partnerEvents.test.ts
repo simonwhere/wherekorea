@@ -26,12 +26,21 @@ import {
   appliedEventKey,
   applyPartnerEvent,
   applyPartnerEvents,
+  appointmentJoinKey,
+  appointmentJoinNoticeKey,
+  appointmentJoinedBy,
   cleanPartnerEvent,
   earliestCheckDate,
+  earliestDoneAt,
   hasAppliedEvent,
+  hasJoinedAppointment,
+  joinAppointment,
+  joinableAppointment,
   partnerEventProblem,
+  taskLocked,
   type PartnerEvent,
 } from '@/lib/logic/partnerEvents'
+import { noticeTarget } from '@/lib/logic/today'
 import { FERTILITY_CLAIM_ID, FERTILITY_TEST_ID, chainKey, fertilityChain, monthlyTask, setFertilityApplied } from '@/lib/logic/partnerTrack'
 import { setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { setPersonalPref } from '@/lib/logic/prefs'
@@ -314,6 +323,33 @@ describe('task-done events', () => {
     expect(next.appointments[0]!.done).toBe(true)
   })
 
+  it('never records the booked test before its day: ‘예약됨’ is locked, ‘예약일 지남’ starts on the booked day (N14 leftover)', () => {
+    let s = fresh()
+    s = addAppointment(
+      s,
+      { date: '2026-09-15', time: '10:00', title: '정액검사', who: PARTNER, kind: 'test', taskId: FERTILITY_TEST_ID },
+      PARTNER,
+    )
+    const booked = monthlyTask(s, TODAY, PARTNER)!
+    expect(booked.stage).toBe('booked')
+    expect(earliestDoneAt(booked)).toBe('2026-09-15')
+    expect(taskLocked(booked, TODAY)).toBe(true)
+    // [받았어요] today (the page's defaultDoneAt) and any day before the booking are refused.
+    expect(partnerEventProblem(s, { id: 'b1', kind: 'task-done', taskId: booked.id, date: TODAY }, TODAY)).toBe('date')
+    expect(applyPartnerEvent(s, { id: 'b1', kind: 'task-done', taskId: booked.id, date: TODAY }, TODAY, NOW)).toBe(s)
+    // On the booked day it is '예약일 지남' and opens.
+    const visited = monthlyTask(s, '2026-09-15', PARTNER)!
+    expect(visited.stage).toBe('visited')
+    expect(taskLocked(visited, '2026-09-15')).toBe(false)
+    expect(partnerEventProblem(s, { id: 'b2', kind: 'task-done', taskId: visited.id, date: '2026-09-14' }, '2026-09-16')).toBe('date')
+    const next = applyPartnerEvent(s, { id: 'b2', kind: 'task-done', taskId: visited.id, date: '2026-09-15' }, '2026-09-16', stamp('2026-09-16'))
+    expect(next.planDone[FERTILITY_TEST_ID]).toEqual({ at: '2026-09-15', by: PARTNER })
+    // Without a booking, the step before still bounds it; a later own minDoneAt wins over an earlier booking.
+    expect(earliestDoneAt({ stage: 'book', minDoneAt: '2026-08-24' })).toBe('2026-08-24')
+    expect(earliestDoneAt({ stage: 'visited', minDoneAt: '2026-09-20', appointment: { ...visited.appointment!, date: '2026-09-15' } })).toBe('2026-09-20')
+    expect(earliestDoneAt({ stage: 'claim' })).toBeUndefined()
+  })
+
   it('rejects a wrong task, a future day and a day before the application', () => {
     const s = fresh()
     const task = monthlyTask(s, TODAY, PARTNER)!
@@ -327,7 +363,18 @@ describe('task-done events', () => {
 describe('what the partner can never do', () => {
   it('has no event for a period, an LH strip, a test, a rest cycle or a share switch — forged ones are dropped unread', () => {
     const s = fresh()
-    expect(PARTNER_EVENT_KINDS).toEqual(['check', 'reply', 'signal', 'nudge', 'cheer', 'task-done', 'week-pick', 'week-done', 'setup'])
+    expect(PARTNER_EVENT_KINDS).toEqual([
+      'check',
+      'reply',
+      'signal',
+      'nudge',
+      'cheer',
+      'task-done',
+      'week-pick',
+      'week-done',
+      'setup',
+      'join-appointment',
+    ])
     const forged = [
       { id: 'f1', kind: 'period', date: '2026-09-10' },
       { id: 'f2', kind: 'lh', date: '2026-09-10', result: 'positive' },
@@ -522,6 +569,76 @@ describe('이번 주 우리 둘 events (week-pick / week-done, N21)', () => {
     ]) {
       expect(cleanPartnerEvent(bad), JSON.stringify(bad)).toBeUndefined()
     }
+  })
+})
+
+describe('join-appointment events ([같이 갈게요], N32)', () => {
+  /** Clinic mode is the couple's; the appointments are theirs: hers, his, and one they both go to. */
+  function clinicCouple(): { s: AppState; both: string; his: string; hers: string } {
+    let s = fresh()
+    s = addAppointment(s, { date: '2026-09-12', time: '08:30', title: '난포 초음파', place: '○○의원', who: 'both', kind: 'hospital', note: '메모' }, OWNER)
+    s = addAppointment(s, { date: '2026-09-13', time: '10:00', title: '정액검사', place: '보건소', who: PARTNER, kind: 'test' }, PARTNER)
+    s = addAppointment(s, { date: '2026-09-14', time: '07:00', title: '주사', who: OWNER, kind: 'injection' }, OWNER)
+    const id = (title: string) => s.appointments.find((a) => a.title === title)!.id
+    return { s, both: id('난포 초음파'), his: id('정액검사'), hers: id('주사') }
+  }
+
+  it('keeps his answer in decisions and leaves her one 🔔 with the day, time and place — never the title or the note', () => {
+    const { s, both } = clinicCouple()
+    const ev: PartnerEvent = { id: 'j1', kind: 'join-appointment', appointmentId: both }
+    expect(partnerEventProblem(s, ev, TODAY)).toBeNull()
+    const next = applyPartnerEvent(s, ev, TODAY, NOW)
+    expect(next.decisions[appointmentJoinKey(both, PARTNER)]).toBe(TODAY)
+    expect(hasJoinedAppointment(next, both, PARTNER)).toBe(true)
+    expect(appointmentJoinedBy(next, both)).toEqual([PARTNER])
+    expect(next.decisions[appliedEventKey('j1')]).toBe(TODAY)
+    // The appointment record itself is untouched (it stays the couple's).
+    expect(next.appointments).toBe(s.appointments)
+    const bell = next.notifications.find((n) => n.key === appointmentJoinNoticeKey(both, PARTNER))!
+    expect(bell).toMatchObject({ to: OWNER, from: PARTNER, kind: 'system', read: false, createdAt: NOW })
+    expect(bell.title).toBe('🤝 민수님이 병원에 같이 간대요')
+    expect(bell.body).toBe('9월 12일 (토) 08:30 · ○○의원')
+    expect(`${bell.title}${bell.body}`).not.toMatch(/난포|초음파|메모/)
+    // Tapping it opens 챙길 것 (the 'appt:' prefix).
+    expect(noticeTarget(bell.kind, 'preparing', bell.key)).toBe('plan')
+    // Once: the same event, and a second [같이 갈게요] under a new id, change nothing.
+    expect(applyPartnerEvent(next, ev, TODAY, NOW)).toBe(next)
+    expect(partnerEventProblem(next, { ...ev, id: 'j2' }, TODAY)).toBe('appointment')
+    sameCycleData(s, next)
+  })
+
+  it('only a live, not-done, not-past ‘둘이 함께’ appointment takes it — never hers, his own or an unknown id', () => {
+    const { s, both, his, hers } = clinicCouple()
+    const ev = (appointmentId: string, id = 'j'): PartnerEvent => ({ id, kind: 'join-appointment', appointmentId })
+    expect(partnerEventProblem(s, ev(hers), TODAY)).toBe('appointment')
+    expect(partnerEventProblem(s, ev(his), TODAY)).toBe('appointment')
+    expect(partnerEventProblem(s, ev('nope'), TODAY)).toBe('appointment')
+    // Past: the day after it.
+    expect(partnerEventProblem(s, ev(both), '2026-09-13')).toBe('appointment')
+    // On the day itself it still counts.
+    expect(partnerEventProblem(s, ev(both), '2026-09-12')).toBeNull()
+    // Done or deleted (a tombstone).
+    const done = { ...s, appointments: s.appointments.map((a) => (a.id === both ? { ...a, done: true } : a)) }
+    expect(partnerEventProblem(done, ev(both), TODAY)).toBe('appointment')
+    const gone = { ...s, appointments: s.appointments.map((a) => (a.id === both ? { ...a, deletedAt: NOW } : a)) }
+    expect(joinableAppointment(gone, both, TODAY)).toBeUndefined()
+    // Never as the cycle owner.
+    expect(partnerEventProblem(s, { ...ev(both), from: OWNER }, TODAY)).toBe('actor')
+    // joinAppointment on its own (the app's row can call it) keeps the same rules.
+    expect(joinAppointment(s, PARTNER, hers, TODAY)).toBe(s)
+    expect(joinAppointment(s, PARTNER, both, '2026-09-13')).toBe(s)
+  })
+
+  it('cleanPartnerEvent: an id-like appointment id only; no title, note or date rides along', () => {
+    expect(cleanPartnerEvent({ id: 'j1', kind: 'join-appointment', appointmentId: 'appt-1', title: '난포', note: 'x', date: TODAY })).toEqual({
+      id: 'j1',
+      kind: 'join-appointment',
+      appointmentId: 'appt-1',
+    })
+    expect(cleanPartnerEvent({ id: 'j1', kind: 'join-appointment' })).toBeUndefined()
+    expect(cleanPartnerEvent({ id: 'j1', kind: 'join-appointment', appointmentId: 'has space' })).toBeUndefined()
+    expect(cleanPartnerEvent({ id: 'j1', kind: 'join-appointment', appointmentId: 'a'.repeat(65) })).toBeUndefined()
+    expect(cleanPartnerEvent({ id: 'j1', kind: 'join-appointment', appointmentId: 7 })).toBeUndefined()
   })
 })
 

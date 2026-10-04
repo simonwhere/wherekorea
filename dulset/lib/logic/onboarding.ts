@@ -181,8 +181,8 @@ export function setStarterItems(state: AppState, member: MemberId, items: readon
 
 /**
  * Right after onboarding (N15 asks nobody about the other person's habits):
- * the starter lists are rebuilt from the defaults — the cycle owner's 엽산 ·
- * 비타민 D, and 걷기 30분 only for the member who doesn't track the cycle, who
+ * the starter lists are rebuilt from the defaults — the cycle owner's 엽산
+ * (only, since N29), and 걷기 30분 only for the member who doesn't track the cycle, who
  * also gets the 은근하게 alert style until they choose for themselves.
  */
 export function applyPartnerDefaults(state: AppState, today: ISODate): AppState {

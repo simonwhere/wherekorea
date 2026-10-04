@@ -39,7 +39,7 @@ import { NOTICE_EXPIRY_REMINDER_DAYS, appointmentReminders, noticeExpiryNotices,
 import { isBleedingDuringPositive, markBleeding } from '@/lib/logic/positiveBleeding'
 import { QUIET_DAYS_AFTER_END, backToPreparing, quietEndsOn, startPregnancy } from '@/lib/logic/pregnancy'
 import { setPersonalPref, setShareCycleDetails, shareLevelOf } from '@/lib/logic/prefs'
-import { anniversaryAlertsOn, memoriesOn, sanitizeBackup, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
+import { anniversaryAlertsOn, memoriesOn, sanitizeBackup, setAnniversaryAlerts, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
 import { doctorAdvice, endPregnancy, noticeTarget } from '@/lib/logic/today'
 import {
   SUPPORT_CHECK_LINE,
@@ -590,15 +590,27 @@ describe('settings switches and old saves', () => {
     expect(PERSONAL_DEFAULTS).toEqual({ acceptNudges: true })
   })
 
-  it('기념일 알림 off: no anniv: notice and no cover line; unset = on', () => {
+  it('기념일 알림 off: no anniv: notice and no cover line; unset = off while preparing, on later (N27)', () => {
     const base = fresh({ couple: { ...fresh().couple, marriedDate: '2024-09-08' } })
     const off = setCoupleFlag(base, 'anniversaryAlerts', false)
+    const on = setAnniversaryAlerts(base, true)
+    const pregnant: AppState = { ...base, stage: 'pregnant' }
     for (const day of ['2026-09-01', '2026-09-08']) {
-      expect(anniversaryNotices(base, day).length).toBeGreaterThan(0)
+      // Preparing and never chosen: quiet (N27, positioning §3-3).
+      expect(anniversaryNotices(base, day)).toEqual([])
       expect(anniversaryNotices(off, day)).toEqual([])
       expect(scheduledNotices(off, day).filter((n) => n.key.startsWith('anniv:'))).toEqual([])
       expect(heroLine(off, day, PARTNER, 20).kind).not.toBe('anniversary')
+      // A later stage keeps the old default: on, with the week's heads-up.
+      expect(anniversaryNotices(pregnant, day).length).toBeGreaterThan(0)
     }
+    // Turned on while preparing: the day itself only, never the week before.
+    expect(anniversaryNotices(on, '2026-09-01')).toEqual([])
+    expect(anniversaryNotices(on, '2026-09-08').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-08:0:a', 'anniv:married-year:2:2026-09-08:0:b'])
+    expect(anniversaryNotices(pregnant, '2026-09-01').every((n) => n.key.includes(':7:'))).toBe(true)
+    expect(anniversaryAlertsOn(on.settings, 'preparing')).toBe(true)
+    expect(anniversaryAlertsOn(base.settings, 'preparing')).toBe(false)
+    expect(anniversaryAlertsOn(base.settings, 'pregnant')).toBe(true)
   })
 
   it('a save from before Next B loads byte-identical, and garbage Next B fields are dropped', () => {

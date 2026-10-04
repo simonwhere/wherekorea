@@ -5,23 +5,20 @@
 // with one action: the stage's [했어요], which sends a 'task-done' event
 // dated the snapshot's defaultDoneAt (the booked day once it has passed,
 // else today). Booking a date, ticking the claim papers and changing the
-// date happen in the app; the page says so where it matters.
+// date happen in the app; the page says so where it matters. While the
+// booked day is still ahead ('예약됨'), there is no [받았어요] — the card says
+// '예약일 10월 15일' (partnerEvents.taskLocked: nothing is recorded before it).
 
 import { ExternalLink } from '@/components/today/bits'
 import { cx } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
+import { taskLocked } from '@/lib/logic/partnerEvents'
 import type { SnapshotTask } from '@/lib/logic/partnerSnapshot'
-import type { TaskStage } from '@/lib/logic/partnerTrack'
+import { taskStageLabel, type TaskStage } from '@/lib/logic/partnerTrack'
+import type { ISODate } from '@/lib/types'
 import { Pill } from './bits'
 
-const STAGE_LABEL: Record<TaskStage, string> = {
-  apply: '신청',
-  book: '예약 전',
-  booked: '예약됨',
-  visited: '예약일 지남',
-  claim: '청구',
-}
 
 const DONE_LABEL: Record<TaskStage | 'plain', string> = {
   apply: '신청했어요',
@@ -123,6 +120,7 @@ export function LinkTaskBody({
   done,
   onDone,
   onSurface2 = false,
+  today,
   className,
 }: {
   task: SnapshotTask
@@ -130,12 +128,17 @@ export function LinkTaskBody({
   onDone: (task: SnapshotTask) => void
   /** Inside a surface-2 box (the moment card): the pill takes the surface colour. */
   onSurface2?: boolean
+  /** The page's day (the booked day itself reads '오늘 예약일'). */
+  today?: ISODate
   className?: string
 }) {
   const overdue = task.status === 'overdue'
   const stage = task.stage
   const pastBooked =
     stage === 'booked' && !!task.appointment && task.appointment.date <= task.defaultDoneAt && task.appointment.date !== task.defaultDoneAt
+  // The snapshot's day is its defaultDoneAt for a booked step: before the booked day nothing can be recorded.
+  const locked = taskLocked(task, task.defaultDoneAt)
+  const lockedOn = locked ? (task.appointment?.date ?? task.minDoneAt) : undefined
 
   return (
     <div className={className}>
@@ -143,7 +146,7 @@ export function LinkTaskBody({
         이번 달 할 일
         {stage ? (
           <span className={cx('rounded-full px-1.5 py-px text-[10.5px]', stage === 'visited' ? 'bg-brand text-white' : 'bg-brand-soft')}>
-            {STAGE_LABEL[stage]}
+            {taskStageLabel(stage, task.appointment?.date, today)}
           </span>
         ) : null}
       </p>
@@ -183,6 +186,19 @@ export function LinkTaskBody({
             <Icon name="check" className="h-4 w-4" strokeWidth={2.6} />
             {formatKo(task.defaultDoneAt, { weekday: false })}로 기록했어요
           </p>
+        ) : lockedOn ? (
+          // The booked day and time are the line above (as in the app's MonthlyTask): the lock says what waits for it.
+          <p data-task-locked className="flex items-center gap-1.5 py-1 text-[13.5px] font-bold text-ink-2">
+            <Icon name="clock" className="h-4 w-4 shrink-0 text-ink-3" />
+            {task.appointment ? (
+              <>
+                <span className="sr-only">예약일 {formatKo(lockedOn, { weekday: false })} · </span>
+                다녀온 뒤에 기록해요
+              </>
+            ) : (
+              `${formatKo(lockedOn, { weekday: false })}부터 기록해요`
+            )}
+          </p>
         ) : (
           <>
             <Pill onClick={() => onDone(task)} tone={stage === 'visited' ? 'primary' : onSurface2 ? 'outline' : 'soft'} icon="check">
@@ -207,11 +223,13 @@ export default function LinkTaskCard({
   task,
   done,
   onDone,
+  today,
   className,
 }: {
   task: SnapshotTask
   done: boolean
   onDone: (task: SnapshotTask) => void
+  today?: ISODate
   className?: string
 }) {
   const overdue = task.status === 'overdue'
@@ -227,7 +245,7 @@ export default function LinkTaskCard({
       <span aria-hidden className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand-ink">
         <Icon name={taskIcon(task)} className="h-6 w-6" />
       </span>
-      <LinkTaskBody task={task} done={done} onDone={onDone} onSurface2={overdue} className="min-w-0 flex-1" />
+      <LinkTaskBody task={task} done={done} onDone={onDone} onSurface2={overdue} today={today} className="min-w-0 flex-1" />
     </section>
   )
 }

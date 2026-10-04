@@ -47,7 +47,8 @@ revoke execute on function public.dulset_token_couple(text) from public, anon, a
 revoke execute on function public.dulset_cleanup() from public, anon, authenticated;
 
 -- Owner side (her phone, with the owner key)
-grant execute on function public.create_couple(text) to anon, authenticated;
+grant execute on function public.create_couple(text, uuid) to anon, authenticated;
+grant execute on function public.delete_couple(text, uuid) to anon, authenticated;
 grant execute on function public.issue_token(text, uuid, text, integer) to anon, authenticated;
 grant execute on function public.revoke_token(text, uuid, text) to anon, authenticated;
 grant execute on function public.publish_snapshot(text, uuid, text, jsonb, timestamptz) to anon, authenticated;

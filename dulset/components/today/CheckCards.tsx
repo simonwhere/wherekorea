@@ -15,7 +15,7 @@ import {
   weeklyCheckInName,
   weeklyDone,
 } from '@/lib/logic/checks'
-import { NUDGES_PER_DAY, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
+import { nudgesPerDay, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
 import { acceptNudgesFor } from '@/lib/logic/settings'
 import { rowProgress, stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
@@ -166,7 +166,9 @@ export function PartnerChecks() {
   const items = activeItems(state, partner.id)
   const done = doneIds(state, partner.id, today)
   const prog = rowProgress(state, partner.id, today)
-  const left = Math.max(0, NUDGES_PER_DAY - nudgesSentToday(state, me.id, today))
+  // One 콕 a day from the partner, three from the cycle owner (notifications.nudgesPerDay, N30).
+  const perDay = nudgesPerDay(state, me.id)
+  const left = Math.max(0, perDay - nudgesSentToday(state, me.id, today))
   // A 콕 only ever points at an unchecked daily item — never a weekly check-in —
   // and the button is not there at all for a partner who turned 콕 받기 off
   // (settings.acceptNudgesFor; sendNudge drops it too).
@@ -250,7 +252,7 @@ export function PartnerChecks() {
             : !accepts
               ? `${partner.name}님은 콕을 받지 않기로 했어요. 응원은 언제든 보낼 수 있어요.`
               : left === 0
-                ? `콕은 하루 ${NUDGES_PER_DAY}번까지예요. 내일 다시 보낼 수 있어요.`
+                ? `콕은 하루 ${perDay}번까지예요. 내일 다시 보낼 수 있어요.`
                 : `콕은 오늘 ${left}번 더 보낼 수 있어요.`}
       </p>
     </Card>

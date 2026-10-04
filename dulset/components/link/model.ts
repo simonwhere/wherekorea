@@ -12,12 +12,14 @@
 // only done flags and counts.
 //
 // Also here: the first-run card's and the install card's per-device memory
-// (N22), the in-app browser check (카카오톡 → '사파리/크롬으로 열기'), and the
-// '이번 주 우리 둘' lines (N21).
+// (N22), the in-app browser check (카카오톡 → '사파리/크롬으로 열기'), the
+// '이번 주 우리 둘' lines (N21), his clinic week's [같이 갈게요] marks (N32),
+// the token this browser remembers for a token-less open (the weekly
+// calendar's '/link/', N31) and the weekly reminder's address.
 
-import { weekdayKo } from '@/lib/dates'
+import { diffDays, formatKo, weekdayKo } from '@/lib/dates'
 import type { SetupDrinks, SetupHabits } from '@/lib/logic/partnerEvents'
-import type { PartnerPage, PartnerSnapshot, SnapshotChecks, SnapshotPrep, SnapshotWeek } from '@/lib/logic/partnerSnapshot'
+import type { PartnerPage, PartnerSnapshot, SnapshotChecks, SnapshotClinic, SnapshotPrep, SnapshotWeek } from '@/lib/logic/partnerSnapshot'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import type { AlertStyle, ISODate } from '@/lib/types'
 
@@ -40,6 +42,10 @@ export interface LocalMarks {
   weekPick?: { monday: ISODate; optionId: WeekOptionId; at: number }
   /** … and his [했어요]. */
   weekDone?: { monday: ISODate; at: number }
+  /** His clinic week (N32): appointment id → when he said [같이 갈게요]. */
+  joins?: Record<string, number>
+  /** One of the two answers on a card she told him about (해 줄 말, N30) — sent as a 'signal' event. */
+  told?: { signalId: string; at: number }
 }
 
 export const NO_MARKS: LocalMarks = { checks: {}, signals: [], cheers: [] }
@@ -72,6 +78,15 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
       ? marks.weekPick
       : undefined
   const weekDone = marks.weekDone && fresh(marks.weekDone.at, now) && week?.monday === marks.weekDone.monday && !week.done ? marks.weekDone : undefined
+  // A [같이 갈게요] stays until the snapshot says joined (or the appointment is gone from his week).
+  const joins: Record<string, number> = {}
+  for (const [id, at] of Object.entries(marks.joins ?? {})) {
+    const row = snapshot?.clinic?.appointments.find((a) => a.id === id)
+    if (fresh(at, now) && row && !row.joined) joins[id] = at
+  }
+  // A told answer stays until the snapshot says one went out (or the told card is gone).
+  const say = snapshot?.moment?.say
+  const told = marks.told && fresh(marks.told.at, now) && say && !say.sent ? marks.told : undefined
   return {
     checks,
     ...(task ? { task } : {}),
@@ -81,7 +96,38 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
     cheers: marks.cheers.filter((at) => fresh(at, now)),
     ...(weekPick ? { weekPick } : {}),
     ...(weekDone ? { weekDone } : {}),
+    ...(Object.keys(joins).length ? { joins } : {}),
+    ...(told ? { told } : {}),
   }
+}
+
+/**
+ * The told card's 해 줄 말 (N30) with his local answer applied: once he tapped
+ * one of the two answers, the card reads '보냈어요 · …' at once (the snapshot
+ * then confirms it as `sent`). Undefined when the card carries none.
+ */
+export function viewTold(page: Pick<PartnerPage, 'moment'>, marks: LocalMarks): NonNullable<NonNullable<PartnerPage['moment']>['say']> | undefined {
+  const say = page.moment?.say
+  if (!say) return undefined
+  if (say.sent) return say
+  const mine = marks.told && say.replies.some((r) => r.id === marks.told!.signalId) ? marks.told.signalId : undefined
+  return mine ? { ...say, sent: mine } : say
+}
+
+/** His clinic week with his [같이 갈게요] marks applied (a '둘이 함께' row he just answered reads joined). */
+export function viewClinic(page: Pick<PartnerPage, 'clinic'>, marks: LocalMarks): SnapshotClinic | null {
+  const c = page.clinic
+  if (!c) return null
+  const joins = marks.joins ?? {}
+  if (!Object.keys(joins).length) return c
+  return { ...c, appointments: c.appointments.map((a) => (a.with === 'both' && joins[a.id] !== undefined ? { ...a, joined: true } : a)) }
+}
+
+/** '오늘 08:30' · '내일' · '10월 8일 (목) 09:30' — an appointment's day as his clinic week reads it. */
+export function clinicWhen(date: ISODate, time: string | undefined, today: ISODate): string {
+  const n = diffDays(today, date)
+  const d = n === 0 ? '오늘' : n === 1 ? '내일' : formatKo(date)
+  return time ? `${d} ${time}` : d
 }
 
 /** The checks with his local marks applied, and the counts recomputed the way the home counts them (daily rows only). */
@@ -208,6 +254,13 @@ export function viewerOf(snapshot: Pick<PartnerSnapshot, 'members' | 'viewer'>):
 export type NoticeKind = 'expired' | 'nolink' | 'stale' | 'offline'
 
 /**
+ * The slim line over a page drawn from what this browser kept, when the
+ * transport could not be reached (the full 'offline' notice is for when
+ * there is nothing kept to draw).
+ */
+export const OFFLINE_LINE = { title: '지금은 불러올 수 없어요', body: '마지막으로 받은 화면이에요. 인터넷이 돌아오면 저절로 새로 보여요.' } as const
+
+/**
  * The copy for each notice; the owner's name when the page knows it. No
  * health word, no detail. 'stale' (the week the snapshot covers is over)
  * never asks anything of her — it says what happens on its own (her phone
@@ -225,6 +278,44 @@ export function noticeCopy(kind: NoticeKind, ownerName?: string): { title: strin
     default:
       return { title: '지금은 불러올 수 없어요', body: '인터넷을 확인하고 다시 열어 주세요.' }
   }
+}
+
+// ── The token this browser remembers (N31) ──────────────────
+
+/**
+ * localStorage key: the share token this browser last opened the page with.
+ * The weekly calendar reminder links to '/link/' WITHOUT the token (a
+ * calendar must never hold the secret — lib/logic/ics weeklyLinkIcs), so a
+ * token-less open on this device uses this one.
+ */
+export const LINK_TOKEN_KEY = 'dulset:link-token:v1'
+
+/**
+ * The token to open with: the one in the address when there is one, else the
+ * one this browser remembers (a token-less '/link/' from the calendar), else
+ * the cached view's. Null when none is valid. `isToken` is the token check
+ * (lib/logic/partnerLink — passed in so this file stays free of it).
+ */
+export function pickToken(
+  hashToken: string | null,
+  remembered: string | null,
+  cachedViewToken: string | null,
+  isToken: (v: unknown) => v is string,
+): string | null {
+  if (hashToken && isToken(hashToken)) return hashToken
+  if (remembered && isToken(remembered)) return remembered
+  if (cachedViewToken && isToken(cachedViewToken)) return cachedViewToken
+  return null
+}
+
+/**
+ * The origin + base path the weekly reminder links to (its '/link/' is
+ * appended by lib/logic/ics): this page's address without '/link/', the
+ * query and the hash — so a site served under a sub-path still works.
+ */
+export function weeklyLinkOrigin(origin: string, pathname: string): string {
+  const base = pathname.replace(/\/link(\/(index\.html)?)?$/, '').replace(/\/+$/, '')
+  return `${origin.replace(/\/+$/, '')}${base}`
 }
 
 // ── First run on this device (N22) ──────────────────────────

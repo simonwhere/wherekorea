@@ -29,6 +29,8 @@ import {
   setFertilityApplied,
   setFertilityClaimed,
   setShareCycleDetails,
+  TASK_STAGE_LABEL,
+  taskStageLabel,
   testIdFor,
 } from '@/lib/logic/partnerTrack'
 import { setPersonalPref, shareLevelOf } from '@/lib/logic/prefs'
@@ -442,8 +444,8 @@ describe('오늘 해 줄 수 있는 것', () => {
       for (let i = 0; i < 40; i++) {
         const day = addDays('2026-09-10', i)
         const tip = partnerTip(s, day, 'a')
-        // With the details shared, period days 1–3 carry the moment card's own tip instead.
-        if (tip === undefined) expect(ttcMoment(s, day, 'a')?.partnerTip, day).toBeTruthy()
+        // Only a card with its own lines (a told moment) takes the tip's place.
+        if (tip === undefined) expect(ttcMoment(s, day, 'a')?.partnerTip ?? ttcMoment(s, day, 'a')?.say, day).toBeTruthy()
         else expect(tip, day).not.toMatch(TIMING)
       }
     }
@@ -455,9 +457,13 @@ describe('오늘 해 줄 수 있는 것', () => {
     expect(partnerTip(told, '2026-10-09', 'a')).toBeUndefined()
     expect(ttcMoment(told, '2026-10-09', 'a')?.partnerTip).toBe(PERIOD_PARTNER_TIP)
     expect(PERIOD_PARTNER_TIP).toContain('고생했어')
-    // Shared details, days 1–3 (and while '알릴까요?' is unanswered): the moment card's tip again.
-    expect(partnerTip(shared(s), '2026-10-09', 'a')).toBeUndefined()
-    expect(partnerTip(shared(s), '2026-10-12', 'a')).toBeUndefined()
+    // The told card carries 해 줄 말 · 아껴 둘 말 too (N30): the tip steps aside for those as well.
+    expect(ttcMoment(told, '2026-10-09', 'a')?.say?.say).toContain('고생했어')
+    // Shared details, days 1–3: not a moment she sent — no 해 줄 말 on that card (N30),
+    // so the stage card offers its own small thing instead.
+    expect(ttcMoment(shared(s), '2026-10-09', 'a')?.partnerTip).toBeUndefined()
+    expect(partnerTip(shared(s), '2026-10-09', 'a')).toBe('가벼운 산책을 제안해 봐요.')
+    expect(partnerTip(shared(s), '2026-10-12', 'a')).toBe('가벼운 산책을 제안해 봐요.')
     // She answered '괜찮아요'; from day 4 with the details shared: a walk.
     const answered = skipTellPartnerPeriod(shared(s), '2026-10-08', '2026-10-08T21:00:00+09:00')
     expect(partnerTip(answered, '2026-10-11', 'a')).toBe('가벼운 산책을 제안해 봐요.')
@@ -520,5 +526,15 @@ describe('sharing the cycle details', () => {
     expect(shareLevelOf(shared)).toBe('details')
     expect(setShareCycleDetails(shared, 'b', true)).toBe(shared)
     expect(shareLevelOf(setShareCycleDetails(shared, 'b', false))).toBe('week')
+  })
+})
+
+describe('taskStageLabel (QA Now 3b): the booked day itself has not passed', () => {
+  it("reads '오늘 예약일' on the booked day, '예약일 지남' after it, the plain label otherwise", () => {
+    expect(taskStageLabel('visited', '2026-10-23', '2026-10-23')).toBe('오늘 예약일')
+    expect(taskStageLabel('visited', '2026-10-23', '2026-10-24')).toBe('예약일 지남')
+    expect(taskStageLabel('visited', undefined, '2026-10-23')).toBe('예약일 지남')
+    expect(taskStageLabel('booked', '2026-10-23', '2026-10-23')).toBe('예약됨')
+    for (const stage of ['apply', 'book', 'booked', 'claim'] as const) expect(taskStageLabel(stage, undefined, undefined)).toBe(TASK_STAGE_LABEL[stage])
   })
 })

@@ -3,17 +3,27 @@
 // The moment card on the partner page — components/today/CycleBlock's partner
 // card, word for word from the snapshot: eyebrow, title, body, note, the week
 // row (the shared "우리의 주간" band only), the month task when the card
-// features it, '오늘 해 줄 수 있는 것', two date ideas, and after a loss the
-// quiet support list. 잠금화면 숨김 to the card: VEIL_COPY until he taps.
+// features it, '오늘 해 줄 수 있는 것', two date ideas, his clinic week while
+// the couple's clinic mode is on (N32, components/link/LinkClinic — inside the
+// card, so the veil covers it too), and after a loss the quiet support list.
+// On a card she told him about ([알리기]: her period, a positive test, bleeding
+// after it) the tip gives way to 해 줄 말 · 아껴 둘 말 and two one-tap answers
+// (N30) — each a 'signal' event partnerEvents accepts only while that card
+// stands and only once; then the card reads '보냈어요 · …'.
+// 잠금화면 숨김 to the card: VEIL_COPY until he taps.
 // The app's action labels (달력 보기, 아이디어 더 보기 …) lead to screens the
 // page does not have, so they are not drawn here.
 
 import { useState } from 'react'
 import LossSupport from '@/components/today/LossSupport'
 import { cx } from '@/components/ui'
-import type { PartnerPage, SnapshotIdea, SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import { SayLines } from '@/components/signals/SayText'
+import type { PartnerPage, SnapshotAppointment, SnapshotClinic, SnapshotIdea, SnapshotMoment, SnapshotTask } from '@/lib/logic/partnerSnapshot'
+import type { Signal } from '@/lib/logic/signals'
 import { VEIL_COPY, estimateMarks, type MomentTone } from '@/lib/logic/ttcFlow'
+import type { ISODate } from '@/lib/types'
 import { Pill } from './bits'
+import LinkClinic from './LinkClinic'
 import { LinkTaskBody } from './LinkTask'
 import LinkWeekRow from './LinkWeekRow'
 import { cardEyebrow } from './model'
@@ -63,19 +73,85 @@ function Ideas({ ideas, className }: { ideas: SnapshotIdea[]; className?: string
   )
 }
 
+/** 해 줄 말 on a told card: the two lines, then the two answers — or what he already sent. */
+function ToldSay({
+  say,
+  ownerName,
+  left,
+  onAnswer,
+  className,
+}: {
+  say: NonNullable<SnapshotMoment['say']>
+  ownerName: string
+  left: number
+  onAnswer: (s: Signal) => void
+  className?: string
+}) {
+  const sent = say.sent ? say.replies.find((r) => r.id === say.sent) : undefined
+  return (
+    <div data-told-say className={className}>
+      <SayLines say={say.say} save={say.save} />
+      {say.sent ? (
+        <p data-told-sent className="mt-2.5 text-[12.5px] font-semibold text-ink-3">
+          보냈어요{sent ? ' · ' : ''}
+          {sent ? (
+            <>
+              <span aria-hidden>{sent.emoji} </span>
+              {sent.text}
+            </>
+          ) : null}
+        </p>
+      ) : (
+        <div role="group" aria-label={`${ownerName}님에게 답하기`} className="mt-2.5 flex flex-wrap gap-2">
+          {say.replies.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              data-told-answer={r.id}
+              onClick={() => onAnswer(r)}
+              disabled={left <= 0}
+              className="relative inline-flex min-h-[44px] items-center gap-[5px] rounded-full border-[1.5px] border-line bg-surface px-3.5 text-[13.5px] font-bold text-ink transition-colors hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
+            >
+              <span aria-hidden>{r.emoji}</span> {r.text}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LinkMoment({
   snapshot,
   task,
   onTaskDone,
+  clinic,
+  today,
+  onJoin,
   weekBelow = false,
+  say,
+  ownerName = '',
+  signalsLeft = 0,
+  onTold,
   className,
 }: {
   snapshot: PartnerPage
   /** The month task when the card features it (moment.monthlyTask), with his local mark. */
   task?: { task: SnapshotTask; done: boolean }
   onTaskDone: (task: SnapshotTask) => void
+  /** His clinic week (N32) with his marks applied (model.viewClinic), while clinic mode is on. */
+  clinic?: SnapshotClinic | null
+  today?: ISODate
+  onJoin?: (a: SnapshotAppointment) => void
   /** '이번 주 우리 둘' (LinkWeek) comes right after this card: the eyebrow does not repeat its header. */
   weekBelow?: boolean
+  /** The told card's 해 줄 말 with his local answer applied (model.viewTold); else the card's own. */
+  say?: SnapshotMoment['say']
+  ownerName?: string
+  /** Signals he may still send today (an answer is one). */
+  signalsLeft?: number
+  /** One of the two answers tapped (LinkPage sends it as a 'signal' event). */
+  onTold?: (s: Signal) => void
   className?: string
 }) {
   const m = snapshot.moment
@@ -86,6 +162,7 @@ export default function LinkMoment({
   // "(예상)" once per card (components/today/CycleBlock): the band legend drops its own when the copy has it.
   const estimate = [m.eyebrow, m.title, m.body, m.note, m.partnerTip].some((t) => estimateMarks(t) > 0) ? 'none' : 'one'
   const eyebrow = cardEyebrow(m.eyebrow, weekBelow)
+  const told = say ?? m.say
 
   if (m.veiled && !revealed) {
     return (
@@ -127,9 +204,14 @@ export default function LinkMoment({
 
       {snapshot.strip ? <LinkWeekRow strip={snapshot.strip} estimate={estimate} /> : null}
 
-      {task ? <LinkTaskBody task={task.task} done={task.done} onDone={onTaskDone} onSurface2={!muted} className={inner} /> : null}
+      {task ? <LinkTaskBody task={task.task} done={task.done} onDone={onTaskDone} onSurface2={!muted} today={today ?? snapshot.date} className={inner} /> : null}
 
-      {m.partnerTip ? (
+      {clinic ? <LinkClinic clinic={clinic} today={today ?? snapshot.date} onJoin={onJoin ?? (() => {})} className={inner} /> : null}
+
+      {/* A moment she told: 해 줄 말 · 아껴 둘 말 and two answers — instead of the tip that says the same (as the app's card). */}
+      {told ? (
+        <ToldSay say={told} ownerName={ownerName} left={signalsLeft} onAnswer={onTold ?? (() => {})} className={inner} />
+      ) : m.partnerTip ? (
         <p className={cx(inner, 'text-[13px] leading-[1.55] text-ink-2')}>
           <b className="font-bold text-ink">오늘 해 줄 수 있는 것</b> · {m.partnerTip}
         </p>

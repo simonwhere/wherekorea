@@ -15,8 +15,9 @@ import {
 import { buildIcs, downloadText } from '@/lib/logic/ics'
 import { useApp } from '@/lib/store'
 import type { Appointment } from '@/lib/types'
-import { Owners, btnBrand, btnDanger, btnSecondary } from './bits'
+import { Owners, btn, btnBrand, btnDanger, btnSecondary } from './bits'
 import { ownerText, usableAppointments } from '@/lib/logic/plan'
+import { appointmentJoinedBy, joinAppointment, joinableAppointment } from '@/lib/logic/partnerEvents'
 import { discreetFor } from '@/lib/logic/prefs'
 
 const PAST_PAGE = 3
@@ -121,7 +122,7 @@ function AppointmentRow({
   onDone: (a: Appointment, done: boolean) => void
   past?: boolean
 }) {
-  const { state, update, today, me } = useApp()
+  const { state, update, today, me, cycleOwner } = useApp()
   const toast = useToast()
   const [confirming, setConfirming] = useState(false)
   const deleteRef = useRef<HTMLButtonElement>(null)
@@ -139,6 +140,19 @@ function AppointmentRow({
   const members = state.couple.members
   const owners = appt.who === 'both' ? members.map((m) => m.id) : [appt.who]
   const { month, day } = parts(appt.date)
+  // [같이 갈게요] (N32): kept as a decision, never on the appointment itself. The other
+  // one reads '민수님이 같이 가요'; the one who said it reads '같이 가요 ✓'. In the app the
+  // button is the partner's, the same one his link carries — only on a live '둘이 함께'
+  // appointment that is still ahead.
+  const joinedBy = appt.who === 'both' ? appointmentJoinedBy(state, appt.id) : []
+  const iJoined = joinedBy.includes(me.id)
+  const othersJoined = members.filter((m) => m.id !== me.id && joinedBy.includes(m.id))
+  const canJoin = !past && !iJoined && me.id !== cycleOwner.id && !!joinableAppointment(state, appt.id, today)
+  const join = () => {
+    update((s) => joinAppointment(s, me.id, appt.id, today))
+    const other = members.find((m) => m.id !== me.id)
+    toast.show(other ? `${other.name}님에게 같이 간다고 알렸어요` : '같이 간다고 알렸어요')
+  }
 
   const addToCalendar = () => {
     downloadText(`dulset-${appt.date}.ics`, buildIcs([appointmentIcsEvent(appt, discreetFor(state.settings, me.id))]))
@@ -205,6 +219,12 @@ function AppointmentRow({
           ) : null}
         </div>
         {appt.note ? <p className="mt-0.5 text-xs text-ink-3">“{appt.note}”</p> : null}
+        {othersJoined.length > 0 || iJoined ? (
+          <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-ok-soft px-2 py-0.5 text-[11.5px] font-semibold text-ink-2">
+            <Icon name="check" className="h-3 w-3 shrink-0 text-ok" strokeWidth={2.6} />
+            {othersJoined.length > 0 ? `${othersJoined.map((m) => m.name).join('·')}님이 같이 가요` : '같이 가요'}
+          </p>
+        ) : null}
 
         {confirming ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="일정 삭제 확인">
@@ -233,6 +253,11 @@ function AppointmentRow({
           </div>
         ) : (
           <div className="mt-2 flex flex-wrap gap-1.5">
+            {canJoin ? (
+              <button type="button" className={cx(btn, 'bg-him-soft text-ink hover:bg-him/15')} onClick={join}>
+                같이 갈게요
+              </button>
+            ) : null}
             {!past ? (
               <button type="button" className={btnSecondary} onClick={addToCalendar}>
                 <Icon name="cal" className="h-3.5 w-3.5" strokeWidth={2} /> 캘린더에 추가

@@ -1,10 +1,12 @@
 # supabase/ — 남편용 웹 화면(파트너 링크)의 서버 쪽
 
-> **아직 실제 프로젝트에서 돌려 본 적이 없어요.** 이 글을 쓰는 시점에 Supabase 프로젝트가 없어요. 클라이언트(`lib/sync/supabaseTransport.ts`)의 요청 모양은 가짜 fetch로 단위 테스트했고, SQL은 문법만 다시 읽었어요. 처음 돌릴 때는 `docs/next-a-setup.md`를 열어 두고 오류를 하나씩 맞춰 주세요.
+> **아직 실제 프로젝트에서 돌려 본 적이 없어요.** 클라이언트(`lib/sync/supabaseTransport.ts`)의 요청 모양은 가짜 fetch로 단위 테스트했고, SQL은 문법만 다시 읽었어요(2026-10-04 다시 읽음). 키가 생기면 SQL을 실행한 뒤 **`node scripts/verify-supabase.mjs`** 한 번이면 모든 함수를 버리는 데이터로 돌려 보고 PASS/FAIL 표를 보여 줘요(`docs/next-a-setup.md` 맨 위 '키를 받았을 때 빠른 순서').
+>
+> 2026-10-04에 고친 것: `create_couple(p_owner_key, p_couple_id)` — 앱이 폰에서 만든 커플 id를 그대로 등록해요(같은 키·id로 다시 불러도 그대로, 다른 기기 것이면 403). 전에는 등록 호출이 없어서 실제로는 첫 publish부터 403이 났을 거예요. `couples.owner_key_hash`의 unique를 뺐고(주인 확인은 늘 id + 해시), `delete_couple`을 더했어요. 이벤트 종류(`kind`)는 길이만 보는 글자라서 새 종류(`join-appointment`, N32)에 SQL을 고칠 필요가 없어요.
 
 | 파일 | 하는 일 | 실행 순서 |
 |---|---|---|
-| `schema.sql` | 표 5개 + API 함수(RPC) 10개 + 내부 도우미 4개 | 1 |
+| `schema.sql` | 표 5개 + API 함수(RPC) 11개 + 내부 도우미 4개 | 1 |
 | `policies.sql` | RLS 켜기, 표 접근 전부 막기, 함수만 열기 | 2 |
 
 둘 다 여러 번 실행해도 괜찮아요(`if not exists` / `create or replace`).
@@ -17,14 +19,15 @@
 | `couple_tokens` | 아내가 보내는 링크의 토큰 | 해시만, 만료일(`expires_at`), 해제(`revoked_at`) |
 | `partner_snapshots` | 아내 폰이 **개인정보 렌즈를 거쳐** 만든 `PartnerSnapshot` (`lib/logic/partnerSnapshot.ts`) — 남편 화면에 보이는 것 그대로 | 생리·LH·임테기 기록, 나만 보기, 컨디션, 관계일은 애초에 들어오지 않아요 |
 | `partner_snapshots`의 모양 | v2(2026-10-03, N20): 오늘~+6일 7칸(`days[]`), 칸마다 그날의 남편 화면. 약 25 KB, 서버 한도 128 KB | 미래 칸도 같은 렌즈를 거쳐요(예측으로만 바뀌는 '늦음'은 앞 칸을 그대로 둬요) |
-| `partner_events` | 남편 화면이 보내는 것: 체크·답장·신호·콕·응원·이번 달 할 일·이번 주 하나(`week-pick`/`week-done`)·첫 설정(`setup`) — id·날짜·정해진 값만 (`lib/logic/partnerEvents.ts`) | 자유 텍스트 없음 |
+| `partner_events` | 남편 화면이 보내는 것: 체크·답장·신호·콕·응원·이번 달 할 일·이번 주 하나(`week-pick`/`week-done`)·첫 설정(`setup`)·병원 [같이 갈게요](`join-appointment`, 일정 id만) — id·날짜·정해진 값만 (`lib/logic/partnerEvents.ts`) | 자유 텍스트 없음 |
 | `link_opens` | **'링크 연 날' — 연구용**(2026-10-03 결정): 커플 id · 서울 날짜 · 그날 연 횟수 | IP·기기·시각·토큰·내용 없음. 아내 화면에는 어떤 형태로도 안 보여요(`positioning.md` §6). 연구가 끝나면 지워요(아래) |
 
 ## 함수(RPC) — `POST /rest/v1/rpc/<이름>`
 
 | 쪽 | 함수 | 검사 |
 |---|---|---|
-| 아내 폰 | `create_couple(p_owner_key)` → uuid | 키 32자 이상 |
+| 아내 폰 | `create_couple(p_owner_key, p_couple_id)` → uuid | 키 32자 이상. 폰이 만든 id를 등록(멱등), 다른 기기 것이면 403. id 없이 부르면 새 id |
+| 아내 폰 | `delete_couple(p_owner_key, p_couple_id)` → 지웠는지 | 주인 키 일치. 커플과 그 아래 토큰·스냅숏·이벤트·링크 연 날이 cascade로 함께 지워져요(확인 스크립트의 정리, 나중에 연결 해제). 연구 중인 커플에는 쓰지 않아요 |
 | 아내 폰 | `issue_token(p_owner_key, p_couple_id, p_token, p_days=30)` → 만료 시각 | 주인 키 일치, 1~90일 |
 | 아내 폰 | `revoke_token(...)` | 주인 키 일치 |
 | 아내 폰 | `publish_snapshot(p_owner_key, p_couple_id, p_token, p_payload, p_published_at)` → 버전 | 주인 키, 64 KB, 토큰 처음 쓰면 30일로 발급, 최근 3개 버전만 보관 |
@@ -43,7 +46,7 @@
 
 ## 접근 규칙 (`policies.sql`)
 
-- 표 4개 모두 RLS 켬 + **정책 0개** + anon/authenticated에서 모든 권한 회수 → API로 표를 직접 읽거나 쓸 수 없어요.
+- 표 5개 모두 RLS 켬 + **정책 0개** + anon/authenticated에서 모든 권한 회수 → API로 표를 직접 읽거나 쓸 수 없어요.
 - 함수는 `security definer`라 소유자(SQL을 실행한 역할) 권한으로 돌아요. 각 함수가 주인 키 또는 토큰을 스스로 검사해요.
 - PostgREST는 `errcode 42501`을 HTTP 403으로, `22023`은 400으로 돌려줘요. 클라이언트는 `SupabaseTransportError(code: 'http', status)`로 받아요.
 

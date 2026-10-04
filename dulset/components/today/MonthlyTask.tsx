@@ -3,13 +3,16 @@
 // "이번 달 할 일" — the partner's one meaningful task this month, as a staged
 // card (lib/logic/partnerTrack.monthlyTask, N14):
 //   신청 (where · what you get · [신청했어요]) → 예약 전 (what · where · bring ·
-//   cost · [일정 잡기]) → 예약됨 (the booked day · [받았어요]) → 다녀왔어요?
+//   cost · [일정 잡기]) → 예약됨 (the booked day; '예약일 10월 15일' — nothing
+//   can be recorded before it, partnerEvents.taskLocked) → 다녀왔어요?
 //   → 청구 (the four papers · [청구했어요]) → the next item.
 // Every stage ends with '오늘 해 줄 수 있는 것' — one small thing for today.
 //
 // A chain step is completed through the '언제 했어요?' sheet (the date it
 // happened, the booked day by default once it has passed), never silently as
-// "today": the next deadline counts from that date. Done and undo both go
+// "today": the next deadline counts from that date — and never before the
+// booked day (partnerEvents.earliestDoneAt: the sheet's earliest date, the
+// same rule the link's 'task-done' gate keeps). Done and undo both go
 // through completeMonthlyTask — never tickItem: the claim step ('검사비
 // 청구하기') has no roadmap row of its own.
 //
@@ -25,7 +28,8 @@ import { Button, Field, Sheet, cx, inputClass, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
 import { addDays, dLabel, formatKo, formatShort, isISODate } from '@/lib/dates'
-import { bookingDraft, completeMonthlyTask, setClaimDocDone, type MonthlyTask, type TaskStage } from '@/lib/logic/partnerTrack'
+import { earliestDoneAt, taskLocked } from '@/lib/logic/partnerEvents'
+import { bookingDraft, completeMonthlyTask, setClaimDocDone, taskStageLabel, type MonthlyTask, type TaskStage } from '@/lib/logic/partnerTrack'
 import type { AppointmentDraft } from '@/lib/logic/plan'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
@@ -67,12 +71,14 @@ function WhenSheet({ task, onConfirm, onClose }: { task: MonthlyTask; onConfirm:
   const [date, setDate] = useState(task.defaultDoneAt)
   const [error, setError] = useState(false)
   const booked = task.appointment && task.appointment.date <= today ? task.appointment.date : undefined
+  // Never before the booked day (nor the step before it).
+  const min = earliestDoneAt(task)
+  const valid = (d: string) => isISODate(d) && d <= today && (!min || d >= min)
   const chips: Array<{ label: string; value: ISODate }> = [
     ...(booked ? [{ label: `예약일 ${formatShort(booked)}`, value: booked }] : []),
     { label: '오늘', value: today },
     { label: '어제', value: addDays(today, -1) },
-  ].filter((c, i, all) => all.findIndex((x) => x.value === c.value) === i)
-  const valid = (d: string) => isISODate(d) && d <= today && (!task.minDoneAt || d >= task.minDoneAt)
+  ].filter((c, i, all) => all.findIndex((x) => x.value === c.value) === i && valid(c.value))
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,7 +119,7 @@ function WhenSheet({ task, onConfirm, onClose }: { task: MonthlyTask; onConfirm:
             className={inputClass}
             value={date}
             max={today}
-            min={task.minDoneAt}
+            min={min}
             required
             aria-invalid={error}
             onChange={(e) => {
@@ -235,13 +241,6 @@ function Pill({
   )
 }
 
-const STAGE_LABEL: Record<TaskStage, string> = {
-  apply: '신청',
-  book: '예약 전',
-  booked: '예약됨',
-  visited: '예약일 지남',
-  claim: '청구',
-}
 
 /** '무엇 · 정액검사' rows from the stage guide. */
 function GuideRows({ task }: { task: MonthlyTask }) {
@@ -360,6 +359,8 @@ function StageBody({
   const stage: TaskStage | undefined = task.stage === 'visited' && notYet === task.appointment?.id ? 'booked' : task.stage
   const tone = onSurface2 ? 'surface' : 'soft'
   const pastBooked = stage === 'booked' && !!task.appointment && task.appointment.date <= today
+  // '예약됨' with the day still ahead: nothing can be recorded yet — the card says when instead.
+  const locked = stage === 'booked' && !pastBooked && taskLocked(task, today)
 
   const book = () => setBooking(bookingDraft(state, me.id, today))
 
@@ -411,9 +412,18 @@ function StageBody({
           </>
         ) : stage === 'booked' ? (
           <>
-            <Pill onClick={() => onDone(task)} tone={tone} icon="check">
-              받았어요
-            </Pill>
+            {locked && task.appointment ? (
+              // The booked day and time sit right above (AppointmentLine), so the lock says what waits for it.
+              <span data-task-locked className="inline-flex h-10 items-center gap-1.5 text-[13.5px] font-bold text-ink-2">
+                <Icon name="clock" className="h-4 w-4 shrink-0 text-ink-3" />
+                <span className="sr-only">예약일 {formatKo(task.appointment.date, { weekday: false })} · </span>
+                다녀온 뒤에 기록해요
+              </span>
+            ) : (
+              <Pill onClick={() => onDone(task)} tone={tone} icon="check">
+                받았어요
+              </Pill>
+            )}
             <LinkButton size="md" arrow onClick={() => goPlan(onNavigate)} className="px-1">
               {pastBooked ? '일정 고치기' : '일정 보기'}
             </LinkButton>
@@ -455,12 +465,13 @@ function StageBody({
 }
 
 function StageEyebrow({ task }: { task: MonthlyTask }) {
+  const { today } = useApp()
   return (
     <p className="flex items-center gap-1.5 text-[11.5px] font-bold text-brand-ink">
       이번 달 할 일
       {task.stage ? (
         <span className={cx('rounded-full px-1.5 py-px text-[10.5px]', task.stage === 'visited' ? 'bg-brand text-white' : 'bg-brand-soft')}>
-          {STAGE_LABEL[task.stage]}
+          {taskStageLabel(task.stage, task.appointment?.date, today)}
         </span>
       ) : null}
     </p>

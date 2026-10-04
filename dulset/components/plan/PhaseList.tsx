@@ -14,7 +14,12 @@ const FILTERS: Array<{ value: PhaseFilter; label: string }> = [
   { value: 'all', label: '전체' },
 ]
 
-/** Phase chips + one section per phase with progress and the item rows. */
+/**
+ * Phase chips + one section per phase with progress and the item rows. While
+ * preparing there are no chips (N27): 48 of the 60 items belong to later
+ * stages, so the list stays on this stage (`filter` is 'stage') and the
+ * chips come back after the stage changes.
+ */
 export default function PhaseList({
   items,
   filter,
@@ -29,14 +34,15 @@ export default function PhaseList({
   actions: ItemActions
 }) {
   const { state } = useApp()
-  const groups = phaseGroups(items, filter, state)
+  const chips = state.stage !== 'preparing'
+  const groups = phaseGroups(items, chips ? filter : 'stage', state)
 
   return (
     <section className="mt-6" aria-labelledby="plan-phases-title">
       <div className="mb-2 flex items-end justify-between gap-3 px-1">
         <div>
           <h2 id="plan-phases-title" className="text-[15px] font-bold text-ink">
-            단계별로 보기
+            {chips ? '단계별로 보기' : '준비하면서 챙길 것'}
           </h2>
           <p className="mt-0.5 text-xs text-ink-3">체크하면 둘의 화면에 같이 표시돼요</p>
         </div>
@@ -46,32 +52,34 @@ export default function PhaseList({
       </div>
 
       {/* Scrolls inside itself so the page never scrolls sideways. */}
-      <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
-        <div role="group" aria-label="단계 고르기" className="flex w-max gap-1.5">
-          {FILTERS.map((f) => {
-            const on = f.value === filter
-            return (
-              <button
-                key={f.value}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onFilter(f.value)}
-                className="group inline-flex h-11 shrink-0 items-center rounded-full focus-visible:outline-none"
-              >
-                <span
-                  className={cx(
-                    'inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors',
-                    'group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-brand',
-                    on ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2 group-hover:bg-surface-2',
-                  )}
+      {chips ? (
+        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
+          <div role="group" aria-label="단계 고르기" className="flex w-max gap-1.5">
+            {FILTERS.map((f) => {
+              const on = f.value === filter
+              return (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onFilter(f.value)}
+                  className="group inline-flex h-11 shrink-0 items-center rounded-full focus-visible:outline-none"
                 >
-                  {f.label}
-                </span>
-              </button>
-            )
-          })}
+                  <span
+                    className={cx(
+                      'inline-flex h-8 items-center rounded-full border px-3 text-xs font-medium transition-colors',
+                      'group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-brand',
+                      on ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2 group-hover:bg-surface-2',
+                    )}
+                  >
+                    {f.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="mt-2 space-y-4">
         {groups.map((g) => (

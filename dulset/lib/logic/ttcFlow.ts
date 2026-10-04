@@ -30,7 +30,7 @@
 import { FEEL_CHIPS, waitingWeekLine } from '../content/fertility'
 import { addDays, addMonths, diffDays, formatKo, formatShort, isBetween, isISODate } from '../dates'
 import type { LogKind } from '../logLauncher'
-import { decide, decided, decisionDay } from '../sync/model'
+import { decide, decided, decisionDay, liveOnly } from '../sync/model'
 import type {
   AppState,
   Appointment,
@@ -43,7 +43,7 @@ import type {
   PregnancyTestResult,
   RestCycle,
 } from '../types'
-import { upcomingAppointments } from './appointments'
+import { CLINIC_KIND_WORD, upcomingAppointments } from './appointments'
 import {
   CLINIC_LABEL,
   LH_LABEL,
@@ -57,7 +57,7 @@ import {
 } from './calendarView'
 import { mondayOf } from './checks'
 import { sharedBandBefore, sharedWeek } from './cycleRing'
-import { fertileHintsAllowed } from './dateIdeas'
+import { fertileHintsAllowed, partnerHintState } from './dateIdeas'
 import { logPeriodStart } from './logs'
 import {
   LH_LEAD_DAYS,
@@ -82,8 +82,9 @@ import { mergeNotices } from './notifications'
 import { LATE_TEST_DAYS, PERIOD_DUE_COPY, dueRange } from './periodDue'
 import { FEEL_LABEL, lastCycleFeels, personalDay } from './personalLog'
 import { bleedingAdvice, isBleedingDuringPositive, type BleedingLineId } from './positiveBleeding'
-import { canLogCycle, canSeeCycleDetails, canSeeWeekBand, lhPrompting, lowPressureFor, settingsFor } from './prefs'
+import { canLogCycle, canSeeCycleDetails, canSeeWeekBand, lowPressureFor, settingsFor } from './prefs'
 import { recentlyEnded } from './pregnancy'
+import { sayForTold, sentSince, type SayLines, type ToldMoment } from './signals'
 import { homeDiscreetFor } from './settings'
 import { fertilityVoice, type FertilityVoice } from './today'
 import { LIVE_VACCINE_REST_DAYS, activePositivePending, activeRest, endRestCycle, startRestCycle } from './ttc'
@@ -422,6 +423,14 @@ export interface Moment {
   support?: boolean
   /** One thing the partner can do today. */
   partnerTip?: string
+  /**
+   * Partner, on a moment SHE SENT with [알리기] (her period, a positive test,
+   * bleeding — N30): 해 줄 말 · 아껴 둘 말 and two one-tap answers
+   * (signals.sayForTold), the day she told him (`since`) and the answer he
+   * already sent since then (`sent`, a signal id — his own action). Never on
+   * a card his screen could only read from her records.
+   */
+  say?: SayLines & { since: ISODate; sent?: string }
   /** Owner only: how she said today felt (오늘 컨디션, lib/logic/personalLog). Never set for the partner. */
   todayFeel?: PersonalFeel
   /** Owner only, period days 1–3: her feel chips from the cycle that just ended ('지난 주기 컨디션 N개'). */
@@ -444,8 +453,16 @@ export function feelLabel(feel: PersonalFeel): string {
   return FEEL_CHIPS.find((c) => c.feel === feel)?.label ?? FEEL_LABEL[feel]
 }
 
-/** The tww card's one action before the test day: opens the log sheet on 메모, where the 오늘 컨디션 chips sit. */
-const LOG_FEEL: MomentAction = { type: 'log', kind: 'note', label: '오늘 컨디션' }
+/**
+ * Does the owner use LH strips — '써요' answered (settings.usesLH === true)?
+ * Only then is 'LH 기록' the home card's action, and only inside the window
+ * (N29, docs/positioning.md §5: 'LH 상세'). Unanswered, '나중에' and '안 써요'
+ * get no LH action — and 오늘 컨디션 is never the action (it sits in the
+ * 메모 panel's '자세히', components/log/NotePanel).
+ */
+export function usesLHNow(state: Pick<AppState, 'settings'>): boolean {
+  return state.settings.usesLH === true
+}
 
 /**
  * '지난 주기 컨디션 N개' for the owner's period-day card: her feel chips from
@@ -469,7 +486,20 @@ export function lastFeelsFor(
 
 /** The next appointment (not done, today or later) — what the clinic card leads with. */
 export function nextClinicAppointment(state: Pick<AppState, 'appointments'>, today: ISODate): Appointment | undefined {
-  return upcomingAppointments(state.appointments, today)[0]
+  return upcomingAppointments(liveOnly(state.appointments), today)[0]
+}
+
+/**
+ * The next appointment the partner's side may name (N32): his own or one
+ * they both go to ('둘이 함께') — never one of hers alone. The partner's
+ * clinic card and the link's clinic week (partnerSnapshot.linkClinic) read
+ * the same rule.
+ */
+export function nextPartnerClinicAppointment(state: Pick<AppState, 'appointments'>, today: ISODate, partner: MemberId): Appointment | undefined {
+  return upcomingAppointments(
+    liveOnly(state.appointments).filter((a) => a.who === 'both' || a.who === partner),
+    today,
+  )[0]
 }
 
 /** '오늘 08:00' · '내일' · '10월 8일 09:30' */
@@ -624,8 +654,11 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opt
   let m = isOwner ? ownerMoment(ctx) : partnerMoment(ctx)
   // The "우리의 주간" teaser and its date ideas follow the 둘만의 시간 rule too
   // (dateIdeas.fertileHintsAllowed: not in low-pressure mode or with alerts
-  // off, not while resting or waiting for the clinic).
-  if (!fertileHintsAllowed(state, viewer, today)) {
+  // off, not while resting or waiting for the clinic) — for a partner without
+  // her details read through partnerHintState: his one window already stops
+  // for a pause she started before it, and one she starts inside it must not
+  // end it (cycleRing.sharedWeek).
+  if (!fertileHintsAllowed(partnerHintState(state, viewer), viewer, today)) {
     if (m.copy === 'partner.our-week' || m.copy === 'partner.our-week-soon') m = partnerNeutral(ctx)
     else if (m.dateIdeas) m = { ...m, dateIdeas: false }
   }
@@ -649,6 +682,11 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opt
     ...(veiled ? { veiled: true } : {}),
   }
 }
+
+// partnerHintState — the state the 둘만의 시간 gate reads for a viewer — lives
+// in ./dateIdeas (the #date banner and the link's ideas read it too, and
+// dateIdeas cannot import this file); re-exported here for the screens.
+export { partnerHintState } from './dateIdeas'
 
 /**
  * What a veiled card shows (homeDiscreetFor): nothing about the cycle, the
@@ -953,64 +991,37 @@ function ownerMoment(c: Ctx): MomentBody {
     case 'before-fertile': {
       if (voice === 'calm') return ownerCalm(c)
       const start = p.fertileStart!
-      const toLh = diffDays(today, addDays(start, -LH_LEAD_DAYS))
-      // Someone who said '안 써요' to LH strips (prefs.lhPrompting, N17) never gets
-      // LH as the title or the action: the calendar estimate is named as such and
-      // 오늘 컨디션 is the thing to do once the window is near.
-      const lhOn = lhPrompting(c.state)
-      const near = toLh <= 0
-      const testing = lhOn && near
-      const nearAction: Partial<MomentBody> = near ? { primary: LOG_FEEL } : { secondary: TO_CYCLE }
+      const n = p.daysUntilFertile ?? diffDays(today, start)
+      // N29: no action before the window. 'LH 기록' becomes the action only
+      // inside it and only for '써요' (usesLHNow); a '써요' owner near it gets
+      // one quiet line that the button comes with the window.
+      const near = usesLHNow(c.state) && diffDays(today, addDays(start, -LH_LEAD_DAYS)) <= 0
       if (voice === 'explicit') {
         const low = p.confidence === 'low'
-        if (!lhOn) {
-          const n = p.daysUntilFertile ?? diffDays(today, start)
-          return {
-            role,
-            copy: 'owner.before-fertile',
-            tone: 'default',
-            // The eyebrow carries the one "(예상)" (low confidence names the basis instead, and the body's range says it).
-            eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
-            title: low ? `가임기 무렵까지 D-${n}` : `가임기까지 D-${n}`,
-            body: low
-              ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.`
-              : `${day(start)}부터예요. 달력 기준 예상이에요.`,
-            ...nearAction,
-          }
-        }
-        return {
-          role,
-          copy: testing ? 'owner.lh-start' : 'owner.before-fertile',
-          tone: testing ? 'fert' : 'default',
-          // Low confidence names what the estimate rests on ('달력 기준 · 기록 2주기').
-          eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
-          title: testing ? '오늘 LH 테스트해 봐요' : `LH 테스트 시작 D-${toLh}`,
-          body: low ? `가임기는 ${day(start)} 무렵부터예요 (예상 범위, 넓음).` : `가임기는 ${day(start)}부터예요.`,
-          note: testing ? (low ? '결과를 기록하면 범위가 좁아져요.' : '결과를 기록하면 예상을 다시 계산해요.') : undefined,
-          ...(testing ? { primary: { type: 'log', kind: 'lh', label: 'LH 기록' } as MomentAction } : { secondary: TO_CYCLE }),
-          todayLH: p.todayLH,
-        }
-      }
-      const soon = (p.daysUntilFertile ?? 99) <= 3
-      if (!lhOn) {
         return {
           role,
           copy: 'owner.before-fertile',
           tone: 'default',
-          eyebrow: '다가오는 우리의 주간 (예상)',
-          title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요`,
-          body: '둘만의 시간을 미리 계획해 볼까요? 달력 기준 예상이에요.',
-          ...nearAction,
+          // The eyebrow carries the one "(예상)" (low confidence names the basis instead, and the body's range says it).
+          eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
+          title: low ? `가임기 무렵까지 D-${n}` : `가임기까지 D-${n}`,
+          body: low
+            ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.`
+            : `${day(start)}부터예요. 달력 기준 예상이에요.`,
+          ...(near ? { note: 'LH 결과는 가임기에 들어서면 여기서 바로 남길 수 있어요.' } : {}),
+          secondary: TO_CYCLE,
+          todayLH: p.todayLH,
         }
       }
+      const soon = n <= 3
       return {
         role,
-        copy: testing ? 'owner.lh-start' : 'owner.before-fertile',
-        tone: testing ? 'fert' : 'default',
+        copy: 'owner.before-fertile',
+        tone: 'default',
         eyebrow: '다가오는 우리의 주간 (예상)',
         title: soon ? '곧 우리의 주간이에요' : `${day(start)} 무렵부터 우리의 주간이에요`,
-        body: testing ? '테스트를 시작해 볼까요? 결과를 기록하면 예상을 다시 계산해요.' : '둘만의 시간을 미리 계획해 볼까요?',
-        ...(testing ? { primary: { type: 'log', kind: 'lh', label: '오늘 기록' } as MomentAction } : { secondary: TO_CYCLE }),
+        body: '둘만의 시간을 미리 계획해 볼까요?',
+        secondary: TO_CYCLE,
         todayLH: p.todayLH,
       }
     }
@@ -1018,9 +1029,10 @@ function ownerMoment(c: Ctx): MomentBody {
     case 'fertile': {
       if (voice === 'calm') return ownerCalm(c)
       const end = p.fertileEnd!
-      // '안 써요' (prefs.lhPrompting): 오늘 컨디션 instead of LH 기록, and the body
-      // names the calendar as the basis instead of asking for a strip.
-      const lhOn = lhPrompting(c.state)
+      // N29: 'LH 기록' is the action inside the window for a '써요' owner only
+      // (usesLHNow); anyone else gets no action, and the body names the
+      // calendar as the basis instead of asking for a strip.
+      const lhOn = usesLHNow(c.state)
       if (voice === 'explicit') {
         const low = p.confidence === 'low'
         return {
@@ -1045,9 +1057,9 @@ function ownerMoment(c: Ctx): MomentBody {
                 : '달력으로만 계산한 범위라 넓게 잡았어요. 달력 기준 예상이에요.'
               : lhOn
                 ? '오늘 LH 결과를 기록하면 예상을 다시 계산해요.'
-                : '달력 기준 예상이에요. 오늘 컨디션을 남겨 둬도 좋아요.',
+                : '달력 기준 예상이에요.',
           note: '이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.',
-          primary: lhOn ? { type: 'log', kind: 'lh', label: 'LH 기록' } : LOG_FEEL,
+          ...(lhOn ? { primary: { type: 'log', kind: 'lh', label: 'LH 기록' } as MomentAction } : {}),
           peak: p.peak,
           todayLH: p.todayLH,
         }
@@ -1059,7 +1071,7 @@ function ownerMoment(c: Ctx): MomentBody {
         eyebrow: `${day(end)}까지 (예상)`,
         title: '이번 주는 우리의 주간이에요',
         body: '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
-        primary: lhOn ? { type: 'log', kind: 'lh', label: '오늘 기록' } : LOG_FEEL,
+        ...(lhOn ? { primary: { type: 'log', kind: 'lh', label: '오늘 기록' } as MomentAction } : {}),
         todayLH: p.todayLH,
       }
     }
@@ -1091,11 +1103,11 @@ function ownerMoment(c: Ctx): MomentBody {
           ...own,
         }
       }
-      if (p.noSurge && voice !== 'calm' && lhPrompting(c.state)) {
+      if (p.noSurge && voice !== 'calm' && usesLHNow(c.state)) {
         // LH strips this cycle but no surge by the window's end: ovulation may be
-        // late, so keep testing for a week before moving on to the wait (never
-        // for someone who said '안 써요' — the strips she logged are hers, the
-        // card doesn't ask for more).
+        // late, so keep testing for a week before moving on to the wait — the
+        // window carried on, for a '써요' owner only (usesLHNow: the strips an
+        // unanswered or '안 써요' owner logged are hers, the card asks for no more).
         const n = p.noSurge
         return {
           role,
@@ -1116,8 +1128,8 @@ function ownerMoment(c: Ctx): MomentBody {
       }
       if (p.early) {
         // Too early for a test to say much: a countdown to the first day of the
-        // expected range, one self-care line a day, and 오늘 컨디션 as the action
-        // (the test stays a quiet second choice — the sheet logs one any day).
+        // expected range and one self-care line a day — no action (N29: 오늘
+        // 컨디션 lives in the 메모 panel's '자세히'; the sheet logs a test any day).
         return {
           role,
           copy: 'owner.tww',
@@ -1126,8 +1138,7 @@ function ownerMoment(c: Ctx): MomentBody {
           title: `테스트까지 D-${diffDays(today, due.from)}`,
           body: `생리 예정은 ${dueRange(due)} 무렵이에요${marked ? '' : ' (예상)'}. ${waitingWeekLine(sinceOv ?? d)}`,
           note: '너무 이르면 음성일 수 있어요.',
-          primary: LOG_FEEL,
-          secondary: LOG_TEST,
+          secondary: TO_CYCLE,
           early: true,
           ...own,
         }
@@ -1156,23 +1167,29 @@ function ownerMoment(c: Ctx): MomentBody {
  * estimates a date. A period does not end it; [병원 준비 마치기] does.
  */
 function clinicMoment(c: Ctx, role: 'owner' | 'partner'): MomentBody {
-  const next = nextClinicAppointment(c.state, c.today)
-  const when = next ? appointmentWhen(next, c.today) : undefined
   const members = c.state.couple.members
-  const who = next ? (next.who === 'both' ? '둘이 함께' : (members.find((m) => m.id === next.who)?.name ?? '')) : ''
+  const whoOf = (a: Appointment) => (a.who === 'both' ? '둘이 함께' : (members.find((m) => m.id === a.who)?.name ?? ''))
   if (role === 'partner') {
+    // His side (N32): his own or a '둘이 함께' appointment only, as day · time
+    // · place · a kind word (CLINIC_KIND_WORD) — never its title (a treatment
+    // step like '난포 초음파' is hers to tell), never one of hers alone. This
+    // card reaches the link word for word, beside its clinic week.
+    const mine = nextPartnerClinicAppointment(c.state, c.today, otherOf(cycleOwnerId(c.state)))
     return {
       role,
       copy: 'partner.clinic',
       tone: 'brand',
       eyebrow: CLINIC_LABEL,
       title: '일정에 맞춰 함께해요',
-      body: next
-        ? `${when} ${next.title}${next.place ? ` · ${next.place}` : ''} · ${who}. 결과는 묻지 말고 일정만 함께 챙겨요.`
+      body: mine
+        ? `${appointmentWhen(mine, c.today)} ${CLINIC_KIND_WORD[mine.kind] ?? '일정'}${mine.place ? ` · ${mine.place}` : ''} · ${whoOf(mine)}. 결과는 묻지 말고 일정만 함께 챙겨요.`
         : '결과는 묻지 말고 일정만 함께 챙겨요. 일정이 잡히면 여기서 알려 드려요.',
       primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
     }
   }
+  const next = nextClinicAppointment(c.state, c.today)
+  const when = next ? appointmentWhen(next, c.today) : undefined
+  const who = next ? whoOf(next) : ''
   return {
     role,
     copy: 'owner.clinic',
@@ -1266,6 +1283,7 @@ function partnerMoment(c: Ctx): MomentBody {
         title: '병원에 같이 가 줄 수 있어요',
         body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요. 결과가 어떻든 한 팀이에요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
+        ...toldSay(c, 'bleeding', bleedingToldKey(since)),
       }
     }
     if (decided(c.state, positiveToldKey(since))) {
@@ -1277,6 +1295,7 @@ function partnerMoment(c: Ctx): MomentBody {
         title: '병원 확인을 기다리고 있어요',
         body: '결과가 어떻든 한 팀이에요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
+        ...toldSay(c, 'positive', positiveToldKey(since)),
       }
     }
   }
@@ -1318,8 +1337,24 @@ function periodToldCard(c: Ctx): MomentBody | undefined {
     eyebrow: `${c.ownerName}님이 알려 줬어요`,
     title: '이번 달은 쉬어 가요',
     body: '따뜻한 차 한 잔, 컨디션을 챙겨 주세요.',
+    // The same two lines as `say` in one sentence — kept for screens that read only this (the link, until it draws `say`).
     partnerTip: PERIOD_PARTNER_TIP,
+    ...toldSay(c, 'period', periodToldKey(start)),
   }
+}
+
+/**
+ * 해 줄 말 · 아껴 둘 말 and two answers for what she told (signals.sayForTold),
+ * with the day she told and the answer he sent since (his own action) — only
+ * ever called for a card that exists because she told him.
+ */
+function toldSay(c: Pick<Ctx, 'state'>, moment: ToldMoment, key: string): Pick<MomentBody, 'say'> {
+  const since = decisionDay(c.state, key)
+  if (!since) return {}
+  const lines = sayForTold(moment)
+  const partner = otherOf(cycleOwnerId(c.state))
+  const sent = sentSince(c.state, partner, since, lines.replies)?.id
+  return { say: { ...lines, since, ...(sent ? { sent } : {}) } }
 }
 
 /** '자세히' (N23): she shares her period, LH and test records, so the card follows the phase — as before N19. */
@@ -1337,7 +1372,8 @@ function partnerWithDetails(c: Ctx): MomentBody {
         eyebrow: voice === 'explicit' ? `${owner}님 생리 ${p.cycleDay ?? 1}일째` : `${owner}님의 하루`,
         title: `${owner}님 컨디션을 챙겨 주세요`,
         body: '따뜻한 말 한마디가 힘이 돼요.',
-        ...(p.kind === 'period-early' ? { partnerTip: PERIOD_PARTNER_TIP } : {}),
+        // No 해 줄 말 here (N30): her shared details are not a moment she sent —
+        // those lines come with [알리기] (periodToldCard) and her signals only.
       }
 
     case 'before-fertile':

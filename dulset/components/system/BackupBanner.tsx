@@ -30,11 +30,26 @@ import { useDeviceRecord } from './useDeviceRecord'
 const link =
   'inline-flex min-h-[44px] items-center rounded-lg px-1.5 text-[12.5px] font-bold text-brand-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand'
 
-function copy(b: Banner): { icon: IconName; title: string; body: string } {
+/**
+ * Set with the first-period marker when this device already held period records
+ * (onboarding's last start, a restore, the demo): the moment still deserves the
+ * backup line, but it is not this phone's first record, so the banner doesn't say so.
+ */
+const FIRST_PERIOD_HAD_EARLIER_KEY = 'dulset:first-period-earlier'
+
+function hadEarlierRecords(): boolean {
+  try {
+    return window.localStorage.getItem(FIRST_PERIOD_HAD_EARLIER_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function copy(b: Banner, earlier: boolean): { icon: IconName; title: string; body: string } {
   if (b.reason === 'first-period') {
     return {
       icon: 'sprout',
-      title: '첫 기록을 남겼어요',
+      title: earlier ? '기록이 이 폰에 쌓이고 있어요' : '첫 기록을 남겼어요',
       body: b.installed
         ? '기록은 이 폰에만 있어요. 백업 파일을 한 번 받아 두면 폰을 바꿔도 되살릴 수 있어요.'
         : '기록은 이 폰에만 있어요. 홈 화면에 추가하면 사파리의 7일 삭제를 피할 수 있어요.',
@@ -74,7 +89,7 @@ export default function BackupBanner({ className }: { className?: string }) {
     firstPeriodOn: canLogCycle(state, me.id) ? device.firstPeriodOn : null,
   })
   if (!banner) return null
-  const text = copy(banner)
+  const text = copy(banner, banner.reason === 'first-period' && hadEarlierRecords())
   const dismiss = () => writeDeviceStamp(BANNER_DISMISSED_KEY, stampOn(today))
   const wantsInstall = !banner.installed
   const wantsBackup = banner.reason !== 'not-installed' || !!banner.nudge
@@ -125,14 +140,24 @@ export default function BackupBanner({ className }: { className?: string }) {
  * Remembers, once per device, the day a period gets logged while the app is
  * open (from the sheet, the first-period card or the calendar — any path, since
  * it watches the count). Mounted in AppShell so it sees logs made on any tab.
+ * Whether the device already had period records then is kept with it, so the
+ * banner says '첫 기록' only when it really was the first (leftover from N16).
  */
 export function useFirstPeriodMarker(): void {
   const { state, today } = useApp()
   const count = state.periods.length
   const prev = useRef(count)
   useEffect(() => {
-    const stamp = firstPeriodMarker(prev.current, count, readDeviceStamp(FIRST_PERIOD_KEY), stampOn(today))
+    const before = prev.current
+    const stamp = firstPeriodMarker(before, count, readDeviceStamp(FIRST_PERIOD_KEY), stampOn(today))
     prev.current = count
-    if (stamp) writeDeviceStamp(FIRST_PERIOD_KEY, stamp)
+    if (!stamp) return
+    try {
+      if (before > 0) window.localStorage.setItem(FIRST_PERIOD_HAD_EARLIER_KEY, '1')
+      else window.localStorage.removeItem(FIRST_PERIOD_HAD_EARLIER_KEY)
+    } catch {
+      // Storage off: the banner falls back to '첫 기록' wording.
+    }
+    writeDeviceStamp(FIRST_PERIOD_KEY, stamp)
   }, [count, today])
 }

@@ -15,6 +15,7 @@ import { openTreatments } from '@/components/clinic/openTreatments'
 import { CLINIC_SUMMARY_SHEET_TITLE } from '@/components/clinic/summaryTitle'
 import { requestOpenFeels } from '@/components/cycle/CycleHistory'
 import { cardEyebrow } from '@/components/link/model'
+import { SayLines, ToldAnswers } from '@/components/signals/SayLines'
 import { Card, cx, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
@@ -335,7 +336,13 @@ export default function CycleBlock({
           <MonthlyTaskBody task={featuredTask} onDone={onTaskDone} onNavigate={onNavigate} onSurface2={!muted} className={inner} />
         ) : null}
 
-        {m.partnerTip ? (
+        {/* A moment she told ([알리기], N30): 해 줄 말 · 아껴 둘 말 and two answers — instead of the tip that says the same. */}
+        {m.say ? (
+          <div className={inner} data-told-say>
+            <SayLines say={m.say.say} save={m.say.save} />
+            <ToldAnswers replies={m.say.replies} sent={m.say.sent} className="mt-2.5" />
+          </div>
+        ) : m.partnerTip ? (
           <p className={cx(inner, 'text-[13px] leading-[1.55] text-ink-2')}>
             <b className="font-bold text-ink">오늘 해 줄 수 있는 것</b> · {m.partnerTip}
           </p>

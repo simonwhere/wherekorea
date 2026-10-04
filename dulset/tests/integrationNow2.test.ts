@@ -523,7 +523,8 @@ describe("'아직 안 왔어요' (stillWaiting): the day keeps counting, a quiet
 
 describe('LH strips but no surge by the window’s end (tww-no-surge, N11)', () => {
   const strips = (s: AppState) => lh(lh(lh(s, '2026-09-10', 'negative'), '2026-09-12', 'faint'), '2026-09-14', 'negative')
-  const s = strips(confident())
+  // N29: the no-surge card asks for more strips only from an owner who said '써요'.
+  const s = setUsesLH(strips(confident()), true, OWNER)
 
   it('waits a week past the window with LH as the action, then moves on; a surge ends it; the sheet opens on LH meanwhile', () => {
     expect(noSurgeWait(s, '2026-09-01', '2026-09-15')).toBeUndefined()
@@ -547,6 +548,13 @@ describe('LH strips but no surge by the window’s end (tww-no-surge, N11)', () 
     // Without strips there is nothing to wait for.
     expect(noSurgeWait(confident(), '2026-09-01', '2026-09-16')).toBeUndefined()
     expect(ttcMoment(confident(), '2026-09-16', OWNER)?.copy).toBe('owner.tww')
+    // Strips logged without answering (or '나중에'): the wait is there, the card does not ask for more (N29).
+    for (const answer of [undefined, 'later'] as const) {
+      const quiet = setUsesLH(strips(confident()), answer, OWNER)
+      expect(noSurgeWait(quiet, '2026-09-01', '2026-09-16')).toBeDefined()
+      expect(ttcMoment(quiet, '2026-09-16', OWNER)?.copy).toBe('owner.tww')
+      expect(logKind(ttcMoment(quiet, '2026-09-16', OWNER)?.primary)).not.toBe('lh')
+    }
   })
 
   it('soft and calm owners, and the partner, never read LH; the history row says LH N회 · 양성 없음 once the cycle is over', () => {
@@ -567,7 +575,8 @@ describe('LH strips but no surge by the window’s end (tww-no-surge, N11)', () 
     // '안 써요': the strips she logged are hers, but the card does not ask for more.
     const off = setUsesLH(s, false, OWNER)
     expect(ttcMoment(off, '2026-09-16', OWNER)?.copy).toBe('owner.tww')
-    expect(logKind(ttcMoment(off, '2026-09-16', OWNER)?.primary)).toBe('note')
+    // No action at all on the early wait (N29: 오늘 컨디션 sits in 메모 › 자세히); the sheet still opens on 메모.
+    expect(ttcMoment(off, '2026-09-16', OWNER)?.primary).toBeUndefined()
     expect(defaultLogKind(off, '2026-09-16', '2026-09-16')).toBe('note')
   })
 })
@@ -630,12 +639,17 @@ describe('병원과 함께 준비 중 (clinic): never ended by a period, pauses 
     }
     expect(partnerTip(clinic, '2026-09-11', PARTNER)).toBe('결과를 묻지 말고, 병원 일정만 같이 챙겨요.')
     expect(monthlyTask(clinic, '2026-09-11', PARTNER)?.tip).toBe('결과를 묻지 말고, 병원 일정만 같이 챙겨요.')
-    // The owner's card leads with the next appointment; the partner's names it too, and nothing else.
+    // The owner's card leads with the next appointment; the partner's names only his own or a
+    // '둘이 함께' one, by a kind word — never her own, never a title (N32).
     const withVisit = addAppointment(clinic, { date: '2026-09-13', time: '08:00', title: '채혈·초음파', who: OWNER, kind: 'test' }, OWNER)
     expect(ttcMoment(withVisit, '2026-09-11', OWNER)?.title).toBe('9월 13일 08:00 채혈·초음파')
     const his = ttcMoment(withVisit, '2026-09-11', PARTNER)!
-    expect(his.body).toMatch(/채혈·초음파/)
+    expect(his.body).not.toMatch(/채혈|초음파|08:00/)
     expect(words(his)).not.toMatch(FERTILE_WORDS)
+    const together = addAppointment(withVisit, { date: '2026-09-14', time: '10:00', title: '인공수정', who: 'both', kind: 'injection' }, OWNER)
+    const both = ttcMoment(together, '2026-09-11', PARTNER)!
+    expect(both.body).toContain('9월 14일 10:00 병원 일정 · 둘이 함께')
+    expect(both.body).not.toMatch(/인공수정|채혈/)
   })
 
   it('survives a backup and a reload; an unknown reason is dropped, an ordinary rest kept', () => {
@@ -830,7 +844,7 @@ describe('LH slots: a past day fills 아침 then 저녁, never silently replaces
 
 // ── 9. usesLH = false never puts LH first ───────────────────
 
-describe("'안 써요' (settings.usesLH = false): never an LH title, action or prompt; 'later' and unanswered keep them", () => {
+describe("'안 써요' (settings.usesLH = false): never an LH title, action or prompt; only '써요' puts LH first on the card (N29)", () => {
   it('through a whole cycle, for the explicit and the soft owner', () => {
     const off = setUsesLH(confident(), false, OWNER)
     expect(lhPrompting(off)).toBe(false)
@@ -854,11 +868,15 @@ describe("'안 써요' (settings.usesLH = false): never an LH title, action or p
         expect(defaultLogKind(s, d, d)).not.toBe('lh')
         expect(lhAskDue(s, d, null)).toBe(false)
         for (const n of scheduledNotices(s, d)) expect(n.body).not.toMatch(/LH/)
-        if (logKind(ttcMoment(withStyle(confident(), OWNER, style), d, OWNER)?.primary) === 'lh') lhDaysOn++
+        if (logKind(ttcMoment(withStyle(setUsesLH(confident(), true, OWNER), OWNER, style), d, OWNER)?.primary) === 'lh') lhDaysOn++
+        // Unanswered and '나중에' never put LH first on the card either (N29: '써요' only).
+        for (const answer of [undefined, 'later'] as const)
+          expect(logKind(ttcMoment(withStyle(setUsesLH(confident(), answer, OWNER), OWNER, style), d, OWNER)?.primary)).not.toBe('lh')
       }
-      expect(lhDaysOn).toBeGreaterThan(5) // the same days do put LH first when strips are in use
+      expect(lhDaysOn).toBeGreaterThan(5) // the same days do put LH first for an owner who said '써요'
     }
-    expect(feelDays).toBeGreaterThan(10)
+    // 오늘 컨디션 is never the card's action since N29 (it sits in 메모 › 자세히).
+    expect(feelDays).toBe(0)
     // Strips she logs anyway stay hers (the panel is her tool) and still pin the cycle.
     const pinned = lh(off, '2026-09-13', 'positive')
     expect(cycleConfidence(pinned, '2026-09-14')).toBe('lh')
@@ -999,7 +1017,7 @@ describe('onboarding (N15): earlier starts, the partner’s defaults and first r
   it('the non-owner starts with 걷기 30분 and 은근하게 only; the sheet asks them once and never again', () => {
     const s = applyPartnerDefaults(fresh(), '2026-09-01')
     expect(s.checkItems.filter((i) => i.owner === PARTNER).map((i) => i.label)).toEqual(['걷기 30분'])
-    expect(s.checkItems.filter((i) => i.owner === OWNER).map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(s.checkItems.filter((i) => i.owner === OWNER).map((i) => i.label)).toEqual(['엽산'])
     expect(s.settings.alertStyle[PARTNER]).toBe('soft')
     expect(JOINING_MEMBER).toBe('b')
     const joining = applyPartnerDefaults(createInitialState({ me: { name: '지은', role: 'wife' }, partner: { name: '민수', role: 'husband' }, cycleOwner: 'a' }, new Date(2026, 8, 1, 9)), '2026-09-01')

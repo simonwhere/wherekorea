@@ -17,6 +17,7 @@ import { useFirstPeriodMarker } from '@/components/system/BackupBanner'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
+import { bellUnread } from '@/lib/logic/usView'
 import { useLinkSync } from '@/lib/useLinkSync'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
 import { OPEN_LOG_EVENT, openLog, type LogRequest } from '@/lib/logLauncher'
@@ -117,7 +118,10 @@ function PinnedTodayBanner() {
   useEffect(() => setPinned(readPinnedToday()), [])
   if (!pinned) return null
   return (
-    <p role="status" className="flex items-center justify-between gap-3 border-t border-line/70 bg-surface-2 px-4 py-1 text-[12px] leading-snug text-ink-2">
+    <p
+      role="status"
+      className="flex items-center justify-between gap-3 border-t border-line/70 bg-surface-2 px-4 py-1 text-[12px] leading-snug text-ink-2"
+    >
       <span>데모: 오늘을 {formatKo(pinned, { weekday: false })}로 고정</span>
       <button
         type="button"
@@ -213,8 +217,10 @@ function MainApp() {
   useEffect(() => {
     const sync = () => {
       const h = readHash()
-      if (h === 'days' || h === 'album') setTab('diary') // 우리 → 기념일 / 앨범
-      else if (isSettingsAnchor(h)) setTab('settings') // 설정 → 공유 범위 / 내 알림 / 데이터
+      if (h === 'days' || h === 'album')
+        setTab('diary') // 우리 → 기념일 / 앨범
+      else if (isSettingsAnchor(h))
+        setTab('settings') // 설정 → 공유 범위 / 내 알림 / 데이터
       else if (tabs.some((t) => t.key === h) || EXTRA_ROUTES.includes(h as TabKey)) setTab(h as TabKey)
       else setTab('today')
     }
@@ -244,16 +250,24 @@ function MainApp() {
     return () => cancelAnimationFrame(raf)
   }, [tab])
 
+  // CoverAsk reads its one-time flag when it mounts: a new mount whenever 오늘 opens again
+  // (not on the first render — that mount already read it, and a remount would close its sheet).
+  const [coverAskKey, setCoverAskKey] = useState(0)
+  const lastTab = useRef<TabKey>(tab)
+  useEffect(() => {
+    if (tab === 'today' && lastTab.current !== 'today') setCoverAskKey((k) => k + 1)
+    lastTab.current = tab
+  }, [tab])
+
   const go = (key: TabKey) => {
     if (readHash() !== key) window.location.hash = key
     setTab(key)
     window.scrollTo({ top: 0 })
   }
 
-  const unread = useMemo(
-    () => state.notifications.filter((n) => n.to === me.id && !n.read && !n.dismissed).length,
-    [state.notifications, me.id],
-  )
+  // The 🔔 badge counts the bell's own notes: while preparing, a reaction on my record waits in the
+  // 기록장 instead (usView.isRecordBookNotice, N27).
+  const unread = useMemo(() => bellUnread(state, me.id), [state, me.id])
 
   const content = (() => {
     switch (tab) {
@@ -289,9 +303,7 @@ function MainApp() {
             <div className="flex items-baseline gap-2">
               <span className="text-[20px] font-extrabold tracking-tight text-ink">둘셋</span>
               {/* The home's cover already says whose day it is; other tabs name the stage. */}
-              {tab === 'today' ? null : (
-                <span className="truncate text-[11px] font-medium text-ink-3">{STAGE_LABEL[state.stage]}</span>
-              )}
+              {tab === 'today' ? null : <span className="truncate text-[11px] font-medium text-ink-3">{STAGE_LABEL[state.stage]}</span>}
             </div>
           </div>
           <button
@@ -304,7 +316,9 @@ function MainApp() {
               <Avatar member={me} size="sm" />
             </span>
             <span className="max-w-[5.5rem] truncate">{me.name}</span>
-            <span aria-hidden className="text-ink-3">⇄</span>
+            <span aria-hidden className="text-ink-3">
+              ⇄
+            </span>
             <span className="sr-only">{partner.name}의 화면으로 전환</span>
           </button>
           <button
@@ -335,7 +349,10 @@ function MainApp() {
         </div>
         {/* Storage full or blocked: say so until a save succeeds (nothing is lost while the tab stays open). */}
         {saveFailed ? (
-          <p role="alert" className="flex items-center justify-between gap-3 border-t border-warn/30 bg-warn-soft px-4 py-2 text-[12.5px] leading-snug text-ink">
+          <p
+            role="alert"
+            className="flex items-center justify-between gap-3 border-t border-warn/30 bg-warn-soft px-4 py-2 text-[12.5px] leading-snug text-ink"
+          >
             <span>지금 기록이 저장되지 않고 있어요</span>
             <button
               type="button"
@@ -351,10 +368,7 @@ function MainApp() {
 
       <main className="flex-1 px-4 pb-28 pt-4">{content}</main>
 
-      <nav
-        className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-bg/95 backdrop-blur"
-        aria-label="주요 메뉴"
-      >
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-bg/95 backdrop-blur" aria-label="주요 메뉴">
         <ul className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${navCount}, minmax(0, 1fr))` }}>
           {tabs.map((t, i) => {
             const active = t.key === tab
@@ -389,8 +403,9 @@ function MainApp() {
       <LHHowTo />
       {/* "민수님, 처음이죠?" — the joining member's own first run (N15); it decides by itself when to open. */}
       <PartnerFirstRunSheet />
-      {/* '첫 화면에 우리 사진을 걸어 볼까요?' — once, right after the onboarding's 시작하기 (Next B). */}
-      <CoverAsk />
+      {/* '첫 화면에 우리 사진을 걸어 볼까요?' — once, after the partner's link went out (N27: the
+          onboarding's ④ or 설정 › 연결). Remounted each time 오늘 opens, so a send from 설정 asks there. */}
+      <CoverAsk key={coverAskKey} />
     </div>
   )
 }

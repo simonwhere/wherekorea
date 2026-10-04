@@ -6,11 +6,13 @@ import type { PartnerEvent } from '@/lib/logic/partnerEvents'
 import { buildPartnerSnapshot, type PartnerSnapshot } from '@/lib/logic/partnerSnapshot'
 import {
   MOCK_EVENTS_MAX,
+  MOCK_OFFLINE_KEY,
   MOCK_SYNC_KEY,
   MockTransportError,
   createMockTransport,
   memoryChannel,
   memoryStorage,
+  mockOfflineOn,
   parseMockStore,
 } from '@/lib/sync/mockTransport'
 import {
@@ -18,6 +20,7 @@ import {
   SupabaseTransportError,
   createSupabaseTransport,
   deviceOwnerKey,
+  isPublishableKey,
   randomSecret,
   rpcHeaders,
   rpcUrl,
@@ -256,7 +259,7 @@ describe('supabase transport: request shaping with a fake fetch (never run again
 
   it('owner side: create_couple, issue_token, publish_snapshot, pull_events, mark_events_read carry the owner key and the right argument names', async () => {
     const { calls, fetch } = fake((c) => {
-      if (c.url.endsWith('/create_couple')) return { body: 'c0ffee00-0000-4000-8000-000000000001' }
+      if (c.url.endsWith('/create_couple')) return { body: (c.body as { p_couple_id?: string }).p_couple_id ?? 'c0ffee00-0000-4000-8000-000000000001' }
       if (c.url.endsWith('/issue_token')) return { body: '2026-11-01T00:00:00+00:00' }
       if (c.url.endsWith('/publish_snapshot')) return { body: 3 }
       if (c.url.endsWith('/pull_events'))
@@ -303,6 +306,8 @@ describe('supabase transport: request shaping with a fake fetch (never run again
 
     expect(calls.map((c) => c.url.split('/rpc/')[1])).toEqual([
       'create_couple',
+      // issueToken first registers her phone's own couple id (ensureCouple) — once per page.
+      'create_couple',
       'issue_token',
       'publish_snapshot',
       'pull_events',
@@ -312,23 +317,24 @@ describe('supabase transport: request shaping with a fake fetch (never run again
       calls.every((c) => c.method === 'POST' && c.headers.apikey === 'anon-key' && c.headers.Authorization === 'Bearer anon-key'),
     ).toBe(true)
     expect(calls[0]!.body).toEqual({ p_owner_key: OWNER })
-    expect(calls[1]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_token: TOKEN, p_days: 14 })
-    expect(calls[2]!.body).toEqual({
+    expect(calls[1]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1' })
+    expect(calls[2]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_token: TOKEN, p_days: 14 })
+    expect(calls[3]!.body).toEqual({
       p_owner_key: OWNER,
       p_couple_id: 'c1',
       p_token: TOKEN,
       p_payload: snap,
       p_published_at: '2026-10-02T09:00:00+09:00',
     })
-    expect(calls[3]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_since: '2026-10-01T09:00:00+09:00' })
-    expect(calls[4]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_ids: ['e0', 'e1'] })
+    expect(calls[4]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_since: '2026-10-01T09:00:00+09:00' })
+    expect(calls[5]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_ids: ['e0', 'e1'] })
     // Rows are cleaned and ordered by the server's clock; the forged kind and the free text never come through.
     expect(pulled).toEqual([
       { id: 'e0', kind: 'nudge' },
       { id: 'e1', kind: 'cheer', from: 'a' },
     ])
     // The snapshot that went out is the lens-built one: no cycle records inside.
-    const sent = JSON.stringify(calls[2]!.body)
+    const sent = JSON.stringify(calls[3]!.body)
     for (const word of ['periods', 'lhTests', 'pregnancyTests', 'personalLog', 'intimacy', 'privateTo'])
       expect(sent).not.toContain(`"${word}"`)
   })
@@ -340,6 +346,7 @@ describe('supabase transport: request shaping with a fake fetch (never run again
       if (c.url.endsWith('/snapshot_by_token'))
         return { body: empty ? [] : [{ couple_id: 'c1', version: 2, published_at: '2026-10-02T00:00:00+00:00', payload: snap }] }
       if (c.url.endsWith('/send_event')) return { status: 204 }
+      if (c.url.endsWith('/create_couple')) return { body: 'c1' }
       if (c.url.endsWith('/pull_events')) return { body: [] }
       return { status: 404 }
     })
@@ -356,13 +363,20 @@ describe('supabase transport: request shaping with a fake fetch (never run again
       p_kind: 'reply',
       p_payload: { id: 'e1', kind: 'reply', from: 'a', signalId: 'thanks', replyId: 'ok' },
     })
-    expect(calls[3]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_since: null })
-    for (const c of calls) expect(JSON.stringify(c.body)).not.toContain(OWNER.slice(0, 8) + (c.url.includes('pull') ? '§' : ''))
+    // The partner calls never register anything; the owner's pull does, once.
+    expect(calls.slice(0, 3).some((c) => c.url.endsWith('/create_couple'))).toBe(false)
+    expect(calls[3]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1' })
+    expect(calls[4]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: 'c1', p_since: null })
+    // Only the owner's own calls (her pull and its one registration) carry the owner key.
+    for (const c of calls)
+      expect(JSON.stringify(c.body)).not.toContain(OWNER.slice(0, 8) + (c.url.includes('pull') || c.url.includes('create_couple') ? '§' : ''))
   })
 
   it('pullReceived keeps the server’s created_at with each cleaned event', async () => {
     const { fetch } = fake((c) =>
-      c.url.endsWith('/pull_events')
+      c.url.endsWith('/create_couple')
+        ? { body: 'c1' }
+        : c.url.endsWith('/pull_events')
         ? {
             body: [
               { id: 'e1', kind: 'cheer', payload: { id: 'e1', kind: 'cheer' }, created_at: '2026-10-02T00:00:01+00:00', read_at: null },
@@ -445,11 +459,147 @@ describe('supabase transport: request shaping with a fake fetch (never run again
   })
 })
 
+describe('mock transport: offline, simulated (?mockOffline=1 / dulset:mock-offline — N25 prep)', () => {
+  it('mockOfflineOn reads the page address switch and the storage flag; anything else is online', () => {
+    const storage = memoryStorage()
+    expect(mockOfflineOn('', storage)).toBe(false)
+    expect(mockOfflineOn('?today=2026-10-04', storage)).toBe(false)
+    expect(mockOfflineOn('?mockOffline=1', storage)).toBe(true)
+    expect(mockOfflineOn('?today=2026-10-04&mockOffline=true', null)).toBe(true)
+    expect(mockOfflineOn('?mockOffline=0', storage)).toBe(false)
+    storage.setItem(MOCK_OFFLINE_KEY, '1')
+    expect(mockOfflineOn('', storage)).toBe(true)
+    storage.setItem(MOCK_OFFLINE_KEY, 'yes')
+    expect(mockOfflineOn('', storage)).toBe(false)
+    const broken = { getItem: () => { throw new Error('blocked') } }
+    expect(mockOfflineOn(undefined, broken)).toBe(false)
+  })
+
+  it('his calls fail as an unreachable server would; the counter records nothing; her calls go on', async () => {
+    const storage = memoryStorage()
+    const channel = memoryChannel()
+    let off = false
+    const her = createMockTransport({ storage, channel, offline: () => false })
+    const him = createMockTransport({ storage, channel, offline: () => off })
+    const snap = snapshot()
+    await her.publishSnapshot('couple-1', TOKEN, snap)
+    expect(await him.fetchSnapshot(TOKEN)).toEqual(snap)
+    off = true
+    await expect(him.fetchSnapshot(TOKEN)).rejects.toMatchObject({ code: 'offline' })
+    await expect(him.sendEvent(TOKEN, ev('e1'))).rejects.toBeInstanceOf(MockTransportError)
+    await expect(him.recordLinkOpen(TOKEN, TODAY)).resolves.toBeUndefined()
+    expect(parseMockStore(storage.getItem(MOCK_SYNC_KEY)).opens).toEqual({})
+    expect(await her.pullEvents('couple-1', '')).toEqual([])
+    // Her phone still publishes; back online, he sees it.
+    const again = { ...snap, today: '2026-10-03' }
+    await her.publishSnapshot('couple-1', TOKEN, again)
+    off = false
+    expect(await him.fetchSnapshot(TOKEN)).toEqual(again)
+    await him.sendEvent(TOKEN, ev('e2'))
+    expect((await her.pullEvents('couple-1', '')).map((e) => e.id)).toEqual(['e2'])
+  })
+
+  it('by default the switch comes from the storage the mock writes to', async () => {
+    const storage = memoryStorage()
+    const t = createMockTransport({ storage, channel: null })
+    await t.publishSnapshot('couple-1', TOKEN, snapshot())
+    storage.setItem(MOCK_OFFLINE_KEY, '1')
+    await expect(t.fetchSnapshot(TOKEN)).rejects.toMatchObject({ code: 'offline' })
+    storage.removeItem(MOCK_OFFLINE_KEY)
+    expect(await t.fetchSnapshot(TOKEN)).not.toBeNull()
+  })
+})
+
+describe('supabase transport: her couple id is registered once, a couple space can be removed, the newer keys', () => {
+  interface Call {
+    url: string
+    body: Record<string, unknown>
+    headers: Record<string, string>
+  }
+  const ENV = { url: 'https://abc.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiJ9.e30.sig' }
+  const OWNER = 'o'.repeat(40)
+  const COUPLE = '7f3c2a10-1b2c-4d5e-8f90-0123456789ab'
+
+  function fake(reply: (fn: string, body: Record<string, unknown>) => { status?: number; body?: unknown }) {
+    const calls: Call[] = []
+    const fetch: FetchLike = async (input, init) => {
+      const body = init.body ? (JSON.parse(init.body) as Record<string, unknown>) : {}
+      calls.push({ url: input, body, headers: init.headers })
+      const r = reply(input.split('/rpc/')[1]!, body)
+      const text = r.body === undefined ? '' : JSON.stringify(r.body)
+      return { ok: (r.status ?? 200) < 300, status: r.status ?? 200, text: async () => text }
+    }
+    return { calls, fetch }
+  }
+  const fns = (calls: Call[]) => calls.map((c) => c.url.split('/rpc/')[1])
+
+  it('issue, publish and pull register the couple first — once per page, with her own id; a second publish goes straight', async () => {
+    const { calls, fetch } = fake((fn, body) =>
+      fn === 'create_couple'
+        ? { body: String(body.p_couple_id).toUpperCase() }
+        : fn === 'pull_events'
+          ? { body: [] }
+          : fn === 'issue_token'
+            ? { body: '2026-11-03T00:00:00+00:00' }
+            : { body: 1 },
+    )
+    const t = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch })
+    await t.publishSnapshot(COUPLE, TOKEN, snapshot())
+    await t.publishSnapshot(COUPLE, TOKEN, snapshot())
+    await t.pullEvents(COUPLE, '')
+    await t.issueToken(COUPLE, TOKEN)
+    expect(fns(calls)).toEqual(['create_couple', 'publish_snapshot', 'publish_snapshot', 'pull_events', 'issue_token'])
+    expect(calls[0]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: COUPLE })
+    // Partner calls never register.
+    await t.fetchSnapshot(TOKEN).catch(() => null)
+    expect(fns(calls).filter((f) => f === 'create_couple')).toHaveLength(1)
+  })
+
+  it('a refused registration is not remembered (the next call tries again); another id back is a bad response', async () => {
+    let refuse = true
+    const { calls, fetch } = fake((fn, body) =>
+      fn === 'create_couple' ? (refuse ? { status: 403, body: { message: 'couple belongs to another device' } } : { body: body.p_couple_id }) : { body: 1 },
+    )
+    const t = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch })
+    await expect(t.publishSnapshot(COUPLE, TOKEN, snapshot())).rejects.toMatchObject({ code: 'http', status: 403 })
+    expect(fns(calls)).toEqual(['create_couple'])
+    refuse = false
+    await t.publishSnapshot(COUPLE, TOKEN, snapshot())
+    expect(fns(calls)).toEqual(['create_couple', 'create_couple', 'publish_snapshot'])
+    const other = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch: fake(() => ({ body: '00000000-0000-4000-8000-000000000000' })).fetch })
+    await expect(other.ensureCouple(COUPLE)).rejects.toMatchObject({ code: 'bad-response' })
+  })
+
+  it('deleteCouple: delete_couple with the owner key; true when a row went; the couple registers again afterwards', async () => {
+    const { calls, fetch } = fake((fn, body) => (fn === 'delete_couple' ? { body: true } : fn === 'create_couple' ? { body: body.p_couple_id } : { body: 1 }))
+    const t = createSupabaseTransport({ ...ENV, ownerKey: OWNER, fetch })
+    await t.publishSnapshot(COUPLE, TOKEN, snapshot())
+    expect(await t.deleteCouple(COUPLE)).toBe(true)
+    expect(calls[2]!.body).toEqual({ p_owner_key: OWNER, p_couple_id: COUPLE })
+    await t.publishSnapshot(COUPLE, TOKEN, snapshot())
+    expect(fns(calls)).toEqual(['create_couple', 'publish_snapshot', 'delete_couple', 'create_couple', 'publish_snapshot'])
+    const noKey = createSupabaseTransport({ ...ENV, fetch, storage: null })
+    await expect(noKey.deleteCouple(COUPLE)).rejects.toBeInstanceOf(SupabaseTransportError)
+  })
+
+  it('the newer publishable key (sb_publishable_…) rides in apikey only; the classic JWT anon key as apikey and bearer', () => {
+    expect(isPublishableKey('sb_publishable_abc')).toBe(true)
+    expect(isPublishableKey(ENV.anonKey)).toBe(false)
+    expect(rpcHeaders({ url: ENV.url, anonKey: 'sb_publishable_abc' })).toEqual({
+      apikey: 'sb_publishable_abc',
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    })
+    expect(rpcHeaders(ENV).Authorization).toBe(`Bearer ${ENV.anonKey}`)
+  })
+})
+
 describe('the SQL and the client agree (supabase/*.sql — read as text, never run here)', () => {
   const schema = readFileSync(path.resolve(__dirname, '../supabase/schema.sql'), 'utf8')
   const policies = readFileSync(path.resolve(__dirname, '../supabase/policies.sql'), 'utf8')
   const CLIENT_RPCS = [
     'create_couple',
+    'delete_couple',
     'issue_token',
     'revoke_token',
     'publish_snapshot',
@@ -460,6 +610,30 @@ describe('the SQL and the client agree (supabase/*.sql — read as text, never r
     'record_link_open',
     'link_open_days',
   ]
+
+  it('create_couple takes her own couple id (and replaces the one-argument draft); delete_couple removes a space with cascade; event kinds are not an enum', () => {
+    expect(schema).toMatch(/drop function if exists public\.create_couple\(text\);/)
+    expect(schema).toMatch(/create or replace function public\.create_couple\(p_owner_key text, p_couple_id uuid default null\)/)
+    expect(policies).toMatch(/grant execute on function public\.create_couple\(text, uuid\) to anon, authenticated;/)
+    expect(policies).not.toMatch(/public\.create_couple\(text\) to/)
+    expect(schema).toMatch(/create or replace function public\.delete_couple\(p_owner_key text, p_couple_id uuid\)/)
+    expect(policies).toMatch(/grant execute on function public\.delete_couple\(text, uuid\) to anon, authenticated;/)
+    // Owner checked as (id, hash) — the hash alone is not unique any more.
+    const couples = /create table if not exists public\.couples \(([\s\S]*?)\n\);/.exec(schema)?.[1] ?? ''
+    expect(couples).not.toMatch(/unique/)
+    expect(schema).toMatch(/alter table public\.couples drop constraint if exists couples_owner_key_hash_key;/)
+    // Every table under a couple goes with it.
+    for (const t of ['couple_tokens', 'partner_snapshots', 'partner_events', 'link_opens']) {
+      const body = new RegExp(`create table if not exists public\\.${t} \\(([\\s\\S]*?)\\n\\);`).exec(schema)?.[1] ?? ''
+      expect(body, t).toMatch(/references public\.couples \(id\) on delete cascade/)
+    }
+    // No server-side list of kinds to keep in step: 'join-appointment' (N32) and later kinds pass the length check.
+    const events = /create table if not exists public\.partner_events \(([\s\S]*?)\n\);/.exec(schema)?.[1] ?? ''
+    expect(events).toMatch(/kind text not null,/)
+    expect(events).not.toMatch(/check \(kind/)
+    expect(schema).toMatch(/length\(p_kind\) > 40/)
+    expect('join-appointment'.length).toBeLessThanOrEqual(40)
+  })
 
   it('every function the client calls exists and is granted to the API roles; the helpers are not', () => {
     for (const fn of CLIENT_RPCS) {

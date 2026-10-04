@@ -1,9 +1,9 @@
 'use client'
 
-// 오늘 컨디션 (N11) at the top of the 메모 panel: six chips saved straight to
-// the viewer's own log (personalLog — never the partner's screen, never in
-// anything shared). The home's 기다리는 주 card opens the sheet here. Saving
-// keeps the sheet open, so a line can follow in the 메모 field below.
+// 오늘 컨디션 (N11) in the 메모 panel's '자세히' (N29 — an optional input:
+// the home no longer asks for it): six chips saved straight to the viewer's
+// own log (personalLog — never the partner's screen, never in anything
+// shared). Saving keeps the sheet open, so a line can follow in the 메모 field.
 
 import { useToast } from '@/components/ui'
 import FeelChips from '@/components/today/FeelChips'

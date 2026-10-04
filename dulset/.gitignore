@@ -3,3 +3,7 @@ node_modules
 out
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase keys for the partner link (N25): never committed — copy .env.local.example
+.env.local
+.env*.local

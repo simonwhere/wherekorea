@@ -8,23 +8,18 @@ import { Button } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import type { Stage } from '@/lib/types'
 
-// Preparing comes first (founder direction); pregnancy / baby / 기록장 follow later.
-// One-line bodies so the start button stays on the first screen.
-const VALUE_PROPS: ReadonlyArray<{ icon: IconName; tile: string; title: string; body: string }> = [
-  { icon: 'check', tile: 'bg-ok-soft', title: '매일 할 일은 짧게, 서로 챙기기', body: '엽산·걷기처럼 하루 1~2개만, 서로 응원해요' },
-  { icon: 'heart', tile: 'bg-fert-soft', title: '가임기 예상을 두 사람에게', body: '‘우리의 주간’처럼 각자 편한 말투로 받아요' },
-  { icon: 'hospital', tile: 'bg-brand-soft', title: '검사·신청 기한까지 함께', body: '가임력 검사 신청부터 청구까지 둘이 봐요' },
-  { icon: 'lock', tile: 'bg-him-soft', title: '자세한 기록은 허용할 때만', body: '생리일·테스트 결과는 기록하는 사람이 정해요' },
-]
+// The one line (docs/positioning.md §1, founder decision 2026-10-03) and,
+// always right under it, the sub-copy that says who it is for — couples,
+// engaged and common-law couples alike. It replaced the four value rows (N27).
+export const WELCOME_LINE = '남편이 같이 하는 임신 준비'
+export const WELCOME_SUB = '기록하는 사람 혼자 챙기지 않게 — 부부·예비부부·사실혼, 함께 준비하는 두 사람 누구나'
 
 /** The fifth promise (review G11), one short line so 시작하기 still sits above the fold at 375×667. */
 const NO_ADS_LINE = '광고도, 추적 SDK도 없어요 · 기록은 이 폰에만'
 
-const DEMOS: Array<{ stage: Stage; icon: IconName; label: string }> = [
-  { stage: 'preparing', icon: 'sprout', label: '준비 중' },
-  { stage: 'pregnant', icon: 'bump', label: '임신 중' },
-  { stage: 'parenting', icon: 'baby', label: '육아 중' },
-]
+// Only the preparing couple here: the 임신 중 · 육아 중 examples moved to
+// 설정 › 정보 (N27 — a first look of '커플 앱 + 임신 앱' is not the product).
+const DEMO: { stage: Stage; icon: IconName; label: string } = { stage: 'preparing', icon: 'sprout', label: '준비 중 예시 보기' }
 
 /** Two overlapping circles and a small glow dot — "둘이 셋이 되기까지". The app's only 둘→셋 symbol. */
 function Mark() {
@@ -82,25 +77,10 @@ export default function WelcomeStep({
             둘셋
           </h1>
         </div>
-        <p className="mt-2 text-[18px] font-bold tracking-[-0.03em] text-ink-2">둘이 셋이 되기까지, 함께</p>
-
-        <ul className="mt-[22px]">
-          {VALUE_PROPS.map((v) => (
-            <li key={v.title} className="flex items-center gap-3 py-[9px]">
-              <span aria-hidden className={`flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[14px] text-ink-2 ${v.tile}`}>
-                <Icon name={v.icon} className="h-[22px] w-[22px]" strokeWidth={2} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[15px] font-bold leading-[1.35] tracking-[-0.025em] text-ink">{v.title}</p>
-                <p className="mt-0.5 text-[12.5px] leading-[1.45] text-ink-3">{v.body}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-1 flex items-center gap-2 pl-[2px] text-[12.5px] font-semibold leading-[1.45] text-ink-2">
-          <span aria-hidden className="flex w-[42px] shrink-0 justify-center text-ink-3">
-            <Icon name="ban" className="h-[18px] w-[18px]" strokeWidth={2} />
-          </span>
+        <p className="mt-3 text-[21px] font-extrabold leading-[1.3] tracking-[-0.035em] text-ink">{WELCOME_LINE}</p>
+        <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2 [word-break:keep-all]">{WELCOME_SUB}</p>
+        <p className="mt-4 flex items-center gap-2 text-[12.5px] font-semibold leading-[1.45] text-ink-2">
+          <Icon name="ban" className="h-[18px] w-[18px] shrink-0 text-ink-3" strokeWidth={2} />
           {NO_ADS_LINE}
         </p>
 
@@ -126,20 +106,15 @@ export default function WelcomeStep({
             가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요. 주기를 기록하는 지은님 화면에서 시작하고, 위쪽 ⇄로 민수님
             화면도 볼 수 있어요. 둘러본 뒤 설정에서 지우고 새로 시작하면 돼요.
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {DEMOS.map((d) => (
-              <button
-                key={d.stage}
-                type="button"
-                onClick={() => onDemo(d.stage)}
-                className="flex h-[46px] items-center justify-center gap-1 rounded-[14px] bg-surface px-2 text-sm font-bold text-ink-2 hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand forced-colors:border forced-colors:border-line"
-              >
-                <Icon name={d.icon} className="h-[18px] w-[18px] text-ink-3" />
-                {d.label}
-                <span className="sr-only"> 예시 보기</span>
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => onDemo(DEMO.stage)}
+            className="mt-3 flex h-[46px] w-full items-center justify-center gap-1.5 rounded-[14px] bg-surface px-3 text-sm font-bold text-ink-2 hover:bg-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand forced-colors:border forced-colors:border-line"
+          >
+            <Icon name={DEMO.icon} className="h-[18px] w-[18px] text-ink-3" />
+            {DEMO.label}
+          </button>
+          <p className="mt-2 text-[11.5px] leading-normal text-ink-3">임신 중·육아 중 예시는 둘러보는 중에 설정 › 정보에서 열 수 있어요.</p>
         </section>
       </div>
     </main>

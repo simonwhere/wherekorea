@@ -1,6 +1,33 @@
 # Next A 준비 — 창업자용 설정 안내 (Supabase · 카톡 링크 · 앱 전환 · 푸시)
 
-> 2026-10-02 기준, 2026-10-03 갱신(Now 3: 일주일 버티는 링크 N20 · 링크 첫 30초 N22 · '이번 주 우리 둘' N21 · 링크 연 날 카운터). 코드는 **지금도 서버 없이** 돌아요. 아래는 "남편용 설치 없는 웹 화면(①)"을 실제로 켤 때 창업자가 할 일과, 그다음 단계(② 앱 전환, ③ 실제 연결·푸시)에 필요한 계정·비용이에요. 가격은 각 회사 공식 페이지 기준으로 썼고 바뀔 수 있으니 결제 전에 한 번 더 확인해요.
+> 2026-10-02 기준, 2026-10-03 갱신(Now 3: 일주일 버티는 링크 N20 · 링크 첫 30초 N22 · '이번 주 우리 둘' N21 · 링크 연 날 카운터), 2026-10-04 갱신(N25 준비: **키를 받으면 몇 분 안에 확인하는 순서 — 바로 아래 '키를 받았을 때 빠른 순서'**, `scripts/verify-supabase.mjs`, `.env.local.example`, SQL 보완).
+
+## 키를 받았을 때 빠른 순서 (N25, 2026-10-04)
+
+키(URL·anon key)가 있으면 아래 네 가지만 하면 돼요. 막히면 확인 스크립트가 어느 단계에서 왜 막혔는지 한국어로 알려 줘요.
+
+1. **SQL은 창업자가 Supabase에서 직접 실행해요.** anon 키로는 표를 만들 수 없어요(그래서 안전한 거예요). Supabase 대시보드 → **SQL Editor** → `supabase/schema.sql` 붙여 넣고 Run → 이어서 `supabase/policies.sql` Run. 둘 다 여러 번 실행해도 괜찮아요. 2026-10-04에 고친 SQL(`create_couple`이 앱이 만든 커플 id를 받음, `delete_couple` 추가)을 아직 안 돌렸다면 다시 한 번 실행해요.
+2. **Claude Code 클라우드 환경이면 Network access에 `*.supabase.co`를 허용해요.** 지금 이 환경은 바깥 주소를 정책으로 막고 있어서, 허용하지 않으면 확인 스크립트가 1단계에서 '네트워크에서 막혔어요'로 끝나요. 세션 제목 줄의 클라우드 환경 메뉴 → **Edit** → **Network access** → **Custom** → **Allowed domains**에 `*.supabase.co`를 더해요. 패키지 매니저 기본 목록(npm 등)은 그대로 둬요(지우면 `npm ci`가 막혀요). 자세한 화면: https://code.claude.com/docs/en/cloud-environments#network-access
+3. **환경 변수는 채팅이 아니라 환경 설정에 넣어요.** 같은 Edit 화면의 환경 변수(API credentials 칸이 있으면 그곳)에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 두 이름으로 넣어요. **새 세션부터** 읽혀요(지금 열린 세션에는 안 보여요). 내 컴퓨터라면 `cp .env.local.example .env.local` 뒤 값을 채워요(.env.local은 git에 안 올라가요). anon(또는 publishable) 키만 — service_role·secret 키는 스크립트가 거절해요.
+4. **확인 스크립트를 돌려요**(`dulset/` 안에서):
+   ```bash
+   node scripts/verify-supabase.mjs
+   ```
+   환경 변수 → 없으면 `.env.local` 순서로 두 값을 읽고, 버리는 데이터로 앱과 똑같은 왕복을 해요: `create_couple → issue_token → publish_snapshot`(건강 기록이 하나도 없는 가짜 스냅숏) `→ snapshot_by_token → send_event → pull_events → record_link_open → link_open_days → revoke_token →` 해제 뒤 다시 읽기(**읽히면 FAIL**) `→ delete_couple`(만든 줄을 cascade로 모두 지움). 결과는 단계마다 PASS/FAIL·HTTP 상태·고칠 것 한 줄이에요. 키 값은 어디에도 출력하지 않아요(종류와 길이만).
+
+| 스크립트가 말하는 것 | 뜻 | 할 일 |
+|---|---|---|
+| 네트워크에서 막혔어요 | 이 환경이 `*.supabase.co`로 못 나가요(또는 주소 오타) | 위 2번 — Network access 허용 |
+| HTTP 404 | 함수가 없어요 = SQL을 안 돌렸거나 예전 SQL | 위 1번 — schema.sql → policies.sql 실행(방금 했으면 1분 뒤 다시) |
+| HTTP 401 | 키가 틀렸거나 다른 프로젝트 것 | anon public 키를 다시 복사 |
+| HTTP 403 | 키·정책(권한) 문제 | policies.sql 실행 여부, 키가 이 프로젝트 것인지 |
+| HTTP 400 | 인자 모양이 다름 | schema.sql 최신본 다시 실행 |
+| 해제 뒤 읽기 FAIL | 해제한 링크로 아직 읽혀요 | schema.sql 다시 실행(그대로면 다음 세션에 결과를 붙여 주세요) |
+| 테스트 데이터 지우기 FAIL | `delete_couple`이 없음(예전 SQL) | 메모에 나온 `delete from public.couples where id = '…';`를 SQL Editor에서 실행 |
+
+종료 코드: 0 모두 통과 · 1 한 단계 이상 FAIL · 2 두 값이 없거나 쓸 수 없는 키. 프록시가 있는 환경(클라우드)에서는 스크립트가 `NODE_USE_ENV_PROXY=1`로 자기 자신을 한 번 다시 실행해요(Node 22.21 이상). 스크립트의 요청 모양은 앱(`lib/sync/supabaseTransport.ts`)과 같은지 `tests/verifySupabase.test.ts`가 지켜요.
+
+모두 PASS면: 같은 두 값으로 `npm run build` → 설정 › 데이터에 '연결: Supabase' → 아래 §5의 2~4번(실제 앱으로 한 번 더, `payload`에 생리·LH 날짜가 없는지 눈으로). 코드는 **지금도 서버 없이** 돌아요. 아래는 "남편용 설치 없는 웹 화면(①)"을 실제로 켤 때 창업자가 할 일과, 그다음 단계(② 앱 전환, ③ 실제 연결·푸시)에 필요한 계정·비용이에요. 가격은 각 회사 공식 페이지 기준으로 썼고 바뀔 수 있으니 결제 전에 한 번 더 확인해요.
 
 ## 0. 지금 상태 — 무엇이 되고 무엇이 모의인가
 
@@ -26,10 +53,12 @@
 
 ## 2. SQL 실행
 
+SQL은 **창업자가 Supabase 대시보드에서 직접** 실행해요. 앱과 확인 스크립트가 쓰는 anon 키로는 표나 함수를 만들 수 없어요(그게 정상이고, 그래서 공개돼도 되는 키예요).
+
 1. 왼쪽 메뉴 **SQL Editor** → New query.
 2. `dulset/supabase/schema.sql` 내용을 붙여 넣고 **Run**. "Success. No rows returned"가 정상이에요.
 3. 이어서 `dulset/supabase/policies.sql`을 같은 방법으로 Run.
-4. **Table Editor**에 `couples` `couple_tokens` `partner_snapshots` `partner_events` `link_opens` 다섯 표가 보이고, 각 표 이름 옆에 RLS 자물쇠가 켜져 있으면 끝이에요. (`link_opens`는 5쌍 검증용 '링크 연 날' 카운터예요. 연구가 끝나면 지워요 — `supabase/README.md` '연구가 끝나면'.)
+4. **Table Editor**에 `couples` `couple_tokens` `partner_snapshots` `partner_events` `link_opens` 다섯 표가 보이고, 각 표 이름 옆에 RLS 자물쇠가 켜져 있으면 끝이에요. 바로 `node scripts/verify-supabase.mjs`로 함수까지 확인해요(맨 위 '빠른 순서' 4번). (`link_opens`는 5쌍 검증용 '링크 연 날' 카운터예요. 연구가 끝나면 지워요 — `supabase/README.md` '연구가 끝나면'.)
 5. 오류가 나면 줄 번호와 메시지를 그대로 다음 작업 세션에 붙여 주세요(처음 실행이라 손볼 곳이 있을 수 있어요 — `supabase/README.md` 맨 위 경고).
 
 ## 3. URL과 anon key 찾기
@@ -50,14 +79,15 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 ```
 
-- **내 컴퓨터에서**: `dulset/.env.local` 파일에 두 줄을 적어요(이 파일은 git에 올라가지 않아요). `npm run build` 또는 `npm run dev`.
-- **Claude Code 작업 환경(이 저장소의 클라우드 환경)**: 세션 제목 줄의 클라우드 환경 메뉴 → **Edit** → 환경 변수(API credentials 칸이 있으면 그곳)에 위 두 이름으로 값을 넣어요. 새 세션부터 읽혀요. 값을 채팅에 붙여 넣지는 마세요.
+- **내 컴퓨터에서**: `cp .env.local.example .env.local` 뒤 두 줄을 채워요(이 파일은 git에 올라가지 않아요 — `dulset/.gitignore`). `npm run build` 또는 `npm run dev`.
+- **Claude Code 작업 환경(이 저장소의 클라우드 환경)**: 세션 제목 줄의 클라우드 환경 메뉴 → **Edit** → 환경 변수(API credentials 칸이 있으면 그곳)에 위 두 이름으로 값을 넣어요. **새 세션부터** 읽혀요. 값을 채팅에 붙여 넣지는 마세요 — 채팅 기록에 남아요. 같은 화면의 **Network access**에서 `*.supabase.co`도 허용해야 해요(Custom → Allowed domains, 패키지 매니저 기본값은 그대로).
 - **Vercel 같은 호스팅**: 프로젝트 Settings → Environment Variables에 같은 두 이름. Preview와 Production을 따로 넣을 수 있어요.
 
 주의: `NEXT_PUBLIC_` 접두사라서 빌드 결과(JS)에 값이 그대로 들어가요. anon 키는 그래도 되지만, 다른 비밀은 이 접두사로 넣지 않아요.
 
 ## 5. 확인하기
 
+0. 먼저 `node scripts/verify-supabase.mjs` — 서버 함수 11단계를 버리는 데이터로 돌려 보고 PASS/FAIL 표를 보여 줘요(맨 위 '빠른 순서'). 여기서 모두 PASS면 아래는 앱 쪽 확인이에요.
 1. 환경 변수를 넣고 `npm run build` → 앱의 **설정 › 데이터**에 **'연결: Supabase'**가 보이면 빌드가 변수를 읽은 거예요. ('연결: 이 기기 안 (모의)'면 변수가 비었거나 빌드 전에 넣지 않은 거예요.) — 설정 › 연결에도 같은 줄이 있어요; 코드의 문구는 `lib/sync/transport.ts` `TRANSPORT_LABEL`에 있어요.
 2. 브라우저 개발자 도구 → Network에서 `rest/v1/rpc/create_couple` → `publish_snapshot` 호출이 200으로 끝나는지 봐요. 403이면 주인 키·토큰 검사에서 걸린 것, 400이면 인자 모양이 다른 것, 404면 SQL이 안 돌아간 거예요.
 3. Supabase **Table Editor → partner_snapshots**에 한 줄이 생기고, `payload` 안에 생리·LH·임테기 날짜가 **없는지** 눈으로 확인해요(이름, 날짜별 카드 문구 7칸 `days[]`, 이번 달 할 일, 체크 항목 이름, 이번 주 고를 것 3개만 있어야 해요).
@@ -65,7 +95,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 
 ## 6. 아직 모의인 것 / 켜도 안 되는 것
 
-- 남편 화면·카톡 공유·설정 › 연결(만료·해제·새 링크)은 모의 전송에서 끝까지 확인됐어요. Supabase 전송(`lib/sync/supabaseTransport.ts`)과 서버 함수(`issue_token` / `revoke_token`)는 실제 프로젝트에서 아직 한 번도 돌려 보지 않았어요(§5의 확인 순서대로 봐 주세요).
+- 남편 화면·카톡 공유·설정 › 연결(만료·해제·새 링크)은 모의 전송에서 끝까지 확인됐어요. Supabase 전송(`lib/sync/supabaseTransport.ts`)과 서버 함수는 실제 프로젝트에서 아직 한 번도 돌려 보지 않았어요 — `scripts/verify-supabase.mjs`가 첫 확인이에요(§5).
+- 2026-10-04에 고친 것(첫 실행 전에 찾은 것): 앱은 커플 id를 폰에서 만들어 쓰는데 서버에 그 id를 등록하는 호출이 없어서, 실제 프로젝트에서는 첫 publish부터 403이 났을 거예요. 이제 전송이 issue·publish·pull 전에 `create_couple(주인 키, 그 id)`를 한 번 불러 등록해요(같은 키·id면 아무 일 없음). 새 키 체계의 publishable 키(`sb_publishable_…`)는 JWT가 아니라 `apikey` 헤더로만 보내요.
+- 모의 전송에서 남편 링크의 '지금은 불러올 수 없어요'를 보려면: 링크 주소에 `?mockOffline=1`을 붙이거나 그 브라우저 localStorage에 `dulset:mock-offline` = `1`. 남편 쪽 호출만 막히고 아내 폰은 그대로 올려요(모의 전용 — 실제 전송에는 없는 스위치예요).
 - 링크에 표지 사진을 켜도 사진 파일 자체는 서버로 가지 않아요(스냅샷에는 사진 id만). 같은 브라우저(모의)에서는 보이고, 실제 두 폰에서는 그림만 보여요 — 사진 전송은 ③에서 정해요.
 - 실시간 갱신: 남편 화면은 주기적으로 다시 읽어요(폴링). Supabase Realtime은 ③에서.
 - 아내 폰을 바꾸거나 브라우저 데이터를 지우면 주인 키가 사라져 링크가 죽어요 → 새 링크를 보내면 돼요. 복구는 ③(익명 로그인)에서.
@@ -79,6 +111,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 5. 남편 화면: 우리의 주간 띠 · 이번 달 할 일(링크를 만든 뒤 2주는 신청 단계가 맨 위) · '이번 주 우리 둘'(셋 중 하나 → [했어요], 내 준비 한 줄, 지은님의 고마워요) · 신호 답장 · 콕/응원 · 자기 체크. 생리·LH·임테기·컨디션·나만 보기는 **애초에 스냅샷에 없어요**.
 6. 아내 폰이 열릴 때마다(그리고 기록이 바뀔 때) 오늘~+6일 스냅샷을 다시 올려요. 아내 폰이 일주일 넘게 안 열리면 남편 화면은 '새 화면은 곧 채워져요 · 지은님 폰이 열리면 다시 채워져요'로 바뀌고, 그동안에도 신호와 응원은 보낼 수 있어요. 링크는 30일 뒤 만료, 설정에서 언제든 해제.
 7. 안내 문구에 넣을 것: "이 링크는 남편에게만 보내요. 링크가 있는 사람은 만료 전까지 이 화면을 볼 수 있어요."
+8. (N31) 링크 아래 '매주 이 시간에 알려 받기': 남편이 요일을 고르면 그 자리에서 반복 .ics('둘셋 · 이번 주 우리', 매주 저녁 8시)를 만들어요. 캘린더에는 **토큰 없는 `/link/`**만 들어가고, 그 폰에서 열면 브라우저가 기억한 토큰(`dulset:link-token:v1`)으로 열려요. 서버로 가는 것은 없어요.
+9. (N32) '병원과 함께' 모드가 켜져 있으면 링크의 카드 안에 앞으로 7일의 남편·'둘이 함께' 일정(날짜·시각·장소·종류 한 단어 — 제목·메모·시술·횟수는 없음)과 [같이 갈게요]가 보여요. 누르면 `join-appointment` 이벤트(일정 id만)가 가고, 아내 폰은 `decisions`에 남기고 🔔 하나로 알려요. 난임치료휴가 한 줄(남성 근로자도 · 2026-11-27부터 유급 4일, 연 6일)은 `docs/research/kr-programs.json`의 출처와 함께 보여요. 병원을 찾거나 추천하는 기능은 없어요.
 
 ### 7-1. 링크 연 날 (연구용 카운터, 2026-10-03 결정)
 

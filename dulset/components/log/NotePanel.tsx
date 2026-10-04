@@ -3,7 +3,9 @@
 import { useId, useState } from 'react'
 import FeelPanel from '@/components/log/FeelPanel'
 import type { SaveLog } from '@/components/log/parts'
-import { Button, Toggle, inputClass, useToast } from '@/components/ui'
+import { Button, Toggle, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { feelLabel } from '@/lib/logic/ttcFlow'
 import { formatKo } from '@/lib/dates'
 import { uid } from '@/lib/id'
 import { NOTE_MAX_LENGTH, addNote } from '@/lib/logic/logs'
@@ -18,7 +20,8 @@ import type { ISODate } from '@/lib/types'
  * '나만 보기' on, as the cycle owner's private line in her own log
  * (personalLog, N11: never the partner's screen, never anything shared with
  * him — the 주기 tab's cycle row lists it). While preparing, the cycle owner
- * also gets the 오늘 컨디션 chips on top.
+ * also has the 오늘 컨디션 chips — behind '자세히' (N29: an optional input,
+ * not one the home asks for; what she saved shows on the toggle).
  */
 export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog }) {
   const { state, update, today, viewer, partner } = useApp()
@@ -30,6 +33,10 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
   // Her own log (chips + a private line) is for the cycle owner while preparing.
   const own = canLogCycle(state, viewer) && state.stage === 'preparing'
   const privateLine = own ? personalDay(state, viewer, date)?.note : undefined
+  const feel = own ? personalDay(state, viewer, date)?.feel : undefined
+  // '자세히' — the 오늘 컨디션 chips (closed by default).
+  const [detail, setDetail] = useState(false)
+  const detailId = useId()
 
   const submit = () => {
     if (!ready) return
@@ -54,7 +61,6 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
 
   return (
     <div className="space-y-3">
-      {own ? <FeelPanel date={date} /> : null}
       <form
         className="space-y-2"
         onSubmit={(e) => {
@@ -108,6 +114,29 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
           >
             지우기
           </button>
+        </div>
+      ) : null}
+      {own ? (
+        <div>
+          <button
+            type="button"
+            aria-expanded={detail}
+            aria-controls={detailId}
+            onClick={() => setDetail((v) => !v)}
+            className="-ml-2 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-[13px] font-semibold text-ink-2 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          >
+            자세히
+            <span className="font-normal text-ink-3">
+              {' '}
+              · {date === today ? '오늘' : '이 날'} 컨디션{feel ? ` · ${feelLabel(feel)}` : ''}
+            </span>
+            <Icon name="chev" className={cx('h-4 w-4 transition-transform', detail && 'rotate-180')} strokeWidth={2.2} />
+          </button>
+          {detail ? (
+            <div id={detailId} className="mt-1">
+              <FeelPanel date={date} />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

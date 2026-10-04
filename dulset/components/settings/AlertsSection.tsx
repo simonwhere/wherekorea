@@ -6,7 +6,17 @@ import { Icon } from '@/components/ui/icons'
 import { NICE_GUIDANCE } from '@/lib/content/fertility'
 import { cycleLens, cyclePause, icsAvailability, windowRangeShort } from '@/lib/logic/calendarView'
 import { upcomingWindows } from '@/lib/logic/cycle'
-import { buildIcs, downloadText, fertileWindowEvents } from '@/lib/logic/ics'
+import {
+  WEEKLY_DAYS,
+  WEEKLY_DAY_LABEL,
+  WEEKLY_LINK_TITLE,
+  buildIcs,
+  downloadText,
+  fertileWindowEvents,
+  weeklyLinkEvent,
+  weeklyLinkIcs,
+  type WeeklyDay,
+} from '@/lib/logic/ics'
 import {
   ALERT_STYLE_OPTIONS,
   acceptNudgesFor,
@@ -37,6 +47,7 @@ import {
 } from '@/lib/logic/prefs'
 import { fertilityVoice } from '@/lib/logic/today'
 import { openLHHowTo } from '@/lib/logLauncher'
+import { weekdayIndex } from '@/lib/dates'
 
 /**
  * Does this viewer read 가임기 / 배란 wording? Only with their own explicit
@@ -96,6 +107,8 @@ export default function AlertsSection() {
         {preparing && !low && canLogCycle(state, viewer) ? <IcsCard /> : null}
         {/* LH strips are the owner's tool, named only where she reads 가임기 words herself. */}
         {preparing && canLogCycle(state, viewer) && explicit ? <LHStripsCard /> : null}
+        {/* His weekly prompt (N31): the one his link carries, here for the partner who uses the app. */}
+        {preparing && !canLogCycle(state, viewer) ? <WeeklyCalendarCard /> : null}
       </div>
     </SettingsSection>
   )
@@ -560,6 +573,71 @@ function IcsCard() {
         {label}
       </Button>
       {!enabled && reason ? <p className="mt-2 text-xs text-ink-3">{reason}</p> : null}
+    </Card>
+  )
+}
+
+// ── 매주 이 시간에 알려 받기 (N31, the partner) ──────────────────
+
+/** The RFC 5545 day `date` falls on (weekdayIndex: 0 = Sunday; WEEKLY_DAYS: Monday first). */
+const weeklyDayOf = (date: string): WeeklyDay => WEEKLY_DAYS[(weekdayIndex(date) + 6) % 7]!
+
+/** '저녁 8시' from 'HH:MM' (the default 20:00 of lib/logic/ics). */
+function eveningWords(hhmm: string): string {
+  const h = Number(hhmm.slice(0, 2))
+  const part = h < 12 ? '오전' : h < 18 ? '오후' : '저녁'
+  return `${part} ${h % 12 || 12}시`
+}
+
+/**
+ * The partner picks a day; his phone's own calendar reminds him once a week
+ * with '둘셋 · 이번 주 우리' (lib/logic/ics weeklyLinkEvent — RRULE weekly, no
+ * health word, nothing from her cycle: it repeats on HIS day from this week).
+ * His link page has the same card; here the event opens the app's 오늘 instead
+ * of the link page, since this phone has the app. Nothing is sent anywhere.
+ */
+function WeeklyCalendarCard() {
+  const { today } = useApp()
+  const toast = useToast()
+  const [day, setDay] = useState<WeeklyDay>(() => weeklyDayOf(today))
+  const ev = weeklyLinkEvent(day, today)
+  const download = () => {
+    downloadText('dulset-weekly.ics', weeklyLinkIcs(day, today, { origin: window.location.origin, path: '/#today' }))
+    toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
+  }
+  return (
+    <Card>
+      <h3 className="flex items-center gap-1.5 text-sm font-bold text-ink">
+        <Icon name="cal" className="h-[18px] w-[18px] text-ink-2" />
+        매주 이 시간에 알려 받기
+      </h3>
+      <p className="mt-1 text-xs leading-relaxed text-ink-2">
+        고른 요일 {eveningWords(ev.time?.at ?? '20:00')}에 휴대폰 캘린더가 ‘{WEEKLY_LINK_TITLE}’를 알려 줘요. 다른 요일로 다시 받으면
+        예전 알림을 바꿔요.
+      </p>
+      <div role="group" aria-label="알려 받을 요일" className="mt-3 grid grid-cols-7 gap-1">
+        {WEEKLY_DAYS.map((d) => {
+          const on = d === day
+          return (
+            <button
+              key={d}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setDay(d)}
+              className={cx(
+                'flex h-11 items-center justify-center rounded-xl border text-sm font-bold transition-colors',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+                on ? 'border-brand bg-brand text-white' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
+              )}
+            >
+              {WEEKLY_DAY_LABEL[d]}
+            </button>
+          )
+        })}
+      </div>
+      <Button full variant="secondary" className="mt-3" onClick={download}>
+        매주 {WEEKLY_DAY_LABEL[day]}요일 캘린더에 넣기 (.ics)
+      </Button>
     </Card>
   )
 }

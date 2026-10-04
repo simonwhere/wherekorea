@@ -5,7 +5,7 @@
 
 import { addDays, addMonths, diffDays } from '../dates'
 import { uid } from '../id'
-import type { AppState, CustomAnniversary, ISODate } from '../types'
+import type { AppState, CustomAnniversary, ISODate, Settings, Stage } from '../types'
 import type { Notice } from './notifications'
 
 /** Day count with the start day as 1일 (사귄 지 N일). */
@@ -138,21 +138,51 @@ export function removeAnniversary(state: AppState, id: string): AppState {
 
 // ── Notices ─────────────────────────────────────────────────
 
+/**
+ * 기념일 알림 when the couple never chose: off while preparing (N27 — the
+ * record book's breadth stays behind the couple's own choice in the stage the
+ * app is for), on once a pregnancy or a baby is in the story. lib/initial.ts
+ * SETTINGS_DEFAULTS.anniversaryAlerts (true) is the later stages' value.
+ */
+export function anniversaryAlertsDefault(stage: Stage): boolean {
+  return stage !== 'preparing'
+}
 
 /**
- * A week before and on the day of each anniversary, to both — unless the
- * couple turned 기념일 알림 off (settings.anniversaryAlerts, Next B). Unset
- * means on (lib/initial.ts SETTINGS_DEFAULTS; the same rule as
- * lib/logic/settings.ts anniversaryAlertsOn, read inline here because
- * settings.ts imports notifications.ts, which imports this file).
+ * Are 기념일 알림 on for this couple now? An explicit choice
+ * (settings.anniversaryAlerts true / false, 설정 › 첫 화면) always wins;
+ * unset follows the stage (anniversaryAlertsDefault). The one reader for the
+ * notices, the cover line and lib/logic/settings.ts anniversaryAlertsOn
+ * (read here because settings.ts imports notifications.ts, which imports this
+ * file).
+ */
+export function anniversaryAlertsEnabled(state: { stage: Stage; settings: Pick<Settings, 'anniversaryAlerts'> }): boolean {
+  const v = state.settings.anniversaryAlerts
+  return typeof v === 'boolean' ? v : anniversaryAlertsDefault(state.stage)
+}
+
+/**
+ * While preparing an anniversary is mentioned on its day only — no '일주일
+ * 전' notice and no 'D-N' on the cover (N27: in a 70-day walk, the partner's
+ * first line read '💍 D-N' on 15 days). Other stages keep the week's heads-up.
+ */
+export function anniversaryDayOnly(stage: Stage): boolean {
+  return stage === 'preparing'
+}
+
+/**
+ * On the day of each anniversary (and, outside the preparing stage, a week
+ * before), to both — when 기념일 알림 are on (anniversaryAlertsEnabled: off by
+ * default while preparing, an explicit choice wins).
  */
 export function anniversaryNotices(state: AppState, today: ISODate): Notice[] {
   const out: Notice[] = []
-  if (state.settings.anniversaryAlerts === false) return out
+  if (!anniversaryAlertsEnabled(state)) return out
+  const dayOnly = anniversaryDayOnly(state.stage)
   const events = anniversariesBetween(state.couple, state.anniversaries, today, addDays(today, 7))
   for (const e of events) {
     const until = diffDays(today, e.date)
-    if (until !== 0 && until !== 7) continue
+    if (until !== 0 && (dayOnly || until !== 7)) continue
     for (const to of ['a', 'b'] as const) {
       out.push({
         key: `anniv:${e.key}:${e.date}:${until}:${to}`,

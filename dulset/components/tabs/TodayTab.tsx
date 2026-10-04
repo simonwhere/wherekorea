@@ -11,7 +11,8 @@
 //      picks → [했어요], 내 준비, her [고마워요] for the rest of the week
 //   3. 우리 한 줄 — the partner's month task, the other's progress, '이번 주 민수님'
 //      + [고마워요] on her home (N21), a signal to answer, the reply to mine,
-//      and '신호 보내기' as one row (out of 더 보기)
+//      and '신호 보내기' as one row (out of 더 보기); under it on her home, his
+//      이번 달 할 일 by stage in one line ('민수님 · 정액검사 예약했어요', N28)
 //   + 기록 지키기 (BackupBanner): a compact line under ③ while the app isn't on
 //     the home screen or the backup is over a week old, and on the first period's day
 // The partner's "이번 달 할 일" goes right under the cover when it's urgent
@@ -26,7 +27,10 @@
 
 import { useMemo } from 'react'
 import type { TabKey } from '@/components/AppShell'
-import { SectionTitle } from '@/components/ui'
+import { SectionTitle, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { MemberBubble } from '@/components/today/bits'
+import { partnerProgressLine } from '@/lib/logic/usView'
 import { monthlyTask } from '@/lib/logic/partnerTrack'
 import { partnerTaskVisible, ttcMoment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
@@ -98,6 +102,8 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       <WeekTogether withChain={showTask} className="mt-3.5" />
       <TodayTasks onNavigate={onNavigate} className="mt-7" />
       <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
+      {/* Her home: where his 이번 달 할 일 stands, one line by its stage (N28) — never a zero, not in the quiet. */}
+      <PartnerProgress onNavigate={onNavigate} className="mt-3" />
       {/* 설정 마저 하기: what the short onboarding left for later (N15). */}
       <SetupCard className="mt-4" />
       {/* 기록 지키기: outside 더 보기, so a browser-tab couple sees it (N16). */}
@@ -106,6 +112,38 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       <p className="mt-1 text-center text-[11.5px] text-ink-3">사진과 기록은 이 폰에만 저장돼요</p>
       {toast}
     </div>
+  )
+}
+
+/**
+ * '민수님 · 정액검사 예약했어요' — the partner's month task as one line on the
+ * cycle owner's preparing home (usView.partnerProgressLine: the stage name
+ * only, nothing before his first step, nothing in the 42 quiet days). Taps
+ * open 챙길 것, where the steps live.
+ */
+function PartnerProgress({ onNavigate, className }: { onNavigate: Nav; className?: string }) {
+  const { state, today, me } = useApp()
+  const line = partnerProgressLine(state, today, me.id)
+  if (!line) return null
+  const member = state.couple.members.find((m) => m.id === line.member)
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate('plan')}
+      aria-label={`${line.text} · 챙길 것에서 보기`}
+      data-partner-progress
+      className={cx(
+        'flex min-h-[48px] w-full items-center gap-2.5 rounded-xl bg-surface-2 py-2 pl-2.5 pr-3 text-left transition-colors hover:bg-line/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand',
+        className,
+      )}
+    >
+      {member ? <MemberBubble member={member} size={30} /> : null}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] font-semibold text-ink-3">이번 달 할 일</span>
+        <span className="block truncate text-[13.5px] font-bold tracking-[-0.01em] text-ink">{line.text}</span>
+      </span>
+      <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
+    </button>
   )
 }
 

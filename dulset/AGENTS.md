@@ -27,7 +27,7 @@ npm run build        # next build → out/ (정적 export)
 ```
 
 - `?today=YYYY-MM-DD`를 붙이면 앱의 오늘 날짜가 고정돼요(데모·재현용).
-- 첫 화면의 "예시로 둘러보기"(준비 중 / 임신 중 / 육아 중)를 누르면 가상 커플 민수·지은의 데이터가 채워져요.
+- 첫 화면의 '준비 중 예시 보기'를 누르면 가상 커플 민수·지은의 데이터가 채워져요. 임신 중·육아 중 예시는 설정 › 정보에 있어요(N27).
 - 네트워크 없이도 전부 동작해요. 외부 API 호출, 외부 폰트·분석 SDK가 없어요.
 
 ## 완료 기준 (PR 전에 반드시)
@@ -87,6 +87,9 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
   - 자세히가 아닌 상대의 화면은 `lib/logic/cycleRing.ts`의 `sharedWeek` 하나로 정해요(기록한 생리 시작일만 써요. LH·테스트는 안 쓰고, 생리 1~3일·쉬는 주기·병원과 함께·양성 확인 전에는 꺼져요). 날짜 없음이면 띠·날짜·주기 단계가 상대 화면 어디에도 없어요.
   - **알리지 않은 기록은 상대 화면을 바꾸지 않아요**(앱, 링크의 7일 칸 모두). 남편이 보는 것은 아내가 보낸 것(신호·[알리기]·공유 동의)이나 자기 것뿐이고, 화면이 바뀌는 것도 정보예요. `tests/leakInference.test.ts`·`tests/integrationNow3.test.ts`가 지켜요.
   - 상대에게는 횟수 문장('하루나 이틀에 한 번' 등)을 보이지 않아요(알림·달력·요약 모두).
+  - 남편 화면의 우리의 주간 아이디어·`#date` 띠는 `lib/logic/dateIdeas.ts`의 `partnerHintState` 하나로 정해요(홈 카드·링크 아이디어·`dateBanner` 셋 다, 소스 검사 테스트가 지켜요). 남편의 주기 탭·홈·링크가 같은 창을 그리려면 `cycleLens`/`sharedWeek`에 `decisions`·`notifications`(아내가 [알리기]로 보낸 `period-told:<시작일>`)를 함께 넘겨요.
+  - '해 줄 말 · 아껴 둘 말'(`lib/logic/signals.ts`의 `sayForTold`·`sayForSignal`)은 아내가 보낸 순간(신호, [알리기])에만 붙고, 앱과 링크가 같은 줄을 그려요(`components/signals/SayText.tsx`). 답 2개는 'signal' 이벤트로 돌아오고 `partnerEvents.toldAnswerOpen`이 그 카드가 있는 동안 한 번만 받아요.
+  - 콕은 하루에 함께하는 사람 1번, 주기를 기록하는 사람 3번이에요(`notifications.ts`의 `nudgesPerDay`).
 - **쉬는 주기·병원 확인 전**(`restCycle`, `positivePending`)에는 가임기 표시·알림·데이트 제안이 멈춰요. 판단은 `lib/logic/ttc.ts`의 `activeRest` / `activePositivePending`으로 해요.
 - 주기 기록은 `lib/logic/logs.ts`(기록자·되돌리기·쉬는 주기 해제가 함께 처리돼요)나 `openLog()`로만 바꿔요.
 - **잠금화면 숨김**(`discreet`)이 켜져 있으면 브라우저 알림과 .ics에 건강 용어를 넣지 않아요.

@@ -173,14 +173,14 @@ describe('the partner’s defaults and first run', () => {
   it('starts the non-owner with 걷기 30분 only and 은근하게, whichever member that is', () => {
     const s = applyPartnerDefaults(fresh(), TODAY)
     expect(activeItems(s, 'b').map((i) => [i.label, i.cadence])).toEqual([['걷기 30분', undefined]])
-    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산'])
     expect(s.settings.alertStyle).toEqual({ a: 'explicit', b: 'soft' })
     expect(s.checkItems.every((i) => i.createdAt === TODAY)).toBe(true)
     // The husband onboarded: he is the non-owner, his own rows get the default too.
     const his = applyPartnerDefaults(fresh({}, 'b'), TODAY)
     expect(nonOwner(his)).toBe('a')
     expect(activeItems(his, 'a').map((i) => i.label)).toEqual(['걷기 30분'])
-    expect(activeItems(his, 'b').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(activeItems(his, 'b').map((i) => i.label)).toEqual(['엽산'])
     expect(his.settings.alertStyle).toEqual({ a: 'soft', b: 'explicit' })
     expect(PARTNER_DEFAULT_HABITS).toEqual({ smokes: false, drinks: 'rarely', exercises: false, takesSupplements: false })
   })
@@ -194,7 +194,7 @@ describe('the partner’s defaults and first run', () => {
       '금주',
       '사우나·뜨거운 탕 쉬기',
     ])
-    expect(starterItemsFor(s, 'a', TODAY).map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(starterItemsFor(s, 'a', TODAY).map((i) => i.label)).toEqual(['엽산'])
   })
 
   it('asks the joining member once: on their first visit, while preparing, until they joined or ticked something', () => {
@@ -217,7 +217,7 @@ describe('the partner’s defaults and first run', () => {
     const at = '2026-10-02T21:10:00+09:00'
     const s = completePartnerFirstRun(s0, 'b', { habits: { ...PARTNER_DEFAULT_HABITS, smokes: true, exercises: true }, alertStyle: 'explicit' }, TODAY, at)
     expect(activeItems(s, 'b').map((i) => i.label)).toEqual(['운동 30분', '금연', '사우나·뜨거운 탕 쉬기'])
-    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산'])
     expect(s.settings.alertStyle.b).toBe('explicit')
     expect(s.couple.linkedAt).toBe(at)
     expect(needsPartnerFirstRun(s, 'b')).toBe(false)
@@ -228,7 +228,7 @@ describe('the partner’s defaults and first run', () => {
     expect(kept.couple.linkedAt).toBe(at)
     // The cycle owner's rows are never rebuilt from habit answers.
     const owner = completePartnerFirstRun(applyPartnerDefaults(fresh({}, 'b'), TODAY), 'b', { habits: { ...PARTNER_DEFAULT_HABITS, smokes: true }, alertStyle: 'soft' }, TODAY, at)
-    expect(activeItems(owner, 'b').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(activeItems(owner, 'b').map((i) => i.label)).toEqual(['엽산'])
     expect(activeItems(owner, 'a').map((i) => i.label)).toEqual(['걷기 30분'])
     expect(owner.settings.alertStyle.b).toBe('soft')
   })

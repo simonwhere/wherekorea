@@ -1,7 +1,8 @@
 'use client'
 
-// First-run flow (N15: four screens): welcome (or a demo couple, or a restore)
-// → ① 우리 둘 (names, roles, who records the cycle, 처음 만난 날) → ② 주기 (last
+// First-run flow (N15: four screens): welcome (or the preparing demo couple, or
+// a restore) → ① 우리 둘 (names, roles, who records the cycle — 처음 만난 날
+// moved to the 기록장 in N27) → ② 주기 (last
 // start + earlier starts, average cycle, 45일 이상·들쭉날쭉, 배란테스트기) →
 // ③ 동의 + 공유 범위 → ④ 초대·설치. Nobody answers for the other person:
 // their habits and alert style stay at the defaults (걷기 30분 + 은근하게)
@@ -17,7 +18,7 @@ import DoneStep from '@/components/onboarding/DoneStep'
 import WelcomeStep from '@/components/onboarding/WelcomeStep'
 import type { ShareChoice } from '@/components/onboarding/consentCopy'
 import { ProgressDots } from '@/components/onboarding/parts'
-import { requestCoverAsk } from '@/components/cover/coverAskFlag'
+import { askCoverAfterLink } from '@/components/onboarding/coverAskAfterLink'
 import { Button } from '@/components/ui'
 import {
   draftNames,
@@ -85,6 +86,9 @@ export default function Onboarding() {
   const headingRef = useRef<HTMLHeadingElement>(null)
   // True once the user went back to the welcome screen, so focus lands on it.
   const [cameBack, setCameBack] = useState(false)
+  // ④'s link went out (shared or copied): only then does the home ask about a cover photo (N27).
+  const [linkSent, setLinkSent] = useState(false)
+  const markSent = useCallback(() => setLinkSent(true), [])
 
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -133,8 +137,9 @@ export default function Onboarding() {
     state = applyOnboardingCycle(state, { pastStarts, usesLH }, today)
     setViewer('a')
     openOnHome()
-    // The home then asks once whether to hang a cover photo (components/cover/CoverAsk).
-    requestCoverAsk()
+    // The home asks once whether to hang a cover photo (components/cover/CoverAsk) — only after
+    // the partner's link went out; otherwise 설정 › 연결's first send asks it (N27).
+    if (linkSent) askCoverAfterLink(false)
     replace(state)
     scrollTopSoon()
   }
@@ -159,7 +164,7 @@ export default function Onboarding() {
         return <ConsentStep draft={draft} patch={patch} sensitive={sensitive} onSensitive={setSensitive} share={share} onShare={setShare} />
       default:
         // The link is made on the cycle owner's phone (lib/useLinkSync publishes there only).
-        return <DoneStep code={code} partner={names.b} ownerIsMe={draftOwner(draft) === 'a'} />
+        return <DoneStep code={code} partner={names.b} ownerIsMe={draftOwner(draft) === 'a'} onSent={markSent} />
     }
   })()
 

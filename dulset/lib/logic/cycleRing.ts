@@ -9,9 +9,18 @@
 // notifications): sharedWeek — WHICH window a partner without her details may
 // see, and when (N19, docs/positioning.md §4 '0번: 새는 곳').
 
-import { addDays, diffDays, formatKo, isISODate, weekdayKo } from '../dates'
+import { addDays, formatKo, isISODate, weekdayKo } from '../dates'
 import type { AppState, ISODate } from '../types'
-import { cycleAt, fertilityStatus, ourWeekSoon, sortedStarts, type CycleConfidence, type CycleInput, type CycleWindow } from './cycle'
+import {
+  OUR_WEEK_LEAD_DAYS,
+  cycleAt,
+  pausedSince,
+  sortedStarts,
+  spansEndedPregnancy,
+  type CycleConfidence,
+  type CycleInput,
+  type CycleWindow,
+} from './cycle'
 import { recentlyEnded } from './pregnancy'
 import { activePositivePending, activeRest } from './ttc'
 import type { CycleStrip, StripDay, StripTone } from './ttcFlow'
@@ -35,15 +44,31 @@ import type { CycleStrip, StripDay, StripTone } from './ttcFlow'
 // no LH result goes to him automatically). So her own (LH-tuned) card may name
 // a slightly different window than his; that gap is the privacy boundary.
 //
+// Two rules keep what he was shown in place (Now 3 leftovers):
+//  • Once his span has started ('곧 우리의 주간' or the window), it stays until
+//    the window's predicted last day: a period she logs inside it, a rest she
+//    starts inside it or a positive test she has not told does not cut it
+//    short. (A period she TELLS does — her [알리기] card comes first; so does
+//    the clinic mode, which both phones show, and a pregnancy that ended.)
+//  • An untold period that came EARLIER than his view expected does not pull
+//    his next window forward: that window is frozen to what was predicted
+//    before she logged it — the cycle the previous start projected, with the
+//    statistics of that time (anchoredWindow). A period she told, or one on
+//    time or late, anchors his window on its real day as before.
+//
 // Residuals (documented, tested in tests/leakInference.test.ts):
 //  • When the next window would have come and does not (a late period, a rest,
-//    a positive test), he sees no change at all — only the absence of one, on
-//    the day it would have come.
-//  • A pause she starts INSIDE the shared window (a rest, the clinic) ends it
-//    early for him too: showing '우리의 주간' through a rest she chose (after
-//    a live vaccine, say) would contradict the rest itself.
-//  • A period logged inside the window (a cycle far shorter than expected)
-//    ends it as well.
+//    a positive test she logged before it started), he sees no change at all —
+//    only the absence of one, on the day it would have come.
+//  • The freeze covers the NEXT window only: the start after an untold early
+//    one anchors on its real day again (so her rhythm and his do not drift
+//    apart for good). The spacing of his two windows then differs from the
+//    usual one — it says that a cycle ran short, a cycle later, never the day.
+//  • A rest is read from the one record she keeps: a rest she backdates to
+//    before the span began, logged inside it, ends it on the day she logs it;
+//    a rest that paused a span and was then ended by a period logged inside
+//    where that span would have been leaves no trace, so the span's remaining
+//    days come back (both need a cycle shorter than its window).
 //  • A period start logged late (backdated to day 4 or later of its cycle)
 //    can start the next shared span on the day it is logged.
 
@@ -55,14 +80,18 @@ export interface SharedWeek {
   kind: 'soon' | 'window'
   fertileStart: ISODate
   fertileEnd: ISODate
-  /** The calendar window behind it (its `start` keys his one notice: notifications.fertileKey). */
+  /**
+   * The calendar window behind it (her logged start — or, for a frozen
+   * window, the start his view expected). Never in a notice key
+   * (notifications.partnerFertileKey uses the window's week).
+   */
   window: CycleWindow
   /** Logged cycles only ('cycles' / 'low') — never 'lh'. */
   confidence: CycleConfidence
 }
 
 type SharedState = Pick<AppState, 'stage' | 'periods' | 'cycle' | 'pregnancy' | 'restCycle' | 'positivePending'> &
-  Partial<Pick<AppState, 'cycleNotes'>>
+  Partial<Pick<AppState, 'cycleNotes' | 'decisions' | 'notifications' | 'pregnancyTests'>>
 
 /** What a partner without details is computed from: her logged period starts and the cycle settings — no LH, no tests. */
 export function sharedCycleInput(state: Omit<SharedState, 'stage' | 'restCycle' | 'positivePending'>): CycleInput {
@@ -76,25 +105,131 @@ export function sharedCycleInput(state: Omit<SharedState, 'stage' | 'restCycle' 
 }
 
 /**
+ * The decision keys ttcFlow writes when she tells him ([알리기]) — spelled out
+ * here because ttcFlow imports this file (tests/cycleRing.test.ts keeps them
+ * equal to ttcFlow.periodToldKey / positiveToldKey).
+ */
+export const sharedPeriodToldKey = (start: ISODate) => `period-told:${start}`
+export const sharedPositiveToldKey = (since: ISODate) => `positive-told:${since}`
+
+/** sync/model.decided for a state that may not carry the decision fields. */
+function toldKey(state: Partial<Pick<AppState, 'decisions' | 'notifications'>>, key: string): boolean {
+  if (state.decisions?.[key] !== undefined) return true
+  return (state.notifications ?? []).some((n) => n.key === key)
+}
+
+/** Her calendar input as it stood on the day `start` was her latest logged start (no LH, nothing later). */
+function inputUpTo(state: SharedState, start: ISODate): CycleInput {
+  return sharedCycleInput({ ...state, periods: state.periods.filter((p) => p.start <= start) })
+}
+
+/**
+ * The window his view uses for the cycle that begins at her logged start
+ * `starts[i]`: the projection as it stood then — or, for a start she did not
+ * tell that came before the day the previous start projected, the window
+ * of that projected cycle (frozen to what his view expected before she logged
+ * it). Null when the calendar has nothing to say.
+ */
+export function anchoredWindow(state: SharedState, starts: readonly ISODate[], i: number): CycleWindow | null {
+  const start = starts[i]
+  if (!start) return null
+  const own = cycleAt(inputUpTo(state, start), start)
+  const prev = starts[i - 1]
+  if (!prev || toldKey(state, sharedPeriodToldKey(start)) || spansEndedPregnancy(prev, start, state.pregnancy)) return own
+  const before = inputUpTo(state, prev)
+  const expected = cycleAt(before, prev)
+  if (!expected || start >= expected.nextPeriod) return own
+  return cycleAt(before, expected.nextPeriod) ?? own
+}
+
+/** The first day his span shows: 곧 우리의 주간 (OUR_WEEK_LEAD_DAYS before the window), never on that cycle's days 1–3. */
+export function sharedSpanFrom(w: Pick<CycleWindow, 'start' | 'fertileStart'>): ISODate {
+  const lead = addDays(w.fertileStart, -OUR_WEEK_LEAD_DAYS)
+  const quiet = addDays(w.start, SHARED_QUIET_DAYS)
+  return lead > quiet ? lead : quiet
+}
+
+function shaped(w: CycleWindow, today: ISODate): SharedWeek {
+  return {
+    kind: today < w.fertileStart ? 'soon' : 'window',
+    fertileStart: w.fertileStart,
+    fertileEnd: w.fertileEnd,
+    // His view counts from its start as from a logged one — a frozen window
+    // must not read differently from the one an on-time period would give.
+    window: w.startLogged ? w : { ...w, startLogged: true },
+    confidence: w.confidence,
+  }
+}
+
+/**
+ * Was the span starting on `from` (in the cycle that began on `cycleStart`)
+ * held back by a pause she started before it — so it never showed? A rest
+ * (any reason: the clinic and the 'loss' quiet are ruled out earlier), or a
+ * positive test: the record while it is on, and a positive test dated in that
+ * stretch (or one she told) once a period has cleared the record.
+ */
+function pausedBefore(state: SharedState, from: ISODate, cycleStart: ISODate, today: ISODate): boolean {
+  // Strictly before its first day: one started on that day finds the span already shown.
+  const rest = activeRest(state, today)
+  if (rest && rest.since < from) return true
+  const pending = activePositivePending(state)
+  if (pending && (pending.since < from || toldKey(state, sharedPositiveToldKey(pending.since)))) return true
+  // Once a period has cleared the record: a positive test dated before the span, or one she told.
+  return (state.pregnancyTests ?? []).some(
+    (t) => t.result === 'positive' && t.date >= cycleStart && (t.date < from || toldKey(state, sharedPositiveToldKey(t.date))),
+  )
+}
+
+/**
  * The shared window a partner without details sees on `today` — '곧 우리의
  * 주간' (the lead days before it) or the window itself — or undefined: the
  * '평소 주'. Undefined outside the preparing stage, in the quiet after a
- * pregnancy ended, while a rest, the clinic or a positive test pauses the
- * dates, on period days 1–3, and whenever the window is not near. Pure; one
- * rule for the home card, the week row, the calendar and his notice.
+ * pregnancy ended, while the clinic mode is on, while a rest or a positive
+ * test she started before the span pauses the dates, on period days 1–3, and
+ * whenever the window is not near. Once a span has started it runs to its
+ * last day whatever she logs and does not tell; an untold early period does
+ * not pull the next one forward (see above). Pure; one rule for the home
+ * card, the week row, the calendar and his notice.
  */
 export function sharedWeek(state: SharedState, today: ISODate): SharedWeek | undefined {
-  if (state.stage !== 'preparing' || !isISODate(today)) return undefined
-  if (activePositivePending(state) || activeRest(state, today) || recentlyEnded(state, today)) return undefined
-  const input = sharedCycleInput(state)
-  const status = fertilityStatus(input, today)
-  if (!ourWeekSoon(status)) return undefined
-  const start = [...sortedStarts(state.periods)].reverse().find((d) => d <= today)
-  if (!start || diffDays(start, today) + 1 <= SHARED_QUIET_DAYS) return undefined
-  const w = cycleAt(input, start)
-  if (!w || w.fertileEnd < today) return undefined
-  const kind = today < w.fertileStart ? 'soon' : 'window'
-  return { kind, fertileStart: w.fertileStart, fertileEnd: w.fertileEnd, window: w, confidence: w.confidence }
+  // The state is immutable (update(fn) only), so one state object answers the same for a day:
+  // the home, the week row, the calendar, the notices and the link's seven days ask it again and again.
+  let memo = SHARED_MEMO.get(state)
+  if (!memo) SHARED_MEMO.set(state, (memo = new Map()))
+  if (memo.has(today)) return memo.get(today)
+  const out = computeSharedWeek(state, today)
+  memo.set(today, out)
+  return out
+}
+
+const SHARED_MEMO = new WeakMap<object, Map<string, SharedWeek | undefined>>()
+
+function computeSharedWeek(state: SharedState, today: ISODate): SharedWeek | undefined {
+  if (state.stage !== 'preparing' || !isISODate(today) || recentlyEnded(state, today)) return undefined
+  if (pausedSince(sharedCycleInput(state))) return undefined
+  const rest = activeRest(state, today)
+  if (rest && (rest.reason === 'clinic' || rest.reason === 'loss')) return undefined
+  const starts = sortedStarts(state.periods).filter((d) => d <= today)
+  const n = starts.length - 1
+  if (n < 0) return undefined
+  const latest = starts[n]!
+  // The previous cycle's span, still running: a start she logged inside it and
+  // has not told waits until that span's last day.
+  if (n >= 1 && !toldKey(state, sharedPeriodToldKey(latest))) {
+    const prev = anchoredWindow(state, starts, n - 1)
+    if (prev) {
+      const from = sharedSpanFrom(prev)
+      // (A start on the span's first day finds it already shown, as a pause does.)
+      if (from <= latest && today >= from && today <= prev.fertileEnd && !pausedBefore(state, from, starts[n - 1]!, today)) {
+        return shaped(prev, today)
+      }
+    }
+  }
+  const w = anchoredWindow(state, starts, n)
+  if (!w) return undefined
+  const from = sharedSpanFrom(w)
+  if (today < from || today > w.fertileEnd || pausedBefore(state, from, latest, today)) return undefined
+  return shaped(w, today)
 }
 
 /** Did the shared window already run on the day before `monday` (the week row's left edge stays square)? */

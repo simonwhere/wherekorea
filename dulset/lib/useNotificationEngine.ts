@@ -7,6 +7,7 @@ import { stampOn } from './logic/today'
 import { useApp } from './store'
 import type { AppNotification } from './types'
 import { discreetFor } from './logic/prefs'
+import { isRecordBookNotice } from './logic/usView'
 
 /**
  * Runs the notification rules whenever the date or relevant data changes, and
@@ -41,8 +42,10 @@ export function useNotificationEngine(): void {
   }, [today, stage, periods, lhTests, cycle, pregnancy, baby, settings.lowPressure, settings.personal, settings.alertStyle, settings.ttcStart, settings.usesLH, settings.anniversaryAlerts, settings.shareLevel, couple.members, couple.metDate, couple.marriedDate, appointments, anniversaries, planDone, milestones, customTasks, cycleNotes, restCycle, positivePending, treatments, decisions])
 
   // Also surface nudges/cheers written by the partner's "phone" (another tab).
-  // Whatever is already unread when the app opens isn't re-announced.
-  const incoming = state.notifications.filter((n) => n.to === viewer && !n.read && n.from !== undefined)
+  // Whatever is already unread when the app opens isn't re-announced. While
+  // preparing, a reaction to a diary entry is a note for the 기록장 (usView
+  // isRecordBookNotice, N27): never a browser notification, like the 🔔.
+  const incoming = state.notifications.filter((n) => n.to === viewer && !n.read && n.from !== undefined && !isRecordBookNotice(n, stage))
   const primed = useRef(false)
   useEffect(() => {
     if (!primed.current) {
@@ -59,7 +62,7 @@ export function useNotificationEngine(): void {
     if (typeof window === 'undefined' || !('Notification' in window)) return
     if (Notification.permission !== 'granted') return
     for (const n of list) {
-      if (shown.current.has(n.id)) continue
+      if (shown.current.has(n.id) || isRecordBookNotice(n, stage)) continue
       shown.current.add(n.id)
       try {
         // Discreet mode keeps anything health-related off the lock screen.

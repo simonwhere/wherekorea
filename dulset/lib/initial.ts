@@ -75,14 +75,18 @@ export const MAX_DAILY_STARTERS = 2
 
 /**
  * Starter checklist per member, built from the partner's answers:
- *  • the cycle owner: 엽산 (daily — the one supplement with strong evidence:
- *    USPSTF A, WHO, KDCA) + 비타민 D (optional);
+ *  • the cycle owner: 엽산 only (daily — the one supplement with strong
+ *    evidence: USPSTF A, WHO, KDCA). N29 (docs/positioning.md §5 '아내 본인 체크
+ *    기본 4개'): her checks read as '지은 0/4' on his side and were the target
+ *    of his 콕, so the rest — 비타민 D, 술 안 마시기, 30분 걷기 — are offered in
+ *    나의 체크 항목 (lib/content supplements) instead. Only new lists change:
+ *    an existing couple's items are never touched;
  *  • the partner: 1–2 daily rows (걷기 30분, or the 운동 they already do; the
  *    supplement they already take) and weekly check-ins — 금연 only for smokers,
  *    금주 only for drinkers, 사우나·뜨거운 탕 쉬기 for the sperm side.
  *    No men's zinc/folate pill by default: FAZST (JAMA 2020) found no benefit.
  *
- * Without answers (the demo couple, older callers) the original list is kept.
+ * Without answers (the demo couple, older callers) the partner's original list is kept.
  */
 export function defaultCheckItems(members: [Member, Member], today = todayISO(), habits?: HabitAnswers): CheckItem[] {
   const items: CheckItem[] = []
@@ -100,11 +104,6 @@ export function defaultCheckItems(members: [Member, Member], today = todayISO(),
       })
     if (m.tracksCycle) {
       add('엽산', 'supplement', '400µg')
-      add('비타민 D', 'supplement', '선택')
-      if (!habits) {
-        add('술 안 마시기', 'habit')
-        add('30분 걷기·운동', 'habit')
-      }
       continue
     }
     if (!habits) {

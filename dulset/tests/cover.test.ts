@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, addMonths } from '@/lib/dates'
 import { SETTINGS_DEFAULTS, createInitialState } from '@/lib/initial'
-import { addAnniversary, anniversaryNotices, setCoupleDates } from '@/lib/logic/anniversary'
+import { addAnniversary, anniversaryAlertsEnabled, anniversaryNotices, setCoupleDates } from '@/lib/logic/anniversary'
+import { setAnniversaryAlerts } from '@/lib/logic/settings'
 import {
   COVER_CAPTION_MAX,
   COVER_WORDS,
@@ -70,6 +71,12 @@ function finishDay(s: AppState, member: MemberId, day: ISODate, nowISO: string):
   }
   return next
 }
+
+/** 기념일 알림 turned on by the couple (unset is off while preparing — N27). */
+const annivOn = (s: AppState): AppState => setAnniversaryAlerts(s, true)
+
+/** The same couple, pregnant (LMP 08-20, confirmed 09-10): the stage that still looks a week ahead. */
+const pregnantOf = (s: AppState): AppState => startPregnancy(s, '2026-08-20', '2026-09-10')
 
 /** Pregnant from 07-01, confirmed 08-05, back to preparing on `endedAt`. */
 function afterLoss(endedAt: ISODate, base = fresh()): AppState {
@@ -298,8 +305,8 @@ describe('heroLine', () => {
   })
 
   it('first match wins: signal → done → cheer → anniversary → greeting', () => {
-    let s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' }) // 결혼 2주년 on 09-14 (D-3)
-    expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'anniversary', text: '💍 결혼 2주년까지 D-3', target: 'diary' })
+    let s = annivOn(setCoupleDates(fresh(), { marriedDate: '2024-09-11' })) // 결혼 2주년 today
+    expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'anniversary', text: '오늘은 결혼 2주년이에요', target: 'diary' })
     s = sendCheer(s, OWNER, PARTNER, at(TODAY, '12'))
     expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'cheer', text: '지은님이 응원을 보냈어요', avatar: OWNER, target: 'us' })
     s = finishDay(s, OWNER, TODAY, at(TODAY, '13'))
@@ -345,30 +352,46 @@ describe('heroLine', () => {
     }
   })
 
-  it('says today’s anniversary with the right ending, and looks 7 days ahead', () => {
-    const s = addAnniversary(fresh(), { title: '프러포즈', date: TODAY, yearly: false })
+  it('says today’s anniversary with the right ending; while preparing only on the day itself (N27)', () => {
+    const s = annivOn(addAnniversary(fresh(), { title: '프러포즈', date: TODAY, yearly: false }))
     expect(heroLine(s, TODAY, OWNER, EVENING).text).toBe('오늘은 프러포즈예요')
-    const met = setCoupleDates(fresh(), { metDate: addDays(TODAY, -1099) }) // 1,100일 today
+    const met = annivOn(setCoupleDates(fresh(), { metDate: addDays(TODAY, -1099) })) // 1,100일 today
     expect(heroLine(met, TODAY, OWNER, EVENING).text).toBe('오늘은 만난 지 1,100일이에요')
-    const week = addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, 7), yearly: false })
+    // No 'D-N' while preparing — a day or a week ahead says nothing yet (and the day itself still does).
+    for (const ahead of [1, 3, 7]) {
+      const soon = annivOn(addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, ahead), yearly: false }))
+      expect(heroLine(soon, TODAY, OWNER, EVENING).kind, `D-${ahead}`).toBe('greeting')
+      expect(heroLine(soon, addDays(TODAY, ahead), OWNER, EVENING).text).toBe('오늘은 첫 캠핑이에요')
+    }
+  })
+
+  it('after the preparing stage it still looks 7 days ahead', () => {
+    const week = annivOn(pregnantOf(addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, 7), yearly: false })))
+    expect(week.stage).toBe('pregnant')
     expect(heroLine(week, TODAY, OWNER, EVENING).text).toBe('💍 첫 캠핑까지 D-7')
-    const far = addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, 8), yearly: false })
+    const far = annivOn(pregnantOf(addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, 8), yearly: false })))
     expect(heroLine(far, TODAY, OWNER, EVENING).kind).toBe('greeting')
+    // Unset is on again once pregnant (anniversaryAlertsEnabled), so the line shows without a choice.
+    const unset = pregnantOf(addAnniversary(fresh(), { title: '첫 캠핑', date: addDays(TODAY, 2), yearly: false }))
+    expect(heroLine(unset, TODAY, OWNER, EVENING).text).toBe('💍 첫 캠핑까지 D-2')
   })
 
   it('skips anniversaries with health words and uses the next one', () => {
-    let s = addAnniversary(fresh(), { title: '임신 확인한 날', date: addDays(TODAY, 1), yearly: false })
+    let s = pregnantOf(addAnniversary(fresh(), { title: '임신 확인한 날', date: addDays(TODAY, 1), yearly: false }))
     expect(heroLine(s, TODAY, OWNER, EVENING).kind).toBe('greeting')
     s = addAnniversary(s, { title: '첫 여행', date: addMonths(addDays(TODAY, 4), -12), yearly: true })
     expect(heroLine(s, TODAY, OWNER, EVENING).text).toBe('💍 첫 여행 1주년까지 D-4')
     // A yearly one keeps its words in the title ('… 1주년').
-    const yearly = addAnniversary(fresh(), { title: '임신 확인한 날', date: addMonths(TODAY, -12), yearly: true })
+    const yearly = annivOn(addAnniversary(fresh(), { title: '임신 확인한 날', date: addMonths(TODAY, -12), yearly: true }))
     expect(heroLine(yearly, TODAY, OWNER, EVENING).kind).toBe('greeting')
+    // On the day itself while preparing: a health-word title is skipped for a clean one the same day.
+    const sameDay = annivOn(addAnniversary(addAnniversary(fresh(), { title: '병원 첫 방문', date: TODAY, yearly: false }), { title: '이사한 날', date: TODAY, yearly: false }))
+    expect(heroLine(sameDay, TODAY, OWNER, EVENING).text).toBe('오늘은 이사한 날이에요')
   })
 
   it('skipped titles never hide an allowed anniversary later in the week', () => {
     // Three health-word days first (more than the old "next 3 events" window), then an allowed one on day 5.
-    let s = fresh()
+    let s = pregnantOf(fresh())
     for (const [title, d] of [['임신 확인한 날', 0], ['시험관 1차', 1], ['첫 초음파', 2], ['병원 첫 방문', 3]] as const) {
       s = addAnniversary(s, { title, date: addDays(TODAY, d), yearly: false })
     }
@@ -387,13 +410,13 @@ describe('heroLine', () => {
     expect(copula('여행 3')).toBe('이에요') // 삼
     expect(copula('캠핑 D-7')).toBe('이에요') // 칠
     expect(copula('캠핑 D-9')).toBe('예요') // 구
-    const s = addAnniversary(fresh(), { title: '우리 여행 2', date: TODAY, yearly: false })
+    const s = annivOn(addAnniversary(fresh(), { title: '우리 여행 2', date: TODAY, yearly: false }))
     expect(heroLine(s, TODAY, OWNER, EVENING).text).toBe('오늘은 우리 여행 2예요')
   })
 
   it('quiet days: no “done”, no anniversary — a signal or cheer still shows', () => {
-    let s = afterLoss('2026-09-01')
-    s = setCoupleDates(s, { marriedDate: '2024-09-14' })
+    let s = annivOn(afterLoss('2026-09-01'))
+    s = setCoupleDates(s, { marriedDate: '2024-09-11' })
     s = finishDay(s, OWNER, TODAY, at(TODAY, '13'))
     expect(s.notifications.some((n) => n.key === `complete:${OWNER}:${TODAY}`)).toBe(true)
     expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
@@ -405,11 +428,11 @@ describe('heroLine', () => {
 
   it('never says 🎉', () => {
     // Anniversaries whose own emoji is 🎉 (만난 지 N주년) still get 💍 or none.
-    const s = setCoupleDates(fresh(), { metDate: addMonths(addDays(TODAY, 2), -60) })
+    const s = pregnantOf(setCoupleDates(fresh(), { metDate: addMonths(addDays(TODAY, 2), -60) }))
     const line = heroLine(s, TODAY, OWNER, EVENING)
     expect(line.text).toBe('💍 만난 지 5주년까지 D-2')
     expect(line.text).not.toContain('🎉')
-    const today = setCoupleDates(fresh(), { metDate: addMonths(TODAY, -60) })
+    const today = annivOn(setCoupleDates(fresh(), { metDate: addMonths(TODAY, -60) }))
     expect(heroLine(today, TODAY, OWNER, EVENING).text).toBe('오늘은 만난 지 5주년이에요')
   })
 
@@ -466,6 +489,8 @@ describe('heroLine', () => {
         sendCheer(s, p, viewer, at(day, '12'), '오늘 생리 시작했다며, 푹 쉬어요'),
         withAnniv,
         setCoupleDates(withAnniv, { metDate: addDays(day, -99) }),
+        annivOn(withAnniv),
+        annivOn(setCoupleDates(withAnniv, { metDate: addDays(day, -99) })),
       ]
     }
 
@@ -765,22 +790,57 @@ describe("'N년 전 오늘' (settings.memories, off by default)", () => {
   })
 })
 
-describe('기념일 알림 off (settings.anniversaryAlerts = false)', () => {
+describe('기념일 알림 (settings.anniversaryAlerts): off by default while preparing, an explicit choice wins (N27)', () => {
   const EVENING = 20
-  const off = (s: AppState): AppState => ({ ...s, settings: { ...s.settings, anniversaryAlerts: false } })
+  const off = (s: AppState): AppState => setAnniversaryAlerts(s, false)
 
-  it('no anniversary line on the cover (D-N or the day itself) and no anniv: notices; the greeting shows instead', () => {
-    expect(SETTINGS_DEFAULTS.anniversaryAlerts).toBe(true)
+  it('preparing, never chosen: no anniversary line and no anniv: notices — not on the day either', () => {
+    expect(SETTINGS_DEFAULTS.anniversaryAlerts).toBe(true) // the later stages' value; preparing reads off
     const s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' })
-    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('anniversary')
+    expect(s.settings.anniversaryAlerts).toBeUndefined()
+    expect(anniversaryAlertsEnabled(s)).toBe(false)
+    expect(heroLine(s, '2026-09-14', PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(anniversaryNotices(s, '2026-09-07')).toEqual([])
+    expect(anniversaryNotices(s, '2026-09-14')).toEqual([])
+  })
+
+  it('preparing, turned on: the line and the notice on the day only — no D-7 notice, no D-N line', () => {
+    const s = annivOn(setCoupleDates(fresh(), { marriedDate: '2024-09-14' }))
+    expect(s.settings.anniversaryAlerts).toBe(true)
+    expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('greeting') // D-3
     expect(heroLine(s, '2026-09-14', PARTNER, EVENING).text).toBe('오늘은 결혼 2주년이에요')
-    expect(heroLine(off(s), TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
-    expect(heroLine(off(s), '2026-09-14', PARTNER, EVENING).kind).toBe('greeting')
+    expect(anniversaryNotices(s, '2026-09-07')).toEqual([])
+    expect(anniversaryNotices(s, '2026-09-14').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:0:a', 'anniv:married-year:2:2026-09-14:0:b'])
+  })
+
+  it('pregnant, never chosen: on, with the week-ahead notice and the D-N line as before', () => {
+    const s = pregnantOf(setCoupleDates(fresh(), { marriedDate: '2024-09-14' }))
+    expect(anniversaryAlertsEnabled(s)).toBe(true)
+    expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'anniversary', text: '💍 결혼 2주년까지 D-3', target: 'diary' })
     expect(anniversaryNotices(s, '2026-09-07').map((n) => n.key)).toEqual(['anniv:married-year:2:2026-09-14:7:a', 'anniv:married-year:2:2026-09-14:7:b'])
-    expect(anniversaryNotices(off(s), '2026-09-07')).toEqual([])
-    expect(anniversaryNotices(off(s), '2026-09-14')).toEqual([])
-    // Unset means on; everything else on the cover still works.
-    expect(heroLine(sendCheer(off(s), OWNER, PARTNER, at(TODAY, '12')), TODAY, PARTNER, EVENING).kind).toBe('cheer')
+    expect(anniversaryNotices(s, '2026-09-14')).toHaveLength(2)
+  })
+
+  it('turned off: nothing in any stage, and the rest of the cover still works', () => {
+    for (const base of [fresh(), pregnantOf(fresh())]) {
+      const s = off(setCoupleDates(base, { marriedDate: '2024-09-14' }))
+      expect(s.settings.anniversaryAlerts).toBe(false)
+      expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+      expect(heroLine(s, '2026-09-14', PARTNER, EVENING).kind).toBe('greeting')
+      expect(anniversaryNotices(s, '2026-09-07')).toEqual([])
+      expect(anniversaryNotices(s, '2026-09-14')).toEqual([])
+      expect(heroLine(sendCheer(s, OWNER, PARTNER, at(TODAY, '12')), TODAY, PARTNER, EVENING).kind).toBe('cheer')
+    }
+  })
+
+  it('the choice made while preparing outlives the stage change (it is stored, not dropped as a default)', () => {
+    const on = annivOn(setCoupleDates(fresh(), { marriedDate: '2024-09-14' }))
+    expect(anniversaryAlertsEnabled(pregnantOf(on))).toBe(true)
+    const offed = off(setCoupleDates(fresh(), { marriedDate: '2024-09-14' }))
+    expect(anniversaryAlertsEnabled(pregnantOf(offed))).toBe(false)
+    expect(anniversaryNotices(pregnantOf(offed), '2026-09-07')).toEqual([])
+    // Same value again → the same object (no rewrite).
+    expect(setAnniversaryAlerts(on, true)).toBe(on)
   })
 })
 
@@ -791,7 +851,10 @@ describe('signal chips and the privacy sweep', () => {
     for (const sg of ALL_SIGNALS) expect(sg.text, sg.id).not.toMatch(/가임기|배란|LH|생리|테스트|임테기/)
     // COVER_WORDS is the cover's own list (임신, 병원 included): these two chips carry such a word by design —
     // '병원 같이 가 줄래요?' and '오늘은 임신 얘기 말고 쉬어요' — and only the person they were sent to reads them, in 우리 한 줄 and the inbox.
-    expect(ALL_SIGNALS.filter((sg) => COVER_WORDS.test(sg.text)).map((sg) => sg.id)).toEqual(['clinic', 'no-baby-talk'])
+    // ('clinic-together' — his '병원 같이 갈게요', N30 — is the same kind of line, when the list has it.)
+    const withWords = ALL_SIGNALS.filter((sg) => COVER_WORDS.test(sg.text)).map((sg) => sg.id)
+    expect(withWords).toEqual(expect.arrayContaining(['clinic', 'no-baby-talk']))
+    for (const id of withWords) expect(['clinic', 'no-baby-talk', 'clinic-together'], id).toContain(id)
     for (const sg of ALL_SIGNALS) {
       const s = sendSignal(fresh(), OWNER, PARTNER, sg.id, TODAY, at(TODAY, '18'))
       const line = heroLine(s, TODAY, PARTNER, EVENING)

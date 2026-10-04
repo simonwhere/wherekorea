@@ -80,10 +80,12 @@ export function ttcClockStart(state: Pick<AppState, 'settings' | 'stage' | 'preg
 // ── Fertile-window notice keys ──────────────────────────────
 //
 // One "우리의 주간" heads-up (and, for the explicit style, one "가장 좋은 날"
-// notice) per cycle and person. The key carries the cycle's first day, not the
+// notice) per cycle and person. HER key carries her cycle's first day, not the
 // window's: an LH positive that moves the window inside the same cycle must not
 // send a second notice. Keys used before this change ('fertile-start:<window
 // start>' / 'peak:<peak start>') still count as delivered for their cycle.
+// HIS key carries the window's week instead (partnerFertileKey, below) — never
+// a date of her cycle.
 
 /** 'fertile:<cycle start>:<member>'. */
 export function fertileKey(cycleStart: ISODate, member: MemberId): string {
@@ -93,6 +95,60 @@ export function fertileKey(cycleStart: ISODate, member: MemberId): string {
 /** 'peak:<cycle start>:<member>'. */
 export function peakKey(cycleStart: ISODate, member: MemberId): string {
   return `peak:${cycleStart}:${member}`
+}
+
+// ── The partner's keys (Now 3 leftover: no date of her cycle in his key) ──
+//
+// His notice is keyed by the WEEK his window starts in, never by her cycle's
+// first day: a key travels with the notice (to his device once push exists,
+// N25) and must not carry her period start. 'fertile-week:<Monday of the
+// window's first day>:<member>' (and 'peak-week:' for the 🌟 a partner with
+// her details may get). A window an LH result moves across a Monday ('자세히'
+// only — his shared window never moves with LH) counts as delivered under the
+// neighbouring week, and the keys used before — 'fertile:<cycle start>' /
+// 'peak:<cycle start>' (Now 3) and the older window / peak dates — still count
+// for their cycle (partnerNoticeDelivered).
+
+/** 'fertile-week:<Monday of the week the window starts in>:<member>'. */
+export function partnerFertileKey(fertileStart: ISODate, member: MemberId): string {
+  return `fertile-week:${mondayOf(fertileStart)}:${member}`
+}
+
+/** 'peak-week:<Monday of the week the best days start in>:<member>'. */
+export function partnerPeakKey(peakStart: ISODate, member: MemberId): string {
+  return `peak-week:${mondayOf(peakStart)}:${member}`
+}
+
+const PARTNER_WEEK_KEY = /^(fertile|peak)-week:(\d{4}-\d{2}-\d{2}):([ab])$/
+const CYCLE_START_KEY = /^(fertile|peak):(\d{4}-\d{2}-\d{2}):([ab])$/
+
+/**
+ * Was this window's notice of `kind` already delivered to the partner under
+ * another key than `current` (the one scheduledNotices writes today)? Under a
+ * week key from the week before up to the window's last day; under a
+ * 'fertile:' / 'peak:' key naming one of her logged starts (`starts`) inside
+ * this cycle (more than one cycle length before the window is the cycle
+ * before); or under the older window / peak date keys (deliveredUnderOldKey).
+ */
+export function partnerNoticeDelivered(
+  notifications: Pick<AppNotification, 'key'>[],
+  w: Pick<CycleWindow, 'start' | 'nextPeriod' | 'fertileStart' | 'fertileEnd' | 'length'>,
+  member: MemberId,
+  kind: 'fertile' | 'peak',
+  current: string,
+  starts: readonly ISODate[] = [],
+): boolean {
+  const weekFrom = addDays(mondayOf(w.fertileStart), -7)
+  const cycleFrom = addDays(w.fertileStart, -w.length)
+  const logged = new Set([w.start, ...starts])
+  const found = notifications.some((n) => {
+    if (!n.key || n.key === current) return false
+    const week = PARTNER_WEEK_KEY.exec(n.key)
+    if (week) return week[1] === kind && week[3] === member && week[2]! >= weekFrom && week[2]! <= w.fertileEnd
+    const cycle = CYCLE_START_KEY.exec(n.key)
+    return !!cycle && cycle[1] === kind && cycle[3] === member && logged.has(cycle[2]!) && cycle[2]! > cycleFrom && cycle[2]! <= w.fertileEnd
+  })
+  return found || deliveredUnderOldKey(notifications, w, member, kind)
 }
 
 const LEGACY_FERTILE_KEY = /^fertile-start:(\d{4}-\d{2}-\d{2}):([ab])$/
@@ -263,6 +319,8 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
     // 없음' (N23: prefs.canSeeWeekBand) he gets none at all.
     const shared = sharedWeek(state, today)
     const lh = lhPrompting(state)
+    // Her logged starts (read for the partner's old-key check only, never put in his key).
+    const logged = sortedStarts(state.periods)
     for (const m of state.couple.members) {
       const style = state.settings.alertStyle?.[m.id] ?? 'soft'
       // Low-pressure mode (NICE: every 2–3 days, all cycle long): no fertile-day alerts for that person.
@@ -277,15 +335,17 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       // would give away an LH result). Same rule as the home and calendar
       // (ttcFlow.homeVoice, calendarView.cycleLens).
       const soft = style === 'soft' || !details
+      // Her key is her cycle's first day (her own phone); his is the window's
+      // week (partnerFertileKey — no date of her cycle in a key that travels).
+      const fKey = isOwner ? fertileKey(w.start, m.id) : partnerFertileKey(w.fertileStart, m.id)
+      const fDelivered = isOwner
+        ? deliveredUnderOldKey(state.notifications, w, m.id, 'fertile')
+        : partnerNoticeDelivered(state.notifications, w, m.id, 'fertile', fKey, logged)
       // Heads-up the day before the window, and on any day inside it — once
-      // per cycle (the key is the cycle's first day, so an LH-shifted window
-      // in the same cycle is not announced again).
-      if (
-        isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd) &&
-        !deliveredUnderOldKey(state.notifications, w, m.id, 'fertile')
-      ) {
+      // per cycle (an LH-shifted window in the same cycle is not announced again).
+      if (isBetween(today, addDays(w.fertileStart, -1), w.fertileEnd) && !fDelivered) {
         out.push({
-          key: fertileKey(w.start, m.id),
+          key: fKey,
           to: m.id,
           kind: 'fertile-start',
           title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
@@ -296,14 +356,13 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       }
       // Explicit style only: soft style already got its one gentle nudge above.
       // No 🌟 with low confidence — the calendar alone can't name the best days.
-      if (
-        !soft &&
-        w.confidence !== 'low' &&
-        isBetween(today, w.peakStart, w.peakEnd) &&
-        !deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
-      ) {
+      const pKey = isOwner ? peakKey(w.start, m.id) : partnerPeakKey(w.peakStart, m.id)
+      const pDelivered = isOwner
+        ? deliveredUnderOldKey(state.notifications, w, m.id, 'peak')
+        : partnerNoticeDelivered(state.notifications, w, m.id, 'peak', pKey, logged)
+      if (!soft && w.confidence !== 'low' && isBetween(today, w.peakStart, w.peakEnd) && !pDelivered) {
         out.push({
-          key: peakKey(w.start, m.id),
+          key: pKey,
           to: m.id,
           kind: 'peak',
           title: '🌟 가능성이 가장 높은 날들이에요',
@@ -441,7 +500,22 @@ function trim(list: AppNotification[]): AppNotification[] {
 
 // ── Partner interactions ────────────────────────────────────
 
-export const NUDGES_PER_DAY = 3
+/**
+ * 콕 a day from the person who does NOT track the cycle (함께하는 사람 → 기록하는
+ * 사람): one (Now 3 N30 decision, docs/positioning.md §3-2 '콕' — his 콕 on her
+ * checks can read as pressure, so one gentle reminder is the default). The
+ * person whose cycle it is keeps OWNER_NUDGES_PER_DAY. Read per sender with
+ * nudgesPerDay.
+ */
+export const NUDGES_PER_DAY = 1
+/** 콕 a day from the person whose cycle it is (기록하는 사람 → 함께하는 사람) — unchanged. */
+export const OWNER_NUDGES_PER_DAY = 3
+
+/** How many 콕 `from` may send a day: the cycle owner OWNER_NUDGES_PER_DAY, the partner NUDGES_PER_DAY. */
+export function nudgesPerDay(state: Pick<AppState, 'couple'>, from: MemberId): number {
+  const owner = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
+  return from === owner ? OWNER_NUDGES_PER_DAY : NUDGES_PER_DAY
+}
 
 export function nudgesSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'nudge' && n.from === from && n.createdAt.startsWith(today))
@@ -449,12 +523,18 @@ export function nudgesSentToday(state: Pick<AppState, 'notifications'>, from: Me
 }
 
 /**
- * Can `from` 콕 `to` today at all? Not once the day's NUDGES_PER_DAY are used,
- * and never when `to` turned 콕 받기 off (settings.acceptNudgesFor, Next B) —
- * the home hides the button and sendNudge drops the call either way.
+ * Can `from` 콕 `to` today at all? Not once the day's 콕 are used (nudgesPerDay:
+ * one from the partner, three from the cycle owner), and never when `to`
+ * turned 콕 받기 off (settings.acceptNudgesFor, Next B) — the home hides the
+ * button and sendNudge drops the call either way.
  */
-export function canNudge(state: Pick<AppState, 'notifications' | 'settings'>, from: MemberId, to: MemberId, today: ISODate): boolean {
-  return acceptsNudges(state.settings, to) && nudgesSentToday(state, from, today) < NUDGES_PER_DAY
+export function canNudge(
+  state: Pick<AppState, 'notifications' | 'settings' | 'couple'>,
+  from: MemberId,
+  to: MemberId,
+  today: ISODate,
+): boolean {
+  return acceptsNudges(state.settings, to) && nudgesSentToday(state, from, today) < nudgesPerDay(state, from)
 }
 
 /**

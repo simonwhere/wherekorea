@@ -222,6 +222,25 @@ export function setClaimDocDone(state: AppState, member: MemberId, doc: ClaimDoc
  */
 export type TaskStage = 'apply' | 'book' | 'booked' | 'visited' | 'claim'
 
+/** The stage badge on his month task (the app's MonthlyTask and the link's LinkTask say the same). */
+export const TASK_STAGE_LABEL: Record<TaskStage, string> = {
+  apply: '신청',
+  book: '예약 전',
+  booked: '예약됨',
+  visited: '예약일 지남',
+  claim: '청구',
+}
+
+/**
+ * The badge for `stage` on `today`: on the booked day itself the card already
+ * asks '다녀왔어요?', but the day has not passed — it reads '오늘 예약일', not
+ * '예약일 지남'.
+ */
+export function taskStageLabel(stage: TaskStage, appointmentDate: ISODate | undefined, today: ISODate | undefined): string {
+  if (stage === 'visited' && appointmentDate && today && appointmentDate === today) return '오늘 예약일'
+  return TASK_STAGE_LABEL[stage]
+}
+
 /** What · where · bring · cost for the stage, from lib/content/programs (N14). */
 export interface TaskGuide {
   what?: string
@@ -343,7 +362,10 @@ function chainTask(
         link: E_HEALTH,
         top: true,
         defaultDoneAt: stage === 'visited' ? appointment!.date : today,
-        minDoneAt: chain.appliedAt,
+        // Never before applying, and — once a test is booked — never before
+        // the booked day (the same bound partnerEvents.earliestDoneAt gives
+        // the 'task-done' gate, the link and the app's card).
+        minDoneAt: laterDay(chain.appliedAt, appointment?.date),
       }
     }
     case 'claim': {
@@ -379,6 +401,13 @@ function chainTask(
     default:
       return undefined
   }
+}
+
+/** The later of two optional days (undefined when both are). */
+function laterDay(a: ISODate | undefined, b: ISODate | undefined): ISODate | undefined {
+  if (!a) return b
+  if (!b) return a
+  return a > b ? a : b
 }
 
 /** A lapsed step stops being "this month's task" a month after its deadline. */
@@ -543,7 +572,8 @@ export function partnerTipsFor(copy: MomentCopyKey): readonly string[] {
  * the partner's own moment (ttcMoment): the copy key already passes this
  * viewer's alert style, 부담 줄이기 and the sharing choice, so a calm viewer
  * only ever gets a neutral tip. None when the moment card carries its own
- * (period days 1–3: '‘고생했어’ 한마디면 충분해요'), so it isn't said twice, and
+ * (period days 1–3: '‘고생했어’ 한마디면 충분해요') or the 해 줄 말 lines of a
+ * moment she told (Moment.say), so it isn't said twice, and
  * none through the quiet after a pregnancy ended (the card asks nothing then).
  */
 export function partnerTip(state: AppState, today: ISODate, member: MemberId): string | undefined {
@@ -551,7 +581,7 @@ export function partnerTip(state: AppState, today: ISODate, member: MemberId): s
   if (isClinicMode(state)) return CLINIC_PARTNER_TIP
   const m = ttcMoment(state, today, member)
   if (!m || m.role !== 'partner') return undefined
-  if (m.partnerTip || m.copy === 'partner.after-loss') return undefined
+  if (m.partnerTip || m.say || m.copy === 'partner.after-loss') return undefined
   return byDate(partnerTipsFor(m.copy), today)
 }
 

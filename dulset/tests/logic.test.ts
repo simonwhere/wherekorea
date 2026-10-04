@@ -241,12 +241,11 @@ const NONE: HabitAnswers = { smokes: false, drinks: 'rarely', exercises: false, 
 describe('starter check items', () => {
   const of = (list: ReturnType<typeof defaultCheckItems>, owner: 'a' | 'b') => list.filter((i) => i.owner === owner)
 
-  it('gives the cycle owner 엽산 daily (+ optional 비타민 D)', () => {
+  it('gives the cycle owner 엽산 daily only (N29: 비타민 D and the habits are suggestions now)', () => {
     const owner = of(defaultCheckItems(members(), '2026-09-28', NONE), 'b')
-    expect(owner.map((i) => [i.label, i.cadence ?? 'daily', i.note])).toEqual([
-      ['엽산', 'daily', '400µg'],
-      ['비타민 D', 'daily', '선택'],
-    ])
+    expect(owner.map((i) => [i.label, i.cadence ?? 'daily', i.note])).toEqual([['엽산', 'daily', '400µg']])
+    // Without answers too (older callers, the demo): no 비타민 D, 술, 걷기 rows for her.
+    expect(of(defaultCheckItems(members(), '2026-09-28'), 'b').map((i) => i.label)).toEqual(['엽산'])
   })
 
   it('gives a non-smoker who rarely drinks one daily row and only the sauna check-in', () => {
@@ -319,7 +318,7 @@ describe('onboarding extras', () => {
   it('rebuilds the starter list from the habit answers', () => {
     const s = applyOnboardingExtras(base('a'), { habits: { ...NONE, drinks: 'often' } }, '2026-09-28')
     expect(activeItems(s, 'b').map((i) => i.label)).toEqual(['걷기 30분', '금주', '사우나·뜨거운 탕 쉬기'])
-    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산', '비타민 D'])
+    expect(activeItems(s, 'a').map((i) => i.label)).toEqual(['엽산'])
     expect(s.checkItems.every((i) => i.createdAt === '2026-09-28')).toBe(true)
   })
 

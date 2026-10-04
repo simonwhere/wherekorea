@@ -1,9 +1,13 @@
 'use client'
 
-// ② 주기: the last period start (date first, then the quick chips), up to six
-// earlier starts ("최근 시작일 더 넣기" — one tap per cycle, so a record kept in
-// another app moves over in a minute), the average cycle with the "45일 이상·
-// 들쭉날쭉" switch (N12 longCycles), and "배란테스트기 써요?" (N17 usesLH).
+// ② 주기: the last period start (date first, then the quick chips) is the one
+// thing asked (N29, docs/positioning.md §5 — the partner's loop runs on it).
+// The rest sits behind '더 넣기 (선택)': up to six earlier starts ("최근 시작일
+// 더 넣기" — one tap per cycle, so a record kept in another app moves over in a
+// minute), the average cycle with the "45일 이상·들쭉날쭉" switch (N12
+// longCycles), 생리 기간 and "배란테스트기 써요?" (N17 usesLH). The defaults
+// already work, so skipping the fold is fine; it opens by itself when a value
+// in it was already changed (coming back to this step).
 // The earlier starts and the LH answer live outside the draft (lib/onboardingDraft) and
 // become periods / settings.usesLH through lib/logic/onboarding.
 
@@ -64,6 +68,15 @@ export default function CycleStep({
   const note = draft.periodUnknown ? null : periodDateNote(draft.lastPeriodStart, draft.cycleLength, today)
   const range = cycleLengthRange(draft.longCycles)
   const dateId = useId()
+  const moreId = useId()
+  // Open when something inside was already set (back from ③), closed on a first visit.
+  const [more, setMore] = useState(
+    () =>
+      draft.cycleLength !== CYCLE_RANGE.fallback ||
+      draft.longCycles === true ||
+      draft.periodLength !== PERIOD_RANGE.fallback ||
+      usesLH !== undefined,
+  )
 
   // Moving the last start drops the earlier starts that no longer sit before it.
   const setLast = (lastPeriodStart: string) => {
@@ -131,48 +144,68 @@ export default function CycleStep({
         )}
       </div>
 
-      <div className="space-y-3 rounded-xl2 border border-line bg-surface p-4 shadow-card">
-        <Group title="평균 주기" hint={`잘 모르면 ${CYCLE_RANGE.fallback}일로 둘게요. 시작일이 쌓이면 알아서 맞춰져요.`}>
-          <NumberStepper
-            label="평균 주기"
-            unit="일"
-            min={range.min}
-            max={range.max}
-            value={draft.cycleLength}
-            onChange={(cycleLength) => patch({ cycleLength })}
-          />
-        </Group>
-        <div className="border-t border-line">
-          <Toggle
-            checked={draft.longCycles === true}
-            onChange={setLong}
-            label="주기가 45일 이상이거나 들쭉날쭉해요"
-            description="날짜 대신 넓은 예상 범위로 보여 드리고, 주기 길이를 90일까지 받아요."
-          />
-        </div>
-        <div className="border-t border-line pt-3">
-          <Group title="생리 기간">
+      <button
+        type="button"
+        onClick={() => setMore((v) => !v)}
+        aria-expanded={more}
+        aria-controls={moreId}
+        className="flex min-h-[48px] w-full items-center justify-between gap-3 rounded-xl2 border border-dashed border-line bg-surface/60 px-4 py-2.5 text-left hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-ink">
+            더 넣기 <span className="text-xs font-medium text-ink-3">(선택)</span>
+          </span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-ink-3">
+            평균 주기 · 생리 기간 · 배란테스트기. 몰라도 괜찮아요, 기록이 쌓이면 맞춰져요.
+          </span>
+        </span>
+        <Icon name="chev" className={cx('h-4 w-4 shrink-0 text-ink-3 transition-transform', more && 'rotate-180')} strokeWidth={2.2} />
+      </button>
+
+      <div id={moreId} hidden={!more} className="space-y-4">
+        <div className="space-y-3 rounded-xl2 border border-line bg-surface p-4 shadow-card">
+          <Group title="평균 주기" hint={`잘 모르면 ${CYCLE_RANGE.fallback}일로 둘게요. 시작일이 쌓이면 알아서 맞춰져요.`}>
             <NumberStepper
-              label="생리 기간"
+              label="평균 주기"
               unit="일"
-              min={PERIOD_RANGE.min}
-              max={PERIOD_RANGE.max}
-              value={draft.periodLength}
-              onChange={(periodLength) => patch({ periodLength })}
+              min={range.min}
+              max={range.max}
+              value={draft.cycleLength}
+              onChange={(cycleLength) => patch({ cycleLength })}
+            />
+          </Group>
+          <div className="border-t border-line">
+            <Toggle
+              checked={draft.longCycles === true}
+              onChange={setLong}
+              label="주기가 45일 이상이거나 들쭉날쭉해요"
+              description="날짜 대신 넓은 예상 범위로 보여 드리고, 주기 길이를 90일까지 받아요."
+            />
+          </div>
+          <div className="border-t border-line pt-3">
+            <Group title="생리 기간">
+              <NumberStepper
+                label="생리 기간"
+                unit="일"
+                min={PERIOD_RANGE.min}
+                max={PERIOD_RANGE.max}
+                value={draft.periodLength}
+                onChange={(periodLength) => patch({ periodLength })}
+              />
+            </Group>
+          </div>
+        </div>
+
+        <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
+          <Group title="배란테스트기(LH) 써요?" hint="양성을 기록하면 그 날짜에 맞춰 예상을 다시 계산해요. 안 써도 괜찮아요. 설정에서 바꿀 수 있어요.">
+            <ChoiceGroup
+              label="배란테스트기 사용"
+              options={USES_LH_OPTIONS}
+              value={toChoice(usesLH)}
+              onChange={(v) => setUsesLH(fromChoice(v))}
             />
           </Group>
         </div>
-      </div>
-
-      <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-        <Group title="배란테스트기(LH) 써요?" hint="양성을 기록하면 그 날짜에 맞춰 예상을 다시 계산해요. 안 써도 괜찮아요. 설정에서 바꿀 수 있어요.">
-          <ChoiceGroup
-            label="배란테스트기 사용"
-            options={USES_LH_OPTIONS}
-            value={toChoice(usesLH)}
-            onChange={(v) => setUsesLH(fromChoice(v))}
-          />
-        </Group>
       </div>
 
       <Disclaimer>{ESTIMATE_DISCLAIMER}</Disclaimer>

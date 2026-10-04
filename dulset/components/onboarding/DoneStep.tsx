@@ -61,11 +61,14 @@ export default function DoneStep({
   code,
   partner,
   ownerIsMe = true,
+  onSent,
 }: {
   code: string
   partner: string
   /** The person onboarding tracks the cycle: this phone publishes the link's page. Else the link is made on the partner's phone. */
   ownerIsMe?: boolean
+  /** The link went out (shared or copied) — the home then asks about a cover photo once (N27). */
+  onSent?: () => void
 }) {
   const { today } = useStore()
   // Browser-only facts (display mode, user agent, the link kept on this phone) are read after mount.
@@ -93,6 +96,7 @@ export default function DoneStep({
       const l = link ?? (await rotateLink(stampOn(today)))
       setLink(l)
       const r = await shareLink(shareURL(origin || window.location.origin, l.token), shareText(partner))
+      if (r === 'shared' || r === 'copied') onSent?.()
       setNote(
         r === 'shared'
           ? `보냈어요. ${partner}님 화면은 아래 시작하기를 누르면 준비돼요.`

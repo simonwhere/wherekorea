@@ -3,9 +3,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { ChoiceButton, LoggedList, hhmm, ro, type LineLevel, type SaveLog } from '@/components/log/parts'
 import { Button, cx, inputClass, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { LH_CHOICES } from '@/lib/content/fertility'
 import { LH_LABEL, type FertilityView } from '@/lib/logic/calendarView'
-import { cycleAt } from '@/lib/logic/cycle'
+import { cycleAt, isSurge } from '@/lib/logic/cycle'
 import {
   LH_SLOT_LABEL,
   MAX_LH_PER_DAY,
@@ -35,8 +36,20 @@ const LEVEL: Record<LHResult, LineLevel> = { negative: 'none', faint: 'faint', p
 const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
 /**
- * LH (배테기): 음성 · 희미 · 양성 · 가장 진함, up to two a day. Today's test
- * carries the clock time; a past day's goes into an 아침 / 저녁 slot. A result
+ * The default: two big buttons, one tap (N29, docs/positioning.md §5 'LH
+ * 상세'). [양성] saves 양성, [아직] saves 음성 — the same records as the four
+ * levels; '자세히' opens 희미 · 가장 진함, the time and the 아침 / 저녁 slots.
+ */
+const QUICK: ReadonlyArray<{ result: LHResult; label: string; hint: string }> = [
+  { result: 'positive', label: '양성', hint: '검사선이 대조선만큼 진해요' },
+  { result: 'negative', label: '아직', hint: '검사선이 없거나 연해요' },
+]
+
+/**
+ * LH (배테기). By default two big buttons — [양성] [아직], one tap (N29) —
+ * saved as 양성 / 음성 with today's clock time or a past day's free 아침 /
+ * 저녁 slot. '자세히' opens the four levels (음성 · 희미 · 양성 · 가장 진함),
+ * the time and the slots — saved the same way, up to two a day. A result
  * that would take another test's place asks first ("08:10 기록을 바꿀까요?") —
  * nothing is overwritten quietly, and 되돌리기 puts the old one back.
  */
@@ -58,6 +71,9 @@ export default function LHPanel({
   const isToday = date === today
   const tests = lhTestsOn(state.lhTests, date)
   const [time, setTime] = useState(() => hhmm(nowOn(today)))
+  // '자세히': the four levels, the time and the slots (closed by default — N29).
+  const [detail, setDetail] = useState(false)
+  const detailId = useId()
   // A past day: the first half of the day with no test yet (아침, then 저녁).
   const [slot, setSlot] = useState<LHSlot>(() => freeLHSlot(tests) ?? 'morning')
   const when: Pick<LHInput, 'time' | 'slot'> = isToday ? { time: isTime(time) ? time : undefined } : { slot }
@@ -111,72 +127,100 @@ export default function LHPanel({
   return (
     <div className="space-y-3">
       <UsesLHAsk view={view} paused={paused} />
-      <p className="text-[13px] leading-relaxed text-ink-2">
-        검사선(T)을 대조선(C)과 비교해 골라 주세요.
-        {paused ? '' : view === 'explicit' ? ' 첫 양성이 나오면 배란 예상일을 다시 계산해요.' : ' 첫 양성이 나오면 예상 날짜를 다시 계산해요.'}
-      </p>
-      {isToday ? (
-        <div className="flex items-center gap-3">
-          <label htmlFor={timeId} className="shrink-0 text-xs font-semibold text-ink-2">
-            검사 시각
-          </label>
-          <input
-            id={timeId}
-            type="time"
-            value={time}
-            onChange={(e) => {
-              setTime(e.target.value)
-              setAsking(null)
-            }}
-            className={`${inputClass} w-32`}
-          />
-          <span className="flex-1" />
-          {howTo}
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <div role="group" aria-label="검사한 때" className="grid flex-1 grid-cols-2 gap-2">
-            {LH_SLOTS.map((s) => {
-              const logged = tests.find((t) => lhSlotOf(t) === s)
-              const on = s === slot
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    setSlot(s)
-                    setAsking(null)
-                  }}
-                  className={cx(
-                    'min-h-[44px] rounded-xl border px-2 py-1 text-left text-sm font-semibold transition-colors',
-                    FOCUS,
-                    on ? 'border-brand bg-brand-soft text-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
-                  )}
-                >
-                  {LH_SLOT_LABEL[s]}
-                  <span className="block text-[11px] font-normal text-ink-3">
-                    {logged ? `${logged.time ? `${logged.time} · ` : ''}${LH_LABEL[logged.result]}` : '아직 없어요'}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          {howTo}
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-2" role="group" aria-label="LH 테스트 결과">
-        {LH_CHOICES.map((c) => (
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="LH 결과">
+        {QUICK.map((q) => (
           <ChoiceButton
-            key={c.result}
-            label={LH_LABEL[c.result]}
-            hint={c.hint}
-            level={LEVEL[c.result]}
-            current={current?.result === c.result}
-            onClick={() => pick(c.result)}
+            key={q.result}
+            label={q.label}
+            hint={q.hint}
+            level={LEVEL[q.result]}
+            current={!!current && isSurge(current.result) === (q.result === 'positive')}
+            onClick={() => pick(q.result)}
           />
         ))}
       </div>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          aria-expanded={detail}
+          aria-controls={detailId}
+          onClick={() => setDetail((v) => !v)}
+          className={cx(
+            '-ml-2 inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-[13px] font-semibold text-ink-2 hover:text-ink',
+            FOCUS,
+          )}
+        >
+          자세히
+          <Icon name="chev" className={cx('h-4 w-4 transition-transform', detail && 'rotate-180')} strokeWidth={2.2} />
+          <span className="sr-only">{detail ? ' 접기' : ' · 희미·가장 진함, 검사 시각'}</span>
+        </button>
+        {howTo}
+      </div>
+      {detail ? (
+        <div id={detailId} className="space-y-3 rounded-xl border border-line bg-surface-2/60 p-3">
+          <p className="text-[13px] leading-relaxed text-ink-2">
+            검사선(T)을 대조선(C)과 비교해 골라 주세요.
+            {paused ? '' : view === 'explicit' ? ' 첫 양성이 나오면 배란 예상일을 다시 계산해요.' : ' 첫 양성이 나오면 예상 날짜를 다시 계산해요.'}
+          </p>
+          {isToday ? (
+            <div className="flex items-center gap-3">
+              <label htmlFor={timeId} className="shrink-0 text-xs font-semibold text-ink-2">
+                검사 시각
+              </label>
+              <input
+                id={timeId}
+                type="time"
+                value={time}
+                onChange={(e) => {
+                  setTime(e.target.value)
+                  setAsking(null)
+                }}
+                className={`${inputClass} w-32`}
+              />
+            </div>
+          ) : (
+            <div role="group" aria-label="검사한 때" className="grid grid-cols-2 gap-2">
+              {LH_SLOTS.map((s) => {
+                const logged = tests.find((t) => lhSlotOf(t) === s)
+                const on = s === slot
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => {
+                      setSlot(s)
+                      setAsking(null)
+                    }}
+                    className={cx(
+                      'min-h-[44px] rounded-xl border px-2 py-1 text-left text-sm font-semibold transition-colors',
+                      FOCUS,
+                      on ? 'border-brand bg-brand-soft text-ink' : 'border-line bg-surface text-ink-2 hover:bg-surface-2',
+                    )}
+                  >
+                    {LH_SLOT_LABEL[s]}
+                    <span className="block text-[11px] font-normal text-ink-3">
+                      {logged ? `${logged.time ? `${logged.time} · ` : ''}${LH_LABEL[logged.result]}` : '아직 없어요'}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2" role="group" aria-label="LH 테스트 결과">
+            {LH_CHOICES.map((c) => (
+              <ChoiceButton
+                key={c.result}
+                label={LH_LABEL[c.result]}
+                hint={c.hint}
+                level={LEVEL[c.result]}
+                current={current?.result === c.result}
+                onClick={() => pick(c.result)}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
       {asking ? (
         <div
           ref={askRef}

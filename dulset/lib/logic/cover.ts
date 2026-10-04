@@ -11,7 +11,7 @@
 
 import { addDays, diffDays, isISODate } from '../dates'
 import type { AppState, Appointment, CoverPhoto, DiaryEntry, ISODate, MemberId, PeriodLog, Pregnancy, PregnancyTest } from '../types'
-import { anniversariesBetween, daysSince } from './anniversary'
+import { anniversariesBetween, anniversaryAlertsEnabled, anniversaryDayOnly, daysSince } from './anniversary'
 import { canSeeCycleDetails } from './prefs'
 import { QUIET_DAYS_AFTER_END, recentlyEnded } from './pregnancy'
 import { isSignal, pendingSignal } from './signals'
@@ -313,6 +313,13 @@ export function memoryFor(
   return best ? { entryId: best.entryId, date: best.date, years: best.years } : undefined
 }
 
+/**
+ * What 'N년 전 오늘' promises, under its switch — 설정 › 첫 화면, or the 기록장
+ * while preparing (N27). The same rules as memoryFor, in plain words.
+ */
+export const MEMORIES_PROMISE =
+  '켜면 1~3년 전 오늘 남긴 이야기를 첫 화면 맨 위에 한 줄로 보여 줘요. 두 사람이 함께 보는 이야기만 — 나만 보기, 임신 중 이야기, 건강·병원 말이 든 글은 빼고, 생리 1~3일째나 임테기 음성인 날, 임신이 끝난 뒤 42일에는 쉬어요.'
+
 /** '1년 전 오늘의 이야기 ›' */
 export function memoryLineText(memory: Pick<Memory, 'years'>): string {
   return `${memory.years}년 전 오늘의 이야기 ›`
@@ -331,7 +338,7 @@ export interface HeroLine {
   memory?: Memory
 }
 
-/** Days ahead an anniversary is mentioned on the cover. */
+/** Days ahead an anniversary is mentioned on the cover — after the preparing stage (preparing: the day itself only). */
 export const HERO_ANNIVERSARY_DAYS = 7
 
 /** Digits read aloud without a final consonant: 이(2) 사(4) 오(5) 구(9). */
@@ -356,9 +363,11 @@ export function copula(word: string): string {
  *  4. 'N년 전 오늘' (settings.memories, off by default): a diary entry from
  *     exactly 1–3 years ago today that passes memoryFor's filters (not on
  *     quiet days);
- *  5. an anniversary within 7 days whose title has no health words (not on
- *     quiet days, and not when the couple turned 기념일 알림 off —
- *     settings.anniversaryAlerts, unset = on; 💍 is the only emoji, never 🎉);
+ *  5. an anniversary whose title has no health words — on its day while
+ *     preparing (N27), within 7 days in the later stages — when 기념일 알림
+ *     are on (anniversary.anniversaryAlertsEnabled: off by default while
+ *     preparing, an explicit choice wins) and not on quiet days; 💍 is the
+ *     only emoji, never 🎉;
  *  6. the greeting.
  * No cycle, test or pregnancy words ever — whoever looks at the phone.
  */
@@ -405,15 +414,16 @@ export function heroLine(state: AppState, today: ISODate, viewer: MemberId, hour
     if (memory) return { kind: 'memory', text: memoryLineText(memory), target: 'diary', memory }
   }
 
-  // 기념일 알림 off (settings.anniversaryAlerts === false) silences the cover line
-  // too; the 우리 tab still lists the days.
-  if (!quiet && state.settings.anniversaryAlerts !== false) {
-    // Every day in the next week (not just the next few events), so a skipped
-    // title never hides an allowed one behind it.
-    const week = anniversariesBetween(state.couple, state.anniversaries, today, addDays(today, HERO_ANNIVERSARY_DAYS))
+  // 기념일 알림 off (explicitly, or unset while preparing) silences the cover
+  // line too; the 우리 tab still lists the days.
+  if (!quiet && anniversaryAlertsEnabled(state)) {
+    // Every day in the window (not just the next few events), so a skipped
+    // title never hides an allowed one behind it. Preparing: today only.
+    const ahead = anniversaryDayOnly(state.stage) ? 0 : HERO_ANNIVERSARY_DAYS
+    const week = anniversariesBetween(state.couple, state.anniversaries, today, addDays(today, ahead))
     for (const ev of week) {
       const n = diffDays(today, ev.date)
-      if (n < 0 || n > HERO_ANNIVERSARY_DAYS) continue
+      if (n < 0 || n > ahead) continue
       if (COVER_WORDS.test(ev.title)) continue
       return {
         kind: 'anniversary',

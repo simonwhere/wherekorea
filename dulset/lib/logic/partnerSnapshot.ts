@@ -42,12 +42,22 @@
 //     progress line (numbers only — no item names), and the cover photo's id
 //     ONLY when she opted in (prefs.coverOnLink)
 //   • '이번 주 우리 둘' (N21, weekTogether): the week's three picks (ids and
-//     words), his pick and [했어요], 내 준비 (his habit timer, his complete
-//     days this week, his 검사 chain so far — each only when there is
-//     something: no zeros), and her [고마워요] of this week
+//     words), his pick and [했어요], and her [고마워요] of this week
+//   • 내 준비 (N30, myPrep): his habit timer, this week's N/7 and his 검사
+//     chain step — read from his own records only, each part only when it
+//     has something to say (no zeros); the page draws it as a bar under the
+//     week card. (Snapshots from before N30 carried a shorter `week.prep`.)
+//   • 병원과 함께일 때 (N32, linkClinic): while the couple's clinic mode is on,
+//     the appointments of the next seven days that are HIS or '둘이 함께' —
+//     the day, the time, the place and a kind word ('검사', '병원 진료'), never
+//     the title, the note, a treatment or a count — each with whether he has
+//     said [같이 갈게요], plus one line about 난임치료휴가 with its source
+//     (docs/research/kr-programs.json). Only appointments the two of them put
+//     in: nothing here finds or suggests a hospital (positioning §6).
 // What it never holds, by construction (tests/partnerSnapshot.test.ts walks
 // every lens × moment × day): period dates, LH results, pregnancy tests,
-// personalLog, '나만 보기' entries, 관계일, treatment notes, positivePending /
+// personalLog, '나만 보기' entries, 관계일, treatment notes or counts,
+// appointment titles and notes, her own appointments, positivePending /
 // bleeding, a cycle day when not shared, a banned word. The AppState never
 // goes anywhere: this is a projection for one viewer, not a sync. For the
 // owner herself it is null — her own view is never published.
@@ -57,15 +67,18 @@
 // so a reply sent on Monday still counts when she opens on Thursday.
 
 import { BUDGET_META, DATE_IDEAS } from '../content/dateIdeas'
-import { addDays, diffDays, formatShort, isISODate } from '../dates'
+import { addDays, diffDays, formatKo, formatShort, isISODate } from '../dates'
+import { isLive } from '../sync/model'
 import type { ReceivedEvent } from '../sync/transport'
 import type { AppState, CheckKind, ISODate, ISODateTime, MemberId, Role, Stage } from '../types'
+import { CLINIC_KIND_WORD, compareAppointments } from './appointments'
 import { activeItems, isDone, isWeekly, mondayOf, nudgeableItem, weekCount, weeklyDone } from './checks'
 import { coverView, heroLine, type HeroLine } from './cover'
 import { describeStrip } from './cycleRing'
-import { fertileHintsAllowed, mapLinks, pickIdeas, recentlyPlannedIdeaIds } from './dateIdeas'
+import { fertileHintsAllowed, mapLinks, partnerHintState, pickIdeas, recentlyPlannedIdeaIds } from './dateIdeas'
+import { myPrep } from './myPrep'
 import { canNudge, localNowISO } from './notifications'
-import { applyPartnerEvent, forgetOldEvents, type PartnerEvent } from './partnerEvents'
+import { applyPartnerEvent, earliestDoneAt, forgetOldEvents, hasJoinedAppointment, type PartnerEvent } from './partnerEvents'
 import {
   fertilityChain,
   monthlyTask,
@@ -77,8 +90,21 @@ import {
 } from './partnerTrack'
 import { canSeeWeekBand, coverOnLink, withShareLevelAtMost } from './prefs'
 import type { ItemStatus } from './roadmap'
-import { SIGNALS_PER_DAY, pendingSignal, repliesFor, signalById, signalIdOf, signalsFor, signalsSentToday, type Signal } from './signals'
+import {
+  SIGNALS_PER_DAY,
+  pendingSignal,
+  receivedReply,
+  repliesFor,
+  sayForSignal,
+  signalById,
+  signalIdOf,
+  signalsFor,
+  signalsSentToday,
+  type Signal,
+} from './signals'
 import { habitTimer, rowProgress, stampOn } from './today'
+import { LEAVE_DAYS_PER_YEAR, PAID_LEAVE_CHANGE, PAID_LEAVE_DAYS } from './treatments'
+import { activeRest } from './ttc'
 import {
   PERIOD_PARTNER_TIP,
   cycleOwnerId,
@@ -86,11 +112,12 @@ import {
   partnerTaskVisible,
   ttcMoment,
   type CycleStrip,
+  type Moment,
   type MomentCopyKey,
   type MomentKind,
   type MomentTone,
 } from './ttcFlow'
-import { thanksThisWeek, weekDone, weekOf, weekOptions, weekPick, weekTogetherOn, type WeekOptionId } from './weekTogether'
+import { thanksThisWeek, weekDone, weekOf, weekOptions, weekPick, weekQuiet, weekTogetherOn, type WeekOptionId } from './weekTogether'
 
 export const PARTNER_SNAPSHOT_VERSION = 2 as const
 /** Days one snapshot carries: today and the six after it (N20). */
@@ -128,6 +155,19 @@ export interface SnapshotMoment {
   support: boolean
   /** The card features his month task (else it sits in 우리 한 줄). */
   monthlyTask: boolean
+  /**
+   * 해 줄 말 · 아껴 둘 말 (N30) — only on a card she SENT ([알리기]: her period,
+   * a positive test, bleeding after it; ttcFlow toldSay): the two lines, the
+   * two answers he can send (as a 'signal' event — partnerEvents accepts
+   * exactly these while the card stands), and the one he sent since she told.
+   */
+  say?: SnapshotSay & { replies: Signal[]; sent?: string }
+}
+
+/** 해 줄 말 · 아껴 둘 말 (signals.sayForTold / sayForSignal) — fixed catalogue lines, never her words. */
+export interface SnapshotSay {
+  say: string
+  save: string
 }
 
 export interface SnapshotIdea {
@@ -188,8 +228,24 @@ export interface SnapshotSignal {
   from: MemberId
   at: ISODateTime
   replies: Signal[]
-  /** '해 줄 말' under '이번 달은 아니었어요' (ttcFlow.PERIOD_PARTNER_TIP). */
+  /** '해 줄 말' under '이번 달은 아니었어요' (ttcFlow.PERIOD_PARTNER_TIP) — kept for pages that read only this. */
   tip?: string
+  /** 해 줄 말 · 아껴 둘 말 for her signal (signals.sayForSignal, N30); the answers are `replies`. */
+  say?: SnapshotSay
+}
+
+/**
+ * Her answer to his last signal (signals.receivedReply — what the app's 우리 한
+ * 줄 shows him): the reply's catalogue words, when, and the words of what it
+ * answered. Only what she SENT; nothing inferred, nothing of her records.
+ */
+export interface SnapshotReply {
+  emoji: string
+  text: string
+  from: MemberId
+  at: ISODateTime
+  /** The words of his signal it answers ('오늘 저녁은 내가 할게요'). */
+  answered?: string
 }
 
 /** Her line in 우리 한 줄: numbers only — her item names stay in the app. */
@@ -225,6 +281,55 @@ export interface SnapshotPrep {
   chain?: string
 }
 
+/**
+ * 내 준비 as the page draws it (N30) — myPrep's words for his own progress,
+ * each part only when it has something to say. Never empty when present.
+ */
+export interface SnapshotMyPrep {
+  /** '생활 습관 D+40 · 약 3개월 중' / '생활 습관 약 3개월을 채웠어요'. */
+  timerLabel?: string
+  /** 0–1, with timerLabel. */
+  timerProgress?: number
+  /** '이번 주 3/7'. */
+  weekCount?: string
+  /** '신청 ✓ · 다음은 검사 예약' … */
+  chainStep?: string
+}
+
+/**
+ * One appointment of the couple's own, as his clinic week shows it (N32):
+ * the day, the time, the place and a kind word — never the title, the note,
+ * a treatment or a count. Only his own and '둘이 함께' ones get here.
+ */
+export interface SnapshotAppointment {
+  id: string
+  date: ISODate
+  time?: string
+  place?: string
+  /** '병원 진료' · '검사' · '예방접종' · '병원 일정' (CLINIC_KIND_WORD). */
+  label: string
+  /** 'both' — 둘이 함께 ([같이 갈게요] is offered); 'mine' — his own. */
+  with: 'both' | 'mine'
+  /** He said [같이 갈게요] (her phone applied it). */
+  joined: boolean
+}
+
+/** A line with where it comes from (no number without a source — AGENTS.md). */
+export interface SnapshotSourcedLine {
+  text: string
+  /** '회사마다 달라요'. */
+  note: string
+  source: { label: string; url: string }
+}
+
+/** '병원과 함께' on his side (N32): while the couple's clinic mode is on. */
+export interface SnapshotClinic {
+  /** The next seven days, his and '둘이 함께', in order; [] when none. */
+  appointments: SnapshotAppointment[]
+  /** 난임치료휴가 — 남성 근로자도 · 유급 일수 (CLINIC_LEAVE_SOURCE). */
+  leave: SnapshotSourcedLine
+}
+
 /** '이번 주 우리 둘' on his side (N21). Absent outside the preparing stage and in the quiet after a loss. */
 export interface SnapshotWeek {
   /** The week's Monday (weekTogether.weekOf). */
@@ -239,6 +344,11 @@ export interface SnapshotWeek {
   doneText?: string
   /** The day she said [고마워요] this week — kept on his card for the rest of the week. */
   thanks?: ISODate
+  /**
+   * Before N30 the week card carried a short 내 준비 line; snapshots built
+   * since carry PartnerDay.myPrep instead (the page falls back to this one
+   * for a cached older snapshot).
+   */
   prep?: SnapshotPrep
 }
 
@@ -259,9 +369,15 @@ export interface PartnerDay {
   task?: SnapshotTask
   checks: SnapshotChecks
   signal?: SnapshotSignal
+  /** Her answer to his signal (QA Now 3b: the link had no way to show it). */
+  reply?: SnapshotReply
   signalsLeft: number
   owner: SnapshotOwnerLine
   week?: SnapshotWeek
+  /** 내 준비 (N30), when any part has something to say. */
+  myPrep?: SnapshotMyPrep
+  /** 병원과 함께 (N32), while the couple's clinic mode is on. */
+  clinic?: SnapshotClinic
 }
 
 export interface PartnerSnapshot {
@@ -300,9 +416,13 @@ function member(state: Pick<AppState, 'couple'>, id: MemberId): SnapshotMember {
   return { id: m.id, name: m.name, emoji: m.emoji, role: m.role }
 }
 
-/** The ideas inside the 우리의 주간 card, as components/today/OurWeekIdeas picks them. */
+/**
+ * The ideas inside the 우리의 주간 card, as components/today/OurWeekIdeas picks
+ * them — gated as the card is (dateIdeas.partnerHintState: a rest or a
+ * positive test she starts inside his window and does not tell keeps them).
+ */
 export function linkIdeas(state: AppState, today: ISODate, viewer: MemberId): SnapshotIdea[] {
-  if (!fertileHintsAllowed(state, viewer, today)) return []
+  if (!fertileHintsAllowed(partnerHintState(state, viewer), viewer, today)) return []
   const picks = pickIdeas(
     DATE_IDEAS.filter((i) => !/박/.test(i.duration)),
     { today, stage: state.stage, excludeIds: recentlyPlannedIdeaIds(state.datePlans, today), count: LINK_DATE_IDEAS },
@@ -323,6 +443,7 @@ export function linkIdeas(state: AppState, today: ISODate, viewer: MemberId): Sn
 
 function snapshotTask(t: MonthlyTask, top: boolean): SnapshotTask {
   const a = t.appointment
+  const minDoneAt = earliestDoneAt(t)
   return {
     id: t.id,
     title: t.title,
@@ -339,7 +460,8 @@ function snapshotTask(t: MonthlyTask, top: boolean): SnapshotTask {
     ...(a ? { appointment: { id: a.id, date: a.date, ...(a.time ? { time: a.time } : {}), ...(a.place ? { place: a.place } : {}) } } : {}),
     top,
     defaultDoneAt: t.defaultDoneAt,
-    ...(t.minDoneAt ? { minDoneAt: t.minDoneAt } : {}),
+    // Never before the booked day (partnerEvents.earliestDoneAt — the 'task-done' gate reads the same).
+    ...(minDoneAt ? { minDoneAt } : {}),
   }
 }
 
@@ -384,7 +506,12 @@ export function linkPrep(state: AppState, day: ISODate, partner: MemberId, withC
   return Object.keys(prep).length ? prep : undefined
 }
 
-/** '이번 주 우리 둘' for `day`, or undefined when the week rests (weekTogether.weekOptions is empty). */
+/**
+ * '이번 주 우리 둘' for `day`, or undefined when the week rests
+ * (weekTogether.weekOptions is empty). Its `prep` line is what the in-app
+ * home and older snapshots used; since N30 the snapshot drops it and carries
+ * the day's myPrep instead (linkMyPrep — the page's own 내 준비 bar).
+ */
 export function linkWeek(state: AppState, day: ISODate, partner: MemberId, withChain: boolean): SnapshotWeek | undefined {
   const options = weekOptions(state, day, partner)
   if (!options.length) return undefined
@@ -403,6 +530,91 @@ export function linkWeek(state: AppState, day: ISODate, partner: MemberId, withC
     ...(thanks ? { thanks: thanks.day } : {}),
     ...(prep ? { prep } : {}),
   }
+}
+
+/** 내 준비 for `day` (lib/logic/myPrep — his own records only), or undefined when no part has anything to say. */
+export function linkMyPrep(state: AppState, day: ISODate, partner: MemberId): SnapshotMyPrep | undefined {
+  const p = myPrep(state, day, partner)
+  const out: SnapshotMyPrep = {
+    ...(p.timerLabel ? { timerLabel: p.timerLabel, timerProgress: Math.min(1, Math.max(0, p.timerProgress ?? 0)) } : {}),
+    ...(p.weekCount ? { weekCount: p.weekCount } : {}),
+    ...(p.chainStep ? { chainStep: p.chainStep } : {}),
+  }
+  return out.timerLabel || out.weekCount || out.chainStep ? out : undefined
+}
+
+// ── 병원과 함께일 때 남편의 주 (N32) ─────────────────────────
+
+/** How far ahead his clinic week looks: the day and the six after it. */
+export const CLINIC_WEEK_DAYS = 7
+
+// CLINIC_KIND_WORD (a kind word, never the title) lives in ./appointments so
+// the clinic card (ttcFlow, which this file imports) reads the same words.
+export { CLINIC_KIND_WORD } from './appointments'
+
+/**
+ * Where the 난임치료휴가 line comes from: docs/research/kr-programs.json
+ * 'infertility-leave-paid-4-days-2026-11-27' (유급 2일 → 4일, 연 6일 그대로) and
+ * admin-timeline.json '난임치료휴가 연 6일 활용' (남성 근로자도 쓸 수 있어요) —
+ * the numbers themselves are lib/logic/treatments.ts's (LEAVE_DAYS_PER_YEAR,
+ * PAID_LEAVE_DAYS, PAID_LEAVE_CHANGE), pinned to the same findings.
+ */
+export const CLINIC_LEAVE_SOURCE = {
+  label: 'KDI 경제정보센터 · 남녀고용평등법 개정',
+  url: 'https://eiec.kdi.re.kr/policy/materialView.do?num=285673',
+  checked: '2026-10-02',
+} as const
+
+/** '난임치료휴가는 남성 근로자도 쓸 수 있어요 · 2026년 11월 27일부터 유급 4일(연 6일)' — from that day on, '유급 4일(연 6일)'. */
+export function clinicLeaveLine(day: ISODate): SnapshotSourcedLine {
+  const paid =
+    day < PAID_LEAVE_CHANGE
+      ? `${formatKo(PAID_LEAVE_CHANGE, { year: true, weekday: false })}부터 유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`
+      : `유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`
+  return {
+    text: `난임치료휴가는 남성 근로자도 쓸 수 있어요 · ${paid}`,
+    note: '회사마다 달라요',
+    source: { label: CLINIC_LEAVE_SOURCE.label, url: CLINIC_LEAVE_SOURCE.url },
+  }
+}
+
+/** Is the couple's clinic mode on for `day` (the home's own test: ttcFlow's clinic card)? */
+export function clinicOn(state: AppState, day: ISODate): boolean {
+  return state.stage === 'preparing' && state.restCycle?.reason === 'clinic' && activeRest(state, day)?.reason === 'clinic'
+}
+
+/**
+ * His clinic week for `day` (N32): while the couple's clinic mode is on —
+ * not in the quiet after a pregnancy ended — the live, not-done appointments
+ * of `day` … `day + 6` that are his or '둘이 함께', as day · time · place ·
+ * kind word, each with whether he said [같이 갈게요]; and the 난임치료휴가
+ * line. Her own appointments, titles, notes and anything about a treatment
+ * stay in the app. Undefined when clinic mode is off.
+ */
+export function linkClinic(state: AppState, day: ISODate, partner: MemberId): SnapshotClinic | undefined {
+  if (!clinicOn(state, day) || weekQuiet(state, day) || partner === cycleOwnerId(state)) return undefined
+  const until = addDays(day, CLINIC_WEEK_DAYS - 1)
+  const appointments = state.appointments
+    .filter((a) => isLive(a) && !a.done && (a.who === 'both' || a.who === partner) && isISODate(a.date) && a.date >= day && a.date <= until)
+    .sort(compareAppointments)
+    .map(
+      (a): SnapshotAppointment => ({
+        id: a.id,
+        date: a.date,
+        ...(a.time ? { time: a.time } : {}),
+        ...(a.place ? { place: a.place } : {}),
+        label: CLINIC_KIND_WORD[a.kind] ?? '일정',
+        with: a.who === 'both' ? 'both' : 'mine',
+        joined: a.who === 'both' && hasJoinedAppointment(state, a.id, partner),
+      }),
+    )
+  return { appointments, leave: clinicLeaveLine(day) }
+}
+
+/** A told card's 해 줄 말 for the page: the lines, the answers as catalogue signals, what he sent since. */
+function snapshotSay(say: NonNullable<Moment['say']>): NonNullable<SnapshotMoment['say']> {
+  const replies = say.replies.map((id) => signalById(id)).filter((r): r is Signal => !!r).map((r) => ({ ...r }))
+  return { say: say.say, save: say.save, replies, ...(say.sent ? { sent: say.sent } : {}) }
 }
 
 /** One date as the page shows it, and the moment's phase (for the forecast rule). */
@@ -425,6 +637,7 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
         veiled: !!m.veiled,
         support: !!m.support,
         monthlyTask: !!m.monthlyTask,
+        ...(m.say ? { say: snapshotSay(m.say) } : {}),
       }
     : null
 
@@ -462,6 +675,8 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
   const pending = pendingSignal(state, partner, date)
   const pendingId = pending ? signalIdOf(pending) : undefined
   const pendingSig = pendingId ? signalById(pendingId) : undefined
+  // Lines for him under a signal SHE sent (components/signals/SignalsCard reads the same rule).
+  const pendingSay = pending && (pending.from ?? owner) === owner ? sayForSignal(pendingId) : undefined
   const signal: SnapshotSignal | undefined = pending
     ? {
         ...(pendingId ? { signalId: pendingId } : {}),
@@ -471,8 +686,22 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
         at: pending.createdAt,
         replies: repliesFor(pendingId).map((r) => ({ ...r })),
         ...(pendingId === 'not-this-month' ? { tip: PERIOD_PARTNER_TIP } : {}),
+        ...(pendingSay ? { say: { say: pendingSay.say, save: pendingSay.save } } : {}),
       }
     : undefined
+
+  // Her answer to his last signal, as his app's 우리 한 줄 shows it (signals.receivedReply).
+  const got = receivedReply(state, partner, date)
+  const reply: SnapshotReply | undefined =
+    got && got.from === owner
+      ? {
+          emoji: got.reply.emoji,
+          text: got.reply.text,
+          from: got.from,
+          at: got.at,
+          ...(got.answered ? { answered: got.answered.text } : {}),
+        }
+      : undefined
 
   const ownerProg = rowProgress(state, owner, date)
   const ownerLine: SnapshotOwnerLine = {
@@ -490,7 +719,11 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
   const hero = heroLine(state, date, partner, 12)
   const line = hero.kind === 'greeting' || hero.kind === 'memory' ? undefined : { kind: hero.kind, text: hero.text }
 
-  const week = linkWeek(state, date, partner, taskShown)
+  // The week card without its old 내 준비 line: the day carries myPrep (its own bar on the page).
+  const fullWeek = linkWeek(state, date, partner, taskShown)
+  const week: SnapshotWeek | undefined = fullWeek ? (({ prep: _prep, ...rest }) => rest)(fullWeek) : undefined
+  const prep = linkMyPrep(state, date, partner)
+  const clinic = linkClinic(state, date, partner)
 
   const day: PartnerDay = {
     date,
@@ -503,9 +736,12 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
     ...(task ? { task: snapshotTask(task, top) } : {}),
     checks,
     ...(signal ? { signal } : {}),
+    ...(reply ? { reply } : {}),
     signalsLeft: Math.max(0, SIGNALS_PER_DAY - signalsSentToday(state, partner, date)),
     owner: ownerLine,
     ...(week ? { week } : {}),
+    ...(prep ? { myPrep: prep } : {}),
+    ...(clinic ? { clinic } : {}),
   }
   return { day, kind: m?.kind }
 }

@@ -1,5 +1,10 @@
 'use client'
 
+// The 주기 tab's '휴대폰 캘린더에 추가' card. Not mounted since N27: the 가임기
+// .ics lives in 설정 › 알림 only (components/settings/AlertsSection), so the
+// owner's calendar export is never mistaken for the partner's weekly note.
+// Kept (not deleted) for a stage or screen that wants it back.
+
 import { Button, Card, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { buildIcs, downloadText, fertileWindowEvents } from '@/lib/logic/ics'
@@ -25,10 +30,7 @@ export default function IcsExport({
 
   const download = () => {
     if (!enabled) return
-    downloadText(
-      'dulset-fertile.ics',
-      buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: withPeak, id: coupleId })),
-    )
+    downloadText('dulset-fertile.ics', buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: withPeak, id: coupleId })))
     toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
   }
 
@@ -43,12 +45,11 @@ export default function IcsExport({
           <Icon name="chev" className="h-4 w-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180" strokeWidth={2.2} />
         </summary>
         <div className="px-4 pb-4">
-          <p className="text-[13px] leading-relaxed text-ink-2">
-            휴대폰 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요.
-          </p>
+          <p className="text-[13px] leading-relaxed text-ink-2">휴대폰 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요.</p>
           {enabled ? (
             <p className="mt-1 text-xs text-ink-3">
-              앞으로 {windows.length}번의 {view === 'explicit' ? '예상 가임기' : '우리의 주간 (예상)'}: {windows.map(windowRangeShort).join(', ')}
+              앞으로 {windows.length}번의 {view === 'explicit' ? '예상 가임기' : '우리의 주간 (예상)'}:{' '}
+              {windows.map(windowRangeShort).join(', ')}
               {useDiscreet ? ' · 캘린더에는 건강 용어 없이 표시돼요' : ''}
             </p>
           ) : null}

@@ -178,7 +178,8 @@ export interface SharedBand {
   confidence: CycleConfidence
 }
 
-type BandState = Partial<Pick<AppState, 'cycle' | 'pregnancy' | 'cycleNotes'>>
+/** What his one window reads besides the pause: the cycle settings, the pregnancy record, and what she told ([알리기] — decisions). */
+type BandState = Partial<Pick<AppState, 'cycle' | 'pregnancy' | 'cycleNotes' | 'decisions' | 'notifications' | 'pregnancyTests'>>
 
 export const OWNER_LENS = (view: FertilityView): Lens => ({ view, details: true, owner: true })
 

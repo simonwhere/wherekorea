@@ -15,9 +15,10 @@ import type { AppNotification, AppState, ISODate, MemberId, Stage } from '../typ
 
 /**
  * invite: asks for something (a yes / not today) · support: asks for comfort ·
- * warm: says something kind · rest: "not today" · reply: an answer.
+ * warm: says something kind · rest: "not today" · offer: offers to do
+ * something (his '오늘 저녁은 내가 할게요', N30) · reply: an answer.
  */
-export type SignalTone = 'invite' | 'support' | 'warm' | 'rest' | 'reply'
+export type SignalTone = 'invite' | 'support' | 'warm' | 'rest' | 'offer' | 'reply'
 
 export interface Signal {
   id: string
@@ -37,6 +38,9 @@ const S = {
   // Rest / not today — always offered.
   rest: { id: 'rest', emoji: '🛋️', text: '오늘은 둘이 푹 쉬어요', tone: 'rest' },
   tired: { id: 'tired', emoji: '😴', text: '오늘은 좀 피곤해요, 내일 해요', tone: 'rest' },
+  // The partner offers first (N30, docs/positioning.md §4 #6): relationship-side, no timing.
+  dinnerMine: { id: 'dinner-mine', emoji: '🍳', text: '오늘 저녁은 내가 할게요', tone: 'offer' },
+  clinicTogether: { id: 'clinic-together', emoji: '🚶', text: '병원 같이 갈게요', tone: 'offer' },
   // Generic, chat-like (demoted; ids kept for old data).
   thanks: { id: 'thanks', emoji: '🙏', text: '오늘 고마웠어요', tone: 'warm' },
   dinner: { id: 'dinner', emoji: '🍝', text: '오늘 저녁 같이 먹어요', tone: 'invite' },
@@ -56,6 +60,9 @@ const R = {
   glad: { id: 'glad', emoji: '😊', text: '덕분에 힘이 나요', tone: 'reply' },
   soon: { id: 'soon', emoji: '🏠', text: '얼른 갈게요', tone: 'reply' },
   slow: { id: 'slow', emoji: '🌿', text: '그래요, 천천히 해요', tone: 'reply' },
+  // Answers to an offer: a thank-you, and an easy 'not this time' (never a 'no' that needs a reason).
+  thankYou: { id: 'thank-you', emoji: '🙏', text: '고마워요', tone: 'reply' },
+  notNeeded: { id: 'not-needed', emoji: '🙂', text: '이번엔 괜찮아요', tone: 'reply' },
 } as const satisfies Record<string, Signal>
 
 /** Every signal and reply id the app knows (including demoted ones). */
@@ -87,15 +94,18 @@ const OTHER_STAGES: readonly Signal[] = [S.comfort, S.clinic, S.thanks, S.dinner
  */
 export function signalsFor(stage: Stage, isCycleOwner = true): Signal[] {
   if (stage === 'preparing') {
+    // The partner's list opens with his two offers (N30): '오늘 저녁은 내가 할게요',
+    // '병원 같이 갈게요' ('병원 같이 가 줄래요?' stays for his own visit).
     return isCycleOwner
       ? [S.notThisMonth, S.comfort, S.clinic, S.noBabyTalk, S.rest, S.tired]
-      : [S.comfort, S.clinic, S.noBabyTalk, S.thanks, S.rest, S.tired]
+      : [S.dinnerMine, S.clinicTogether, S.comfort, S.clinic, S.thanks, S.rest, S.tired]
   }
   return [...OTHER_STAGES]
 }
 
 /**
- * One-tap answers for a received signal, paired by what it asks: an invite
+ * One-tap answers for a received signal, paired by what it asks: an offer
+ * gets a thank-you and an easy '이번엔 괜찮아요'; an invite
  * gets a yes and a no-pressure "다음에"; a call for comfort gets presence; a
  * kind word gets a kind word back (never "푹 쉬어요"); a "not today" gets an
  * easy okay (never "좋아요!"). Answering an invite or a rest never means
@@ -113,6 +123,8 @@ export function repliesFor(signalId: string | undefined): Signal[] {
       return [R.metoo, R.glad]
     case 'rest':
       return [R.hug, R.slow]
+    case 'offer':
+      return [R.thankYou, R.notNeeded]
     default:
       return [...REPLIES]
   }
@@ -244,4 +256,88 @@ export function receivedReply(state: Pick<AppState, 'notifications'>, me: Member
   const asked = mine.find((n) => n.createdAt <= latest.createdAt)
   const answered = asked ? signalById(signalIdOf(asked) ?? '') : undefined
   return { reply, from: latest.from, at: latest.createdAt, ...(answered ? { answered } : {}) }
+}
+
+// ── '해 줄 말 · 아껴 둘 말' (N30) ────────────────────────────
+//
+// On a moment SHE SENT — and only then (docs/positioning.md §4 rule 1): a
+// signal of hers he has not answered yet, or what she told with [알리기] (her
+// period, a positive test, bleeding after it). One line to say, one to keep
+// for later, and two answers he can send with one tap. Never on anything his
+// screen could only know from her records (with '자세히' shared or not): the
+// table is keyed by what she sent, nothing else. No medical sentence here —
+// what bleeding means stays on her screen (positiveBleeding.ts).
+
+export interface SayLines {
+  /** 해 줄 말. */
+  say: string
+  /** 아껴 둘 말. */
+  save: string
+  /** Two one-tap answers (signal ids: a reply or one of his offers). */
+  replies: readonly [string, string]
+}
+
+/** What she told with [알리기] (ttcFlow.tellPartnerPeriod / tellPartnerPositive / tellPartnerBleeding). */
+export type ToldMoment = 'period' | 'positive' | 'bleeding'
+
+const SAY_FOR_TOLD: Record<ToldMoment, SayLines> = {
+  period: {
+    say: '‘고생했어’ 한마디면 충분해요.',
+    save: '‘다음 달엔 되겠지’ 같은 말은 잠시 아껴 둬요.',
+    replies: [R.here.id, S.dinnerMine.id],
+  },
+  positive: {
+    say: '‘같이 기다리자’ 한마디면 충분해요.',
+    save: '축하나 결과를 묻는 말은 병원에서 확인한 뒤로 아껴 둬요.',
+    replies: [S.clinicTogether.id, R.here.id],
+  },
+  bleeding: {
+    say: '‘옆에 있을게’가 먼저예요.',
+    save: '무슨 뜻인지 짐작하는 말은 아껴 둬요.',
+    replies: [S.clinicTogether.id, R.here.id],
+  },
+}
+
+/** Her signals that come with lines for him (the answers are repliesFor's two). */
+const SAY_FOR_SIGNAL: Partial<Record<string, Omit<SayLines, 'replies'>>> = {
+  [S.notThisMonth.id]: { say: '‘고생했어’ 한마디면 충분해요.', save: '‘다음 달엔 되겠지’ 같은 말은 잠시 아껴 둬요.' },
+  [S.comfort.id]: { say: '‘무슨 일이야?’보다 ‘옆에 있을게’가 먼저예요.', save: '해결책이나 조언은 잠시 아껴 둬요.' },
+  [S.clinic.id]: { say: '‘같이 갈게’라고 먼저 답해 줘요.', save: '결과를 묻는 말은 잠시 아껴 둬요.' },
+  [S.noBabyTalk.id]: { say: '오늘은 다른 이야기로 하루를 채워요.', save: '임신·검사 이야기는 잠시 아껴 둬요.' },
+  [S.rest.id]: { say: '‘그래, 푹 쉬자’ 한마디면 돼요.', save: '내일 계획 이야기는 잠시 아껴 둬요.' },
+  [S.tired.id]: { say: '‘고생했어, 쉬어’면 충분해요.', save: '‘왜 피곤해?’ 같은 질문은 잠시 아껴 둬요.' },
+}
+
+/** 해 줄 말 · 아껴 둘 말 · two answers for what she told ([알리기]). */
+export function sayForTold(moment: ToldMoment): SayLines {
+  return SAY_FOR_TOLD[moment]
+}
+
+/**
+ * 해 줄 말 · 아껴 둘 말 for a signal she sent, with repliesFor's two answers —
+ * or undefined for a signal that needs none (a thank-you, a reply, his own
+ * offers, an unknown id).
+ */
+export function sayForSignal(signalId: string | undefined): SayLines | undefined {
+  const lines = signalId ? SAY_FOR_SIGNAL[signalId] : undefined
+  if (!lines) return undefined
+  const [a, b] = repliesFor(signalId)
+  return { ...lines, replies: [a!.id, b!.id] }
+}
+
+/**
+ * The latest of `ids` that `from` sent on or after `since` (a day), or
+ * undefined — so a moment's two answers turn into '보냈어요' once one went out.
+ */
+export function sentSince(
+  state: Pick<AppState, 'notifications'>,
+  from: MemberId,
+  since: ISODate,
+  ids: readonly string[],
+): Signal | undefined {
+  const sent = state.notifications
+    .filter((n) => isSignal(n) && n.from === from && typeof n.createdAt === 'string' && n.createdAt.slice(0, 10) >= since)
+    .filter((n) => ids.includes(signalIdOf(n) ?? ''))
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0]
+  return sent ? signalById(signalIdOf(sent) ?? '') : undefined
 }

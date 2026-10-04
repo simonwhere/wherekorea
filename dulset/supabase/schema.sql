@@ -27,6 +27,23 @@
 --                        no content. Never shown on her phone. Deleted after
 --                        the study (README → 연구가 끝나면).
 --
+-- 2026-10-04 (N25 prep, before the first real run):
+--   • create_couple takes the couple id the phone already made
+--     (lib/logic/partnerLink.newCoupleId — a uuid kept across new links), so
+--     the app registers its own id on first use (supabaseTransport
+--     ensureCouple) instead of publishing under an id the server never saw;
+--     calling it again with the same key and id is a no-op.
+--   • couples.owner_key_hash is no longer unique (one device key may own a
+--     second couple space after a lost link record); ownership is always
+--     checked as (id, hash) together.
+--   • delete_couple(owner key, couple) removes a couple space and, by
+--     cascade, its tokens, snapshots, events and '링크 연 날' rows — what
+--     scripts/verify-supabase.mjs uses to leave nothing behind, and the
+--     server half of 연결 해제 later (docs/next-a-setup.md §10).
+--   • Event kinds are free text checked by length only (no enum / check),
+--     so a new kind like 'join-appointment' (N32) needs no change here: the
+--     owner's phone reads every event through cleanPartnerEvent.
+--
 -- Trust model, honestly: there is no account. The owner key and the share
 -- token are the secrets (the server keeps their hashes; the strings travel
 -- over TLS inside RPC calls). Whoever has the link sees the snapshot until it
@@ -41,9 +58,12 @@ create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.couples (
   id uuid primary key default gen_random_uuid(),
-  owner_key_hash text not null unique,
+  owner_key_hash text not null,
   created_at timestamptz not null default now()
 );
+-- An earlier draft made the hash unique; drop that if this project has it.
+alter table public.couples drop constraint if exists couples_owner_key_hash_key;
+create index if not exists couples_owner_key_hash_idx on public.couples (owner_key_hash);
 
 create table if not exists public.couple_tokens (
   token_hash text primary key,
@@ -157,9 +177,13 @@ $$;
 
 -- ── Owner side (her phone) ──────────────────────────────────
 
--- Register this device as the owner of a new couple space. Returns its id;
--- the app keeps it next to the owner key (lib/sync/supabaseTransport.ts).
-create or replace function public.create_couple(p_owner_key text)
+-- Register this device as the owner of a couple space. Returns its id.
+-- With p_couple_id (the uuid the phone made and keeps — the app's way): the
+-- space gets that id; again with the same key and id it is a no-op; an id
+-- another device owns is refused (42501 → 403). Without it: a fresh id.
+-- An older one-argument version is replaced (PostgREST must see one function).
+drop function if exists public.create_couple(text);
+create or replace function public.create_couple(p_owner_key text, p_couple_id uuid default null)
 returns uuid
 language plpgsql
 security definer
@@ -167,14 +191,47 @@ set search_path = public, extensions
 as $$
 declare
   v_id uuid;
+  v_hash text;
 begin
   if p_owner_key is null or length(p_owner_key) < 32 then
     raise exception 'owner key too short' using errcode = '22023';
   end if;
-  insert into public.couples (owner_key_hash)
-  values (public.dulset_hash(p_owner_key))
-  returning id into v_id;
+  v_hash := public.dulset_hash(p_owner_key);
+  if p_couple_id is null then
+    insert into public.couples (owner_key_hash)
+    values (v_hash)
+    returning id into v_id;
+    return v_id;
+  end if;
+  insert into public.couples (id, owner_key_hash)
+  values (p_couple_id, v_hash)
+  on conflict (id) do nothing;
+  select c.id into v_id
+    from public.couples c
+   where c.id = p_couple_id and c.owner_key_hash = v_hash;
+  if v_id is null then
+    raise exception 'couple belongs to another device' using errcode = '42501';
+  end if;
   return v_id;
+end
+$$;
+
+-- Remove a couple space the key owns, with everything under it (tokens,
+-- snapshots, events, '링크 연 날' rows go by ON DELETE CASCADE). Returns
+-- whether a row went. scripts/verify-supabase.mjs ends with it; the app's
+-- 연결 해제 will call it later. Not for the study's own couples while the
+-- study runs (README → 연구 중에는).
+create or replace function public.delete_couple(p_owner_key text, p_couple_id uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_couple uuid := public.dulset_owner_couple(p_owner_key, p_couple_id);
+begin
+  delete from public.couples where id = v_couple;
+  return found;
 end
 $$;
 

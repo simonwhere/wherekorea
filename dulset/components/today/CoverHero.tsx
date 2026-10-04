@@ -1,9 +1,9 @@
 'use client'
 
 // The top of the preparing home: "우리 표지". The date and 함께한 지 D+N, one
-// line (a signal to answer, the partner's news, an anniversary or a greeting —
-// lib/logic/cover.heroLine, never cycle words), and the couple's photo in an
-// instant-photo frame. Without a photo, a small drawn landscape for the time of
+// line (a signal to answer, the partner's news, an anniversary on its day or a
+// greeting — lib/logic/cover.heroLine, never cycle words), and the couple's
+// photo in an instant-photo frame (no '앨범 →' while preparing, N27). Without a photo, a small drawn landscape for the time of
 // day with "우리 사진 걸기". The cover never follows the cycle phase. In the
 // quiet weeks after a loss it stands still: no tilt, tape, heart or D+, and a
 // photo hung after the (ended) pregnancy was confirmed waits behind the drawing
@@ -107,16 +107,19 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
       </button>
     )
   } else if (hasCover && view.mode === 'photo') {
-    // A hung photo leads to the album (우리 › 앨범); its caption, when there is one, sits before the link.
+    // A hung photo leads to the album (우리 › 앨범) after the preparing stage; while preparing the
+    // album has no door on the home (N27 — #album still opens it). The caption, when there is one, comes first.
     right = (
       <>
         {view.photo?.caption ? (
           <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">{view.photo.caption}</span>
         ) : null}
-        <button type="button" className={cx(captionButton, 'gap-px')} onClick={goToAlbum}>
-          앨범
-          <Icon name="right" className="h-[14px] w-[14px]" strokeWidth={2.2} />
-        </button>
+        {state.stage !== 'preparing' ? (
+          <button type="button" className={cx(captionButton, 'gap-px')} onClick={goToAlbum}>
+            앨범
+            <Icon name="right" className="h-[14px] w-[14px]" strokeWidth={2.2} />
+          </button>
+        ) : null}
       </>
     )
   } else {

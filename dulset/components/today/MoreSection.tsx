@@ -2,21 +2,22 @@
 
 // "더 보기" — everything that isn't needed every day, folded under the three
 // home blocks: habit timers (in full, with their sources — his 내 준비 line on
-// the week block is the short form), this week's roadmap, the doctor card, a
-// diary prompt and the rest-cycle / clinic switches. 우리 신호 moved out to
-// 우리 한 줄 (Now 3 N21 ③: components/signals/SignalChips).
+// the week block is the short form), this week's roadmap, the doctor card and
+// the rest-cycle / clinic switches. 우리 신호 moved out to 우리 한 줄 (Now 3
+// N21 ③: components/signals/SignalChips); the diary prompt and the 둘만의 시간
+// row left in N27 (the preparing stage hides the record book's breadth).
 
 import type { TabKey } from '@/components/AppShell'
 import ClinicSwitch from '@/components/cycle/ClinicSwitch'
 import { Card, Toggle, cx, useToast } from '@/components/ui'
-import { Icon, type IconName } from '@/components/ui/icons'
+import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { isClinicMode } from '@/lib/logic/clinic'
 import { canLogCycle } from '@/lib/logic/prefs'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { doctorAdvice, stampOn } from '@/lib/logic/today'
 import { activeRest, startRestCycle } from '@/lib/logic/ttc'
-import { endRestFromHome, homeDiaryPrompt, type Moment } from '@/lib/logic/ttcFlow'
+import { endRestFromHome, type Moment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import { DoctorCard } from './ExtraCards'
 import HabitTimers from './HabitTimers'
@@ -37,8 +38,6 @@ export default function MoreSection({
   const { state, today, me } = useApp()
   const owner = canLogCycle(state, me.id)
   const support = recentlyEnded(state, today) && moment?.kind !== 'after-loss'
-  // me.id: a partner without her details reads only what she told (no prompt that moves on an untold day).
-  const prompt = homeDiaryPrompt(state, today, me.id)
   const clinic = isClinicMode(state)
 
   return (
@@ -71,30 +70,10 @@ export default function MoreSection({
         </div>
       ) : null}
 
-      <div className="mt-6 space-y-3">
-        {prompt ? (
-          <QuietRow icon="book" title="준비 일기" body={prompt} onClick={() => onNavigate('diary')} />
-        ) : null}
-        <QuietRow icon="heart" title="둘만의 시간" body="가볍게 즐길 아이디어를 모아 뒀어요" onClick={() => onNavigate('date')} />
-        {/* 기록 지키기 moved out of here: BackupBanner sits under ③ 우리 한 줄 (N16). */}
-      </div>
+      {/* '준비 일기' and '둘만의 시간' rows left here in N27: the 기록장 is the 우리 tab and the ideas
+          stay behind the 우리의 주간 card's '아이디어 더 보기' (#date still opens). 기록 지키기 sits
+          under ③ 우리 한 줄 (BackupBanner, N16). */}
     </details>
-  )
-}
-
-function QuietRow({ icon, title, body, onClick }: { icon: IconName; title: string; body: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-[52px] w-full items-center gap-3 rounded-xl bg-surface-2 px-4 py-2.5 text-left transition-colors hover:bg-line/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
-    >
-      <Icon name={icon} className="h-[18px] w-[18px] shrink-0 text-ink-2" />
-      <span className="min-w-0 flex-1 text-xs text-ink-2">
-        <b className="font-semibold text-ink">{title}</b> · {body}
-      </span>
-      <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
-    </button>
   )
 }
 

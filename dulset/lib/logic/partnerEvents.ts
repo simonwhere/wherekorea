@@ -33,21 +33,52 @@
 //    rebuilding his list (initial.applyHabitAnswers), and 소식 받는 방식 sets
 //    his own alert style (settings.setAlertStyle). Only the enumerated values
 //    get through cleanPartnerEvent; anything else drops the whole event.
+//
+// N32 (병원과 함께일 때 남편의 주) adds one more, an id only:
+//  • 'join-appointment' {appointmentId} — his [같이 갈게요] on a '둘이 함께'
+//    appointment the snapshot showed him (partnerSnapshot.linkClinic: the
+//    couple's own clinic appointments, never a hospital found or suggested).
+//    Her phone keeps it in `decisions` ('appt-join:<id>:<member>' → the day,
+//    joinAppointment — no new state field, the appointment itself is not
+//    touched) and leaves her one 🔔 keyed 'appt:<id>:join:<member>' (it opens
+//    챙길 것). Only a live, not-done, not-past '둘이 함께' appointment takes it,
+//    and only once per person.
+//
+// N30's 해 줄 말 needs no new kind: an answer on a card she told him about
+// ([알리기]) arrives as 'signal' {signalId}, accepted only while that card
+// offers it and nothing was sent since (toldAnswerOpen).
+//
+// The month task's booked step (N14 leftover): [받았어요] / [다녀왔어요] is never
+// recorded before the booked day — earliestDoneAt is the later of the task's
+// own minDoneAt and its appointment's date, and the 'task-done' gate, the
+// link and the app's card all read it (taskLocked: before that day the card
+// shows '예약일 10월 15일' instead of the button).
 
-import { addDays, diffDays, isISODate } from '../dates'
+import { addDays, diffDays, formatKo, isISODate } from '../dates'
 import { applyHabitAnswers, type HabitPatch } from '../initial'
-import { decide, decided } from '../sync/model'
-import type { AlertStyle, AppState, ISODate, MemberId } from '../types'
+import { decide, decided, isLive } from '../sync/model'
+import type { AlertStyle, Appointment, AppState, ISODate, MemberId } from '../types'
 import { isDone, isWeekly, nudgeableItem, weeklyDone } from './checks'
-import { canNudge, sendCheer, sendNudge } from './notifications'
+import { canNudge, mergeNotices, sendCheer, sendNudge } from './notifications'
 import { PARTNER_SETUP_KEY } from './onboarding'
-import { completeMonthlyTask, monthlyTask, partnerId } from './partnerTrack'
+import { completeMonthlyTask, monthlyTask, partnerId, type MonthlyTask } from './partnerTrack'
 import { setAlertStyle } from './settings'
 import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalIdOf, signalsFor, signalsSentToday } from './signals'
 import { stampOn, toggleWithCompletion } from './today'
+import { ttcMoment } from './ttcFlow'
 import { markWeekDone, pickWeek, weekDone, weekOf, weekOptions, weekPick, weekTogetherOn } from './weekTogether'
 
-export type PartnerEventKind = 'check' | 'reply' | 'signal' | 'nudge' | 'cheer' | 'task-done' | 'week-pick' | 'week-done' | 'setup'
+export type PartnerEventKind =
+  | 'check'
+  | 'reply'
+  | 'signal'
+  | 'nudge'
+  | 'cheer'
+  | 'task-done'
+  | 'week-pick'
+  | 'week-done'
+  | 'setup'
+  | 'join-appointment'
 export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'check',
   'reply',
@@ -58,6 +89,7 @@ export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'week-pick',
   'week-done',
   'setup',
+  'join-appointment',
 ] as const
 
 /** The link's drinking answer (N22): 거의 안 마셔요 / 가끔 / 자주. */
@@ -89,6 +121,7 @@ export type PartnerEvent =
   | (EventBase & { kind: 'week-pick'; optionId: string; date: ISODate })
   | (EventBase & { kind: 'week-done'; date: ISODate })
   | (EventBase & { kind: 'setup'; habits: SetupHabits; alertStyle?: AlertStyle })
+  | (EventBase & { kind: 'join-appointment'; appointmentId: string })
 
 /** Ids are short tokens (uuid, nanoid, 'signal:…'); anything longer or stranger is not an id. */
 export const EVENT_ID_MAX = 64
@@ -139,6 +172,9 @@ export function cleanPartnerEvent(raw: unknown): PartnerEvent | undefined {
       if (raw.alertStyle !== undefined && !SETUP_ALERT_STYLES.includes(raw.alertStyle as AlertStyle)) return undefined
       return { ...base, kind: 'setup', habits, ...(raw.alertStyle !== undefined ? { alertStyle: raw.alertStyle as AlertStyle } : {}) }
     }
+    case 'join-appointment':
+      if (!isId(raw.appointmentId)) return undefined
+      return { ...base, kind: 'join-appointment', appointmentId: raw.appointmentId }
     default:
       return undefined
   }
@@ -206,6 +242,8 @@ export type EventProblem =
   | 'task'
   /** '이번 주 우리 둘': not one of the week's picks, no pick to mark done, the week's pick already done, or the quiet. */
   | 'week'
+  /** [같이 갈게요]: no such live '둘이 함께' appointment ahead, or he already said so. */
+  | 'appointment'
 
 function cheersSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'cheer' && n.from === from && !n.key && n.createdAt.startsWith(today)).length
@@ -237,8 +275,11 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
       return null
     }
     case 'signal': {
-      // The partner's own list only: never '이번 달은 아니었어요' (hers), never a demoted one.
-      if (!signalsFor(state.stage, false).some((s) => s.id === ev.signalId)) return 'signal'
+      // The partner's own list — never '이번 달은 아니었어요' (hers), never a
+      // demoted one — or one of the two answers on a card she SENT, while it
+      // stands and until he answered it (toldAnswerOpen, N30).
+      const own = signalsFor(state.stage, false).some((s) => s.id === ev.signalId)
+      if (!own && !toldAnswerOpen(state, partner, ev.signalId, today)) return 'signal'
       if (signalsSentToday(state, partner, today) >= SIGNALS_PER_DAY) return 'limit'
       return null
     }
@@ -251,7 +292,8 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
     case 'task-done': {
       const task = monthlyTask(state, today, partner)
       if (!task || task.id !== ev.taskId) return 'task'
-      if (!isISODate(ev.date) || ev.date > today || (task.minDoneAt !== undefined && ev.date < task.minDoneAt)) return 'date'
+      const min = earliestDoneAt(task)
+      if (!isISODate(ev.date) || ev.date > today || (min !== undefined && ev.date < min)) return 'date'
       return null
     }
     case 'week-pick': {
@@ -271,9 +313,25 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
     case 'setup':
       // Only fixed values got through cleanPartnerEvent; they are his own rows and his own alert style.
       return null
+    case 'join-appointment': {
+      const a = joinableAppointment(state, ev.appointmentId, today)
+      if (!a || hasJoinedAppointment(state, a.id, partner)) return 'appointment'
+      return null
+    }
     default:
       return 'kind'
   }
+}
+
+/**
+ * Is `signalId` one of the two answers 해 줄 말 offers on his card today — a
+ * card that exists only because she told him ([알리기]: ttcFlow toldSay) —
+ * with nothing sent since she told? The link sends that answer as a 'signal'
+ * event (its '여기 있을게요' is a reply, not one of his own signals).
+ */
+export function toldAnswerOpen(state: AppState, partner: MemberId, signalId: string, today: ISODate): boolean {
+  const say = ttcMoment(state, today, partner, { surface: 'link' })?.say
+  return !!say && !say.sent && say.replies.includes(signalId)
 }
 
 // ── Apply ───────────────────────────────────────────────────
@@ -334,6 +392,9 @@ export function applyPartnerEvent(state: AppState, ev: PartnerEvent, today: ISOD
       next = decide(next, PARTNER_SETUP_KEY, today)
       break
     }
+    case 'join-appointment':
+      next = joinAppointment(state, partner, ev.appointmentId, today, nowISO)
+      break
   }
   return rememberEvent(next, ev.id, today)
 }
@@ -357,6 +418,100 @@ export function appliedEventIds(
   events: readonly Pick<PartnerEvent, 'id'>[],
 ): string[] {
   return events.filter((e) => hasAppliedEvent(state, e.id)).map((e) => e.id)
+}
+
+// ── [같이 갈게요] (N32) ──────────────────────────────────────
+
+/** decisions key: `member` said [같이 갈게요] to the appointment (→ the day he did). */
+export const appointmentJoinKey = (appointmentId: string, member: MemberId): string => `appt-join:${appointmentId}:${member}`
+/** Her 🔔 for it; the 'appt:' prefix opens 챙길 것 (today.noticeTarget). */
+export const appointmentJoinNoticeKey = (appointmentId: string, member: MemberId): string => `appt:${appointmentId}:join:${member}`
+
+/** Has `member` said [같이 갈게요] to this appointment? */
+export function hasJoinedAppointment(state: Pick<AppState, 'decisions'>, appointmentId: string, member: MemberId): boolean {
+  return state.decisions?.[appointmentJoinKey(appointmentId, member)] !== undefined
+}
+
+/** Who said [같이 갈게요] to the appointment — for her 챙길 것 row ('민수님이 같이 가요'). */
+export function appointmentJoinedBy(state: Pick<AppState, 'decisions'>, appointmentId: string): MemberId[] {
+  return (['a', 'b'] as const).filter((m) => hasJoinedAppointment(state, appointmentId, m))
+}
+
+/**
+ * The appointment [같이 갈게요] may answer on `today`: live, not done, not in
+ * the past, and one they both go to ('둘이 함께'). Undefined otherwise.
+ */
+export function joinableAppointment(state: Pick<AppState, 'appointments'>, appointmentId: string, today: ISODate): Appointment | undefined {
+  const a = state.appointments.find((x) => x.id === appointmentId)
+  if (!a || !isLive(a) || a.done || a.who !== 'both' || !isISODate(a.date) || a.date < today) return undefined
+  return a
+}
+
+function memberName(state: Pick<AppState, 'couple'>, id: MemberId): string {
+  return state.couple.members.find((m) => m.id === id)?.name ?? ''
+}
+
+/**
+ * `member` says [같이 갈게요] to a '둘이 함께' appointment: the answer is kept
+ * in `decisions` (the appointment record is not touched — it stays the
+ * couple's) and the other one gets a 🔔 with the day, the time and the place
+ * — never the title or the note. The link sends it as 'join-appointment'; the
+ * app can call it from a 챙길 것 row. Not joinable, or already joined → the
+ * same state.
+ */
+export function joinAppointment(
+  state: AppState,
+  member: MemberId,
+  appointmentId: string,
+  today: ISODate,
+  nowISO: string = stampOn(today),
+): AppState {
+  const a = joinableAppointment(state, appointmentId, today)
+  if (!a || hasJoinedAppointment(state, a.id, member)) return state
+  const to: MemberId = member === 'a' ? 'b' : 'a'
+  const name = memberName(state, member)
+  const when = `${formatKo(a.date)}${a.time ? ` ${a.time}` : ''}`
+  const marked = decide(state, appointmentJoinKey(a.id, member), today)
+  return mergeNotices(
+    marked,
+    [
+      {
+        key: appointmentJoinNoticeKey(a.id, member),
+        to,
+        from: member,
+        kind: 'system',
+        title: `🤝 ${name ? `${name}님이` : '같이'} 병원에 같이 간대요`,
+        body: `${when}${a.place ? ` · ${a.place}` : ''}`,
+      },
+    ],
+    nowISO,
+  ).state
+}
+
+// ── The month task's earliest day (N14 leftover) ────────────
+
+/** What bounds the day a month task may be done (a MonthlyTask, or the snapshot's copy of one). */
+export type DoneBounds = Pick<MonthlyTask, 'minDoneAt' | 'stage'> & { appointment?: { date: ISODate } }
+
+/**
+ * The earliest day his month task may be recorded as done: the task's own
+ * minDoneAt (the step before it), and — once a test is booked — never before
+ * the booked day. Undefined when nothing bounds it.
+ */
+export function earliestDoneAt(task: DoneBounds): ISODate | undefined {
+  const hasBooking = (task.stage === 'booked' || task.stage === 'visited') && !!task.appointment && isISODate(task.appointment.date)
+  const booked = hasBooking ? task.appointment!.date : undefined
+  if (!booked) return task.minDoneAt
+  return task.minDoneAt && task.minDoneAt > booked ? task.minDoneAt : booked
+}
+
+/**
+ * Is [했어요] not possible yet on `today`? True while the booked day is still
+ * ahead (the card then shows '예약일 10월 15일' instead of the button).
+ */
+export function taskLocked(task: DoneBounds, today: ISODate): boolean {
+  const min = earliestDoneAt(task)
+  return min !== undefined && today < min
 }
 
 /** The 'check' event's earliest allowed day, for a page that lets him tick a day he missed. */

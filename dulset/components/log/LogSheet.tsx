@@ -3,6 +3,12 @@
 // "+ 기록" — one sheet for every log: 생리 · LH · 임테기 · 메모. Opened from the
 // bottom-bar button, the home screen and calendar days (lib/logLauncher).
 // Tapping a choice saves right away (no save button) and offers 되돌리기.
+//
+// For the partner (the one who does not record the cycle) while preparing, the
+// same button is a '했어요' sheet (N28): a signal to answer, this week's one
+// thing → [했어요], today's checks, '신호 보내기', and the memo folded at the
+// bottom (openLog({ kind: 'note' }) still opens the memo alone). Everything on
+// it is his own or something she sent — the same pieces as his home and link.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import IntimacyPanel from '@/components/log/IntimacyPanel'
@@ -12,16 +18,24 @@ import PeriodPanel from '@/components/log/PeriodPanel'
 import PTestPanel from '@/components/log/PTestPanel'
 import UndoToast, { UNDO_MS, type UndoMessage } from '@/components/log/UndoToast'
 import { DateStepper, KindChips, type SaveLog } from '@/components/log/parts'
-import { Sheet, useToast } from '@/components/ui'
+import { PendingSignal, SignalChips } from '@/components/signals/SignalsCard'
+import WeekTogether from '@/components/today/WeekTogether'
+import { dailyItems, weeklyRows } from '@/components/today/model'
+import { useWeeklyUndo } from '@/components/today/useWeeklyUndo'
+import { Sheet, cx, useToast } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
 import { isISODate } from '@/lib/dates'
 import { cycleLens, dayLine, showsLH, showsTests } from '@/lib/logic/calendarView'
 import { dayInfo } from '@/lib/logic/cycle'
 import { canSeeIntimacy } from '@/lib/logic/intimacy'
 import { defaultLogKind, logUndo, undoLog, type LogKind, type LogUndo } from '@/lib/logic/logs'
+import { checkInLabel, doneIds, isWeekly } from '@/lib/logic/checks'
 import { canLogCycle } from '@/lib/logic/prefs'
+import { stampOn, toggleWithCompletion } from '@/lib/logic/today'
+import { partnerTaskVisible } from '@/lib/logic/ttcFlow'
 import type { LogRequest } from '@/lib/logLauncher'
 import { useApp } from '@/lib/store'
-import type { ISODate } from '@/lib/types'
+import type { CheckItem, ISODate } from '@/lib/types'
 
 /** body[data-toast-top]: toasts sit at the top (app/globals.css), as while a sheet is open. */
 const TOAST_TOP_ATTR = 'data-toast-top'
@@ -92,6 +106,13 @@ export default function LogSheet({ request, onClose }: { request: LogRequest | n
 }
 
 function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLog; onClose: () => void }) {
+  const { state, viewer } = useApp()
+  // The partner's '+ 기록' while preparing: what he did, not a memo-only sheet (N28).
+  if (state.stage === 'preparing' && !canLogCycle(state, viewer) && request.kind !== 'note') return <DidBody save={save} />
+  return <RecordBody request={request} save={save} onClose={onClose} />
+}
+
+function RecordBody({ request, save, onClose }: { request: LogRequest; save: SaveLog; onClose: () => void }) {
   const { state, today, viewer, partner, cycleOwner } = useApp()
   const lens = useMemo(() => cycleLens(state, viewer, today), [state, viewer, today])
   // Only the person whose cycle it is logs periods, LH and tests — and only while preparing.
@@ -152,5 +173,95 @@ function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLo
         </p>
       )}
     </div>
+  )
+}
+
+// ── '했어요' (the partner's + 기록, N28) ─────────────────────
+
+const sectionTitle = 'mb-1.5 text-[13px] font-bold text-ink-2'
+
+function DidBody({ save }: { save: SaveLog }) {
+  const { state, today, me, cycleOwner } = useApp()
+  // The same chain line as his home's week block (TodayTab): not in the quiet after a loss.
+  const withChain = partnerTaskVisible(state, today, me.id)
+  return (
+    <div className="space-y-5" data-did-sheet>
+      <p className="-mt-1 text-[13px] leading-relaxed text-ink-2">한 것을 여기서 바로 남겨요. 누르면 바로 저장돼요.</p>
+      <PendingSignal />
+      <WeekTogether withChain={withChain} />
+      <DidChecks />
+      <SignalChips />
+      <details className="group rounded-xl bg-surface-2 px-3.5">
+        <summary className="flex min-h-[48px] cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
+          <Icon name="book" className="h-[18px] w-[18px] text-ink-3" />
+          <span className="flex-1">메모 남기기</span>
+          <Icon name="chev" className="h-4 w-4 text-ink-3 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pb-3.5">
+          <NotePanel date={today} save={save} />
+        </div>
+      </details>
+      <p className="text-[11px] leading-relaxed text-ink-3">주기 기록은 {cycleOwner.name}님이 해요.</p>
+    </div>
+  )
+}
+
+/** Today's checks as one-tap rows — the same toggle as the home's 오늘 할 일 (TodayTasks), weekly check-ins with 되돌리기. */
+function DidChecks() {
+  const { state, update, today, me, partner } = useApp()
+  const toast = useToast()
+  const weeklyUndo = useWeeklyUndo()
+  const items = dailyItems(state, me.id)
+  const weekly = weeklyRows(state, me.id, today)
+  const done = doneIds(state, me.id, today)
+  if (!items.length && !weekly.length) return null
+
+  const toggle = (item: CheckItem) => {
+    const now = stampOn(today)
+    const alreadyTold = state.notifications.some((n) => n.key === `complete:${me.id}:${today}`)
+    const preview = toggleWithCompletion(state, me.id, partner.id, today, item.id, now)
+    update((s) => toggleWithCompletion(s, me.id, partner.id, today, item.id, now).state)
+    if (preview.completed) toast.show(alreadyTold ? '오늘 체크 완료!' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+    else if (preview.cleared?.length) weeklyUndo.offer(item, preview.cleared)
+    else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인 완료!')
+  }
+
+  const rows = [
+    ...items.map((item) => ({ item, checked: done.includes(item.id), weekly: false })),
+    ...weekly.map((r) => ({ ...r, weekly: true })),
+  ]
+  return (
+    <section aria-labelledby="did-checks">
+      <h3 id="did-checks" className={sectionTitle}>
+        오늘 체크
+      </h3>
+      <ul className="divide-y divide-line/70 rounded-xl border border-line bg-surface px-3">
+        {rows.map(({ item, checked, weekly: isWeeklyRow }) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={checked}
+              onClick={() => toggle(item)}
+              className="flex min-h-[52px] w-full items-center gap-3 py-1.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand"
+            >
+              <span className={cx('min-w-0 flex-1 text-[15px] font-bold tracking-[-0.02em]', checked ? 'text-ink-2' : 'text-ink')}>
+                {isWeeklyRow ? checkInLabel(item) : item.label}
+              </span>
+              <span
+                aria-hidden
+                className={cx(
+                  'flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full',
+                  checked ? 'bg-ok text-white' : 'shadow-[inset_0_0_0_2px_rgb(var(--control))]',
+                )}
+              >
+                {checked ? <Icon name="check" className="h-4 w-4" strokeWidth={2.8} /> : null}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {weeklyUndo.toast}
+    </section>
   )
 }

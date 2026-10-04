@@ -10,12 +10,15 @@
 
 import { cx } from '@/components/ui'
 import { linkIdeas } from '@/lib/logic/partnerSnapshot'
+import { partnerHintState } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 
 /** `className` sets the box's margin and fill (surface-2 on a surface card). */
 export default function OurWeekIdeas({ className = 'mt-3.5 bg-surface-2' }: { className?: string }) {
   const { state, today, me } = useApp()
-  const picks = linkIdeas(state, today, me.id)
+  // A partner without her details: her own rest or untold positive test never takes the ideas away
+  // inside his shared window (ttcFlow.partnerHintState — the card itself reads the same rule).
+  const picks = linkIdeas(partnerHintState(state, me.id), today, me.id)
   if (picks.length === 0) return null
   return (
     <ul aria-label="이번 주 둘만의 시간 아이디어" className={cx('divide-y divide-line/80 rounded-[18px] py-0.5 pl-3 pr-1.5', className)}>

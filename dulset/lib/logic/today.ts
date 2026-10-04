@@ -533,6 +533,9 @@ export type NoticeTab = 'today' | 'cycle' | 'pregnancy' | 'baby' | 'date' | 'pla
 export function noticeTarget(kind: NotificationKind, stage: Stage, key?: string): NoticeTab | null {
   // Couple-wide notices are routed by their key (kind alone is ambiguous).
   if (key?.startsWith('anniv:') || key?.startsWith('reaction:')) return 'diary'
+  // His month task's own reminders (planNotices 'deadline:task-visit:' / 'deadline:task-<step>:', N30):
+  // the month task card is on his 오늘 while preparing.
+  if (key?.startsWith('deadline:task-') && stage === 'preparing') return 'today'
   // 지원결정통지서 만료 D-N (planNotices.noticeExpiryNotices): the counter card sits first on 챙길 것.
   if (key?.startsWith('appt:') || key?.startsWith('deadline:') || key?.startsWith('notice-expiry:')) return 'plan'
   // What the cycle owner chose to tell (ttcFlow.tellPartnerPeriod / tellPartnerPositive):

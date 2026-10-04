@@ -6,8 +6,9 @@
 // own lens would hide), published under an expiring share token, and the
 // small PartnerEvents the partner sends back (lib/logic/partnerEvents.ts:
 // a check, a reply, a signal, 콕, 응원, his month task, his pick of the week,
-// his first-run answers — ids, dates and fixed values only). The owner's
-// phone publishes and pulls; the partner's browser fetches and sends.
+// his first-run answers, his [같이 갈게요] to a clinic appointment — ids,
+// dates and fixed values only). The owner's phone publishes and pulls; the
+// partner's browser fetches and sends.
 //
 // Since Now 3 (N20) a snapshot carries seven days and the owner's phone
 // applies each event on the day the transport took it in (pullReceived →
@@ -25,9 +26,11 @@
 // Two implementations share this interface:
 //  • lib/sync/mockTransport.ts — localStorage + BroadcastChannel: two browser
 //    tabs are the two phones, nothing leaves the device (the default today);
+//    `?mockOffline=1` simulates his page with no connection;
 //  • lib/sync/supabaseTransport.ts — the Supabase REST API over fetch(), used
 //    only when NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are
-//    set at build time (docs/next-a-setup.md). Not yet run against a server.
+//    set at build time (docs/next-a-setup.md). Not yet run against a server —
+//    `node scripts/verify-supabase.mjs` is the first check once there is one.
 //
 // Nothing here imports React or the store; screens call transport() and
 // keep their own polling / subscription.

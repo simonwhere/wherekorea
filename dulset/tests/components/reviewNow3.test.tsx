@@ -33,7 +33,10 @@ describe('the partner’s 주기 tab', () => {
   it('draws his one shared window on 우리의 주간 (cycleLens gets the cycle)', () => {
     renderApp(<CycleTab />, { state: withLevel(demoState(T0), 'week'), viewer: PARTNER, today: T0 })
     expect(pageText()).toContain('지금은 우리의 주간이에요 (예상)')
+    // The demo tells him its latest start (period-told), so his window is hers — 10월 1일 ~ 6일.
+    // (An untold early start would hold his where it was expected: tests/integrationNow3b.)
     expect(pageText()).toContain('10월 1일 (목) ~ 10월 6일 (화)')
+    expect(pageText()).not.toContain('10월 3일 (토) ~ 10월 8일 (목)')
   })
 
   it('shows the same card before and after her first record — never a separate empty state', () => {

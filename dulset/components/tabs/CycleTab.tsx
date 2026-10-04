@@ -9,7 +9,6 @@ import CycleSummary from '@/components/cycle/CycleSummary'
 import DaySheet from '@/components/cycle/DaySheet'
 import FertilityGuide from '@/components/cycle/FertilityGuide'
 import FirstPeriodCard from '@/components/cycle/FirstPeriodCard'
-import IcsExport from '@/components/cycle/IcsExport'
 import MonthCalendar from '@/components/cycle/MonthCalendar'
 import SettingsLink from '@/components/cycle/SettingsLink'
 import { Badge } from '@/components/today/bits'
@@ -24,7 +23,6 @@ import {
   cycleLens,
   cycleSummary,
   hiddenReason,
-  icsAvailability,
   showsLH,
   strongestTest,
   viewNotice,
@@ -32,7 +30,7 @@ import {
 import { endClinicMode, isClinicMode, setClinicMode } from '@/lib/logic/clinic'
 import { intimacyDays } from '@/lib/logic/intimacy'
 import { ageFromBirthYear, ttcClockStart } from '@/lib/logic/notifications'
-import { canLogCycle, discreetFor, settingsFor, shareLevelOf } from '@/lib/logic/prefs'
+import { canLogCycle, settingsFor, shareLevelOf } from '@/lib/logic/prefs'
 import { showTryCountOn } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
 import { startRestCycle } from '@/lib/logic/ttc'
@@ -60,12 +58,20 @@ export default function CycleTab() {
   const { state, update, today, viewer, partner, cycleOwner } = useApp()
   const toast = useToast()
   const mine = settingsFor(state.settings, viewer)
-  const { couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes } = state
+  const { couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes, decisions, notifications, pregnancyTests } =
+    state
   // `today` lets the loss quiet (restCycle.until) end on its last day here too. cycle, pregnancy and
-  // cycleNotes give a partner without details his one shared window (Lens.band, cycleRing.sharedWeek).
+  // cycleNotes give a partner without details his one shared window (Lens.band, cycleRing.sharedWeek);
+  // decisions and notifications carry what she told him ([알리기] — period-told:<start>), so a start she
+  // told moves his window here exactly as on his home and his link (without them it read as untold).
   const lens = useMemo(
-    () => cycleLens({ couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes }, viewer, today),
-    [couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes, viewer, today],
+    () =>
+      cycleLens(
+        { couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes, decisions, notifications, pregnancyTests },
+        viewer,
+        today,
+      ),
+    [couple, settings, restCycle, positivePending, periods, stage, cycle, pregnancy, cycleNotes, decisions, notifications, pregnancyTests, viewer, today],
   )
   const [month, setMonth] = useState<ISODate>(() => startOfMonth(today))
   const [selected, setSelected] = useState<ISODate | null>(null)
@@ -81,7 +87,7 @@ export default function CycleTab() {
     if (takeOpenClinicSummary()) setSummaryOpen(true)
   }, [])
 
-  const { lhTests, pregnancyTests, personalLog, intimacy } = state
+  const { lhTests, personalLog, intimacy } = state
   // 관계한 날 (Next B): a plain dot on the holder's own calendar only — intimacyDays is [] for anyone else.
   const privateDays = useMemo(() => new Set(intimacyDays({ intimacy }, viewer)), [intimacy, viewer])
   // The pregnancy record lets predictions pause after a pregnancy ended (see
@@ -108,10 +114,6 @@ export default function CycleTab() {
   const feels = useMemo(
     () => (lens.owner && history ? cycleFeels({ personalLog }, viewer, history.rows, today) : undefined),
     [lens.owner, history, personalLog, viewer, today],
-  )
-  const ics = useMemo(
-    () => (lens.owner ? icsAvailability(input, today, mine, lens.view, lens.pause) : null),
-    [lens, input, today, mine.lowPressure],
   )
   const canLog = canLogCycle(state, viewer)
   // What the partner sees (N23: 날짜 없음 / 우리의 주간 / 자세히) — the owner's header line.
@@ -152,7 +154,11 @@ export default function CycleTab() {
               <>
                 <span>
                   {partner.name}님에게는{' '}
-                  {shareLevel === 'details' ? '기록도 함께 보여요' : shareLevel === 'week' ? '우리의 주간만 보여요' : '날짜가 보이지 않아요'}
+                  {shareLevel === 'details'
+                    ? '기록도 함께 보여요'
+                    : shareLevel === 'week'
+                      ? '우리의 주간만 보여요'
+                      : '날짜가 보이지 않아요'}
                 </span>
                 <SettingsLink className="-my-3" anchor="share">
                   바꾸기
@@ -292,16 +298,8 @@ export default function CycleTab() {
         </Card>
       ) : null}
 
-      {ics ? (
-        <div className="mt-3">
-          <IcsExport
-            availability={ics}
-            view={lens.view}
-            discreet={discreetFor(state.settings, viewer)}
-            coupleId={state.couple.inviteCode}
-          />
-        </div>
-      ) : null}
+      {/* '휴대폰 캘린더에 추가' (가임기 .ics) left this tab in N27: it lives in 설정 › 알림 only, so it is
+          never mistaken for the partner's weekly calendar note (N31). components/cycle/IcsExport stays. */}
 
       <FertilityGuide
         view={lens.view}

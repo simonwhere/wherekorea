@@ -13,7 +13,10 @@ import {
   pendingSignal,
   receivedReply,
   repliesFor,
+  sayForSignal,
+  sayForTold,
   sendSignal,
+  sentSince,
   signalById,
   signalIdOf,
   signalsFor,
@@ -95,9 +98,20 @@ describe('preparing signals', () => {
 
   it('leaves "이번 달은 아니었어요" to the person whose cycle it is', () => {
     expect(texts(signalsFor('preparing', false))).not.toContain('이번 달은 아니었어요')
-    expect(texts(signalsFor('preparing', false))).toEqual(
-      expect.arrayContaining(['위로가 필요해요', '병원 같이 가 줄래요?', '오늘은 임신 얘기 말고 쉬어요']),
-    )
+    expect(texts(signalsFor('preparing', false))).toEqual(expect.arrayContaining(['위로가 필요해요', '병원 같이 가 줄래요?']))
+  })
+
+  it('opens the partner’s list with his two offers (N30); they are his alone', () => {
+    const his = signalsFor('preparing', false)
+    expect(texts(his).slice(0, 2)).toEqual(['오늘 저녁은 내가 할게요', '병원 같이 갈게요'])
+    expect(his.slice(0, 2).every((x) => x.tone === 'offer')).toBe(true)
+    expect(texts(signalsFor('preparing', true))).not.toContain('오늘 저녁은 내가 할게요')
+    // An offer is answered with a thank-you or an easy 'not this time' — never '좋아요!' to a chore.
+    expect(repliesFor('dinner-mine').map((r) => r.text)).toEqual(['고마워요', '이번엔 괜찮아요'])
+    expect(repliesFor('clinic-together').map((r) => r.text)).toEqual(['고마워요', '이번엔 괜찮아요'])
+    // Still a rest signal in his list, and nothing banned anywhere.
+    expect(his.some((x) => x.tone === 'rest')).toBe(true)
+    for (const x of ALL_SIGNALS) expect(x.text).not.toMatch(BANNED)
   })
 
   it('demotes generic chat lines but keeps their ids readable', () => {
@@ -132,7 +146,7 @@ describe('preparing signals', () => {
   })
 
   it('answers every signal with a fitting reply set; anything that asks for something keeps a no-pressure option', () => {
-    const noPressure = new Set(['later', 'hug', 'slow'])
+    const noPressure = new Set(['later', 'hug', 'slow', 'not-needed'])
     for (const sig of ALL_SIGNALS.filter((x) => x.tone !== 'reply')) {
       const replies = repliesFor(sig.id)
       expect(replies.length).toBeGreaterThanOrEqual(2)
@@ -240,5 +254,46 @@ describe('receivedReply (N21 ③): his answer shows on her home, not only as a �
   it('a signal (not a reply) from him is not a reply', () => {
     const s = sendSignal(base(), 'a', 'b', 'thanks', '2026-10-01', '2026-10-01T20:00:00+09:00')
     expect(receivedReply(s, 'b', '2026-10-01')).toBeUndefined()
+  })
+})
+
+describe("'해 줄 말 · 아껴 둘 말' — only on a moment she sent (N30)", () => {
+  const BANNED = /숙제|실패|노력|오늘 꼭|관계를 가져야/
+
+  it('what she told ([알리기]): two lines and two answers that resolve to signals', () => {
+    expect(sayForTold('period')).toMatchObject({ say: '‘고생했어’ 한마디면 충분해요.', replies: ['here', 'dinner-mine'] })
+    expect(sayForTold('positive').replies).toEqual(['clinic-together', 'here'])
+    expect(sayForTold('bleeding').replies).toEqual(['clinic-together', 'here'])
+    for (const m of ['period', 'positive', 'bleeding'] as const) {
+      const l = sayForTold(m)
+      expect(l.save).toContain('아껴')
+      expect(`${l.say} ${l.save}`).not.toMatch(BANNED)
+      // No medical sentence for him (bleeding's meaning stays on her screen).
+      expect(`${l.say} ${l.save}`).not.toMatch(/유산|착상|출혈량|병원에 가야/)
+      for (const id of l.replies) expect(signalById(id), id).toBeDefined()
+    }
+  })
+
+  it('her signals: lines for the ones that ask for care, answered by repliesFor’s two', () => {
+    for (const id of ['not-this-month', 'comfort', 'clinic', 'no-baby-talk', 'rest', 'tired']) {
+      const l = sayForSignal(id)!
+      expect(l, id).toBeDefined()
+      expect(l.replies).toEqual(repliesFor(id).map((r) => r.id))
+      expect(l.save).toContain('아껴')
+      expect(`${l.say} ${l.save}`).not.toMatch(BANNED)
+    }
+    // A thank-you, his own offers, a reply, an unknown id: nothing to coach.
+    for (const id of ['thanks', 'dinner-mine', 'clinic-together', 'here', 'nope', undefined]) expect(sayForSignal(id), String(id)).toBeUndefined()
+  })
+
+  it('sentSince: the latest of the given answers he sent on or after the day', () => {
+    let s = sendSignal(base(), 'a', 'b', 'here', '2026-09-30', '2026-09-30T20:00:00+09:00')
+    expect(sentSince(s, 'a', '2026-10-01', ['here', 'dinner-mine'])).toBeUndefined()
+    expect(sentSince(s, 'a', '2026-09-30', ['here', 'dinner-mine'])?.id).toBe('here')
+    s = sendSignal(s, 'a', 'b', 'dinner-mine', '2026-10-01', '2026-10-01T18:00:00+09:00')
+    expect(sentSince(s, 'a', '2026-09-30', ['here', 'dinner-mine'])?.id).toBe('dinner-mine')
+    // Hers don't count; other signals don't count.
+    expect(sentSince(s, 'b', '2026-09-30', ['here', 'dinner-mine'])).toBeUndefined()
+    expect(sentSince(s, 'a', '2026-09-30', ['clinic-together'])).toBeUndefined()
   })
 })

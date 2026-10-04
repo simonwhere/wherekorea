@@ -5,17 +5,24 @@
 // 설정 can jump anywhere. None of them may be a tab key (today, cycle, diary …)
 // or one of 우리's hashes (days, album): AppShell checks these first.
 
-/** Section ids inside 설정 that other screens link to, in screen order. */
+import type { Stage } from '@/lib/types'
+
+/**
+ * Section ids inside 설정 that other screens link to, in the preparing
+ * stage's screen order (settingsSections): 연결 and 공유 범위 right after
+ * 우리 둘 — the partner's door and what he sees come first (N28) — and 우리
+ * 둘의 날 near the bottom (N27).
+ */
 export const SETTINGS_ANCHORS = [
   'members',
+  'link',
   'share',
   'alerts',
   'home',
-  'ourdays',
   'cycle-numbers',
   'stage',
-  'link',
   'programs',
+  'ourdays',
   'data',
   'about',
 ] as const
@@ -35,6 +42,16 @@ export const SETTINGS_TOC_LABEL: Record<SettingsAnchor, string> = {
   programs: '지원',
   data: '데이터',
   about: '정보',
+}
+
+/**
+ * The sections in screen order for a stage. Preparing: SETTINGS_ANCHORS as
+ * listed. Later stages have no 공유 범위 or cycle numbers (nothing is
+ * recorded then), and 우리 둘의 날 goes back up under 첫 화면.
+ */
+export function settingsSections(stage: Stage): SettingsAnchor[] {
+  if (stage === 'preparing') return [...SETTINGS_ANCHORS]
+  return ['members', 'link', 'alerts', 'home', 'ourdays', 'stage', 'programs', 'data', 'about']
 }
 
 export function isSettingsAnchor(hash: string): hash is SettingsAnchor {

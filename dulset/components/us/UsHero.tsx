@@ -12,6 +12,8 @@ import { useApp } from '@/lib/store'
 /**
  * "우리" — both of us, 함께한 지 D+N from the day we met, the next
  * anniversary, and the 우리의 날들 chain that keeps growing through each stage.
+ * This is where 처음 만난 날 and 결혼한 날 are asked for (N27: the onboarding and
+ * the home's 설정 마저 하기 no longer ask — they are the record book's).
  */
 export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
   const { state, today, me, partner } = useApp()
@@ -86,6 +88,17 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
           <Icon name="ring" className="h-4 w-4 text-ink-3" />
           {marriedLine(married, today)}
         </p>
+      ) : met ? (
+        // The record book asks for 결혼한 날 itself (N27: no longer on the home's 설정 마저 하기 or in the onboarding).
+        <button
+          type="button"
+          onClick={onEditDates}
+          className="-mb-1 -ml-1 mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+        >
+          <Icon name="ring" className="h-4 w-4 text-ink-3" />
+          결혼한 날도 넣어 두기
+          <span className="font-normal text-ink-3">(있다면)</span>
+        </button>
       ) : null}
 
       {next ? (

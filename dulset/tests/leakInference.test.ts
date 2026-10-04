@@ -18,6 +18,12 @@
 // his own actions, and the quiet after a pregnancy ended (a stage change both
 // phones show). Residuals are pinned below as explicit, documented cases
 // (lib/logic/cycleRing.ts, 'Residuals').
+//
+// Now 3 leftovers: once his span has started it runs to its predicted last
+// day — a period, a rest or a positive test she logs inside it and does not
+// tell does not cut it short; and an untold EARLY period does not pull the
+// next '곧 우리의 주간' forward on any later day (his next window stays where
+// his view expected it).
 
 import { describe, expect, it } from 'vitest'
 import { addDays, diffDays } from '@/lib/dates'
@@ -32,6 +38,8 @@ import { addEntry } from '@/lib/logic/diary'
 import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { logPeriodStart } from '@/lib/logic/logs'
 import { scheduledNotices } from '@/lib/logic/notifications'
+import { myPrep } from '@/lib/logic/myPrep'
+import { linkClinic } from '@/lib/logic/partnerSnapshot'
 import { partnerTip } from '@/lib/logic/partnerTrack'
 import { setEntryPrivacy, setFeel, setPrivateNote } from '@/lib/logic/personalLog'
 import { markBleeding } from '@/lib/logic/positiveBleeding'
@@ -146,6 +154,9 @@ function homeView(s: AppState, d: ISODate) {
     tip: partnerTip(s, d, PARTNER),
     task: partnerTaskVisible(s, d, PARTNER),
     prompt: homeDiaryPrompt(s, d, PARTNER),
+    // N30 / N32 (Now 3b): his 내 준비 bar and the clinic week beside his card — his own records and the couple's mode only.
+    prep: myPrep(s, d, PARTNER),
+    clinic: linkClinic(s, d, PARTNER) ?? null,
   }
 }
 
@@ -241,9 +252,24 @@ const UNTOLD: readonly Record[] = [
       return setEntryPrivacy(w, `secret-${d}`, OWNER, true)
     },
   },
-  // A rest she starts INSIDE the shared window ends it for him too (residual, pinned below).
-  { name: 'rest', when: (s, d) => !sharedWeek(s, d), add: (s, d) => startRestCycle(s, d, 'rest') },
+  // A rest she starts, inside his span or outside it (from today: a backdated one is a documented residual).
+  { name: 'rest', when: () => true, add: (s, d) => startRestCycle(s, d, 'rest') },
+  { name: 'vaccine rest (from today)', when: () => true, add: (s, d) => startRestCycle(s, d, 'vaccine') },
   { name: 'vaccine rest', when: (s, d) => !sharedWeek(s, d), add: (s, d) => startRestCycle(s, addDays(d, -3), 'vaccine') },
+  // Inside his span (Now 3 leftover): a period or a positive test she does not tell keeps it to its last day.
+  { name: 'period start inside the span', when: (s, d) => !!sharedWeek(s, d), add: (s, d) => logPeriodStart(s, d, OWNER, d) },
+  {
+    name: 'positive test inside the span',
+    when: (s, d) => !!sharedWeek(s, d),
+    add: (s, d) =>
+      markPositivePending({ ...s, pregnancyTests: [...s.pregnancyTests, { id: `in-${d}`, date: d, result: 'positive' as const, by: OWNER }] }, d, `in-${d}`),
+  },
+  // An early period (any day after the window, before the expected day) — the day itself; later days below.
+  {
+    name: 'early period start',
+    when: (s, d) => herStatus(s, d).kind === 'after-fertile',
+    add: (s, d) => logPeriodStart(s, d, OWNER, d),
+  },
   {
     name: '아직 안 왔어요',
     when: (s, d) => {
@@ -419,7 +445,8 @@ describe('the documented exceptions', () => {
       expect(before.strip, d).toBeNull()
       expect(before.lens.pause, d).toBe('clinic')
       for (const r of UNTOLD) {
-        if (r.name === 'rest' || r.name === 'vaccine rest' || !r.when(c, d)) continue
+        // A rest replaces the clinic mode itself (startRestCycle) — the couple's switch, not an untold record.
+        if (r.name.includes('rest') || !r.when(c, d)) continue
         const after = r.add(c, d)
         if (after === c) continue
         expect(partnerView(after, d), `${d} · ${r.name}`).toEqual(before)
@@ -427,14 +454,26 @@ describe('the documented exceptions', () => {
     }
   })
 
-  it('a rest she starts inside 우리의 주간 ends it for him too (not showing 우리의 주간 through a rest she chose)', () => {
+  it('a rest she starts inside 우리의 주간 keeps his span to its last day; the dates rest after it (Now 3 leftover)', () => {
     const d = '2026-09-12' // inside the 09-10…09-15 window (28-day cycle from 09-01)
     expect(sharedWeek(s, d)?.kind).toBe('window')
     expect(ttcMoment(s, d, PARTNER)!.copy).toBe('partner.our-week')
     const rest = startRestCycle(s, d, 'rest')
-    expect(sharedWeek(rest, d)).toBeUndefined()
-    expect(ttcMoment(rest, d, PARTNER)!.copy).toBe('partner.neutral')
-    expect(cycleStrip(rest, d, PARTNER)).toBeNull()
+    for (const x of DAYS(d, '2026-09-15')) expect(partnerView(rest, x), x).toEqual(partnerView(s, x))
+    expect(ttcMoment(rest, d, PARTNER)!.dateIdeas).toBe(true)
+    // The day after it ends, both read the 평소 주; the next window does not come while she rests (absence only).
+    expect(ttcMoment(rest, '2026-09-16', PARTNER)!.copy).toBe('partner.neutral')
+    expect(sharedWeek(rest, '2026-10-05')).toBeUndefined()
+    // A rest from before the span holds it back (he never saw it start): no change on any day.
+    const before = startRestCycle(s, '2026-09-05', 'rest')
+    for (const x of DAYS('2026-09-05', '2026-09-16')) expect(sharedWeek(before, x), x).toBeUndefined()
+  })
+
+  it('residual: a rest she backdates to before the span, logged inside it, ends the span on the day she logs it', () => {
+    const d = '2026-09-12'
+    const backdated = startRestCycle(s, '2026-09-05', 'vaccine')
+    expect(sharedWeek(s, d)).toBeDefined()
+    expect(sharedWeek(backdated, d)).toBeUndefined()
   })
 
   it('LH never reaches him: his window is her logged starts only, so it can differ from her LH-tuned one', () => {
@@ -463,5 +502,51 @@ describe('the documented exceptions', () => {
     expect(partnerTaskVisible(off, after, PARTNER)).toBe(true)
     // A record from before the pregnancy (backToPreparing without the rest) still reads the 42 days.
     expect(partnerQuiet(backToPreparing(pregnant, '2026-10-20'), '2026-10-25')).toBe(true)
+  })
+})
+
+describe('an untold early period never pulls his next 곧 우리의 주간 forward (Now 3 leftover)', () => {
+  /** The day after his window's last day, up to the day before her period was expected (cycle.ts calendar, logged starts only). */
+  function luteal(st: AppState, from: ISODate, to: ISODate): ISODate[] {
+    return DAYS(from, to).filter((d) => herStatus(st, d).kind === 'after-fertile' && !sharedWeek(st, d))
+  }
+  const firstShared = (st: AppState, from: ISODate) => DAYS(from, addDays(from, 45)).find((x) => !!sharedWeek(st, x))
+
+  for (const base of BASES.filter((b) => b.name !== 'no records')) {
+    it(
+      `${base.name}: before the expected day his screen is the one he had; his next span starts no earlier than an on-time period's`,
+      () => {
+        let checked = 0
+        for (const lens of LENSES.filter((l) => !l.homeDiscreet && !l.lowPressure)) {
+          const s0 = withLens(base.state, lens)
+          for (const d of luteal(s0, base.from ?? '2026-08-26', '2026-10-20').filter((_, i) => i % 3 === 0)) {
+            const st = herStatus(s0, d)
+            if (st.kind !== 'after-fertile') continue
+            const expected = st.nextPeriod
+            const s1 = logPeriodStart(s0, d, OWNER, d)
+            // Every day from her log to the day before the expected one: exactly the screen before her log.
+            for (const x of DAYS(d, addDays(expected, -1))) {
+              expect(partnerView(s1, x), `${base.name} · ${lensTag(lens)} · logged ${d} · ${x}`).toEqual(partnerView(s0, x))
+            }
+            // From then on: his next span is never earlier than the one an on-time period would bring.
+            const onTime = logPeriodStart(s0, expected, OWNER, expected)
+            const early = firstShared(s1, d)
+            const usual = firstShared(onTime, expected)
+            if (usual) expect(early === undefined || early >= usual, `${base.name} · ${lensTag(lens)} · ${d}: ${early} < ${usual}`).toBe(true)
+            checked++
+          }
+        }
+        expect(checked).toBeGreaterThan(3)
+      },
+      120_000,
+    )
+  }
+
+  it('told, the same early period may move his window — what she sends is his to see', () => {
+    const s = withLens(couple(starts('2026-06-09', [28, 28, 28])), { share: 'week', style: 'soft' })
+    const early = logPeriodStart(s, '2026-09-20', OWNER, '2026-09-20')
+    const told = tellPartnerPeriod(early, '2026-09-20', stamp('2026-09-20'))
+    expect(firstShared(early, '2026-09-20')).toBe(firstShared(logPeriodStart(s, '2026-09-29', OWNER, '2026-09-29'), '2026-09-29'))
+    expect(firstShared(told, '2026-09-20')! < firstShared(early, '2026-09-20')!).toBe(true)
   })
 })

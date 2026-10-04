@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, EmptyState, Sheet, cx } from '@/components/ui'
-import { clearNotifications, inbox, markRead } from '@/lib/logic/notifications'
+import { markRead } from '@/lib/logic/notifications'
 import { groupByDay, noticeTarget, nowOn, relativeTimeKo, splitTitleIcon, type NoticeTab } from '@/lib/logic/today'
+import { bellInbox, clearBell } from '@/lib/logic/usView'
 import { useApp } from '@/lib/store'
 import type { AppNotification, Stage } from '@/lib/types'
 
@@ -41,7 +42,9 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
     statusRef.current?.focus({ preventScroll: true })
   }
 
-  const list = inbox(state, me.id)
+  // While preparing, the reactions on her own entries live in the 기록장 ('새로 받은 마음',
+  // N27), not here — the same list the 🔔 badge counts (usView bellInbox / bellUnread).
+  const list = bellInbox(state, me.id)
   const groups = groupByDay(list, today)
   const unread = list.filter((n) => !n.read).length
 
@@ -67,10 +70,15 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
           )}
         </p>
         <div className="flex shrink-0 gap-1">
-          <Button variant="ghost" onClick={() => bulk((s) => markRead(s, me.id))} disabled={unread === 0}>
+          {/* Only what this list shows (both buttons): the 기록장's own notes stay unread for the 기록장. */}
+          <Button
+            variant="ghost"
+            onClick={() => bulk((s) => bellInbox(s, me.id).reduce((acc, n) => (n.read ? acc : markRead(acc, me.id, n.id)), s))}
+            disabled={unread === 0}
+          >
             모두 읽음
           </Button>
-          <Button variant="ghost" onClick={() => bulk((s) => clearNotifications(s, me.id))} disabled={list.length === 0}>
+          <Button variant="ghost" onClick={() => bulk((s) => clearBell(s, me.id))} disabled={list.length === 0}>
             비우기
           </Button>
         </div>

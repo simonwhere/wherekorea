@@ -51,6 +51,13 @@ describe('Onboarding · four screens', () => {
     fireEvent.click(screen.getByRole('button', { name: /^1주 전/ }))
     const dateInput = screen.getByLabelText('마지막 생리 시작일') as HTMLInputElement
     expect(dateInput.value).toBe(addDays(T0, -7))
+    // Only the last start is asked; 평균 주기 · 생리 기간 · 배란테스트기 wait behind '더 넣기 (선택)' (N29).
+    expect((screen.getByRole('button', { name: '다음' }) as HTMLButtonElement).disabled).toBe(false)
+    const more = screen.getByRole('button', { name: /^더 넣기/ })
+    expect(more.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByRole('group', { name: '배란테스트기 사용' })).toBeNull()
+    fireEvent.click(more)
+    expect(more.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(within(screen.getByRole('group', { name: '배란테스트기 사용' })).getByRole('button', { name: '써요' }))
     next()
 

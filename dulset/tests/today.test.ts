@@ -153,11 +153,15 @@ describe('checks on the home screen', () => {
   })
 
   it('finds the first unchecked item for a nudge', () => {
-    let s = fresh()
+    // Her starter list is 엽산 only since N29; add a second row of her own.
+    let s = addCheckItem(fresh(), 'b', '비타민 D', 'supplement', '2026-09-01')
     const [first, second] = activeItems(s, 'b')
+    expect(second).toBeDefined()
     expect(firstUnchecked(s, 'b', '2026-09-02')?.id).toBe(first!.id)
     s = toggleCheck(s, 'b', '2026-09-02', first!.id)
     expect(firstUnchecked(s, 'b', '2026-09-02')?.id).toBe(second!.id)
+    s = toggleCheck(s, 'b', '2026-09-02', second!.id)
+    expect(firstUnchecked(s, 'b', '2026-09-02')).toBeUndefined()
   })
 
   it('leaves weekly check-ins out of the day: no completion, no 콕', () => {
@@ -553,8 +557,12 @@ describe('supplement suggestions', () => {
     expect(infoNotes('cycle-owner')).toHaveLength(0)
     const ownerIds = availableSuggestions('cycle-owner', activeItems(s, 'b')).map((x) => x.id)
     expect(ownerIds).not.toContain('folic-acid')
-    expect(ownerIds).not.toContain('vitamin-d')
+    // 비타민 D is a suggestion since N29 (her starter list is 엽산 only)…
+    expect(ownerIds).toContain('vitamin-d')
     expect(ownerIds).toContain('multivitamin')
+    // …and hides once it is on her list, matching loosely.
+    const withD = addCheckItem(s, 'b', '비타민d', 'supplement', '2026-09-02')
+    expect(availableSuggestions('cycle-owner', activeItems(withD, 'b')).map((x) => x.id)).not.toContain('vitamin-d')
     const added = addCheckItem(s, 'b', '커피 한 잔만', 'habit', '2026-09-02')
     expect(availableSuggestions('cycle-owner', activeItems(added, 'b')).map((x) => x.id)).not.toContain('caffeine')
   })

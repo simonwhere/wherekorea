@@ -24,6 +24,7 @@ export default function LinkWeek({
   ownerName,
   onPick,
   onDone,
+  showPrep = true,
   className,
 }: {
   /** The week with his local marks applied (model.viewWeek). */
@@ -31,12 +32,14 @@ export default function LinkWeek({
   ownerName: string
   onPick: (id: WeekOptionId) => void
   onDone: () => void
+  /** The old 내 준비 line inside the card (a cached pre-N30 snapshot); off when the page draws its own 내 준비 bar. */
+  showPrep?: boolean
   className?: string
 }) {
   const [changing, setChanging] = useState(false)
   const picked = week.pick ? week.options.find((o) => o.id === week.pick) : undefined
   const choosing = !week.done && (!picked || changing)
-  const prep = prepParts(week.prep)
+  const prep = showPrep ? prepParts(week.prep) : []
 
   return (
     <section

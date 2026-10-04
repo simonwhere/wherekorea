@@ -1,13 +1,16 @@
 'use client'
 
 // "우리 한 줄" on the partner page: her progress (numbers only — her item
-// names stay in the app), 콕 when the snapshot offers it, 응원 always, and
-// the signal she sent with its replies.
+// names stay in the app), 콕 when the snapshot offers it, 응원 always, the
+// signal she sent with its replies, and her answer to his last signal
+// (snapshot.reply — the app's 우리 한 줄 ReplyLine, word for word).
 
 import { cx } from '@/components/ui'
-import type { PartnerPage } from '@/lib/logic/partnerSnapshot'
+import { addDays, formatKo, isISODate } from '@/lib/dates'
+import type { PartnerPage, SnapshotReply } from '@/lib/logic/partnerSnapshot'
 import type { Signal } from '@/lib/logic/signals'
-import { Bubble, isHer } from './bits'
+import type { ISODate } from '@/lib/types'
+import { Bubble, isHer, timeKo } from './bits'
 import { LinkPendingSignal } from './LinkSignals'
 import { ownerOf } from './model'
 
@@ -15,6 +18,37 @@ const small =
   "relative inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-3 text-[13px] font-bold text-ink-2 transition-colors before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40"
 
 const DOTS_MAX = 6
+
+/** '오후 6:12' · '어제 오후 6:12' · '그저께' · '10월 5일 (월)' — when her answer came, as the app's 우리 한 줄 says it. */
+function whenKo(at: string, today: ISODate): string {
+  const day = at.slice(0, 10)
+  if (day === today) return timeKo(at)
+  if (day === addDays(today, -1)) return `어제 ${timeKo(at)}`.trim()
+  if (day === addDays(today, -2)) return '그저께'
+  return isISODate(day) ? formatKo(day) : ''
+}
+
+/** Her answer to his signal: who, when, to what, and the reply as a bubble in her colour. */
+function ReplyLine({ reply, name, her, today, className }: { reply: SnapshotReply; name: string; her: boolean; today: ISODate; className?: string }) {
+  const when = whenKo(reply.at, today)
+  return (
+    <div className={className} data-received-reply>
+      <p className="text-xs font-semibold text-ink-3">
+        {name}님이 답했어요{when ? ` · ${when}` : ''}
+        {reply.answered ? <span className="font-normal"> · ‘{reply.answered}’에</span> : null}
+      </p>
+      <p
+        className={cx(
+          'mt-1.5 inline-block rounded-[18px_18px_18px_6px] px-3.5 py-2.5 text-[15px] font-bold tracking-[-0.02em] text-ink',
+          her ? 'bg-her-soft' : 'bg-him-soft',
+        )}
+      >
+        <span aria-hidden>{reply.emoji} </span>
+        {reply.text}
+      </p>
+    </div>
+  )
+}
 
 export default function LinkUsLine({
   snapshot,
@@ -94,6 +128,15 @@ export default function LinkUsLine({
           senderIsHer={isHer(signal.from, snapshot.cycleOwner)}
           left={signalsLeft}
           onReply={onReply}
+          className="mt-3 border-t border-line/75 pt-3"
+        />
+      ) : null}
+      {snapshot.reply ? (
+        <ReplyLine
+          reply={snapshot.reply}
+          name={(snapshot.members.find((m) => m.id === snapshot.reply!.from) ?? owner).name}
+          her={isHer(snapshot.reply.from, snapshot.cycleOwner)}
+          today={snapshot.date}
           className="mt-3 border-t border-line/75 pt-3"
         />
       ) : null}

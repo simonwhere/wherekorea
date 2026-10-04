@@ -1,11 +1,18 @@
 // The Supabase transport: plain fetch() against the REST (PostgREST) API.
 //
 // ┌──────────────────────────────────────────────────────────────────────┐
-// │ NOT YET RUN AGAINST A REAL PROJECT. There is no Supabase project yet │
-// │ (docs/next-a-setup.md). The request shaping is unit-tested with a    │
-// │ fake fetch (tests/syncTransport.test.ts); the SQL it talks to is in  │
-// │ supabase/schema.sql + policies.sql. First run: expect to adjust.     │
+// │ NOT YET RUN AGAINST A REAL PROJECT. The request shaping is unit-     │
+// │ tested with a fake fetch (tests/syncTransport.test.ts); the SQL it   │
+// │ talks to is in supabase/schema.sql + policies.sql. Before the first  │
+// │ real run, `node scripts/verify-supabase.mjs` walks the same calls    │
+// │ against the project with throwaway data (docs/next-a-setup.md §5).   │
 // └──────────────────────────────────────────────────────────────────────┘
+//
+// The couple id is made on her phone (lib/logic/partnerLink.newCoupleId, a
+// uuid kept across new links), so before the first owner call that needs the
+// couple (issue, publish, pull) this transport registers it once per page
+// with create_couple(owner key, that id) — idempotent on the server
+// (ensureCouple). Without that step every publish would be refused (403).
 //
 // No SDK: a handful of RPC calls over HTTPS are all the partner link needs,
 // and a dependency would add ~30 kB to a build that must stay small. Every call
@@ -106,11 +113,20 @@ export function rpcUrl(env: SupabaseEnv, fn: string): string {
   return `${env.url.replace(/\/+$/, '')}/rest/v1/rpc/${fn}`
 }
 
-/** Headers every call carries: the anon key twice (apikey + bearer), JSON in and out. */
+/**
+ * The newer Supabase API keys ('sb_publishable_…') are not JWTs: they go in
+ * `apikey` only — the gateway refuses a non-JWT bearer. The classic anon key
+ * (a JWT, 'eyJ…') rides as both, as the Supabase clients send it.
+ */
+export function isPublishableKey(key: string): boolean {
+  return key.startsWith('sb_')
+}
+
+/** Headers every call carries: the anon key as apikey (and as the bearer for a classic JWT key), JSON in and out. */
 export function rpcHeaders(env: SupabaseEnv): Record<string, string> {
   return {
     apikey: env.anonKey,
-    Authorization: `Bearer ${env.anonKey}`,
+    ...(isPublishableKey(env.anonKey) ? {} : { Authorization: `Bearer ${env.anonKey}` }),
     'Content-Type': 'application/json',
     Accept: 'application/json',
   }
@@ -135,8 +151,16 @@ export interface EventRow {
 
 export interface SupabaseTransport extends Transport {
   readonly kind: 'supabase'
-  /** Register this device as the owner of a new couple; returns its id (keep it in settings). */
-  createCouple(): Promise<string>
+  /**
+   * Register this device as the owner of a couple: with `coupleId` (the uuid
+   * her phone made — the app's way) that id, idempotently; without, a fresh
+   * one from the server. Returns the id.
+   */
+  createCouple(coupleId?: string): Promise<string>
+  /** The couple is registered for this owner key (once per page; issue / publish / pull call it first). */
+  ensureCouple(coupleId: string): Promise<void>
+  /** Remove the couple space and everything under it (delete_couple — the verify script's cleanup, 연결 해제 later). */
+  deleteCouple(coupleId: string): Promise<boolean>
   /** Issue (or extend) a share token for the link; returns the expiry the server set. */
   issueToken(coupleId: string, token: string, days?: number): Promise<string>
   /** The link stops working at once. */
@@ -180,9 +204,32 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
   /** The one row a set-returning RPC gives back (PostgREST returns an array). */
   const firstRow = <T>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v)
 
+  async function createCouple(coupleId?: string): Promise<string> {
+    const id = await rpc<string>('create_couple', { p_owner_key: needOwner(), ...(coupleId ? { p_couple_id: coupleId } : {}) })
+    if (typeof id !== 'string') throw new SupabaseTransportError('bad-response', 'create_couple: no id')
+    if (coupleId && id.toLowerCase() !== coupleId.toLowerCase())
+      throw new SupabaseTransportError('bad-response', 'create_couple: another id')
+    return id
+  }
+
+  /** Couples registered on this page (a failed attempt is forgotten, so the next call tries again). */
+  const registered = new Map<string, Promise<void>>()
+  function ensureCouple(coupleId: string): Promise<void> {
+    needOwner()
+    let p = registered.get(coupleId)
+    if (!p) {
+      p = createCouple(coupleId).then(() => undefined)
+      registered.set(coupleId, p)
+      p.catch(() => registered.delete(coupleId))
+    }
+    return p
+  }
+
   /** pull_events, cleaned: rows were written by the partner's browser — strict shape before anything reads them. */
   async function received(coupleId: string, since: ISODateTime): Promise<ReceivedEvent[]> {
-    const rows = await rpc<EventRow[]>('pull_events', { p_owner_key: needOwner(), p_couple_id: coupleId, p_since: since || null })
+    const owner = needOwner()
+    await ensureCouple(coupleId)
+    const rows = await rpc<EventRow[]>('pull_events', { p_owner_key: owner, p_couple_id: coupleId, p_since: since || null })
     const kept: ReceivedEvent[] = []
     for (const r of Array.isArray(rows) ? rows : []) {
       const event = r && typeof r === 'object' ? cleanPartnerEvent(r.payload) : undefined
@@ -196,14 +243,19 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
     kind: 'supabase',
     ownerKey,
 
-    async createCouple() {
-      const id = await rpc<string>('create_couple', { p_owner_key: needOwner() })
-      if (typeof id !== 'string') throw new SupabaseTransportError('bad-response', 'create_couple: no id')
-      return id
+    createCouple,
+    ensureCouple,
+
+    async deleteCouple(coupleId) {
+      const gone = await rpc<boolean>('delete_couple', { p_owner_key: needOwner(), p_couple_id: coupleId })
+      registered.delete(coupleId)
+      return gone === true
     },
 
     async issueToken(coupleId, token, days = TOKEN_DAYS_DEFAULT) {
-      const expires = await rpc<string>('issue_token', { p_owner_key: needOwner(), p_couple_id: coupleId, p_token: token, p_days: days })
+      const owner = needOwner()
+      await ensureCouple(coupleId)
+      const expires = await rpc<string>('issue_token', { p_owner_key: owner, p_couple_id: coupleId, p_token: token, p_days: days })
       if (typeof expires !== 'string') throw new SupabaseTransportError('bad-response', 'issue_token: no expiry')
       return expires
     },
@@ -213,8 +265,10 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
     },
 
     async publishSnapshot(coupleId, token, snapshot) {
+      const owner = needOwner()
+      await ensureCouple(coupleId)
       await rpc<number>('publish_snapshot', {
-        p_owner_key: needOwner(),
+        p_owner_key: owner,
         p_couple_id: coupleId,
         p_token: token,
         p_payload: snapshot,

@@ -7,8 +7,14 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  clinicWhen,
   devicePlatform,
   inAppBrowser,
+  pickToken,
+  viewClinic,
+  weeklyLinkOrigin,
+  LINK_TOKEN_KEY,
+  OFFLINE_LINE,
   installSteps,
   kakaoExternalURL,
   noticeCopy,
@@ -604,3 +610,66 @@ describe('owner ⇄ partner page over the mock transport', () => {
     expect(pullSince('2026-12-01', now).startsWith('2026-09-26')).toBe(true)
   })
 })
+
+// ── Now 3: clinic week marks, the remembered token, the weekly address, offline ──
+
+describe('link model (N30–N32 · N25 prep)', () => {
+  const clinicPage = {
+    clinic: {
+      appointments: [
+        { id: 'a1', date: '2026-10-06', time: '08:30', place: '○○의원', label: '병원 진료', with: 'both' as const, joined: false },
+        { id: 'a2', date: '2026-10-08', label: '검사', with: 'mine' as const, joined: false },
+      ],
+      leave: { text: '난임치료휴가는 남성 근로자도 쓸 수 있어요', note: '회사마다 달라요', source: { label: 'x', url: 'https://example.org' } },
+    },
+  }
+
+  it('clinicWhen: 오늘 · 내일 · the day with its weekday, and the time when there is one', () => {
+    expect(clinicWhen('2026-10-04', '08:30', '2026-10-04')).toBe('오늘 08:30')
+    expect(clinicWhen('2026-10-05', undefined, '2026-10-04')).toBe('내일')
+    expect(clinicWhen('2026-10-08', '09:00', '2026-10-04')).toBe('10월 8일 (목) 09:00')
+  })
+
+  it('viewClinic: his [같이 갈게요] reads joined at once on ‘둘이 함께’ rows only; pruneMarks keeps it until the snapshot agrees', () => {
+    expect(viewClinic({}, NO_MARKS)).toBeNull()
+    expect(viewClinic(clinicPage, NO_MARKS)).toBe(clinicPage.clinic)
+    const now = 1_000_000
+    const marks = { ...NO_MARKS, joins: { a1: now, a2: now } }
+    const v = viewClinic(clinicPage, marks)!
+    expect(v.appointments.map((a) => a.joined)).toEqual([true, false])
+    const page = clinicPage as unknown as PartnerPage
+    // Not yet confirmed: kept (fresh); his own row's mark goes (it never offers [같이 갈게요] — but the row is still there).
+    expect(pruneMarks(marks, page, now + 1_000).joins).toEqual({ a1: now, a2: now })
+    // Confirmed by the snapshot: dropped.
+    const confirmed = { clinic: { ...clinicPage.clinic, appointments: [{ ...clinicPage.clinic.appointments[0]!, joined: true }] } } as unknown as PartnerPage
+    expect(pruneMarks(marks, confirmed, now + 1_000).joins).toBeUndefined()
+    // Expired.
+    expect(pruneMarks(marks, page, now + MARK_TTL_MS + 1).joins).toBeUndefined()
+  })
+
+  it('pickToken: the address first, then the token this browser remembers (a token-less /link/ from the calendar), then the cached view', () => {
+    const a = 'A'.repeat(22)
+    const b = 'B'.repeat(22)
+    const c = 'C'.repeat(22)
+    expect(pickToken(a, b, c, isToken)).toBe(a)
+    expect(pickToken(null, b, c, isToken)).toBe(b)
+    expect(pickToken(null, null, c, isToken)).toBe(c)
+    expect(pickToken(null, 'bad token', null, isToken)).toBeNull()
+    expect(pickToken(null, null, null, isToken)).toBeNull()
+    expect(LINK_TOKEN_KEY.startsWith('dulset:')).toBe(true)
+  })
+
+  it('weeklyLinkOrigin: this page’s origin and base path without /link/ — a sub-path site still links right', () => {
+    expect(weeklyLinkOrigin('https://dulset.app', '/link/')).toBe('https://dulset.app')
+    expect(weeklyLinkOrigin('https://dulset.app/', '/link')).toBe('https://dulset.app')
+    expect(weeklyLinkOrigin('https://x.github.io', '/dulset/link/')).toBe('https://x.github.io/dulset')
+    expect(weeklyLinkOrigin('http://localhost:5577', '/link/index.html')).toBe('http://localhost:5577')
+  })
+
+  it('the offline line asks nothing of her and has no health word', () => {
+    expect(OFFLINE_LINE.title).toBe('지금은 불러올 수 없어요')
+    expect(`${OFFLINE_LINE.title} ${OFFLINE_LINE.body}`).not.toMatch(/생리|배란|가임기|임신|숙제|실패|노력/)
+    expect(OFFLINE_LINE.body).not.toContain('지은')
+  })
+})
+

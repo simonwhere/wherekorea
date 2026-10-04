@@ -2,8 +2,10 @@
 
 // 설정 › 첫 화면 (Next B) — what the top of 오늘 and the 우리 tab show:
 //   · 표지 사진: change it, or (my phone only) show the drawing instead
-//   · 'N년 전 오늘': off unless the couple turns it on, with the filter rules in one line
-//   · 기념일 알림 (D-7 · 당일): on by default, for both
+//   · 'N년 전 오늘': off unless the couple turns it on, with the filter rules in one line —
+//     while preparing the switch sits in the 기록장 (우리 tab) instead (N27)
+//   · 기념일 알림: off by default while preparing and then on the day only, D-7 · 당일
+//     by default later (N27); an explicit choice is stored and wins in every stage
 //   · '시도 N번째 주기' in the cycle history: hidden by default (neutral wording)
 // Each switch is read through lib/logic/settings.ts (memoriesOn …); unset = default.
 
@@ -11,9 +13,9 @@ import { useCallback, useState } from 'react'
 import CoverSheet from '@/components/cover/CoverSheet'
 import { Card, Toggle, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
-import { coverView, setHideCover } from '@/lib/logic/cover'
+import { MEMORIES_PROMISE, coverView, setHideCover } from '@/lib/logic/cover'
 import { canLogCycle, canSeeCycleDetails } from '@/lib/logic/prefs'
-import { anniversaryAlertsOn, memoriesOn, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
+import { anniversaryAlertsOn, memoriesOn, setAnniversaryAlerts, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
 import { useApp } from '@/lib/store'
 import { SettingsSection } from './bits'
 
@@ -67,24 +69,26 @@ export default function HomeSection() {
         </Card>
 
         <Card>
-          <Toggle
-            checked={memoriesOn(state.settings)}
-            onChange={(v) => {
-              update((s) => setCoupleFlag(s, 'memories', v))
-              toast.show(v ? '‘N년 전 오늘’을 켰어요' : '‘N년 전 오늘’을 껐어요')
-            }}
-            label={
-              <>
-                ‘N년 전 오늘’ <span className="text-xs font-normal text-ink-3">(두 사람 모두)</span>
-              </>
-            }
-            description="켜면 1~3년 전 오늘 남긴 이야기를 첫 화면 맨 위에 한 줄로 보여 줘요. 두 사람이 함께 보는 이야기만 — 나만 보기, 임신 중 이야기, 건강·병원 말이 든 글은 빼고, 생리 1~3일째나 임테기 음성인 날, 임신이 끝난 뒤 42일에는 쉬어요."
-          />
-          <div className="mt-1 border-t border-line pt-1">
+          {preparing ? null : (
             <Toggle
-              checked={anniversaryAlertsOn(state.settings)}
+              checked={memoriesOn(state.settings)}
               onChange={(v) => {
-                update((s) => setCoupleFlag(s, 'anniversaryAlerts', v))
+                update((s) => setCoupleFlag(s, 'memories', v))
+                toast.show(v ? '‘N년 전 오늘’을 켰어요' : '‘N년 전 오늘’을 껐어요')
+              }}
+              label={
+                <>
+                  ‘N년 전 오늘’ <span className="text-xs font-normal text-ink-3">(두 사람 모두)</span>
+                </>
+              }
+              description={MEMORIES_PROMISE}
+            />
+          )}
+          <div className={preparing ? undefined : 'mt-1 border-t border-line pt-1'}>
+            <Toggle
+              checked={anniversaryAlertsOn(state.settings, state.stage)}
+              onChange={(v) => {
+                update((s) => setAnniversaryAlerts(s, v))
                 toast.show(v ? '기념일 알림을 켰어요' : '기념일 알림을 껐어요 · 우리 탭 기념일에는 그대로 보여요')
               }}
               label={
@@ -92,9 +96,18 @@ export default function HomeSection() {
                   기념일 알림 <span className="text-xs font-normal text-ink-3">(두 사람 모두)</span>
                 </>
               }
-              description="일주일 전과 당일에 두 사람 알림함에 한 줄씩 와요. 꺼도 우리 탭의 기념일과 D-day는 그대로예요."
+              description={
+                preparing
+                  ? '준비하는 동안은 기본으로 꺼져 있어요. 켜면 기념일 당일에 두 사람 알림함과 첫 화면에 한 줄씩 보여요. 꺼도 우리 탭의 기념일과 D-day는 그대로예요.'
+                  : '일주일 전과 당일에 두 사람 알림함에 한 줄씩 와요. 꺼도 우리 탭의 기념일과 D-day는 그대로예요.'
+              }
             />
           </div>
+          {preparing ? (
+            <p className="mt-1 border-t border-line pt-2 text-[11px] leading-relaxed text-ink-3">
+              ‘N년 전 오늘’은 우리 탭(기록장) 맨 아래에서 켜고 끌 수 있어요.
+            </p>
+          ) : null}
         </Card>
 
         {/* The cycle history is the owner's record: only the owner decides whether it counts the tries. */}

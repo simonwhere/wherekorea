@@ -61,7 +61,7 @@ import { inbox, scheduledNotices } from '@/lib/logic/notifications'
 import { canThankWeek, partnerWeekSummary, thanksThisWeek, weekDone, weekOf, weekOptions, weekPick } from '@/lib/logic/weekTogether'
 import { backToPreparing, gestationalAge } from '@/lib/logic/pregnancy'
 import { buildItems, focusItems } from '@/lib/logic/roadmap'
-import { sanitizeBackup } from '@/lib/logic/settings'
+import { sanitizeBackup, setAnniversaryAlerts } from '@/lib/logic/settings'
 import { leaveDaysOf, leaveUsed, noticeStatus, supportCounts, treatmentsOf } from '@/lib/logic/treatments'
 import { chapterContext, entryChapter, receivedReactions } from '@/lib/logic/usView'
 import { isAppState, parseState } from '@/lib/storage'
@@ -834,12 +834,11 @@ describe('demo 우리 둘 · 챙길 것', () => {
     // Preconception items have no dates, so this week's list is their own task.
     const focus = focusItems(buildItems(s, ROADMAP, today))
     expect(focus.map((i) => i.title)).toEqual(['검사 결과지 한곳에 모아 두기'])
-    // 첫 여행 5주년 is a week away: both got the heads-up today.
-    const notes = s.notifications.filter((n) => n.key?.startsWith('anniv:custom:'))
-    expect(notes.map((n) => [n.to, n.title, n.read])).toEqual([
-      ['a', '✈️ 첫 여행 5주년까지 일주일', false],
-      ['b', '✈️ 첫 여행 5주년까지 일주일', false],
-    ])
+    // 첫 여행 5주년 is a week away, but 기념일 알림 are off by default while
+    // preparing (N27, positioning §3-3) and day-only when turned on: no
+    // '일주일' heads-up in the demo inbox.
+    expect(s.settings.anniversaryAlerts).toBeUndefined()
+    expect(s.notifications.filter((n) => n.key?.startsWith('anniv:'))).toEqual([])
     expect(nextAnniversaries(s.couple, s.anniversaries, today, 2).map((e) => e.title)).toEqual(['첫 여행 5주년', '결혼 2주년'])
   })
 
@@ -1083,11 +1082,16 @@ describe('demo cover photo (built-in pictures)', () => {
     })
   }
 
-  it('the preparing home opens on 민수’s unanswered signal for 지은, and the coming 첫 여행 day for 민수', () => {
+  it('the preparing home opens on 민수’s unanswered signal for 지은; 첫 여행 waits for its day and the couple’s choice (N27)', () => {
     const s = createDemoState(today, NOW_29, 'preparing')
     expect(heroLine(s, today, 'b', 19)).toEqual({ kind: 'signal', text: '민수님이 신호를 보냈어요', avatar: 'a', target: 'us' })
-    // 첫 여행 was 2021-10-03 → 5주년 in 4 days.
-    expect(heroLine(s, today, 'a', 19)).toEqual({ kind: 'anniversary', text: '💍 첫 여행 5주년까지 D-4', target: 'diary' })
+    // 첫 여행 was 2021-10-03 → 5주년 in 4 days: no 'D-4' while preparing.
+    expect(heroLine(s, today, 'a', 19)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(s, '2026-10-03', 'a', 19).kind).not.toBe('anniversary')
+    // Turned on in 설정: the day itself only.
+    const on = setAnniversaryAlerts(s, true)
+    expect(heroLine(on, today, 'a', 19)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(on, '2026-10-03', 'a', 19)).toEqual({ kind: 'anniversary', text: '오늘은 첫 여행 5주년이에요', target: 'diary' })
     expect(heroLine(s, '2026-09-20', 'a', 19)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
   })
 

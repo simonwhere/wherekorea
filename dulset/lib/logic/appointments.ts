@@ -26,6 +26,22 @@ export const APPOINTMENT_KIND_EMOJI: Record<AppointmentKind, string> = {
   medication: '💊',
 }
 
+/**
+ * A kind word for what the partner sees of an appointment while the couple's
+ * clinic mode is on (N32: his clinic week on the link, the partner's clinic
+ * card) — a word, never the appointment's title. 주사·약 read as '병원 일정'
+ * (they are steps of a treatment; his side names none).
+ */
+export const CLINIC_KIND_WORD: Record<AppointmentKind, string> = {
+  hospital: '병원 진료',
+  test: '검사',
+  vaccine: '예방접종',
+  admin: '신청·서류',
+  other: '일정',
+  injection: '병원 일정',
+  medication: '병원 일정',
+}
+
 /** 주사·약 (the clinic-cycle kinds, N13) happen at a time of day, so the form asks for one. */
 export function needsTime(kind: AppointmentKind): boolean {
   return kind === 'injection' || kind === 'medication'

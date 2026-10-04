@@ -3,12 +3,16 @@
 // Signals on the partner page: the one she sent that waits for his answer
 // (with the replies that fit it — the snapshot already picked them), and the
 // ones he may send (components/signals/SignalsCard read from the snapshot).
+// Her signal carries 해 줄 말 · 아껴 둘 말 (N30) when the catalogue has lines
+// for it — the same two lines the app shows under it.
 // Every tap is a 'reply' or 'signal' event; the words come from the catalogue
 // on her phone, the page sends ids only.
 
 import { Card, cx } from '@/components/ui'
 import type { PartnerSnapshot, SnapshotMember, SnapshotSignal } from '@/lib/logic/partnerSnapshot'
 import type { Signal } from '@/lib/logic/signals'
+import { SayLines } from '@/components/signals/SayText'
+import { SIGNAL_TONE_CLASS } from '@/components/signals/tone'
 import { timeKo } from './bits'
 
 export function LinkPendingSignal({
@@ -41,7 +45,10 @@ export function LinkPendingSignal({
         {signal.emoji ? <span aria-hidden>{signal.emoji} </span> : null}
         {signal.text}
       </p>
-      {signal.tip ? (
+      {/* 해 줄 말 · 아껴 둘 말 for her signal (N30); an older snapshot carries only the one-line tip. */}
+      {signal.say ? (
+        <SayLines say={signal.say.say} save={signal.say.save} className="mt-2.5 rounded-[14px] bg-surface-2 px-3 py-2" />
+      ) : signal.tip ? (
         <p className="mt-2 text-[12.5px] leading-[1.5] text-ink-2">
           <b className="font-bold text-ink">해 줄 말</b> · {signal.tip}
         </p>
@@ -86,9 +93,7 @@ export default function LinkSignals({
             className={cx(
               'flex min-h-[44px] items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition-colors disabled:opacity-40',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
-              s.tone === 'rest'
-                ? 'border-line bg-surface-2 text-ink-2 hover:bg-line/50'
-                : 'border-line bg-surface text-ink hover:bg-surface-2',
+              SIGNAL_TONE_CLASS(s.tone),
             )}
           >
             <span aria-hidden className="text-base">
