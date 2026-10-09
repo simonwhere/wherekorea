@@ -441,6 +441,12 @@ function StageBody({
           <Pill onClick={() => onDone(task)} tone={tone} icon="check">
             청구했어요
           </Pill>
+        ) : taskLocked(task, today) && task.appointment ? (
+          // Booked ahead (a shared checkup): nothing is recorded before the day.
+          <span data-task-locked className="inline-flex h-10 items-center gap-1.5 text-[13.5px] font-bold text-ink-2">
+            <Icon name="clock" className="h-4 w-4 shrink-0 text-ink-3" />
+            예약일 {formatShort(task.appointment.date)} · 다녀온 뒤에 기록해요
+          </span>
         ) : (
           <Pill onClick={() => onDone(task)} tone={tone} icon="check">
             했어요

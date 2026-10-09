@@ -117,10 +117,14 @@ describe('myPrep — his own progress, nothing of hers', () => {
     expect(myPrep(s, TODAY, PARTNER)).toEqual(before)
   })
 
-  it('is empty for the person whose cycle it is, outside the preparing stage and in the quiet after a loss', () => {
+  it('is empty for the person whose cycle it is, while parenting and in the quiet after a loss', () => {
     const s = habitDays(couple(), '2026-09-20', 10)
     expect(myPrep(s, TODAY, OWNER)).toEqual({})
-    expect(myPrep({ ...s, stage: 'pregnant' }, TODAY, PARTNER)).toEqual({})
+    expect(myPrep({ ...s, stage: 'parenting' }, TODAY, PARTNER)).toEqual({})
+    // While pregnant he has his own items instead (no habit timer, no 검사 chain).
+    const pregnant = myPrep(startPregnancy(s, '2026-08-20', '2026-09-25'), TODAY, PARTNER)
+    expect(pregnant.timerLabel).toBeUndefined()
+    expect(pregnant.items?.length).toBeGreaterThan(0)
     const lost = endPregnancy(startPregnancy(s, '2026-08-20', '2026-09-25'), '2026-10-01')
     expect(myPrep(lost, '2026-10-03', PARTNER)).toEqual({})
     expect(myPrep(s, 'not-a-date', PARTNER)).toEqual({})

@@ -10,8 +10,11 @@
 // so the block's own 내 준비 line is left out here. Here the taps change the state
 // directly (weekTogether.pickWeek / markWeekDone — the link sends the same as
 // 'week-pick' / 'week-done' events), and [했어요] can be taken back for 5 s.
-// Nothing shows for the cycle owner, outside the preparing stage or in the
-// quiet after a loss (linkWeek is undefined then).
+// Nothing shows for the cycle owner, in the parenting stage or in the quiet
+// after a loss (linkWeek is undefined then). While pregnant the same block runs
+// from the pregnancy catalogue (weekTogether.PREGNANT_WEEK_OPTIONS, founder
+// request 2026-10-09). The home draws 내 준비 itself (withPrep false), after
+// '같이 챙길 것' (components/today/TogetherCard); the '했어요' sheet keeps it here.
 
 import { useCallback, useMemo, useState } from 'react'
 import LinkWeek from '@/components/link/LinkWeek'
@@ -22,7 +25,16 @@ import { linkWeek } from '@/lib/logic/partnerSnapshot'
 import { markWeekDone, pickWeek, unmarkWeekDone, type WeekOptionId } from '@/lib/logic/weekTogether'
 import { useApp } from '@/lib/store'
 
-export default function WeekTogether({ withChain, className }: { withChain: boolean; className?: string }) {
+export default function WeekTogether({
+  withChain,
+  withPrep = true,
+  className,
+}: {
+  withChain: boolean
+  /** Draw '내 준비' (MyPrepBar) right under the block. */
+  withPrep?: boolean
+  className?: string
+}) {
   const { state, update, today, me, cycleOwner } = useApp()
   const toast = useToast()
   const week = useMemo(() => linkWeek(state, today, me.id, withChain), [state, today, me.id, withChain])
@@ -51,7 +63,7 @@ export default function WeekTogether({ withChain, className }: { withChain: bool
   return (
     <>
       <LinkWeek week={withoutPrep} ownerName={cycleOwner.name} onPick={pick} onDone={done} className={className} />
-      <MyPrepBar className="mt-2.5" />
+      {withPrep ? <MyPrepBar className="mt-2.5" /> : null}
       <UndoToast message={undo} onUndo={undoDone} onExpire={expire} />
     </>
   )

@@ -10,6 +10,9 @@ import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Appointment, MemberId } from '@/lib/types'
 import { CheckBox, ExternalLink, Owners, Pill, btnDanger, btnGhost, btnSecondary } from './bits'
+import SupportButton from './SupportButton'
+import { togetherRow, type TogetherItem } from '@/lib/logic/together'
+import { weekQuiet } from '@/lib/logic/weekTogether'
 import {
   canSchedule,
   countdown,
@@ -19,8 +22,16 @@ import {
   ownerText,
   shortDate,
   statusPill,
+  type PillTone,
   type PlanItem,
 } from '@/lib/logic/plan'
+
+/** The other person's item on my screen: a neutral status only (lib/logic/together). */
+const NEUTRAL_TONE: Record<string, PillTone> = { done: 'ok', 'this-week': 'soft', upcoming: 'muted' }
+
+function neutralPill(row: TogetherItem): { label: string; tone: PillTone } | null {
+  return row.label ? { label: row.label, tone: NEUTRAL_TONE[row.status] ?? 'muted' } : null
+}
 
 export interface ItemActions {
   onToggle: (item: PlanItem) => void
@@ -72,9 +83,16 @@ function PerPerson({ item, actions }: { item: PlanItem; actions: ItemActions }) 
 /**
  * One roadmap row: tick, what, who, when. The full list rows open for the
  * detail, sources and "일정 잡기"; the focus card uses the compact form.
+ *
+ * Together (founder request 2026-10-09 — "같이 하는 거야"; lib/logic/together
+ * togetherRow): on the other person's item the row shows a neutral status only
+ * ('예정 · 10월 21일' / '이번 주' / '했어요 ✓' — never '기한 지남', a red row or a
+ * countdown about them); for the 함께하는 사람, her items and the shared ones
+ * carry what he can do (the support line) and [같이 할게요]; on her own screen
+ * an item he said it to reads '민수님이 같이 챙긴대요'.
  */
 export default function ItemRow({ item, compact, actions }: { item: PlanItem; compact?: boolean; actions: ItemActions }) {
-  const { state, today } = useApp()
+  const { state, today, me } = useApp()
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const detailId = useId()
@@ -92,27 +110,40 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
 
   const members = state.couple.members
   const done = item.status === 'done'
-  const pill = statusPill(item, state.stage)
-  const cd = countdown(item, today)
+  const row = togetherRow(state, today, me.id, item)
+  // The 42 quiet days after a loss: no support line, no [같이 할게요], no '민수님이 같이 챙긴대요' (together.ts rests).
+  const quiet = weekQuiet(state, today)
+  // Not mine alone to look after → no warning, no countdown, only where it stands.
+  const neutral = row.whose === 'theirs'
+  const pill = neutral ? neutralPill(row) : statusPill(item, state.stage)
+  const cd = neutral ? undefined : countdown(item, today)
   const appt = linkedAppointment(state.appointments, item.id, today)
   const t = item.template
   // lib/content/data audit: false until a person has checked the item against its official original ('미확인').
   const unverified = !!t && ROADMAP_AUDIT[t.id]?.verified === false
   const doneByName = item.doneBy ? members.find((m) => m.id === item.doneBy)?.name : undefined
-  const when = item.start ? dateText(item, today) : item.custom ? '날짜 없음' : item.when
+  // A neutral label that carries its day ('예정 · 10월 21일') says the date already.
+  const when = neutral && row.date ? '' : item.start ? dateText(item, today) : item.custom ? '날짜 없음' : item.when
   const perPerson = item.id === FERTILITY_APPLY_ID && !item.custom && state.stage === 'preparing'
 
   return (
-    <li className={cx('flex gap-3 rounded-xl px-2 py-2.5', item.status === 'overdue' && !compact && 'bg-warn-soft')}>
+    <li
+      className={cx('flex gap-3 rounded-xl px-2 py-2.5', item.status === 'overdue' && !neutral && !compact && 'bg-warn-soft')}
+      data-plan-row={item.id}
+    >
       <div className="pt-0.5">
         <CheckBox checked={done} onToggle={() => actions.onToggle(item)} label={`${item.title} 챙김`} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           {pill ? <Pill tone={pill.tone}>{pill.label}</Pill> : null}
-          <span className={cx('text-[11px] font-medium tabular-nums', item.status === 'now' ? 'text-brand-ink' : 'text-ink-3')}>
-            {when}
-          </span>
+          {when ? (
+            <span
+              className={cx('text-[11px] font-medium tabular-nums', item.status === 'now' && !neutral ? 'text-brand-ink' : 'text-ink-3')}
+            >
+              {when}
+            </span>
+          ) : null}
           {cd ? (
             <span
               className={cx(
@@ -133,6 +164,27 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
           <Icon name={ROADMAP_KIND_ICON[item.kind]} className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" />
           <span className="min-w-0">{item.title}</span>
         </p>
+        {/* What the 함께하는 사람 can do to share it, and [같이 할게요] (together.ts). */}
+        {/* Not on one whose time went by (a lapsed window; her passed deadline reads as nothing on his screen). */}
+        {row.support && !quiet && !done && !item.lapsed && !(neutral && item.status === 'overdue') ? (
+          <div className="mt-1 flex items-center gap-2" data-support-line>
+            <p className="flex min-w-0 flex-1 items-start gap-1.5 text-xs leading-relaxed text-ink-2">
+              <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />
+              <span className="min-w-0">
+                <span className="sr-only">내가 할 수 있는 것: </span>
+                {row.support}
+              </span>
+            </p>
+            <SupportButton itemId={item.id} title={item.title} supported={row.supported} canSupport={row.canSupport} />
+          </div>
+        ) : null}
+        {/* Her screen: his [같이 할게요] on this item. */}
+        {row.supportedBy && !quiet && !done ? (
+          <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-ink" data-supported-by>
+            <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-him" />
+            {row.supportedBy}
+          </p>
+        ) : null}
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <Owners owners={item.owners} members={members} label={ownerText(item.owners, members)} />
           {perPerson ? (
@@ -143,7 +195,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               {doneByName ? ` ${doneByName}` : ''} 챙김
             </span>
           ) : null}
-          {t?.deadline && !done ? (
+          {t?.deadline && !done && !neutral ? (
             <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-ink-2">
               <Icon name="pin" className="h-3 w-3" strokeWidth={2} />
               기한 있음
@@ -226,6 +278,12 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               <div id={detailId} hidden={!open} className="mt-2 rounded-xl bg-surface-2 px-3 py-2.5">
                 {item.start && t ? <p className="mb-1 text-[11px] font-medium text-ink-3">{t.when}</p> : null}
                 <p className="text-xs leading-relaxed text-ink-2">{item.detail}</p>
+                {row.supportNote && !quiet && !done ? (
+                  <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-ink-2">
+                    <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />
+                    <span className="min-w-0">{row.supportNote}</span>
+                  </p>
+                ) : null}
                 {isShared(item) ? <p className="mt-1.5 text-[11px] text-ink-3">임신·아기 탭의 같은 항목과 함께 체크돼요.</p> : null}
                 {t?.link ? (
                   <div className="-mb-1">

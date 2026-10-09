@@ -436,7 +436,7 @@ export function monthlyTask(state: AppState, today: ISODate, member: MemberId): 
   const isPartner = !canLogCycle(state, member)
   if (state.stage !== 'preparing' || !isPartner) {
     const first = [...open].sort((a, b) => rank(a, member) - rank(b, member))[0]
-    return first ? { ...first, top: false, defaultDoneAt: today } : undefined
+    return first ? { ...first, top: false, defaultDoneAt: today, ...bookedAhead(state, first.id, today) } : undefined
   }
 
   const age = ownerAge(state, today)
@@ -451,7 +451,18 @@ export function monthlyTask(state: AppState, today: ISODate, member: MemberId): 
     .filter((i) => i.id !== FERTILITY_APPLY_ID && i.id !== FERTILITY_TEST_ID)
     .sort((a, b) => rank(a, member) - rank(b, member))
   const first = rest[0]
-  return first ? { ...first, top: false, defaultDoneAt: today, tip } : undefined
+  return first ? { ...first, top: false, defaultDoneAt: today, tip, ...bookedAhead(state, first.id, today) } : undefined
+}
+
+/**
+ * Any month task booked ahead (e.g. a shared checkup she booked from 챙길 것):
+ * [했어요] waits for the booked day, like the test step does — the card shows
+ * the day instead, and the link's 'task-done' gate (earliestDoneAt) refuses an
+ * earlier date. Nothing changes for a task without a future booking.
+ */
+function bookedAhead(state: AppState, itemId: string, today: ISODate): Pick<MonthlyTask, 'appointment' | 'minDoneAt'> {
+  const appointment = stepAppointment(state.appointments, itemId, today)
+  return appointment && appointment.date > today ? { appointment, minDoneAt: appointment.date } : {}
 }
 
 /**

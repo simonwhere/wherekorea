@@ -25,7 +25,7 @@
 // next '곧 우리의 주간' forward on any later day (his next window stays where
 // his view expected it).
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { addDays, diffDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { addAppointment } from '@/lib/logic/appointments'
@@ -61,6 +61,11 @@ import {
   ttcMoment,
 } from '@/lib/logic/ttcFlow'
 import type { AlertStyle, AppState, ISODate, PeriodLog, ShareLevel } from '@/lib/types'
+
+// Long synchronous property walks back to back keep the vitest worker from
+// answering its runner (a 60 s RPC timeout → 'Timeout calling onTaskUpdate',
+// exit 1 with every test green). One macrotask between tests lets it breathe.
+beforeEach(() => new Promise<void>((resolve) => setImmediate(resolve)))
 
 const OWNER = 'b' as const
 const PARTNER = 'a' as const

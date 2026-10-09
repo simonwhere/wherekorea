@@ -262,12 +262,12 @@ export function PartnerChecks() {
 // ── Couple week count ───────────────────────────────────────
 
 /** "둘 다 마친 날 · 이번 주 N/7" — counts days this week, so one missed day never resets it. */
-export function CoupleStreak() {
+export function CoupleStreak({ className }: { className?: string }) {
   const { state, today } = useApp()
   const n = coupleWeekCount(state, today)
   if (n === 0) return null
   return (
-    <p className="flex items-center justify-center gap-1.5 rounded-xl bg-ok-soft px-3 py-2.5 text-sm font-semibold text-ok">
+    <p className={cx('flex items-center justify-center gap-1.5 rounded-xl bg-ok-soft px-3 py-2.5 text-sm font-semibold text-ok', className)}>
       <Icon name="users" className="h-4 w-4 shrink-0" strokeWidth={2} /> 둘 다 마친 날 · <span className="tabular-nums">{weekCountLabel(n)}</span>
     </p>
   )

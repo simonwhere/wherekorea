@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { DATE_IDEAS } from '@/lib/content/dateIdeas'
-import { addDays, range } from '@/lib/dates'
+import { addDays, dLabel, range } from '@/lib/dates'
 import { createDemoState } from '@/lib/demo'
 import { createInitialState } from '@/lib/initial'
 import { setCoupleDates } from '@/lib/logic/anniversary'
@@ -15,7 +15,7 @@ import { addEntry } from '@/lib/logic/diary'
 import { giveIntimacyConsent, toggleIntimacyDay } from '@/lib/logic/intimacy'
 import { addLHTest, addPregnancyTest } from '@/lib/logic/logs'
 import { canNudge, sendCheer, sendNudge } from '@/lib/logic/notifications'
-import { FERTILITY_TEST_ID, completeMonthlyTask, monthlyTask, setFertilityApplied } from '@/lib/logic/partnerTrack'
+import { FERTILITY_APPLY_ID, FERTILITY_TEST_ID, completeMonthlyTask, monthlyTask, setFertilityApplied } from '@/lib/logic/partnerTrack'
 import {
   PARTNER_EVENT_KINDS,
   appliedEventKey,
@@ -28,6 +28,9 @@ import {
 import { myPrep } from '@/lib/logic/myPrep'
 import { LEAVE_DAYS_PER_YEAR, PAID_LEAVE_CHANGE, PAID_LEAVE_DAYS } from '@/lib/logic/treatments'
 import {
+  CHECKUP_ROLE,
+  LINK_TOGETHER_ELSEWHERE,
+  linkTogetherPlan,
   CLINIC_KIND_WORD,
   CLINIC_LEAVE_SOURCE,
   CLINIC_WEEK_DAYS,
@@ -74,6 +77,11 @@ import {
   type Moment,
 } from '@/lib/logic/ttcFlow'
 import { addTreatment } from '@/lib/logic/treatments'
+import { templateById } from '@/lib/content/roadmap'
+import { dueDate, formatGA, gestationalAge, updatePregnancy } from '@/lib/logic/pregnancy'
+import { planItems } from '@/lib/logic/plan'
+import { addCustomTask } from '@/lib/logic/roadmap'
+import { LINK_TOGETHER_MAX, linkTogether, neutralLabel, supportItem, type NeutralStatus } from '@/lib/logic/together'
 import type { AlertStyle, AppState, ISODate, MemberId, ShareLevel } from '@/lib/types'
 
 // 'a' = 민수 (partner), 'b' = 지은 (cycle owner). Three 28-day cycles, then the
@@ -91,6 +99,10 @@ const TREATMENT_NOTE = 'TREATMENT_NOTE_4e88'
 const APPT_NOTE = 'APPT_NOTE_5d1c'
 const HIS_APPT_NOTE = 'HIS_NOTE_2b7e'
 const OWNER_ITEM = 'OWNER_ITEM_8a2f'
+/** The pregnant scenarios' appointment titles and her own item's title — free text that never travels. */
+const APPT_TITLE = 'APPT_TITLE_6b0d'
+const SHARED_TITLE = 'SHARED_TITLE_1e4f'
+const OWN_TASK = 'OWN_TASK_3c5a'
 const LH_TIME = '06:17'
 const BANNED = /숙제|실패|노력|오늘 꼭|관계를 가져야|진단|무월경|유산|자궁외|착상|성공률|정확한 배란|확률/
 const FERTILE = /가임기|배란|LH|가능성 높/
@@ -221,6 +233,38 @@ function filled(base: AppState = fresh()): AppState {
   return s
 }
 
+/**
+ * The pregnant stage with what 같이 챙길 것 and the stage card read: 11주 4일 on
+ * 2026-09-20 (LMP 07-01), her own checkup on 09-21 (a title and a note that
+ * must never travel), a shared NT test on 09-24, her own item with a due day,
+ * and his [같이 할게요] on 국민행복카드 from 09-19.
+ */
+function pregnantPlan(base: AppState = filled()): AppState {
+  let s: AppState = { ...base, stage: 'pregnant', pregnancy: { lmp: '2026-07-01', confirmedAt: '2026-08-05' } }
+  s = addAppointment(
+    s,
+    { date: '2026-09-21', time: '11:00', title: APPT_TITLE, place: '○○산부인과', who: OWNER, kind: 'hospital', note: APPT_NOTE },
+    OWNER,
+  )
+  s = addAppointment(
+    s,
+    { date: '2026-09-24', time: '10:00', title: SHARED_TITLE, place: '다니는 산부인과', who: 'both', kind: 'test', note: APPT_NOTE, taskId: 'p1-nt' },
+    OWNER,
+  )
+  s = addCustomTask(s, { title: OWN_TASK, phase: 'pregnancy-1st', who: OWNER, due: '2026-09-22' }, OWNER)
+  return supportItem(s, PARTNER, 'p1-voucher', '2026-09-19')
+}
+
+/** The parenting stage: 콩이 born 2026-08-18. */
+function parentingPlan(base: AppState = filled()): AppState {
+  return {
+    ...base,
+    stage: 'parenting',
+    pregnancy: { lmp: '2025-11-10', confirmedAt: '2025-12-15' },
+    baby: { name: '콩이', birthDate: '2026-08-18', sex: 'unknown' },
+  }
+}
+
 interface Scenario {
   name: string
   day: ISODate
@@ -276,6 +320,8 @@ function scenarios(): Scenario[] {
       day: '2026-09-20',
       state: { ...s, stage: 'pregnant', pregnancy: { lmp: '2026-09-01', confirmedAt: '2026-09-18' } },
     },
+    { name: 'pregnant (11주, her checkup tomorrow, a shared test, his support)', day: '2026-09-20', state: pregnantPlan(s) },
+    { name: 'parenting', day: '2026-09-20', state: parentingPlan(s) },
   ]
 }
 
@@ -307,6 +353,15 @@ function applyLens(s: AppState, l: Lens, i: number): AppState {
   out = withCoverOnLink(out, i % 2 === 0)
   return out
 }
+
+/**
+ * Let the worker's event loop turn between chunks of a long synchronous walk:
+ * vitest's worker → main RPC (onTaskUpdate) times out after 60 s, and two
+ * long walks back to back on a loaded machine used to cross it.
+ */
+const yieldToRunner = () => new Promise<void>((resolve) => setImmediate(resolve))
+// …and between tests: the runner itself goes from one synchronous test to the next without a turn.
+beforeEach(() => yieldToRunner())
 
 /** The moment card's words as the snapshot carries them. */
 function projected(m: Moment | null) {
@@ -363,6 +418,18 @@ function redacted(day: PartnerDay): string {
   // His clinic week (N32): the couple's own appointment days — not cycle dates.
   const clinic = copy.clinic as { appointments: Array<Record<string, unknown>> } | undefined
   if (clinic) for (const a of clinic.appointments) delete a.date
+  // 같이 챙길 것 (2026-10-09): a booked day (pregnant / parenting) or the day a window opens — the shared plan's days.
+  const plan = copy.togetherPlan as { items: Array<Record<string, unknown>> } | undefined
+  if (plan) for (const it of plan.items) delete it.date
+  // The pregnant stage card's next checkup: an appointment's day.
+  const card = copy.stageCard as { checkup?: Record<string, unknown> } | undefined
+  if (card?.checkup) delete card.checkup.date
+  // His own pregnancy-stage items in 내 준비: the days their windows open / close.
+  const prep = copy.myPrep as { items?: Array<Record<string, unknown>> } | undefined
+  for (const it of prep?.items ?? []) {
+    delete it.from
+    delete it.until
+  }
   return JSON.stringify(copy)
 }
 
@@ -407,7 +474,7 @@ function checkDay(s: AppState, d: PartnerDay, day: ISODate, tag: string, sc?: Sc
   }
 
   // Nothing owner-only, by marker, by key, by word.
-  for (const w of [PRIVATE_LINE, SECRET_ENTRY, TREATMENT_NOTE, APPT_NOTE, HIS_APPT_NOTE, OWNER_ITEM, LH_TIME, ...FORBIDDEN_KEYS]) {
+  for (const w of [PRIVATE_LINE, SECRET_ENTRY, TREATMENT_NOTE, APPT_NOTE, HIS_APPT_NOTE, OWNER_ITEM, LH_TIME, APPT_TITLE, SHARED_TITLE, OWN_TASK, ...FORBIDDEN_KEYS]) {
     expect(json.includes(w), `${tag}: ${w}`).toBe(false)
   }
   // Her feel chips: nowhere — the signal catalogue is static text ('오늘은 좀
@@ -527,6 +594,83 @@ function checkDay(s: AppState, d: PartnerDay, day: ISODate, tag: string, sc?: Sc
     expect(JSON.stringify(w), tag).not.toMatch(/\b0\/7|안 했어요/)
   }
   if (d.moment?.support) expect(d.week, tag).toBeUndefined()
+
+  // 같이 챙길 것 (2026-10-09): together.linkTogether as is — her items and the shared ones, neutral, never overdue.
+  checkTogetherPlan(s, d, day, tag)
+  // The pregnant stage card: only while pregnant; the weeks and the due date she switched to, his next shared checkup.
+  checkStageCard(s, d, day, tag)
+  if (d.moment?.support) {
+    expect(d.togetherPlan, tag).toBeUndefined()
+    expect(d.stageCard, tag).toBeUndefined()
+  }
+}
+
+/** Neutral words only about her items: no overdue, no warning, no '안 했어요'. */
+const NOT_NEUTRAL = /기한 지남|지났어요|안 했어요|늦었|서둘러|놓쳤/
+
+function checkTogetherPlan(s: AppState, d: PartnerDay, day: ISODate, tag: string): void {
+  // His month task's own item is that card's (never twice on one page).
+  expect(d.togetherPlan, tag).toEqual(linkTogetherPlan(s, day, PARTNER, d.task ? [d.task.id] : []))
+  if (d.task) expect(d.togetherPlan?.items.some((i) => i.id === d.task!.id) ?? false, tag).toBe(false)
+  if (!d.togetherPlan) return
+  const plan = d.togetherPlan
+  expect(plan.items.length, tag).toBeGreaterThan(0)
+  expect(plan.items.length, tag).toBeLessThanOrEqual(LINK_TOGETHER_MAX)
+  expect(plan.ownerName, tag).toBe('지은님')
+  const json = JSON.stringify(plan)
+  expect(json, tag).not.toMatch(NOT_NEUTRAL)
+  for (const w of ['"time"', '"place"', '"note"', '"custom"', '"supportedBy"', '"doneAt"', '"owners"']) expect(json.includes(w), `${tag}: ${w}`).toBe(false)
+  for (const it of plan.items) {
+    // Never the 신청 row: his half is his month task, her half is hers.
+    expect(LINK_TOGETHER_ELSEWHERE, tag).not.toContain(it.id)
+    // A catalogue item, hers or shared, with his support line.
+    const t = templateById(it.id)
+    expect(t, `${tag} ${it.id}`).toBeDefined()
+    expect(it.title, tag).toBe(t!.title)
+    expect(it.support, tag).toBe(t!.support)
+    expect(['theirs', 'ours'], tag).toContain(it.whose)
+    expect(['upcoming', 'this-week', 'done'], tag).toContain(it.status)
+    expect(it.label, tag).toBe(neutralLabel({ status: it.status as NeutralStatus, ...(it.date ? { date: it.date } : {}) }))
+    if (it.status === 'done') expect(it.canSupport, tag).toBe(false)
+    // A booked day travels only once she is pregnant (her bookings stay in the app while preparing).
+    if (s.stage === 'preparing' && it.date) {
+      const booked = s.appointments.some((a) => a.taskId === it.id && a.date === it.date && a.date >= day)
+      expect(booked, `${tag} ${it.id}: a booked day while preparing`).toBe(false)
+    }
+  }
+}
+
+function checkStageCard(s: AppState, d: PartnerDay, day: ISODate, tag: string): void {
+  const p = s.stage === 'pregnant' ? s.pregnancy : undefined
+  if (!p) {
+    expect(d.stageCard, tag).toBeUndefined()
+    return
+  }
+  const c = d.stageCard!
+  expect(c, tag).toBeDefined()
+  const ga = gestationalAge(p, day)
+  expect(c.title, tag).toBe(`임신 ${formatGA(ga)}`)
+  expect(c.weeks, tag).toBe(ga.weeks)
+  expect(c.dday, tag).toBe(dLabel(dueDate(p), day))
+  expect(c.dueLabel, tag).toMatch(p.dueDateOverride ? /^병원 예정일 / : /^예정일 .+ \(예상\)$/)
+  // Words and two numbers: no date of hers (no LMP, no confirmation day), nothing about a period.
+  const { checkup: _k, ...words } = c
+  expect(JSON.stringify(words), tag).not.toMatch(/\d{4}-\d{2}-\d{2}|lmp|confirmedAt|생리|마지막/)
+  if (c.checkup) {
+    const k = c.checkup
+    expect(['both', 'hers'], tag).toContain(k.with)
+    // What he does is the booked item's support line (as his day-before 🔔 says it on hers), else the general line.
+    const linked = k.itemId ? templateById(k.itemId) : undefined
+    if (k.itemId) expect(linked?.support, tag).toBeTruthy()
+    expect(k.role, tag).toBe(linked?.support ?? (k.with === 'both' ? CHECKUP_ROLE.both : CHECKUP_ROLE.hers))
+    // Her own: the day only. Never a title or a note.
+    if (k.with === 'hers') {
+      expect(k.time, tag).toBeUndefined()
+      expect(k.place, tag).toBeUndefined()
+    }
+    expect(Object.keys(k).every((x) => ['date', 'time', 'place', 'label', 'with', 'role', 'itemId'].includes(x)), tag).toBe(true)
+    expect(k.date >= day, tag).toBe(true)
+  }
 }
 
 /**
@@ -595,7 +739,7 @@ function checkSnapshot(s: AppState, today: ISODate, tag: string, sc?: Scenario):
 }
 
 describe('buildPartnerSnapshot — every lens × every moment × seven days', () => {
-  it('keeps every rule for 36 lenses × 24 scenarios, each future day equal to its own same-day page, and stays small', { timeout: 300_000 }, () => {
+  it('keeps every rule for 36 lenses × 26 scenarios, each future day equal to its own same-day page, and stays small', { timeout: 300_000 }, async () => {
     let maxBytes = 0
     let covers = 0
     let veiled = 0
@@ -603,8 +747,13 @@ describe('buildPartnerSnapshot — every lens × every moment × seven days', ()
     let withSignal = 0
     let weeks = 0
     let heldDays = 0
+    let plans = 0
+    let cards = 0
+    let checkups = 0
     const copies = new Set<string>()
-    lenses().forEach((lens, i) => {
+    for (const [i, lens] of lenses().entries()) {
+      // A long walk: let the worker answer the runner between lenses (vitest's RPC times out after 60 s).
+      await yieldToRunner()
       for (const sc of scenarios()) {
         const s = applyLens(sc.state, lens, i)
         const snap = checkSnapshot(s, sc.day, `${sc.name} · ${JSON.stringify(lens)} #${i}`, sc)
@@ -616,10 +765,13 @@ describe('buildPartnerSnapshot — every lens × every moment × seven days', ()
         if (d.signal) withSignal++
         if (d.week) weeks++
         if (d.moment) copies.add(d.moment.copy)
+        plans += snap.days.filter((x) => x.togetherPlan).length
+        cards += snap.days.filter((x) => x.stageCard).length
+        checkups += snap.days.filter((x) => x.stageCard?.checkup).length
         const todayKind = ttcMoment(s, sc.day, PARTNER)?.kind
         heldDays += snap.days.filter((x, k) => k > 0 && forecastHold(todayKind, ttcMoment(s, x.date, PARTNER)?.kind)).length
       }
-    })
+    }
     // The table really exercised the branches.
     expect(covers).toBeGreaterThan(50)
     expect(veiled).toBeGreaterThan(50)
@@ -627,6 +779,9 @@ describe('buildPartnerSnapshot — every lens × every moment × seven days', ()
     expect(withSignal).toBeGreaterThan(20)
     expect(weeks).toBeGreaterThan(100)
     expect(heldDays).toBeGreaterThan(10)
+    expect(plans).toBeGreaterThan(500)
+    expect(cards).toBeGreaterThan(100)
+    expect(checkups).toBeGreaterThan(50)
     for (const copy of [
       'partner.neutral',
       'partner.our-week',
@@ -657,8 +812,9 @@ describe('buildPartnerSnapshot — every lens × every moment × seven days', ()
     expect(buildPartnerSnapshot(share(s), '2026-09-11', OWNER)).toBeNull()
   })
 
-  it('keeps the moment card in step with the app through a whole cycle, day by day', { timeout: 300_000 }, () => {
+  it('keeps the moment card in step with the app through a whole cycle, day by day', { timeout: 300_000 }, async () => {
     for (const lens of lenses().filter((_, i) => i % 3 !== 2).slice(0, 8)) {
+      await yieldToRunner()
       const s = applyLens(filled(), lens, 1)
       for (const day of range('2026-09-01', '2026-10-05')) checkSnapshot(s, day, `${day} ${JSON.stringify(lens)}`)
     }
@@ -836,15 +992,244 @@ describe('이번 주 우리 둘 on the link (N21)', () => {
     expect(day0(ended, today).myPrep).toBeUndefined()
   })
 
-  it('rests outside the preparing stage and in the quiet after a loss', () => {
+  it('runs while pregnant too (2026-10-09), rests in the parenting stage and in the quiet after a loss', () => {
     const preg: AppState = { ...filled(), stage: 'pregnant', pregnancy: { lmp: '2026-09-01', confirmedAt: '2026-09-18' } }
-    expect(day0(preg, '2026-09-20').week).toBeUndefined()
+    const w = day0(preg, '2026-09-20').week!
+    expect(w).toBeDefined()
+    expect(w.options.map((o) => o.id)).toEqual(weekOptions(preg, '2026-09-20', PARTNER).map((o) => o.id))
+    expect(day0(parentingPlan(), '2026-09-20').week).toBeUndefined()
     const ended: AppState = {
       ...filled(fresh({ periods: [{ start: '2026-04-03' }, { start: '2026-05-01' }] })),
       pregnancy: { lmp: '2026-05-01', confirmedAt: '2026-06-10', endedAt: '2026-07-01' },
     }
     expect(day0(ended, '2026-07-10').week).toBeUndefined()
     expect(day0(startLossRest(ended, '2026-07-01'), '2026-07-20').week).toBeUndefined()
+  })
+})
+
+describe('같이 챙길 것 and the pregnant stage on the link (2026-10-09)', () => {
+  /** The parts this request added, for the invariance checks. */
+  const together = (d: PartnerDay) => ({ togetherPlan: d.togetherPlan, stageCard: d.stageCard, week: d.week, myPrep: d.myPrep })
+
+  it('carries her items and the shared ones with a neutral status and his support line, in every stage', () => {
+    const prep = day0(filled(), '2026-09-20').togetherPlan!
+    expect(prep.ownerName).toBe('지은님')
+    expect(prep.items.length).toBeGreaterThan(0)
+    // While preparing her bookings stay in the app: no day on any row.
+    expect(prep.items.every((i) => i.date === undefined)).toBe(true)
+    const preg = day0(pregnantPlan(), '2026-09-20').togetherPlan!
+    const nt = preg.items.find((i) => i.id === 'p1-nt')!
+    expect(nt).toMatchObject({ whose: 'theirs', status: 'upcoming', date: '2026-09-24', support: templateById('p1-nt')!.support, canSupport: true })
+    expect(nt.label).toBe(neutralLabel({ status: 'upcoming', date: '2026-09-24' }))
+    // The appointment it is booked for gives its day — never its title, note, time or place.
+    expect(JSON.stringify(preg)).not.toMatch(/SHARED_TITLE|APPT_TITLE|APPT_NOTE|10:00|산부인과/)
+    // Her own item (free text) never travels.
+    expect(JSON.stringify(preg)).not.toContain(OWN_TASK)
+    expect(day0(parentingPlan(), '2026-09-20').togetherPlan?.items.every((i) => ['theirs', 'ours'].includes(i.whose))).toBe(true)
+  })
+
+  it('leaves the 신청 row to his month task: her own application never moves the list', () => {
+    const s = filled() // he applied on 08-24
+    const day = '2026-09-20'
+    // The plan itself has the shared row (and she would see it in 챙길 것) …
+    expect(linkTogether(s, day, PARTNER)!.items.some((i) => i.id === FERTILITY_APPLY_ID)).toBe(true)
+    // … his page does not: his half is the month task right there, her half is hers.
+    const before = day0(s, day)
+    expect(before.task).toBeDefined()
+    expect(before.togetherPlan!.items.some((i) => i.id === FERTILITY_APPLY_ID)).toBe(false)
+    const applied = setFertilityApplied(s, OWNER, true, day)
+    expect(applied.planDone[FERTILITY_APPLY_ID]).toBeDefined()
+    expect(day0(applied, day).togetherPlan).toEqual(before.togetherPlan)
+  })
+
+  it('a shared item that is his month task stays on that card only (the pregnant demo’s 분만 병원 정하기)', () => {
+    const day = '2026-10-09'
+    const s = createDemoState(day, new Date(`${day}T10:00:00`), 'pregnant')
+    const d = day0(s, day)
+    expect(d.task?.id).toBe('p1-birth-hospital')
+    expect(linkTogether(s, day, PARTNER)!.items.some((i) => i.id === 'p1-birth-hospital')).toBe(true)
+    expect(d.togetherPlan!.items.some((i) => i.id === 'p1-birth-hospital')).toBe(false)
+    // Its place goes to the next row, not to a gap.
+    expect(d.togetherPlan!.items.length).toBe(Math.min(LINK_TOGETHER_MAX, linkTogether(s, day, PARTNER)!.items.length))
+  })
+
+  it('never shows one of her items as overdue: a passed deadline or a lapsed window simply leaves his list (a whole pregnancy, then a baby’s first months)', () => {
+    let lapsed = 0
+    let overdue = 0
+    const walk = (s: AppState, from: ISODate, days: number) => {
+      for (let k = 0; k < days; k += 3) {
+        const day = addDays(from, k)
+        const items = planItems(s, day)
+        const plan = day0(s, day).togetherPlan
+        for (const it of plan?.items ?? []) {
+          const src = items.find((i) => i.id === it.id)!
+          expect(src.status === 'overdue' || (src.lapsed && src.status !== 'done'), `${day} ${it.id}`).toBe(false)
+          expect(it.label, `${day} ${it.id}`).not.toMatch(NOT_NEUTRAL)
+        }
+        // Her passed ones are there in 챙길 것 (her own screen keeps its words) — and not on his page.
+        for (const it of items) {
+          if (it.status === 'done' || it.owners.length !== 1 || it.owners[0] !== OWNER) continue
+          if (it.status !== 'overdue' && !it.lapsed) continue
+          if (it.status === 'overdue') overdue++
+          else lapsed++
+          expect(plan?.items.some((x) => x.id === it.id) ?? false, `${day} ${it.id}`).toBe(false)
+        }
+      }
+    }
+    walk(pregnantPlan(), '2026-07-29', 36 * 7)
+    walk(parentingPlan(), '2026-08-18', 150)
+    expect(lapsed).toBeGreaterThan(0)
+    expect(overdue).toBeGreaterThan(0)
+  })
+
+  it('[같이 할게요] comes back as a support event: supported on the next page, taken back with on:false', () => {
+    const day = '2026-09-20'
+    let s = pregnantPlan()
+    const row = () => day0(s, day).togetherPlan!.items.find((i) => i.id === 'p1-nt')!
+    expect(row().supported).toBe(false)
+    s = applyPartnerEvent(s, { id: 'sup-1', from: PARTNER, kind: 'support', itemId: 'p1-nt', on: true }, day)
+    expect(s.decisions['support:p1-nt:a']).toBe(day)
+    expect(row().supported).toBe(true)
+    // Each future page of the snapshot says so too.
+    expect(buildPartnerSnapshot(s, day, PARTNER)!.days.every((d) => d.togetherPlan?.items.find((i) => i.id === 'p1-nt')?.supported ?? true)).toBe(true)
+    s = applyPartnerEvent(s, { id: 'sup-2', from: PARTNER, kind: 'support', itemId: 'p1-nt', on: false }, day)
+    expect(s.decisions['support:p1-nt:a']).toBeUndefined()
+    expect(row().supported).toBe(false)
+    // By the moment it was taken in: a tap from Sunday counts when her phone opens on Wednesday.
+    const r: ReceivedEvent = { event: { id: 'sup-3', from: PARTNER, kind: 'support', itemId: 'p1-nt', on: true }, receivedAt: stamp(day, 21) }
+    const later = applyReceivedEvents(s, [r], '2026-09-23')
+    expect(later.decisions['support:p1-nt:a']).toBe(day)
+  })
+
+  it('a [같이 할게요] waits out the quiet after a loss; taking one back does not', () => {
+    const ended: AppState = {
+      ...filled(fresh({ periods: [{ start: '2026-04-03' }, { start: '2026-05-01' }] })),
+      pregnancy: { lmp: '2026-05-01', confirmedAt: '2026-06-10', endedAt: '2026-07-01' },
+      decisions: { 'support:pre-varicella:a': '2026-06-20' },
+    }
+    expect(day0(ended, '2026-07-10').togetherPlan).toBeUndefined()
+    const on: ReceivedEvent = { event: { id: 'q-on', from: PARTNER, kind: 'support', itemId: 'pre-checkup-carrier', on: true }, receivedAt: stamp('2026-07-09') }
+    const off: ReceivedEvent = { event: { id: 'q-off', from: PARTNER, kind: 'support', itemId: 'pre-varicella', on: false }, receivedAt: stamp('2026-07-09') }
+    const out = applyReceivedEvents(ended, [on, off], '2026-07-10')
+    expect(out.decisions['support:pre-checkup-carrier:a']).toBeUndefined()
+    expect(out.decisions['support:pre-varicella:a']).toBeUndefined()
+    // Once the quiet is over, the list is back.
+    expect(day0(ended, '2026-08-20').togetherPlan).toBeDefined()
+  })
+
+  it('the pregnant stage card: the weeks, the trimester, the due date (예상 unless the hospital gave it) and D-N, day by day', () => {
+    const s = pregnantPlan()
+    const snap = buildPartnerSnapshot(s, '2026-09-20', PARTNER)!
+    expect(snap.days[0]!.stageCard).toMatchObject({
+      kind: 'pregnant',
+      eyebrow: '임신 초기',
+      title: '임신 11주 4일',
+      weeks: 11,
+      dday: 'D-199',
+      dueLabel: '예정일 4월 7일 (예상)',
+    })
+    expect(snap.days[6]!.stageCard!.title).toBe('임신 12주 3일')
+    expect(snap.days[6]!.stageCard!.dday).toBe('D-193')
+    const told = updatePregnancy(s, { dueDateOverride: '2027-04-10' })
+    expect(day0(told, '2026-09-20').stageCard).toMatchObject({ title: '임신 11주 1일', dday: 'D-202', dueLabel: '병원 예정일 4월 10일' })
+    // Only while pregnant, and only for him.
+    expect(day0(filled(), '2026-09-20').stageCard).toBeUndefined()
+    expect(day0(parentingPlan(), '2026-09-20').stageCard).toBeUndefined()
+    expect(buildPartnerDay(s, '2026-09-20', OWNER)).toBeNull()
+    expect(day0({ ...s, pregnancy: undefined }, '2026-09-20').stageCard).toBeUndefined()
+  })
+
+  it('his next shared checkup: hers by the day only, a shared one with its time and place and the catalogue name — never a title or a note', () => {
+    const s = pregnantPlan()
+    // Sunday: her own checkup tomorrow — the day, a kind word and what he can do.
+    expect(day0(s, '2026-09-20').stageCard!.checkup).toEqual({ date: '2026-09-21', label: CLINIC_KIND_WORD.hospital, with: 'hers', role: CHECKUP_ROLE.hers })
+    // Tuesday: the shared NT test on Thursday — time, place, the item's catalogue name.
+    expect(day0(s, '2026-09-22').stageCard!.checkup).toEqual({
+      date: '2026-09-24',
+      time: '10:00',
+      place: '다니는 산부인과',
+      label: 'NT(목덜미 투명대)',
+      with: 'both',
+      // The item it is booked for: its support line, and the page draws its [같이 할게요] on the card
+      // (leaving its row out of 같이 챙길 것).
+      role: templateById('p1-nt')!.support,
+      itemId: 'p1-nt',
+    })
+    // Friday: his own test on the 25th is not a checkup of hers — nothing ahead within two weeks.
+    expect(day0(s, '2026-09-25').stageCard!.checkup).toBeUndefined()
+    for (const d of range('2026-09-20', '2026-09-30')) {
+      const json = JSON.stringify(day0(s, d).stageCard)
+      for (const w of [APPT_TITLE, SHARED_TITLE, APPT_NOTE, HIS_APPT_NOTE, '○○산부인과', '11:00']) expect(json.includes(w), `${d}: ${w}`).toBe(false)
+    }
+    // Done or deleted ones, admin / 주사·약 kinds and anything beyond two weeks don't count.
+    const ids = s.appointments.filter((a) => a.date === '2026-09-21' || a.date === '2026-09-24').map((a) => a.id)
+    const done = { ...s, appointments: s.appointments.map((a) => (ids.includes(a.id) ? { ...a, done: true } : a)) }
+    expect(day0(done, '2026-09-20').stageCard!.checkup).toBeUndefined()
+    let far = addAppointment(pregnantPlan(fresh()), { date: '2026-10-08', title: 'x', who: OWNER, kind: 'admin' }, OWNER)
+    far = addAppointment(far, { date: '2026-10-08', title: 'x', who: OWNER, kind: 'injection' }, OWNER)
+    far = { ...far, appointments: far.appointments.filter((a) => !ids.includes(a.id) && a.date !== '2026-09-21' && a.date !== '2026-09-24') }
+    far = addAppointment(far, { date: '2026-10-05', title: 'x', who: 'both', kind: 'hospital' }, OWNER)
+    expect(day0(far, '2026-09-20').stageCard!.checkup).toBeUndefined()
+    expect(day0(far, '2026-09-21').stageCard!.checkup?.date).toBe('2026-10-05')
+  })
+
+  it('while pregnant the page carries the week loop (its own catalogue, 검진 날 in a checkup week) and 내 준비 with his own items', () => {
+    const s = pregnantPlan()
+    const sunday = day0(s, '2026-09-20')
+    expect(sunday.week!.options.map((o) => o.id)).toEqual(weekOptions(s, '2026-09-20', PARTNER).map((o) => o.id))
+    expect(sunday.week!.options.some((o) => o.id === 'checkup-day')).toBe(false)
+    expect(day0(s, '2026-09-21').week!.options[2]!.id).toBe('checkup-day')
+    const own = myPrep(s, '2026-09-20', PARTNER)
+    expect(sunday.myPrep!.chainStep).toBe(own.chainStep)
+    expect(sunday.myPrep!.items).toEqual(own.items)
+    expect(sunday.myPrep!.items!.map((i) => i.id)).toContain('p1-partner-support')
+    expect(JSON.stringify(sunday.myPrep)).not.toMatch(/\b0\/|안 했어요/)
+    // Her [고마워요] and his [했어요] work the same as while preparing.
+    let t = applyPartnerEvent(s, { id: 'wp', from: PARTNER, kind: 'week-pick', optionId: 'checkup-day', date: '2026-09-21' }, '2026-09-21')
+    t = applyPartnerEvent(t, { id: 'wd', from: PARTNER, kind: 'week-done', date: '2026-09-24' }, '2026-09-24')
+    t = thankWeek(t, OWNER, '2026-09-25')
+    expect(day0(t, '2026-09-25').week).toMatchObject({ pick: 'checkup-day', done: true, doneText: '검진 날 같이 갔어요', thanks: '2026-09-25' })
+  })
+
+  it('nothing she logs privately, nor what she shares of her cycle, changes any of it (규칙 1: 화면이 바뀌는 것도 정보)', () => {
+    const base = pregnantPlan()
+    const variants: Array<[string, AppState]> = [
+      ['a period logged', { ...base, periods: [...base.periods, { start: '2026-09-19' }] }],
+      ['LH', addLHTest(base, { date: '2026-09-19', result: 'peak', time: LH_TIME, by: OWNER }, '2026-09-20')],
+      ['a test', addPregnancyTest(base, { id: 'neg', date: '2026-09-19', result: 'negative', by: OWNER }, '2026-09-20').state],
+      ['feel + 나만 보기', setPrivateNote(setFeel(base, OWNER, '2026-09-19', 'tired'), OWNER, '2026-09-19', PRIVATE_LINE)],
+      ['날짜 없음', noDates(base)],
+      ['자세히', share(base)],
+    ]
+    for (const day of ['2026-09-20', '2026-09-21', '2026-09-24']) {
+      const want = together(day0(base, day))
+      for (const [name, v] of variants) {
+        expect(together(day0(v, day)), `${day} ${name}`).toEqual(want)
+      }
+    }
+    // While preparing: an untold positive test, bleeding, a rest — the together block stays as it was.
+    const s = filled()
+    const positive = addPregnancyTest(s, { id: 'pos', date: '2026-09-26', result: 'positive', by: OWNER }, '2026-09-27').state
+    for (const [name, v] of [
+      ['positive (untold)', positive],
+      ['bleeding (untold)', markBleeding(positive, '2026-09-27')],
+      ['rest', startRestCycle(s, '2026-09-05', 'rest')],
+      ['clinic', startClinicMode(s, '2026-09-02')],
+      ['자세히', share(s)],
+    ] as const) {
+      expect(day0(v, '2026-09-28').togetherPlan, name).toEqual(day0(s, '2026-09-28').togetherPlan)
+    }
+  })
+
+  it('the preparing page is what it was, plus the together block: no stage card, no items in 내 준비', () => {
+    const KNOWN = ['date', 'together', 'line', 'cover', 'moment', 'strip', 'ideas', 'task', 'checks', 'signal', 'reply', 'signalsLeft', 'owner', 'week', 'myPrep', 'clinic', 'togetherPlan']
+    for (const sc of scenarios().filter((x) => x.state.stage === 'preparing')) {
+      for (const d of buildPartnerSnapshot(sc.state, sc.day, PARTNER)!.days) {
+        expect(Object.keys(d).filter((k) => !KNOWN.includes(k)), sc.name).toEqual([])
+        expect(d.stageCard, sc.name).toBeUndefined()
+        expect(d.myPrep?.items, sc.name).toBeUndefined()
+      }
+    }
   })
 })
 

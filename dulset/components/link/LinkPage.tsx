@@ -27,6 +27,10 @@
 // (transport.recordLinkOpen — the token only; research, never shown to her).
 // Nothing else is requested — no app state, no cycle data, no other origin.
 //
+// 2026-10-09 adds 같이 챙길 것 — her items with what he can do and [같이 할게요]
+// ('support' {itemId, on}) — and, while pregnant, the stage card in the moment
+// card's place with '이번 주 우리 둘' and 내 준비 under it.
+//
 // Now 3 adds: his clinic week's [같이 갈게요] ('join-appointment', N32), the
 // '내 준비' bar (N30), '매주 이 시간에 알려 받기' — a weekly .ics made right
 // here that links to '/link/' WITHOUT the token (N31); a token-less open on
@@ -53,6 +57,7 @@ import {
   type SnapshotTask,
 } from '@/lib/logic/partnerSnapshot'
 import { SIGNALS_PER_DAY, type Signal } from '@/lib/logic/signals'
+import type { LinkTogetherItem } from '@/lib/logic/together'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import { transport } from '@/lib/sync/transport'
 import type { ISODate } from '@/lib/types'
@@ -78,6 +83,7 @@ import {
   parseDeviceMark,
   pickToken,
   pruneMarks,
+  supportToast,
   viewerOf,
   weeklyLinkOrigin,
   type CachedView,
@@ -402,6 +408,10 @@ function LinkScreen() {
           { id: uid(), from: p.viewer, kind: 'join-appointment', appointmentId: a.id },
           `${clinicWhen(a.date, a.time, today)} 같이 간다고 ${owner.name}님에게 전했어요`,
         )
+      },
+      onSupport: (item: LinkTogetherItem, on: boolean) => {
+        setMarks((m) => ({ ...m, supports: { ...(m.supports ?? {}), [item.id]: { on, at: Date.now() } } }))
+        void send({ id: uid(), from: p.viewer, kind: 'support', itemId: item.id, on }, supportToast(item.title, on, p.togetherPlan?.ownerName ?? `${owner.name}님`))
       },
       onTold: (s: Signal) => {
         setMarks((m) => ({ ...m, told: { signalId: s.id, at: Date.now() }, signals: [...m.signals, Date.now()] }))

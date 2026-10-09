@@ -29,7 +29,15 @@ import {
   viewSignal,
   viewSignalsLeft,
   viewTask,
+  viewTogetherPlan,
   viewWeek,
+  prepItemWhen,
+  supportToast,
+  togetherBlockSub,
+  togetherShort,
+  TOGETHER_BLOCK_TITLE,
+  TOGETHER_FOLD,
+  togetherFoldLabel,
   LINK_INSTALL_KEY,
   LINK_INTRO_KEY,
   LINK_OUTSIDE_KEY,
@@ -39,8 +47,10 @@ import {
   ownerOf,
   viewerOf,
 } from '@/components/link/model'
+import { ROADMAP, templateById } from '@/lib/content/roadmap'
 import { addDays } from '@/lib/dates'
 import { createDemoState } from '@/lib/demo'
+import { shortTitle, supportKey, type LinkTogetherItem } from '@/lib/logic/together'
 import { activeItems, isDone } from '@/lib/logic/checks'
 import { hasAppliedEvent, type PartnerEvent } from '@/lib/logic/partnerEvents'
 import {
@@ -673,3 +683,87 @@ describe('link model (N30–N32 · N25 prep)', () => {
   })
 })
 
+
+// ── 같이 챙길 것 (2026-10-09): [같이 할게요] marks, words, the round trip ──
+
+describe('link model — 같이 챙길 것 (2026-10-09)', () => {
+  const item = (id: string, over: Partial<LinkTogetherItem> = {}): LinkTogetherItem => ({
+    id,
+    title: templateById(id)!.title,
+    kind: templateById(id)!.kind,
+    whose: 'theirs',
+    status: 'upcoming',
+    label: '예정',
+    support: templateById(id)!.support!,
+    supported: false,
+    canSupport: true,
+    ...over,
+  })
+  const page = { togetherPlan: { ownerName: '지은님', items: [item('pre-checkup-carrier'), item('pre-varicella', { supported: true })] } }
+
+  it('viewTogetherPlan: a tap reads as he set it at once; null when the page carries no list', () => {
+    expect(viewTogetherPlan({}, NO_MARKS)).toBeNull()
+    expect(viewTogetherPlan({ togetherPlan: { ownerName: '지은님', items: [] } }, NO_MARKS)).toBeNull()
+    expect(viewTogetherPlan(page, NO_MARKS)).toBe(page.togetherPlan)
+    const marks = { ...NO_MARKS, supports: { 'pre-checkup-carrier': { on: true, at: 1 }, 'pre-varicella': { on: false, at: 1 } } }
+    expect(viewTogetherPlan(page, marks)!.items.map((i) => i.supported)).toEqual([true, false])
+  })
+
+  it('pruneMarks keeps a [같이 할게요] until the snapshot agrees, the row is gone, or it expired', () => {
+    const now = 5_000_000
+    const marks = { ...NO_MARKS, supports: { 'pre-checkup-carrier': { on: true, at: now }, 'pre-varicella': { on: false, at: now } } }
+    const p = page as unknown as PartnerPage
+    expect(pruneMarks(marks, p, now + 1_000).supports).toEqual(marks.supports)
+    const agreed = { togetherPlan: { ownerName: '지은님', items: [item('pre-checkup-carrier', { supported: true })] } } as unknown as PartnerPage
+    // One agrees, the other's row is gone: both drop.
+    expect(pruneMarks(marks, agreed, now + 1_000).supports).toBeUndefined()
+    expect(pruneMarks(marks, p, now + MARK_TTL_MS + 1).supports).toBeUndefined()
+    expect(pruneMarks(marks, null, now).supports).toBeUndefined()
+  })
+
+  it('the words: 해요체, no pressure, no banned word — and the short name is together.shortTitle’s for every roadmap item', () => {
+    expect(TOGETHER_BLOCK_TITLE).toBe('같이 챙길 것')
+    expect(TOGETHER_FOLD).toBe(3)
+    expect(togetherFoldLabel(2, false)).toBe('2개 더 보기')
+    expect(togetherFoldLabel(2, true)).toBe('접기')
+    expect(togetherBlockSub('지은님')).toBe('지은님이 챙기는 것도 같이 봐요. [같이 할게요]를 누르면 지은님에게 전해져요.')
+    expect(togetherBlockSub('하나')).toMatch(/^하나가 /)
+    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', true, '지은님')).toBe('‘국민행복카드’ 같이 할게요. 지은님에게 전해져요')
+    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', false, '지은님')).toBe('‘국민행복카드’ 같이 하기를 취소했어요')
+    for (const t of ROADMAP) {
+      expect(togetherShort(t.title), t.id).toBe(shortTitle(t.title))
+      for (const on of [true, false]) expect(supportToast(t.title, on, '지은님'), t.id).not.toMatch(/숙제|실패|노력|오늘 꼭|기한 지남|안 했어요/)
+    }
+    for (const t of [TOGETHER_BLOCK_TITLE, togetherBlockSub('지은님')]) expect(t).not.toMatch(/숙제|실패|노력|오늘 꼭|생리|배란|가임기/)
+  })
+
+  it('pregnant 내 준비 rows read 했어요 · 지금 · N월 N일부터 — never a zero', () => {
+    expect(prepItemWhen({ id: 'x', label: 'x', state: 'done' })).toBe('했어요')
+    expect(prepItemWhen({ id: 'x', label: 'x', state: 'now' })).toBe('지금')
+    expect(prepItemWhen({ id: 'x', label: 'x', state: 'now', until: '2026-12-01' })).toBe('지금 · 12월 1일까지')
+    expect(prepItemWhen({ id: 'x', label: 'x', state: 'next', from: '2027-01-20' })).toBe('1월 20일부터')
+  })
+
+  it('over the mock transport: his [같이 할게요] from the page lands in her decisions, and the next snapshot says so', async () => {
+    const storage = memoryStorage()
+    const channel = memoryChannel()
+    const day = '2026-10-09'
+    let s = createDemoState(day, new Date(`${day}T10:00:00+09:00`), 'pregnant')
+    const link = makeLink(null, `${day}T09:00:00+09:00`)
+    const her = createMockTransport({ storage, channel, now: () => `${day}T09:00:00+09:00` })
+    const page = createMockTransport({ storage, channel, now: () => `${day}T19:30:00+09:00` })
+    await her.publishSnapshot(link.coupleId, link.token, buildPartnerSnapshot(s, day, partnerId(s))!)
+    const snap = (await page.fetchSnapshot(link.token))!
+    const row = snapshotDay(snap, day)!.togetherPlan!.items.find((i) => i.canSupport && !i.supported)!
+    const ev: PartnerEvent = { id: 'support-1', from: snap.viewer, kind: 'support', itemId: row.id, on: true }
+    await page.sendEvent(link.token, ev)
+    const got = await her.pullReceived(link.coupleId, '2026-10-02T00:00:00+09:00')
+    s = applyReceivedEvents(s, got, day)
+    expect(s.decisions[supportKey(row.id, snap.viewer)]).toBe(day)
+    await her.publishSnapshot(link.coupleId, link.token, buildPartnerSnapshot(s, day, partnerId(s))!)
+    const again = snapshotDay((await page.fetchSnapshot(link.token))!, day)!
+    expect(again.togetherPlan!.items.find((i) => i.id === row.id)!.supported).toBe(true)
+    // Applied once: the same event again changes nothing.
+    expect(applyReceivedEvents(s, got, day)).toBe(s)
+  })
+})

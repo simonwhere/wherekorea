@@ -65,6 +65,16 @@ export interface RoadmapTemplate {
   milestoneKey?: string
   link?: { label: string; url: string }
   sources: Array<{ name: string; url: string }>
+  /**
+   * What the 함께하는 사람 can do to share it — a short '~하기' phrase
+   * ('같이 가기 · 확인서 받을 때 옆에 있기', '신청 서류 같이 챙기기'), practical
+   * and relational, never a medical claim. Every 'carrier' item has one; a
+   * 'both' item has one when a split is natural; a 'partner' item never does.
+   * Shown only to the person who is not the carrier (lib/logic/together).
+   */
+  support?: string
+  /** One 해요체 sentence under the support line — for a 'both' item, who takes which half. */
+  supportNote?: string
 }
 
 export type ItemStatus = 'done' | 'overdue' | 'now' | 'soon' | 'later' | 'undated'

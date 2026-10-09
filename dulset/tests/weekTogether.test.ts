@@ -157,9 +157,8 @@ describe('weekOptions: three picks, rotated per (week, couple)', () => {
     expect(weekOptions({ ...one, createdAt: undefined as never }, TODAY, PARTNER)).toHaveLength(WEEK_OPTION_COUNT)
   })
 
-  it('never offers anything to the cycle owner, outside preparing, or before a valid day', () => {
+  it('never offers anything to the cycle owner, while parenting, or before a valid day', () => {
     expect(weekOptions(fresh(), TODAY, OWNER)).toEqual([])
-    expect(weekOptions({ ...fresh(), stage: 'pregnant' }, TODAY, PARTNER)).toEqual([])
     expect(weekOptions({ ...fresh(), stage: 'parenting' }, TODAY, PARTNER)).toEqual([])
     expect(weekOptions(fresh(), 'soon', PARTNER)).toEqual([])
   })

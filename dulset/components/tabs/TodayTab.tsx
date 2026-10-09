@@ -8,7 +8,9 @@
 //   1. today's moment — ring / week row, one title, one sentence, one action
 //   2. 오늘 할 일 — my checks, a weekly check-in when due, today's/tomorrow's appointment
 //   (partner) 이번 주 우리 둘 — the same weekly block as his link (N21): three
-//      picks → [했어요], 내 준비, her [고마워요] for the rest of the week
+//      picks → [했어요], her [고마워요] for the rest of the week; then '지은님 챙길
+//      것 · 같이' (her items with what he can do + [같이 할게요], 2026-10-09) and
+//      his 내 준비
 //   3. 우리 한 줄 — the partner's month task, the other's progress, '이번 주 민수님'
 //      + [고마워요] on her home (N21), a signal to answer, the reply to mine,
 //      and '신호 보내기' as one row (out of 더 보기); under it on her home, his
@@ -24,6 +26,8 @@
 // Pregnant / parenting open with the same cover (the line over it is the
 // greeting or the partner's doings — never the week count or anything about
 // health, lib/logic/cover.heroLine), then their stage hero (+ 기록 지키기 at the bottom).
+// Pregnant runs the same loop as preparing (PregnantHome: his week block, 이번 주
+// 같이 챙길 것, 내 준비; her 우리 한 줄 with [고마워요]); parenting is unchanged.
 
 import { useMemo } from 'react'
 import type { TabKey } from '@/components/AppShell'
@@ -32,6 +36,8 @@ import { Icon } from '@/components/ui/icons'
 import { MemberBubble } from '@/components/today/bits'
 import { partnerProgressLine } from '@/lib/logic/usView'
 import { monthlyTask } from '@/lib/logic/partnerTrack'
+import { myPrep } from '@/lib/logic/myPrep'
+import { carrierOf } from '@/lib/logic/together'
 import { partnerTaskVisible, ttcMoment } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import BackupBanner from '@/components/system/BackupBanner'
@@ -47,6 +53,8 @@ import { MonthlyTaskCard, useMonthlyTaskDone } from '@/components/today/MonthlyT
 import { PlanFocusCard, UpcomingCard } from '@/components/today/PlanCards'
 import StageHero from '@/components/today/StageHero'
 import TodayTasks from '@/components/today/TodayTasks'
+import MyPrepBar from '@/components/today/MyPrepBar'
+import TogetherCard from '@/components/today/TogetherCard'
 import UsLine from '@/components/today/UsLine'
 import WeekTogether from '@/components/today/WeekTogether'
 import { useFoldFit } from '@/components/today/useFoldFit'
@@ -98,8 +106,11 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
         />
       ) : null}
       {task && where === 'after' ? <MonthlyTaskCard task={task} onDone={done} className="mt-3.5" /> : null}
-      {/* His '이번 주 우리 둘' (N21) — nothing for the cycle owner, nor in the quiet after a loss. */}
-      <WeekTogether withChain={showTask} className="mt-3.5" />
+      {/* His '이번 주 우리 둘' (N21) → '지은님 챙길 것 · 같이' (her items, each with what he can do, 2026-10-09)
+          → his 내 준비 — nothing for the cycle owner, nor in the quiet after a loss. */}
+      <WeekTogether withChain={showTask} withPrep={false} className="mt-3.5" />
+      <TogetherCard stage="preparing" onNavigate={onNavigate} className="mt-2.5" />
+      <MyPrepBar className="mt-2.5" />
       <TodayTasks onNavigate={onNavigate} className="mt-7" />
       <UsLine task={where === 'us' ? task : undefined} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
       {/* Her home: where his 이번 달 할 일 stands, one line by its stage (N28) — never a zero, not in the quiet. */}
@@ -148,6 +159,81 @@ function PartnerProgress({ onNavigate, className }: { onNavigate: Nav; className
 }
 
 function StageHome({ onNavigate }: { onNavigate: Nav }) {
+  const { state } = useApp()
+  return state.stage === 'pregnant' ? <PregnantHome onNavigate={onNavigate} /> : <ParentingHome onNavigate={onNavigate} />
+}
+
+/**
+ * The pregnant home (founder request 2026-10-09: "여자가 챙겨야 할 것들을
+ * 남자에게도 계속 보여줘야해 같이 하는거야"): the same loop as the preparing home.
+ *  • His: 임신 N주 (StageHero — weeks and the due date are known to both once
+ *    she switched the stage) → 이번 주 우리 둘 (the pregnancy catalogue) → 이번 주
+ *    같이 챙길 것 (her + shared items, each with his support line and [같이
+ *    할게요]) → 내 준비 (his own items — the card leaves them out) → 오늘 할
+ *    일 → 우리 한 줄 (his 이번 달 할 일 first, as on his link).
+ *  • Hers: 임신 N주 → 다가오는 일정 · 이번 주 챙길 것 (her rows show '민수님이 같이
+ *    챙긴대요') → 오늘 할 일 → 우리 한 줄 ('이번 주 민수님' + [고마워요], '민수님이
+ *    ‘…’ 같이 챙긴대요', signals).
+ * Nothing she logs privately reaches any of it (lib/logic/together reads the
+ * shared plan only).
+ */
+function PregnantHome({ onNavigate }: { onNavigate: Nav }) {
+  const { state, today, me } = useApp()
+  const his = carrierOf(state) !== me.id
+  // His 이번 달 할 일 (e.g. 분만 병원 정하기 — a shared item) sits in 우리 한 줄, as on his link; the
+  // together card leaves it out so it never shows twice. Not for her, not in the quiet (partnerTaskVisible).
+  const showTask = his && partnerTaskVisible(state, today, me.id)
+  const task = useMemo(() => (showTask ? monthlyTask(state, today, me.id) : undefined), [showTask, state, today, me.id])
+  const { done, toast } = useMonthlyTaskDone()
+  // Rows another card on his home already carries leave the together card before its cut to three:
+  // his month task, and his own 내 준비 items (육아휴직 계획, 카시트 … — the link's same rule).
+  const exclude = useMemo(
+    () => (his ? [...(task ? [task.id] : []), ...(myPrep(state, today, me.id).items ?? []).map((i) => i.id)] : []),
+    [his, task, state, today, me.id],
+  )
+  return (
+    <div data-pregnant-home={his ? 'partner' : 'owner'}>
+      <CoverHero onNavigate={onNavigate} />
+
+      <div className="mt-[18px] space-y-3">
+        <AnniversaryBanner onNavigate={onNavigate} />
+        <StageHero onNavigate={onNavigate} />
+        {his ? null : (
+          <>
+            <UpcomingCard onNavigate={onNavigate} />
+            <PlanFocusCard onNavigate={onNavigate} />
+          </>
+        )}
+      </div>
+
+      {his ? (
+        <>
+          <WeekTogether withChain={false} withPrep={false} className="mt-3.5" />
+          <TogetherCard stage="pregnant" exclude={exclude} onNavigate={onNavigate} className="mt-2.5" />
+          <MyPrepBar className="mt-2.5" />
+        </>
+      ) : null}
+
+      <TodayTasks onNavigate={onNavigate} className="mt-7" />
+      <CoupleStreak className="mt-3" />
+      <UsLine task={task} onTaskDone={done} onNavigate={onNavigate} className="mt-7" />
+
+      <SectionTitle>우리 둘의 기록</SectionTitle>
+      <div className="space-y-3">
+        <DiaryPromptCard onNavigate={onNavigate} />
+        <DateCard onNavigate={onNavigate} />
+      </div>
+
+      {/* 기록 지키기: storage.persist() + install / weekly backup nudge, for every stage. */}
+      <div className="mt-6">
+        <InstallBackupCard />
+      </div>
+      {toast}
+    </div>
+  )
+}
+
+function ParentingHome({ onNavigate }: { onNavigate: Nav }) {
   return (
     <div>
       {/* 우리 표지: date · 함께한 지 D+N, one line, the photo — the same cover as the preparing home.

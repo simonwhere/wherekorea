@@ -17,6 +17,7 @@ import { useFirstPeriodMarker } from '@/components/system/BackupBanner'
 import { Avatar, ToastProvider, cx, focusMainHeading } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
+import { canLogCycle } from '@/lib/logic/prefs'
 import { bellUnread } from '@/lib/logic/usView'
 import { useLinkSync } from '@/lib/useLinkSync'
 import { useNotificationEngine } from '@/lib/useNotificationEngine'
@@ -81,6 +82,13 @@ const TAB_SETS: Record<Stage, TabDef[]> = {
 
 /** Where the center "+ 기록" button sits (after this many tabs), per stage. */
 const LOG_BUTTON_AFTER: Partial<Record<Stage, number>> = { preparing: 2 }
+/**
+ * While pregnant the button is the 함께하는 사람's only: his '했어요' sheet (this
+ * week's one thing, today's checks, signals — the same loop as preparing,
+ * founder request 2026-10-09). Her bar stays four tabs (her '+ 기록' would be a
+ * memo alone then; the 임신 tab has her own records).
+ */
+const PARTNER_LOG_BUTTON_AFTER: Partial<Record<Stage, number>> = { pregnant: 2 }
 
 /** Routes reachable without a bottom-bar button. */
 const EXTRA_ROUTES: TabKey[] = ['settings', 'date']
@@ -169,7 +177,7 @@ function MainApp() {
     window.addEventListener(OPEN_LOG_EVENT, onOpen)
     return () => window.removeEventListener(OPEN_LOG_EVENT, onOpen)
   }, [])
-  const logAfter = LOG_BUTTON_AFTER[state.stage]
+  const logAfter = LOG_BUTTON_AFTER[state.stage] ?? (canLogCycle(state, me.id) ? undefined : PARTNER_LOG_BUTTON_AFTER[state.stage])
   const navCount = tabs.length + (logAfter === undefined ? 0 : 1)
 
   // The header hairline only shows once the page has scrolled.

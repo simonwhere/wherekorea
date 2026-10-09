@@ -38,6 +38,7 @@ import { recordBirth, startPregnancy } from './logic/pregnancy'
 import { prenatalKey } from './logic/pregnancyView'
 import { addCustomTask, setTemplateDone } from './logic/roadmap'
 import { sendSignal } from './logic/signals'
+import { supportItem } from './logic/together'
 import { addLeaveDay, addTreatment } from './logic/treatments'
 import { periodToldKey, tellPartnerPeriod } from './logic/ttcFlow'
 import { setReaction } from './logic/usView'
@@ -823,6 +824,17 @@ function demoPregnant(today: ISODate, now: Date): AppState {
     },
     'b',
   )
+  // 같이 챙길 것 (2026-10-09): her flu shot tomorrow — one of HER items, so his
+  // 🔔 the day before says what he can do ('💉 내일 지은님 독감 접종이에요' ·
+  // '접종 날 같이 가기 · …') and his together card has it this week — and one
+  // [같이 할게요] he gave yesterday, which her 우리 한 줄 and her 챙길 것 row
+  // read as '민수님이 같이 챙긴대요'.
+  s = appointment(
+    s,
+    { date: addDays(today, 1), time: '11:00', title: '독감 접종', place: '동네 산부인과', who: 'b', kind: 'vaccine', taskId: 'p1-flu' },
+    'b',
+  )
+  s = supportItem(s, 'a', 'p1-checkup-time', addDays(today, -1))
   s = runEngine(s, addDays(today, -10), today, now) // from 11주 0일
   s = sendCheer(s, 'a', 'b', earlierToday(today, now, 40), '오늘 입덧은 좀 괜찮아요? 퇴근길에 귤 사 갈게요 🍊')
   return settleInbox(s, today)

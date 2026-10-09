@@ -10,15 +10,19 @@
 // deadline of his month task (`top`) goes before the moment card, or right
 // after it when the card ends in a button; else inside the card when the card
 // features it; else in 우리 한 줄. His clinic week (N32) sits inside the
-// moment card while clinic mode is on. Then '이번 주 우리 둘' (N21) with his
-// '내 준비' bar under it (N30), his checks, 우리 한 줄, 우리 신호, and
-// '매주 이 시간에 알려 받기' (N31).
+// moment card while clinic mode is on. While pregnant the stage card
+// ('임신 N주 · 예정일 D-N' and his next shared checkup, LinkStage) takes the
+// moment card's place. Then '이번 주 우리 둘' (N21 — the pregnant stage too),
+// 같이 챙길 것 (2026-10-09: her items and the shared ones with what he can do
+// and [같이 할게요], LinkTogether), his '내 준비' bar (N30), his checks, 우리 한
+// 줄, 우리 신호, and '매주 이 시간에 알려 받기' (N31).
 
 import { useMemo } from 'react'
 import { CHEERS_PER_DAY } from '@/lib/logic/partnerEvents'
 import type { WeeklyDay } from '@/lib/logic/ics'
 import type { PartnerPage, SnapshotAppointment, SnapshotCheck, SnapshotTask } from '@/lib/logic/partnerSnapshot'
 import type { Signal } from '@/lib/logic/signals'
+import type { LinkTogetherItem } from '@/lib/logic/together'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import type { ISODate } from '@/lib/types'
 import { Heading } from './bits'
@@ -28,7 +32,9 @@ import LinkCover from './LinkCover'
 import LinkMoment from './LinkMoment'
 import LinkPrep from './LinkPrep'
 import LinkSignals from './LinkSignals'
+import LinkStage from './LinkStage'
 import LinkTaskCard from './LinkTask'
+import LinkTogether from './LinkTogether'
 import LinkUsLine from './LinkUsLine'
 import LinkWeek from './LinkWeek'
 import LinkWeekly from './LinkWeekly'
@@ -41,6 +47,7 @@ import {
   viewSignal,
   viewSignalsLeft,
   viewTask,
+  viewTogetherPlan,
   viewTold,
   viewWeek,
   type LocalMarks,
@@ -62,6 +69,8 @@ export interface LinkActions {
   onWeekly: (day: WeeklyDay) => void
   /** One of the two answers on a card she told him about (해 줄 말, N30) — a 'signal' event. */
   onTold: (signal: Signal) => void
+  /** [같이 할게요] on one of her items or a shared one (on), or taking it back (off) — a 'support' event. */
+  onSupport: (item: LinkTogetherItem, on: boolean) => void
 }
 
 export const NO_ACTIONS: LinkActions = {
@@ -76,6 +85,7 @@ export const NO_ACTIONS: LinkActions = {
   onJoin: () => {},
   onWeekly: () => {},
   onTold: () => {},
+  onSupport: () => {},
 }
 
 export default function LinkBody({
@@ -108,6 +118,12 @@ export default function LinkBody({
   const week = viewWeek(page, marks)
   const clinic = viewClinic(page, marks)
   const told = viewTold(page, marks)
+  const fullPlan = viewTogetherPlan(page, marks)
+  // The item the stage card's next visit is booked for: its [같이 할게요] goes on the card, its row leaves the list.
+  const stageItemId = page.stageCard?.checkup?.itemId
+  const stageItem = stageItemId ? fullPlan?.items.find((i) => i.id === stageItemId && i.status !== 'done') : undefined
+  const rest = stageItem && fullPlan ? fullPlan.items.filter((i) => i.id !== stageItem.id) : undefined
+  const plan = rest ? (rest.length ? { ...fullPlan!, items: rest } : null) : fullPlan
 
   const goToUsLine = () => {
     const el = document.getElementById('us-line')
@@ -148,6 +164,8 @@ export default function LinkBody({
             signalsLeft={signalsLeft}
             onTold={actions.onTold}
           />
+        ) : page.stageCard ? (
+          <LinkStage card={page.stageCard} ownerName={owner.name} today={today} item={stageItem} onSupport={actions.onSupport} />
         ) : clinic ? (
           <section
             aria-label="병원과 함께"
@@ -160,6 +178,7 @@ export default function LinkBody({
         {week ? (
           <LinkWeek week={week} ownerName={owner.name} onPick={actions.onWeekPick} onDone={actions.onWeekDone} showPrep={!page.myPrep} />
         ) : null}
+        {plan ? <LinkTogether plan={plan} onSupport={actions.onSupport} /> : null}
         {page.myPrep ? <LinkPrep prep={page.myPrep} /> : null}
       </div>
 
@@ -182,7 +201,8 @@ export default function LinkBody({
       <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
       <LinkSignals snapshot={page} left={signalsLeft} onSend={actions.onSignal} />
 
-      {page.stage === 'preparing' && !page.moment?.support ? (
+      {/* The weekly prompt goes with '이번 주 우리 둘' — preparing and, since 2026-10-09, pregnant. */}
+      {(page.stage === 'preparing' || page.stage === 'pregnant') && !page.moment?.support ? (
         <LinkWeekly today={today} onDownload={actions.onWeekly} className="mt-6" />
       ) : null}
 

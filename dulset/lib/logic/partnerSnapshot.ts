@@ -54,6 +54,25 @@
 //     said [같이 갈게요], plus one line about 난임치료휴가 with its source
 //     (docs/research/kr-programs.json). Only appointments the two of them put
 //     in: nothing here finds or suggests a hospital (positioning §6).
+//   • 같이 챙길 것 (founder request 2026-10-09: "여자가 챙겨야 할 것들을 남자에게도
+//     계속 보여줘야해 같이 하는거야", `togetherPlan`): her roadmap items and the
+//     shared ones of the near term, exactly as together.linkTogether gives
+//     them — the catalogue title, a NEUTRAL status ('예정 · 10월 21일' /
+//     '이번 주' / '했어요 ✓' — never '기한 지남' about her: a passed deadline
+//     simply leaves the list), his support line and whether he said [같이
+//     할게요] (a 'support' event back). Roadmap items only (the couple's own
+//     items have free-text titles); while pregnant / parenting a booked
+//     appointment gives its DAY only. In every stage, never in the quiet.
+//   • the pregnant stage card (`stageCard`): '임신 N주 M일', the trimester,
+//     '예정일 … (예상)' and D-N — pregnancy weeks and the due date are known to
+//     both once she switched the stage — and his next shared checkup within
+//     two weeks (her own or '둘이 함께', a visit / test / shot): the day, the
+//     catalogue name of the item it is for or a kind word, and what he does
+//     that day. The time and place only for one they go to together (as his
+//     clinic week); never the title or the note of an appointment.
+//   • while pregnant, '이번 주 우리 둘' runs from its own catalogue
+//     (weekTogether) and 내 준비 lists his own pregnancy-stage items
+//     (myPrep `items`: 배우자 지원 제도 … 배우자 출산휴가 20일).
 // What it never holds, by construction (tests/partnerSnapshot.test.ts walks
 // every lens × moment × day): period dates, LH results, pregnancy tests,
 // personalLog, '나만 보기' entries, 관계일, treatment notes or counts,
@@ -67,19 +86,21 @@
 // so a reply sent on Monday still counts when she opens on Thursday.
 
 import { BUDGET_META, DATE_IDEAS } from '../content/dateIdeas'
-import { addDays, diffDays, formatKo, formatShort, isISODate } from '../dates'
+import { addDays, dLabel, diffDays, formatKo, formatShort, isISODate } from '../dates'
 import { isLive } from '../sync/model'
 import type { ReceivedEvent } from '../sync/transport'
-import type { AppState, CheckKind, ISODate, ISODateTime, MemberId, Role, Stage } from '../types'
+import type { AppState, AppointmentKind, CheckKind, ISODate, ISODateTime, MemberId, Role, Stage } from '../types'
+import { templateById } from '../content/roadmap'
 import { CLINIC_KIND_WORD, compareAppointments } from './appointments'
 import { activeItems, isDone, isWeekly, mondayOf, nudgeableItem, weekCount, weeklyDone } from './checks'
 import { coverView, heroLine, type HeroLine } from './cover'
 import { describeStrip } from './cycleRing'
 import { fertileHintsAllowed, mapLinks, partnerHintState, pickIdeas, recentlyPlannedIdeaIds } from './dateIdeas'
-import { myPrep } from './myPrep'
+import { myPrep, type PrepItem } from './myPrep'
 import { canNudge, localNowISO } from './notifications'
 import { applyPartnerEvent, earliestDoneAt, forgetOldEvents, hasJoinedAppointment, type PartnerEvent } from './partnerEvents'
 import {
+  FERTILITY_APPLY_ID,
   fertilityChain,
   monthlyTask,
   type ClaimDocState,
@@ -88,7 +109,10 @@ import {
   type TaskGuide,
   type TaskStage,
 } from './partnerTrack'
+import { usablePregnancy } from './plan'
+import { TOGETHER_VISIT_LINE, isForEndedPregnancy } from './planNotices'
 import { canSeeWeekBand, coverOnLink, withShareLevelAtMost } from './prefs'
+import { dueDate, formatGA, gestationalAge } from './pregnancy'
 import type { ItemStatus } from './roadmap'
 import {
   SIGNALS_PER_DAY,
@@ -102,7 +126,8 @@ import {
   signalsSentToday,
   type Signal,
 } from './signals'
-import { habitTimer, rowProgress, stampOn } from './today'
+import { NEAR_DAYS, linkTogether, shortTitle, type LinkTogether } from './together'
+import { TRIMESTER_LABEL, habitTimer, rowProgress, stampOn } from './today'
 import { LEAVE_DAYS_PER_YEAR, PAID_LEAVE_CHANGE, PAID_LEAVE_DAYS } from './treatments'
 import { activeRest } from './ttc'
 import {
@@ -292,9 +317,19 @@ export interface SnapshotMyPrep {
   timerProgress?: number
   /** '이번 주 3/7'. */
   weekCount?: string
-  /** '신청 ✓ · 다음은 검사 예약' … */
+  /** '신청 ✓ · 다음은 검사 예약' … — while pregnant, the line for his own items ('다음은 배우자 지원 제도 살펴보기'). */
   chainStep?: string
+  /**
+   * While pregnant: his own pregnancy-stage items in order (myPrep `items` —
+   * 배우자 지원 제도 · 육아휴직 계획 · 카시트 · Tdap · 배우자 출산휴가 20일), each
+   * with its state and the day its window opens / closes. His own, so nothing
+   * of hers; absent while preparing.
+   */
+  items?: SnapshotPrepItem[]
 }
+
+/** One of his own pregnancy-stage items in 내 준비 (lib/logic/myPrep PrepItem). */
+export type SnapshotPrepItem = PrepItem
 
 /**
  * One appointment of the couple's own, as his clinic week shows it (N32):
@@ -330,7 +365,64 @@ export interface SnapshotClinic {
   leave: SnapshotSourcedLine
 }
 
-/** '이번 주 우리 둘' on his side (N21). Absent outside the preparing stage and in the quiet after a loss. */
+/**
+ * 같이 챙길 것 on his side (founder request 2026-10-09): together.linkTogether
+ * as is — her near-term roadmap items and the shared ones, each with the
+ * catalogue title, a neutral status and label (never 'overdue'), the day when
+ * it has one, his support line, and whether he said [같이 할게요].
+ */
+export type SnapshotTogetherPlan = LinkTogether
+
+/** His next shared checkup on the pregnant stage card (linkStageCard). */
+export interface SnapshotCheckup {
+  date: ISODate
+  /** Only for one they go to together ('둘이 함께'), as his clinic week carries it. */
+  time?: string
+  place?: string
+  /** The catalogue name of the item it is for ('NT(목덜미 투명대)'), else a kind word ('병원 진료') — never the appointment's own title. */
+  label: string
+  /** 'both' — 둘이 함께; 'hers' — her own (he is welcome). */
+  with: 'both' | 'hers'
+  /**
+   * What he does that day: the support line of the item it is booked for
+   * ('같이 가기 · 확인서 받을 때 옆에 있기', '접종 날 같이 가기' — on hers the
+   * same line his day-before 🔔 gives, planNotices.togetherAppointmentNotice);
+   * without one, '둘이 같이 가는 날이에요' for one they go to together and
+   * '같이 갈 수 있으면 시간 비워 두기' on hers.
+   */
+  role: string
+  /**
+   * The roadmap item it is booked for, when that item carries a support line
+   * (a catalogue id — the label already names it). The page draws that item's
+   * [같이 할게요] here and leaves its row out of 같이 챙길 것, so the visit shows
+   * once.
+   */
+  itemId?: string
+}
+
+/**
+ * The pregnant stage's card on his page (the app's StageHero, his side):
+ * pregnancy weeks and the due date are known to both once she switched the
+ * stage. Pre-rendered words and two numbers; no LMP, nothing she logs.
+ */
+export interface SnapshotStageCard {
+  kind: 'pregnant'
+  /** '임신 초기' · '임신 중기' · '임신 후기' (today.TRIMESTER_LABEL). */
+  eyebrow: string
+  /** '임신 12주 3일'. */
+  title: string
+  /** Completed weeks (the bar's '12주 / 40주'). */
+  weeks: number
+  /** 0–1 through 40 weeks. */
+  progress: number
+  /** 'D-193' · 'D-day' · 'D+2'. */
+  dday: string
+  /** '예정일 4월 20일 (예상)' — '병원 예정일 4월 20일' when the hospital gave it. */
+  dueLabel: string
+  checkup?: SnapshotCheckup
+}
+
+/** '이번 주 우리 둘' on his side (N21; the pregnant stage too since 2026-10-09). Absent in the parenting stage and in the quiet after a loss. */
 export interface SnapshotWeek {
   /** The week's Monday (weekTogether.weekOf). */
   monday: ISODate
@@ -378,6 +470,10 @@ export interface PartnerDay {
   myPrep?: SnapshotMyPrep
   /** 병원과 함께 (N32), while the couple's clinic mode is on. */
   clinic?: SnapshotClinic
+  /** 같이 챙길 것 (2026-10-09): her items and the shared ones, neutral statuses, his support lines. Absent when empty and in the quiet. */
+  togetherPlan?: SnapshotTogetherPlan
+  /** The pregnant stage's card (임신 N주 · 예정일 D-N · his next shared checkup). Only while pregnant. */
+  stageCard?: SnapshotStageCard
 }
 
 export interface PartnerSnapshot {
@@ -539,8 +635,115 @@ export function linkMyPrep(state: AppState, day: ISODate, partner: MemberId): Sn
     ...(p.timerLabel ? { timerLabel: p.timerLabel, timerProgress: Math.min(1, Math.max(0, p.timerProgress ?? 0)) } : {}),
     ...(p.weekCount ? { weekCount: p.weekCount } : {}),
     ...(p.chainStep ? { chainStep: p.chainStep } : {}),
+    ...(p.items?.length ? { items: p.items.map((i) => ({ ...i })) } : {}),
   }
-  return out.timerLabel || out.weekCount || out.chainStep ? out : undefined
+  return out.timerLabel || out.weekCount || out.chainStep || out.items ? out : undefined
+}
+
+// ── 같이 챙길 것 (2026-10-09) ───────────────────────────────
+
+/**
+ * Rows the link's 같이 챙길 것 leaves to other cards: 임신 사전건강관리 신청 —
+ * his half is his month task (신청 → 검사 → 청구, already on his page) and her
+ * half is her own chain record (partnerTrack.setFertilityApplied), which
+ * travels nowhere on the link: the shared row turns 'done' only when her half
+ * is in, so drawing it would tell him she applied (tests/integrationNow3b
+ * 'her own 검사 applied').
+ */
+export const LINK_TOGETHER_ELSEWHERE: readonly string[] = [FERTILITY_APPLY_ID]
+
+/**
+ * 같이 챙길 것 for `day` (together.linkTogether) without the rows another card
+ * carries — LINK_TOGETHER_ELSEWHERE, and `alsoElsewhere`: the item of his month
+ * task when the page shows it (a shared one, e.g. '분만 병원 정하기' while
+ * pregnant, is his month task card with its own [했어요]) and his own 내 준비
+ * items while pregnant (카시트 · 육아휴직 계획 are shared items, and 내 준비
+ * already lists them). They are left out BEFORE the list is cut to
+ * LINK_TOGETHER_MAX (linkTogether's `exclude`), so their place goes to the next
+ * row and nothing about them moves the others. Undefined for her, in the quiet,
+ * and when there is nothing to show.
+ */
+export function linkTogetherPlan(
+  state: AppState,
+  day: ISODate,
+  partner: MemberId,
+  alsoElsewhere: readonly string[] = [],
+): SnapshotTogetherPlan | undefined {
+  if (!isISODate(day)) return undefined
+  return linkTogether(state, day, partner, { exclude: [...LINK_TOGETHER_ELSEWHERE, ...alsoElsewhere] })
+}
+
+// ── 임신 중: 단계 카드와 다음 검진 (2026-10-09) ─────────────
+
+/** A '검진 날': a visit, a test or a shot (weekTogether's own CHECKUP kinds — not 주사·약 at home, not admin). */
+export const CHECKUP_KINDS: readonly AppointmentKind[] = ['hospital', 'test', 'vaccine']
+
+/** What he does on a checkup day: one they go to together, or one of hers he is welcome at. */
+export const CHECKUP_ROLE = { both: '둘이 같이 가는 날이에요', hers: TOGETHER_VISIT_LINE } as const
+
+/**
+ * His next shared checkup for `day` (pregnant stage): the first live, not-done
+ * visit / test / shot of hers or of both of them from `day` on, within
+ * NEAR_DAYS. Her own: the day only. '둘이 함께': the day, the time and the
+ * place (his clinic week's rule). The name is the catalogue's for the item it
+ * is booked for (shortTitle) or a kind word — never the appointment's title or
+ * note. What he does is that item's support line when it has one (as his
+ * day-before 🔔 says it on hers). His own appointments are his monthly task's
+ * / clinic week's business.
+ */
+export function linkCheckup(state: AppState, day: ISODate, partner: MemberId): SnapshotCheckup | undefined {
+  const owner = cycleOwnerId(state)
+  if (partner === owner) return undefined
+  const next = state.appointments
+    .filter(
+      (a) =>
+        isLive(a) &&
+        !a.done &&
+        (a.who === 'both' || a.who === owner) &&
+        CHECKUP_KINDS.includes(a.kind) &&
+        isISODate(a.date) &&
+        a.date >= day &&
+        diffDays(day, a.date) <= NEAR_DAYS,
+    )
+    .sort(compareAppointments)[0]
+  if (!next) return undefined
+  const template = next.taskId ? templateById(next.taskId) : undefined
+  const both = next.who === 'both'
+  return {
+    date: next.date,
+    ...(both && next.time ? { time: next.time } : {}),
+    ...(both && next.place ? { place: next.place } : {}),
+    label: template ? shortTitle(template.title) : (CLINIC_KIND_WORD[next.kind] ?? '병원 일정'),
+    with: both ? 'both' : 'hers',
+    role: template?.support ?? (both ? CHECKUP_ROLE.both : CHECKUP_ROLE.hers),
+    ...(template?.support ? { itemId: template.id } : {}),
+  }
+}
+
+/**
+ * The pregnant stage's card for `day` (the app's StageHero on his side):
+ * '임신 12주 3일', the trimester, the due date with D-N ('(예상)' unless the
+ * hospital gave it) and his next shared checkup. Undefined outside the
+ * pregnant stage, without a usable pregnancy record, for her, and in the quiet.
+ */
+export function linkStageCard(state: AppState, day: ISODate, partner: MemberId): SnapshotStageCard | undefined {
+  if (state.stage !== 'pregnant' || partner === cycleOwnerId(state) || !isISODate(day) || weekQuiet(state, day)) return undefined
+  const p = usablePregnancy(state.pregnancy)
+  if (!p) return undefined
+  const ga = gestationalAge(p, day)
+  const due = dueDate(p)
+  const checkup = linkCheckup(state, day, partner)
+  const dueWords = formatKo(due, { weekday: false })
+  return {
+    kind: 'pregnant',
+    eyebrow: TRIMESTER_LABEL[ga.trimester],
+    title: `임신 ${formatGA(ga)}`,
+    weeks: ga.weeks,
+    progress: ga.progress,
+    dday: dLabel(due, day),
+    dueLabel: p.dueDateOverride ? `병원 예정일 ${dueWords}` : `예정일 ${dueWords} (예상)`,
+    ...(checkup ? { checkup } : {}),
+  }
 }
 
 // ── 병원과 함께일 때 남편의 주 (N32) ─────────────────────────
@@ -595,7 +798,16 @@ export function linkClinic(state: AppState, day: ISODate, partner: MemberId): Sn
   if (!clinicOn(state, day) || weekQuiet(state, day) || partner === cycleOwnerId(state)) return undefined
   const until = addDays(day, CLINIC_WEEK_DAYS - 1)
   const appointments = state.appointments
-    .filter((a) => isLive(a) && !a.done && (a.who === 'both' || a.who === partner) && isISODate(a.date) && a.date >= day && a.date <= until)
+    .filter(
+      (a) =>
+        isLive(a) &&
+        !a.done &&
+        !isForEndedPregnancy(state, a) &&
+        (a.who === 'both' || a.who === partner) &&
+        isISODate(a.date) &&
+        a.date >= day &&
+        a.date <= until,
+    )
     .sort(compareAppointments)
     .map(
       (a): SnapshotAppointment => ({
@@ -724,6 +936,10 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
   const week: SnapshotWeek | undefined = fullWeek ? (({ prep: _prep, ...rest }) => rest)(fullWeek) : undefined
   const prep = linkMyPrep(state, date, partner)
   const clinic = linkClinic(state, date, partner)
+  // 같이 챙길 것 and the pregnant stage card (2026-10-09) — the plan she shares and the stage she switched, never her records.
+  const elsewhere = [...(task ? [task.id] : []), ...(prep?.items ?? []).map((i) => i.id)]
+  const togetherPlan = linkTogetherPlan(state, date, partner, elsewhere)
+  const stageCard = linkStageCard(state, date, partner)
 
   const day: PartnerDay = {
     date,
@@ -742,6 +958,8 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
     ...(week ? { week } : {}),
     ...(prep ? { myPrep: prep } : {}),
     ...(clinic ? { clinic } : {}),
+    ...(togetherPlan ? { togetherPlan } : {}),
+    ...(stageCard ? { stageCard } : {}),
   }
   return { day, kind: m?.kind }
 }
@@ -883,6 +1101,17 @@ function eventStamp(receivedAt: string, day: ISODate): string {
 const WEEK_KINDS: ReadonlySet<PartnerEvent['kind']> = new Set(['week-pick', 'week-done'])
 
 /**
+ * Does this event wait out her quiet? '이번 주 우리 둘' taps need the loop to be
+ * on for her today (weekTogetherOn); a [같이 할게요] (support, on) needs her
+ * today outside the quiet after a loss — taking one back never waits.
+ */
+function waitsOut(state: AppState, ev: PartnerEvent, today: ISODate): boolean {
+  if (WEEK_KINDS.has(ev.kind)) return !weekTogetherOn(state, today)
+  if (ev.kind === 'support' && ev.on) return weekQuiet(state, today)
+  return false
+}
+
+/**
  * The day an event is judged on: the day it was taken in (eventDay); for an
  * event dated later than that (his phone's clock, or a demo's `?today=` pin,
  * ahead of the transport's) its own date, never past her `today` — what the
@@ -900,14 +1129,15 @@ export function judgedDay(r: ReceivedEvent, today: ISODate): ISODate {
  * 콕 sent while her phone was closed is judged as of that day — the signal was
  * still waiting, the check was within its week — so opening the app three
  * days later loses nothing (partnerEvents.applyPartnerEvent's own gates and
- * once-per-id rule, unchanged). '이번 주 우리 둘' taps also need her today to
- * be outside the quiet (a tap from before a loss is not applied inside it).
+ * once-per-id rule, unchanged). '이번 주 우리 둘' taps and a [같이 할게요] also
+ * need her today to be outside the quiet (a tap from before a loss is not
+ * applied inside it — waitsOut).
  * The same object when nothing applied.
  */
 export function applyReceivedEvents(state: AppState, received: readonly ReceivedEvent[], today: ISODate): AppState {
   let s = state
   for (const r of received) {
-    if (WEEK_KINDS.has(r.event.kind) && !weekTogetherOn(s, today)) continue
+    if (waitsOut(s, r.event, today)) continue
     const day = judgedDay(r, today)
     s = applyPartnerEvent(s, r.event, day, eventStamp(r.receivedAt, day))
   }

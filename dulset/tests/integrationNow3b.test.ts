@@ -11,7 +11,7 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { addDays, diffDays, weekdayIndex } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { CLINIC_KIND_WORD, addAppointment, setAppointmentDone } from '@/lib/logic/appointments'
@@ -50,6 +50,11 @@ import { markBleeding } from '@/lib/logic/positiveBleeding'
 import { parseState } from '@/lib/storage'
 import { migrate } from '@/lib/sync/migrations'
 import type { AlertStyle, AppState, Appointment, ISODate, PeriodLog, ShareLevel } from '@/lib/types'
+
+// Long synchronous property walks back to back keep the vitest worker from
+// answering its runner (a 60 s RPC timeout → 'Timeout calling onTaskUpdate',
+// exit 1 with every test green). One macrotask between tests lets it breathe.
+beforeEach(() => new Promise<void>((resolve) => setImmediate(resolve)))
 
 const OWNER = 'b' as const
 const PARTNER = 'a' as const

@@ -26,7 +26,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { addDays, diffDays } from '@/lib/dates'
 import { createInitialState } from '@/lib/initial'
 import { addAppointment } from '@/lib/logic/appointments'
@@ -81,7 +81,10 @@ import { doctorAdvice, endPregnancy, stampOn } from '@/lib/logic/today'
 import { markPositivePending, startRestCycle } from '@/lib/logic/ttc'
 import { cycleStrip, markStillWaiting, skipTellPartnerPeriod, tellPartnerPeriod, ttcMoment } from '@/lib/logic/ttcFlow'
 import {
+  CHECKUP_DAY_OPTION,
   CLINIC_DAY_OPTION,
+  PREGNANT_WEEK_OPTIONS,
+  THIRD_TRIMESTER_OPTIONS,
   WEEK_OPTIONS,
   WEEK_SUMMARY_MAX,
   canThankWeek,
@@ -98,6 +101,11 @@ import { countLinkOpen, openDaysBetween, type LinkOpenCounts } from '@/lib/sync/
 import { MIGRATIONS, SCHEMA_VERSION, migrate } from '@/lib/sync/migrations'
 import { createMockTransport, parseMockStore } from '@/lib/sync/mockTransport'
 import type { AlertStyle, AppState, ISODate, MemberId, PeriodLog, ShareLevel } from '@/lib/types'
+
+// Long synchronous property walks back to back keep the vitest worker from
+// answering its runner (a 60 s RPC timeout → 'Timeout calling onTaskUpdate',
+// exit 1 with every test green). One macrotask between tests lets it breathe.
+beforeEach(() => new Promise<void>((resolve) => setImmediate(resolve)))
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const OWNER = 'b' as const
@@ -636,7 +644,7 @@ describe("N23 levels: '우리의 주간' = the old 'not shared' minus the leaks,
     }
   })
 
-  it('a pre-rendered day never shows a change only a predicted period would bring — not even to a 자세히 partner', () => {
+  it('a pre-rendered day never shows a change only a predicted period would bring — not even to a 자세히 partner', { timeout: 30_000 }, () => {
     let lateAhead = 0
     for (const base of BASES) {
       const details = withLens(base.state, { share: 'details', style: 'explicit' })
@@ -735,9 +743,10 @@ const TIMING_WORDS = /가임|배란|우리의 주간|LH|배테기|테스트|임�
 
 describe("N21 '이번 주 우리 둘': relationship-side, never a zero, quiet after a loss", () => {
   it('the catalogue and every week’s three picks carry no timing, test or banned word', () => {
-    for (const o of [...WEEK_OPTIONS, CLINIC_DAY_OPTION]) {
+    for (const o of [...WEEK_OPTIONS, CLINIC_DAY_OPTION, ...PREGNANT_WEEK_OPTIONS, ...THIRD_TRIMESTER_OPTIONS, CHECKUP_DAY_OPTION]) {
       expect(`${o.text} ${o.doneText}`, o.id).not.toMatch(TIMING_WORDS)
     }
+    const pregnantIds = new Set([...PREGNANT_WEEK_OPTIONS, ...THIRD_TRIMESTER_OPTIONS, CHECKUP_DAY_OPTION].map((o) => o.id))
     const couples = ['2026-08-01T09:00:00+09:00', '2025-01-15T22:10:00+09:00', '2026-03-03T07:00:00Z'].map((createdAt) => ({
       ...couple(starts('2026-06-09', [28, 28, 28])),
       createdAt,
@@ -752,9 +761,11 @@ describe("N21 '이번 주 우리 둘': relationship-side, never a zero, quiet af
         expect(weekOptions(c, addDays(d, 6), PARTNER)).toEqual(opts)
         expect(weekOptions(logPeriodStart(c, d, OWNER, d), d, PARTNER)).toEqual(opts)
         opts.forEach((o) => seen.add(o.id))
-        // Nothing for her, outside the preparing stage.
+        // Nothing for her; the pregnant stage has its own catalogue (2026-10-09); nothing while parenting.
         expect(weekOptions(c, d, OWNER)).toEqual([])
-        expect(weekOptions({ ...c, stage: 'pregnant' }, d, PARTNER)).toEqual([])
+        const pregnant = weekOptions({ ...c, stage: 'pregnant' }, d, PARTNER)
+        expect(pregnant).toHaveLength(3)
+        expect(pregnant.every((o) => pregnantIds.has(o.id))).toBe(true)
         expect(weekOptions({ ...c, stage: 'parenting' }, d, PARTNER)).toEqual([])
       }
       // The rotation reaches the whole catalogue over a year.

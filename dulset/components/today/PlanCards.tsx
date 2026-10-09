@@ -15,7 +15,7 @@ import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { useApp } from '@/lib/store'
 import { LinkButton } from './bits'
-import { FOCUS_MAX, dayLabel, homeAppointments, upcomingForToday, whoLabel, withTicked } from './model'
+import { FOCUS_MAX, dayLabel, focusItemsFor, homeAppointments, ownOverdue, upcomingForToday, whoLabel, withTicked } from './model'
 
 type Nav = (tab: TabKey) => void
 
@@ -108,7 +108,8 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
   const items = useMemo(() => planItems(state, today), [state, today])
   // Rows ticked here stay (as done) until the tab is left, so the list doesn't jump.
   const [ticked, setTicked] = useState<Array<{ id: string; index: number }>>([])
-  const rows = withTicked(planFocus(items, FOCUS_MAX), items, ticked)
+  // The other person's passed deadline isn't on my card (together.ts — no '기한 지남' about them).
+  const rows = withTicked(planFocus(focusItemsFor(state, today, me.id, items), FOCUS_MAX), items, ticked)
   const openPlan = () => onNavigate('plan')
 
   const actions: ItemActions = {
@@ -130,7 +131,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
   }
 
   if (rows.length === 0) {
-    const calm = recentlyEnded(state, today) ? [] : calmSuggestions(items, state.stage)
+    const calm = recentlyEnded(state, today) ? [] : calmSuggestions(focusItemsFor(state, today, me.id, items), state.stage)
     if (calm.length === 0) return null
     return (
       <button
@@ -147,7 +148,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
     )
   }
 
-  const overdue = rows.some((r) => r.status === 'overdue')
+  const overdue = ownOverdue(rows, me.id)
   const allDone = rows.every((r) => r.status === 'done')
   return (
     <Card className="px-3 pb-2 pt-3">

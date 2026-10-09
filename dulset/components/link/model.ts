@@ -15,11 +15,22 @@
 // (N22), the in-app browser check (카카오톡 → '사파리/크롬으로 열기'), the
 // '이번 주 우리 둘' lines (N21), his clinic week's [같이 갈게요] marks (N32),
 // the token this browser remembers for a token-less open (the weekly
-// calendar's '/link/', N31) and the weekly reminder's address.
+// calendar's '/link/', N31) and the weekly reminder's address — and 같이 챙길
+// 것's [같이 할게요] marks (2026-10-09: her items on his page, each with what he
+// can do; a tap reads as said at once, her phone confirms it).
 
 import { diffDays, formatKo, weekdayKo } from '@/lib/dates'
 import type { SetupDrinks, SetupHabits } from '@/lib/logic/partnerEvents'
-import type { PartnerPage, PartnerSnapshot, SnapshotChecks, SnapshotClinic, SnapshotPrep, SnapshotWeek } from '@/lib/logic/partnerSnapshot'
+import type {
+  PartnerPage,
+  PartnerSnapshot,
+  SnapshotChecks,
+  SnapshotClinic,
+  SnapshotPrep,
+  SnapshotPrepItem,
+  SnapshotTogetherPlan,
+  SnapshotWeek,
+} from '@/lib/logic/partnerSnapshot'
 import type { WeekOptionId } from '@/lib/logic/weekTogether'
 import type { AlertStyle, ISODate } from '@/lib/types'
 
@@ -46,6 +57,8 @@ export interface LocalMarks {
   joins?: Record<string, number>
   /** One of the two answers on a card she told him about (해 줄 말, N30) — sent as a 'signal' event. */
   told?: { signalId: string; at: number }
+  /** 같이 챙길 것 (2026-10-09): item id → what he set [같이 할게요] to, and when (a 'support' event). */
+  supports?: Record<string, { on: boolean; at: number }>
 }
 
 export const NO_MARKS: LocalMarks = { checks: {}, signals: [], cheers: [] }
@@ -87,6 +100,12 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
   // A told answer stays until the snapshot says one went out (or the told card is gone).
   const say = snapshot?.moment?.say
   const told = marks.told && fresh(marks.told.at, now) && say && !say.sent ? marks.told : undefined
+  // A [같이 할게요] (or taking it back) stays until the snapshot agrees (or the item is gone from his list).
+  const supports: NonNullable<LocalMarks['supports']> = {}
+  for (const [id, m] of Object.entries(marks.supports ?? {})) {
+    const row = snapshot?.togetherPlan?.items.find((i) => i.id === id)
+    if (fresh(m.at, now) && row && row.supported !== m.on) supports[id] = m
+  }
   return {
     checks,
     ...(task ? { task } : {}),
@@ -98,7 +117,57 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
     ...(weekDone ? { weekDone } : {}),
     ...(Object.keys(joins).length ? { joins } : {}),
     ...(told ? { told } : {}),
+    ...(Object.keys(supports).length ? { supports } : {}),
   }
+}
+
+// ── 같이 챙길 것 (2026-10-09) ───────────────────────────────
+
+/** The block's header and the line under it. */
+export const TOGETHER_BLOCK_TITLE = '같이 챙길 것'
+/** Rows shown before 'N개 더 보기' — the rest of his page stays within reach. */
+export const TOGETHER_FOLD = 3
+
+/** '2개 더 보기' · '접기'. */
+export function togetherFoldLabel(hidden: number, open: boolean): string {
+  return open ? '접기' : `${hidden}개 더 보기`
+}
+
+export function togetherBlockSub(ownerName: string): string {
+  return `${ownerName}${subjectParticle(ownerName)} 챙기는 것도 같이 봐요. [같이 할게요]를 누르면 ${ownerName}에게 전해져요.`
+}
+
+/** '이' after a final consonant, '가' after a vowel (a non-Hangul end reads as a consonant). */
+function subjectParticle(word: string): string {
+  const code = word.trim().charCodeAt(word.trim().length - 1)
+  if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return '이'
+  return (code - 0xac00) % 28 === 0 ? '가' : '이'
+}
+
+/**
+ * 같이 챙길 것 with his [같이 할게요] marks applied: a row he just answered
+ * reads as he set it at once (the snapshot then confirms it). Null when the
+ * page carries no list (her, the quiet, nothing near).
+ */
+export function viewTogetherPlan(page: Pick<PartnerPage, 'togetherPlan'>, marks: LocalMarks): SnapshotTogetherPlan | null {
+  const plan = page.togetherPlan
+  if (!plan || !plan.items.length) return null
+  const supports = marks.supports ?? {}
+  if (!Object.keys(supports).length) return plan
+  return { ...plan, items: plan.items.map((i) => (supports[i.id] !== undefined ? { ...i, supported: supports[i.id]!.on } : i)) }
+}
+
+/** A row's name for one-liners and toasts: '국민행복카드 (임신·출산 진료비) 신청' → '국민행복카드'. */
+export function togetherShort(title: string): string {
+  const head = title.split(' (')[0]!.split(' · ')[0]!.trim()
+  const s = head || title.trim()
+  return s.length > 18 ? `${s.slice(0, 17)}…` : s
+}
+
+/** The toast after a tap: said, or taken back — and that it reaches her. */
+export function supportToast(title: string, on: boolean, ownerName: string): string {
+  const name = togetherShort(title)
+  return on ? `‘${name}’ 같이 할게요. ${ownerName}에게 전해져요` : `‘${name}’ 같이 하기를 취소했어요`
 }
 
 /**
@@ -192,6 +261,14 @@ export function prepParts(prep: SnapshotPrep | undefined): string[] {
   if (prep.week && prep.week > 0) out.push(`이번 주 ${prep.week}/7`)
   if (prep.chain) out.push(prep.chain)
   return out
+}
+
+/** A pregnant 내 준비 row's day: '했어요' · '지금 · 12월 1일까지' · '1월 20일부터' (never a count). */
+export function prepItemWhen(i: SnapshotPrepItem): string {
+  if (i.state === 'done') return '했어요'
+  if (i.from) return `${formatKo(i.from, { weekday: false })}부터`
+  if (i.until) return `지금 · ${formatKo(i.until, { weekday: false })}까지`
+  return '지금'
 }
 
 /** '지은님이 고마워했어요 (화)' — her [고마워요] this week. */

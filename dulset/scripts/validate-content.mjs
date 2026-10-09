@@ -14,6 +14,15 @@
 // need at least one source per item. No banned word (AGENTS.md 제품·문구 규칙)
 // in any string of any file. Ids are unique within a list.
 //
+// roadmap.json also carries the 함께하는 사람's line on each item (`support`,
+// '같이 할 수 있는 것' — 2026-10-09 founder request: what she looks after
+// keeps showing on his screens, each with what he can do): every item whose
+// `who` is 'carrier' needs one; a 'both' item may have one. `support` is a
+// short '~하기' phrase (no 해요체, at most SUPPORT_MAX characters) and the
+// optional `supportNote` one 해요체 sentence (at most SUPPORT_NOTE_MAX). Both
+// stay practical and relational — no medical claim (MEDICAL_CLAIM words), no
+// timing / pressure / recommending word (SUPPORT_NEVER).
+//
 //   node scripts/validate-content.mjs            # exit 1 on the first file with problems
 //   node scripts/validate-content.mjs --summary  # also print the unverified ('미확인') count per file
 
@@ -38,6 +47,82 @@ const NEEDS_SOURCE = new Set([
 ])
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/
+
+/** roadmap.json `support` / `supportNote` (lib/content/roadmap.ts SUPPORT_MAX / SUPPORT_NOTE_MAX say the same). */
+const SUPPORT_MAX = 40
+const SUPPORT_NOTE_MAX = 80
+/**
+ * Words that turn a support line into a medical claim (an effect, a risk, a
+ * treatment, a chance). The line says what he does — go along, keep the day
+ * free, carry the papers — never what it does to her body or the baby.
+ */
+const MEDICAL_CLAIM = [
+  '효과',
+  '예방',
+  '위험',
+  '낮춰',
+  '낮아',
+  '높여',
+  '높아',
+  '줄여',
+  '줄어',
+  '좋아져',
+  '개선',
+  '치료',
+  '진단',
+  '처방',
+  '복용',
+  '먹여',
+  '안전해',
+  '건강해',
+  '확률',
+  '가능성',
+  '%',
+]
+
+/**
+ * Words a support line never carries either: the timing words a 'soft' / 'off'
+ * person must not meet (AGENTS.md 알림 방식 — the line shows on his screens and
+ * in his 🔔), a pressure word about her ('기한 지남', '안 했어요' — her item on
+ * his screen is never a warning), and anything that finds or recommends a
+ * hospital, a product or an insurer (positioning §6, 의료법 제27조③·제56조).
+ */
+const SUPPORT_NEVER = ['가임', '배란', 'LH', '배테기', '임테기', '기한 지남', '안 했어요', '놓쳤', '추천', '좋은 병원', '병원 찾', '상품', '업체']
+
+/** The roadmap's support fields (see the header). */
+function checkSupport(json, bad) {
+  const items = Array.isArray(json.items) ? json.items : []
+  items.forEach((it, i) => {
+    if (!it || typeof it !== 'object') return
+    const here = `items[${i}]${it.id ? ` (${it.id})` : ''}`
+    const { support, supportNote } = it
+    if (support === undefined) {
+      if (it.who === 'carrier') bad(here, "a 'carrier' item needs a `support` line (what the 함께하는 사람 can do)")
+      if (supportNote !== undefined) bad(here, '`supportNote` without `support`')
+      return
+    }
+    if (it.who === 'partner') bad(here, "a 'partner' item is his own — no `support` line")
+    if (typeof support !== 'string' || !support.trim()) return bad(`${here}.support`, 'must be a non-empty string')
+    if (support !== support.trim()) bad(`${here}.support`, 'has leading or trailing spaces')
+    if (support.length > SUPPORT_MAX) bad(`${here}.support`, `${support.length} characters — at most ${SUPPORT_MAX}`)
+    if (!/기$/.test(support)) bad(`${here}.support`, `'${support}' — a short '~하기' phrase, not a sentence (no 해요체)`)
+    if (supportNote !== undefined) {
+      if (typeof supportNote !== 'string' || !supportNote.trim()) bad(`${here}.supportNote`, 'must be a non-empty string')
+      else {
+        if (supportNote.length > SUPPORT_NOTE_MAX) bad(`${here}.supportNote`, `${supportNote.length} characters — at most ${SUPPORT_NOTE_MAX}`)
+        if (!/요[.!]?$/.test(supportNote)) bad(`${here}.supportNote`, `'${supportNote}' — one 해요체 sentence`)
+      }
+    }
+    for (const [field, text] of [
+      ['support', support],
+      ['supportNote', supportNote],
+    ]) {
+      if (typeof text !== 'string') continue
+      for (const w of MEDICAL_CLAIM) if (text.includes(w)) bad(`${here}.${field}`, `'${w}' reads as a medical claim — say what he does instead`)
+      for (const w of SUPPORT_NEVER) if (text.includes(w)) bad(`${here}.${field}`, `'${w}' never goes in a support line (timing, pressure or recommending)`)
+    }
+  })
+}
 
 function isCalendarDay(s) {
   if (!ISO.test(s)) return false
@@ -140,6 +225,7 @@ function validateFile(name, json) {
     if (/(^|\.)checkNote$/.test(path)) continue
     for (const w of BANNED) if (s.includes(w)) bad(path, `banned word '${w}'`)
   }
+  if (name === 'roadmap') checkSupport(json, bad)
   return { problems, unverified, items }
 }
 

@@ -62,6 +62,10 @@ interface RoadmapItemJson extends ContentAudit {
   link?: string
   /** Keys into `sources`. */
   sources: string[]
+  /** What the 함께하는 사람 can do ('같이 가기 · 옆에 있기'); required when who is 'carrier'. */
+  support?: string
+  /** One 해요체 line under it — for a 'both' item, who takes which half. */
+  supportNote?: string
 }
 
 interface RoadmapJson {
@@ -71,8 +75,31 @@ interface RoadmapJson {
   items: RoadmapItemJson[]
 }
 
+/** `support` is a short '~하기' phrase; scripts/validate-content.mjs checks the same limits. */
+export const SUPPORT_MAX = 40
+export const SUPPORT_NOTE_MAX = 80
+
 const raw = data as unknown as RoadmapJson
 checkAudited(raw.items, 'roadmap.items')
+checkSupport(raw.items)
+
+/**
+ * The cheap shape check of the support lines outside production (the full
+ * rules — no 해요체, no medical claim — live in scripts/validate-content.mjs):
+ * every item she looks after ('carrier') says what the 함께하는 사람 can do
+ * (founder request 2026-10-09: 같이 하는 거야), and a 'partner' item has none.
+ */
+function checkSupport(items: RoadmapItemJson[]): void {
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') return
+  for (const t of items) {
+    const where = `roadmap.items '${t.id}'`
+    if (t.who === 'carrier' && !t.support?.trim()) contentError(where, "a 'carrier' item needs a support line")
+    if (t.who === 'partner' && t.support !== undefined) contentError(where, "a 'partner' item has no support line")
+    if (t.support !== undefined && (t.support.length > SUPPORT_MAX || !t.support.trim())) contentError(where, `support must be 1–${SUPPORT_MAX} characters`)
+    if (t.supportNote !== undefined && (t.support === undefined || t.supportNote.length > SUPPORT_NOTE_MAX))
+      contentError(where, `supportNote needs support and at most ${SUPPORT_NOTE_MAX} characters`)
+  }
+}
 
 export const ROADMAP_CHECKED_AT: string = raw.checkedAt
 
@@ -135,6 +162,8 @@ export const ROADMAP: RoadmapTemplate[] = raw.items.map((t) => {
     ...(t.deadline ? { deadline: true } : {}),
     ...(t.milestone ? { milestoneKey: milestoneKeyOf(t.milestone, where) } : {}),
     detail: t.detail,
+    ...(t.support ? { support: t.support } : {}),
+    ...(t.supportNote ? { supportNote: t.supportNote } : {}),
     sources: resolveSources(t.sources, raw.sources, where).map(({ name, url }) => ({ name, url })),
     ...(link ? { link } : {}),
   }

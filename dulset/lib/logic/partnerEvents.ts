@@ -44,6 +44,18 @@
 //    챙길 것). Only a live, not-done, not-past '둘이 함께' appointment takes it,
 //    and only once per person.
 //
+// 같이 챙길 것 (founder request 2026-10-09) adds one more, an id and a switch:
+//  • 'support' {itemId, on} — his [같이 할게요] on one of HER roadmap items or
+//    a shared one that the link showed him (together.linkTogether), and taking
+//    it back. Her phone keeps it in `decisions` ('support:<itemId>:<member>'
+//    → the day, together.supportItem / unsupportItem — the same keys the app's
+//    own button writes). A "set", not a toggle: on twice is one answer, off
+//    without an answer changes nothing. `on: true` only where the app would
+//    take it (together.canSupportItem: his, an open item of this stage that is
+//    hers or shared, with a support line, outside the quiet after a loss);
+//    `on: false` is always accepted. The link never sends one of the couple's
+//    own items (their titles are free text), so the id must be a roadmap one.
+//
 // N30's 해 줄 말 needs no new kind: an answer on a card she told him about
 // ([알리기]) arrives as 'signal' {signalId}, accepted only while that card
 // offers it and nothing was sent since (toldAnswerOpen).
@@ -65,6 +77,10 @@ import { completeMonthlyTask, monthlyTask, partnerId, type MonthlyTask } from '.
 import { setAlertStyle } from './settings'
 import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalIdOf, signalsFor, signalsSentToday } from './signals'
 import { stampOn, toggleWithCompletion } from './today'
+import { templateById } from '../content/roadmap'
+import { planItems } from './plan'
+import { isForEndedPregnancy } from './planNotices'
+import { canSupportItem, isSupported, supportItem, unsupportItem } from './together'
 import { ttcMoment } from './ttcFlow'
 import { markWeekDone, pickWeek, weekDone, weekOf, weekOptions, weekPick, weekTogetherOn } from './weekTogether'
 
@@ -79,6 +95,7 @@ export type PartnerEventKind =
   | 'week-done'
   | 'setup'
   | 'join-appointment'
+  | 'support'
 export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'check',
   'reply',
@@ -90,6 +107,7 @@ export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'week-done',
   'setup',
   'join-appointment',
+  'support',
 ] as const
 
 /** The link's drinking answer (N22): 거의 안 마셔요 / 가끔 / 자주. */
@@ -122,6 +140,7 @@ export type PartnerEvent =
   | (EventBase & { kind: 'week-done'; date: ISODate })
   | (EventBase & { kind: 'setup'; habits: SetupHabits; alertStyle?: AlertStyle })
   | (EventBase & { kind: 'join-appointment'; appointmentId: string })
+  | (EventBase & { kind: 'support'; itemId: string; on: boolean })
 
 /** Ids are short tokens (uuid, nanoid, 'signal:…'); anything longer or stranger is not an id. */
 export const EVENT_ID_MAX = 64
@@ -175,6 +194,9 @@ export function cleanPartnerEvent(raw: unknown): PartnerEvent | undefined {
     case 'join-appointment':
       if (!isId(raw.appointmentId)) return undefined
       return { ...base, kind: 'join-appointment', appointmentId: raw.appointmentId }
+    case 'support':
+      if (!isId(raw.itemId) || typeof raw.on !== 'boolean') return undefined
+      return { ...base, kind: 'support', itemId: raw.itemId, on: raw.on }
     default:
       return undefined
   }
@@ -244,6 +266,8 @@ export type EventProblem =
   | 'week'
   /** [같이 갈게요]: no such live '둘이 함께' appointment ahead, or he already said so. */
   | 'appointment'
+  /** [같이 할게요]: not a roadmap item of hers / theirs he may share now (together.canSupportItem). */
+  | 'support'
 
 function cheersSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'cheer' && n.from === from && !n.key && n.createdAt.startsWith(today)).length
@@ -316,6 +340,14 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
     case 'join-appointment': {
       const a = joinableAppointment(state, ev.appointmentId, today)
       if (!a || hasJoinedAppointment(state, a.id, partner)) return 'appointment'
+      return null
+    }
+    case 'support': {
+      // A roadmap item only: the link never carries the couple's own items.
+      if (!templateById(ev.itemId)) return 'support'
+      if (!ev.on) return null
+      const item = planItems(state, today).find((i) => i.id === ev.itemId)
+      if (!item || !canSupportItem(state, partner, item, today)) return 'support'
       return null
     }
     default:
@@ -395,6 +427,11 @@ export function applyPartnerEvent(state: AppState, ev: PartnerEvent, today: ISOD
     case 'join-appointment':
       next = joinAppointment(state, partner, ev.appointmentId, today, nowISO)
       break
+    case 'support':
+      // A "set": the same answer twice is one answer.
+      if (isSupported(state, ev.itemId, partner) === ev.on) break
+      next = ev.on ? supportItem(state, partner, ev.itemId, today) : unsupportItem(state, partner, ev.itemId)
+      break
   }
   return rememberEvent(next, ev.id, today)
 }
@@ -439,11 +476,18 @@ export function appointmentJoinedBy(state: Pick<AppState, 'decisions'>, appointm
 
 /**
  * The appointment [같이 갈게요] may answer on `today`: live, not done, not in
- * the past, and one they both go to ('둘이 함께'). Undefined otherwise.
+ * the past, and one they both go to ('둘이 함께') — never a visit booked for a
+ * pregnancy that has ended (planNotices.isForEndedPregnancy: 정밀초음파, 조리원
+ * 상담 … stay in 챙길 것 as they were, without the button). Undefined otherwise.
  */
-export function joinableAppointment(state: Pick<AppState, 'appointments'>, appointmentId: string, today: ISODate): Appointment | undefined {
+export function joinableAppointment(
+  state: Pick<AppState, 'appointments' | 'stage' | 'pregnancy' | 'baby' | 'customTasks'>,
+  appointmentId: string,
+  today: ISODate,
+): Appointment | undefined {
   const a = state.appointments.find((x) => x.id === appointmentId)
   if (!a || !isLive(a) || a.done || a.who !== 'both' || !isISODate(a.date) || a.date < today) return undefined
+  if (isForEndedPregnancy(state, a)) return undefined
   return a
 }
 

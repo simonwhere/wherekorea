@@ -487,10 +487,15 @@ const ToastContext = createContext<ToastApi>({ show: () => {} })
 /** Short confirmation messages ("콕! 보냈어요"). Mounted once in AppShell. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [msg, setMsg] = useState<{ id: number; text: string } | null>(null)
+  // The hide timer goes with the provider: a toast shown just before unmount
+  // (a closed tab, a finished test) never fires into a torn-down window.
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
   const show = useCallback((text: string) => {
     const id = Date.now()
     setMsg({ id, text })
-    window.setTimeout(() => setMsg((m) => (m?.id === id ? null : m)), 2400)
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setMsg((m) => (m?.id === id ? null : m)), 2400)
   }, [])
   return (
     <ToastContext.Provider value={{ show }}>

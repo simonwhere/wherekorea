@@ -13,7 +13,9 @@ import {
   weeklyDone,
 } from '@/lib/logic/checks'
 import { rowProgress } from '@/lib/logic/today'
+import type { PlanItem } from '@/lib/logic/plan'
 import type { RoadmapTemplate } from '@/lib/logic/roadmap'
+import { togetherRow, whoseFor } from '@/lib/logic/together'
 import type { Appointment, AppState, CheckItem, ISODate, Member, MemberId, RoadmapPhase } from '@/lib/types'
 
 /** How far ahead the 다가오는 일정 card looks, and how many it shows. */
@@ -96,6 +98,25 @@ export function withTicked<T extends { id: string; status: string }>(
     if (item && item.status === 'done') rows.splice(Math.min(t.index, rows.length), 0, item)
   }
   return rows
+}
+
+/**
+ * The 이번 주 챙길 것 cards' items as `viewer` sees them (founder request
+ * 2026-10-09): the other person's open item whose deadline passed or whose
+ * window lapsed is not on my card — it reads as nothing there
+ * (lib/logic/together.togetherRow), never '기한 지남' about them.
+ */
+export function focusItemsFor(state: AppState, today: ISODate, viewer: MemberId, items: readonly PlanItem[]): PlanItem[] {
+  return items.filter((i) => {
+    if (i.status === 'done') return true
+    const row = togetherRow(state, today, viewer, i)
+    return !(row.whose === 'theirs' && row.label === null)
+  })
+}
+
+/** Does the card warn ('기한이 지난 일이 있어요')? Only about an overdue item that is the viewer's own or shared. */
+export function ownOverdue(rows: readonly PlanItem[], viewer: MemberId): boolean {
+  return rows.some((r) => r.status === 'overdue' && whoseFor(r, viewer) !== 'theirs')
 }
 
 // ── 오늘 할 일 (preparing home) ─────────────────────────────

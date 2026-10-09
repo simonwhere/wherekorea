@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { withTicked } from '@/components/today/model'
+import { focusItemsFor, ownOverdue, withTicked } from '@/components/today/model'
 import { Card, cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
@@ -18,15 +18,17 @@ const SHOWN = 3
  * jump under the finger and keyboard focus stays on the checkbox.
  */
 export default function FocusCard({ items, actions }: { items: PlanItem[]; actions: ItemActions }) {
-  const { state, today } = useApp()
+  const { state, today, me } = useApp()
   const [more, setMore] = useState(false)
   const [ticked, setTicked] = useState<Array<{ id: string; index: number }>>([])
   const moreId = useId()
-  const focus = withTicked(planFocus(items), items, ticked)
+  // The other person's passed deadline isn't on my card (together.ts — no '기한 지남' about them).
+  const mine = focusItemsFor(state, today, me.id, items)
+  const focus = withTicked(planFocus(mine), items, ticked)
   // Right after a pregnancy ended, no "임신 준비" suggestions (as on 오늘).
   const resting = recentlyEnded(state, today)
-  const calm = focus.length || resting ? [] : withTicked(calmSuggestions(items, state.stage), items, ticked)
-  const overdue = focus.some((i) => i.status === 'overdue')
+  const calm = focus.length || resting ? [] : withTicked(calmSuggestions(mine, state.stage), items, ticked)
+  const overdue = ownOverdue(focus, me.id)
   const rows = focus.length ? focus : calm
   const allDone = rows.length > 0 && rows.every((i) => i.status === 'done')
   const extra = rows.length - SHOWN

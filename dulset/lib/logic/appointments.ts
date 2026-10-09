@@ -2,6 +2,7 @@
 
 import { addDays, diffDays, formatKo } from '../dates'
 import { uid } from '../id'
+import { isLive } from '../sync/model'
 import type { Appointment, AppointmentKind, AppState, ISODate, MemberId } from '../types'
 import type { IcsEvent } from './ics'
 import type { Notice } from './notifications'
@@ -66,15 +67,15 @@ export function compareAppointments(a: Appointment, b: Appointment): number {
   return a.title < b.title ? -1 : a.title > b.title ? 1 : 0
 }
 
+/** Live (not deleted — a tombstone is never an appointment) and not done, from today, within `withinDays` when given. */
 export function upcomingAppointments(list: Appointment[], today: ISODate, withinDays?: number): Appointment[] {
   const until = withinDays === undefined ? undefined : addDays(today, withinDays)
-  return list
-    .filter((a) => !a.done && a.date >= today && (until === undefined || a.date <= until))
-    .sort(compareAppointments)
+  return list.filter((a) => isLive(a) && !a.done && a.date >= today && (until === undefined || a.date <= until)).sort(compareAppointments)
 }
 
+/** Live ones before today, or done — newest first. */
 export function pastAppointments(list: Appointment[], today: ISODate): Appointment[] {
-  return list.filter((a) => a.date < today || a.done).sort((a, b) => -compareAppointments(a, b))
+  return list.filter((a) => isLive(a) && (a.date < today || a.done)).sort((a, b) => -compareAppointments(a, b))
 }
 
 export interface AppointmentInput {

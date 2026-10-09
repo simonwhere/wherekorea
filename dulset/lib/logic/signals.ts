@@ -89,17 +89,18 @@ const OTHER_STAGES: readonly Signal[] = [S.comfort, S.clinic, S.thanks, S.dinner
 
 /**
  * Signals to offer. Preparing: the trying-month set ('이번 달은 아니었어요' is
- * for the person whose cycle it is — the partner can't know it first). Other
- * stages keep a small, calm set. Every list has at least one rest signal.
+ * for the person whose cycle it is — the partner can't know it first). The
+ * partner keeps his offers while pregnant too. Otherwise a small, calm set.
+ * Every list has at least one rest signal.
  */
 export function signalsFor(stage: Stage, isCycleOwner = true): Signal[] {
-  if (stage === 'preparing') {
-    // The partner's list opens with his two offers (N30): '오늘 저녁은 내가 할게요',
-    // '병원 같이 갈게요' ('병원 같이 가 줄래요?' stays for his own visit).
-    return isCycleOwner
-      ? [S.notThisMonth, S.comfort, S.clinic, S.noBabyTalk, S.rest, S.tired]
-      : [S.dinnerMine, S.clinicTogether, S.comfort, S.clinic, S.thanks, S.rest, S.tired]
-  }
+  // The partner's list opens with his two offers (N30): '오늘 저녁은 내가 할게요',
+  // '병원 같이 갈게요' ('병원 같이 가 줄래요?' stays for his own visit) — while
+  // preparing and, since 2026-10-09 ('같이 하는 거야': the pregnant stage runs
+  // his loop too), while pregnant. Not in the parenting stage.
+  const his = [S.dinnerMine, S.clinicTogether, S.comfort, S.clinic, S.thanks, S.rest, S.tired]
+  if (stage === 'preparing') return isCycleOwner ? [S.notThisMonth, S.comfort, S.clinic, S.noBabyTalk, S.rest, S.tired] : his
+  if (stage === 'pregnant' && !isCycleOwner) return his
   return [...OTHER_STAGES]
 }
 

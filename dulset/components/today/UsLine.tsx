@@ -7,6 +7,10 @@
 //    (thankWeek + one 🔔 through sendWeekThanks). A week with nothing in it shows no
 //    line and no button (positioning §4 rule 2: never a 0, never '안 했어요'),
 //    and the whole thing rests in the quiet after a loss (the summary is empty).
+//  • '민수님이 ‘국민행복카드’ 같이 챙긴대요' on the cycle owner's home — his
+//    [같이 할게요] on her items from the last week (lib/logic/together
+//    partnerSupportLines, at most two lines; founder request 2026-10-09). Taps
+//    open 챙길 것, where the item shows the same line. Empty in the quiet.
 //  • a received signal to answer, and the other person's reply to mine
 //    (model.receivedReply) — so an answer shows on the home, not only as a 🔔;
 //  • '신호 보내기' as one compact row (signals/SignalChips), out of 더 보기.
@@ -20,6 +24,7 @@ import { canNudge as nudgeAllowed, sendCheer, sendNudge, sendWeekThanks, WEEK_TH
 import { canLogCycle } from '@/lib/logic/prefs'
 import { pendingSignal } from '@/lib/logic/signals'
 import { stampOn } from '@/lib/logic/today'
+import { partnerSupportLines } from '@/lib/logic/together'
 import { canThankWeek, partnerWeekSummary, thankWeek, weekOf, weekThanked } from '@/lib/logic/weekTogether'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
@@ -64,6 +69,8 @@ export default function UsLine({
   const week = owner ? partnerWeekSummary(state, today, partner.id) : []
   const thankedOn = owner ? weekThanked(state, me.id, weekOf(today)) : undefined
   const canThank = owner && canThankWeek(state, me.id, today)
+  // '민수님이 ‘…’ 같이 챙긴대요' — his [같이 할게요] on her items this week (at most two).
+  const supports = owner ? partnerSupportLines(state, today, me.id) : []
 
   const nudge = () => {
     if (!canNudge) return
@@ -165,6 +172,25 @@ export default function UsLine({
               ))}
             </ul>
           </div>
+        ) : null}
+
+        {supports.length ? (
+          <ul className="mt-3 border-t border-line/75 pt-1.5" aria-label={`${partner.name}님이 같이 챙기는 것`} data-support-lines>
+            {supports.map((l) => (
+              <li key={l.itemId}>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('plan')}
+                  className="flex min-h-[44px] w-full items-center gap-2 rounded-xl text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                >
+                  <Icon name="users" className="h-4 w-4 shrink-0 text-him" />
+                  <span className="min-w-0 flex-1 text-[13.5px] font-semibold leading-[1.45] tracking-[-0.01em] text-ink">{l.text}</span>
+                  <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
+                  <span className="sr-only">: 챙길 것에서 보기</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         ) : null}
 
         {pending ? (

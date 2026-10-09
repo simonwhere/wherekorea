@@ -4,7 +4,8 @@
 // bottom-bar button, the home screen and calendar days (lib/logLauncher).
 // Tapping a choice saves right away (no save button) and offers 되돌리기.
 //
-// For the partner (the one who does not record the cycle) while preparing, the
+// For the partner (the one who does not record the cycle) while preparing and
+// while pregnant (the same loop runs then, founder request 2026-10-09), the
 // same button is a '했어요' sheet (N28): a signal to answer, this week's one
 // thing → [했어요], today's checks, '신호 보내기', and the memo folded at the
 // bottom (openLog({ kind: 'note' }) still opens the memo alone). Everything on
@@ -107,8 +108,9 @@ export default function LogSheet({ request, onClose }: { request: LogRequest | n
 
 function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLog; onClose: () => void }) {
   const { state, viewer } = useApp()
-  // The partner's '+ 기록' while preparing: what he did, not a memo-only sheet (N28).
-  if (state.stage === 'preparing' && !canLogCycle(state, viewer) && request.kind !== 'note') return <DidBody save={save} />
+  // The partner's '+ 기록' while preparing or pregnant: what he did, not a memo-only sheet (N28).
+  const didStage = state.stage === 'preparing' || state.stage === 'pregnant'
+  if (didStage && !canLogCycle(state, viewer) && request.kind !== 'note') return <DidBody save={save} />
   return <RecordBody request={request} save={save} onClose={onClose} />
 }
 

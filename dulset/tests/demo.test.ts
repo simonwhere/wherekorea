@@ -850,6 +850,8 @@ describe('demo 우리 둘 · 챙길 것', () => {
       expect(open.length).toBeGreaterThanOrEqual(3)
       for (const a of open) {
         const it = items.get(a.taskId!)!
+        // An item without a window (the flu shot, 2026-10-09) can be booked any day.
+        if (!it.template?.window) continue
         expect(it.start).toBeDefined()
         expect(a.date >= it.start! && (!it.end || a.date <= it.end)).toBe(true)
       }
@@ -860,14 +862,20 @@ describe('demo 우리 둘 · 챙길 것', () => {
     })
   }
 
-  it('pregnant: first-trimester items done, NT and 조리원 up next', () => {
+  it('pregnant: first-trimester items done, her flu shot tomorrow, NT and 조리원 up next', () => {
     const s = createDemoState(today, NOW, 'pregnant')
     const items = buildItems(s, ROADMAP, today)
     const done = items.filter((i) => i.status === 'done').map((i) => i.id)
     expect(done).toEqual(
       expect.arrayContaining(['pre-folic', 'p1-first-visit', 'p1-voucher', 'p1-health-center', 'p1-prenatal-labs', 'p1-care-center']),
     )
-    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['정기검진 · NT 초음파', '산후조리원 상담'])
+    // 같이 챙길 것 (2026-10-09): one of HER visits tomorrow (his heads-up the day before), then NT; 조리원 after.
+    expect(upcomingForToday(s.appointments, today).map((a) => a.title)).toEqual(['독감 접종', '정기검진 · NT 초음파'])
+    const flu = s.appointments.find((a) => a.taskId === 'p1-flu')!
+    expect(flu).toMatchObject({ date: addDays(today, 1), who: 'b', kind: 'vaccine' })
+    expect(s.appointments.some((a) => a.title === '산후조리원 상담' && a.date === addDays(today, 5))).toBe(true)
+    // …and one [같이 할게요] of his from yesterday that her screens read.
+    expect(s.decisions['support:p1-checkup-time:a']).toBe(addDays(today, -1))
     expect(focusItems(items).map((i) => i.id)).toContain('p1-nt')
   })
 
@@ -951,10 +959,7 @@ describe('오늘 · 우리 둘 / 챙길 것 cards', () => {
     const pregnant = createDemoState(today, NOW, 'pregnant')
     // While pregnant everything booked shows.
     expect(homeAppointments(pregnant)).toBe(pregnant.appointments)
-    expect(upcomingForToday(homeAppointments(pregnant), today).map((a) => a.title)).toEqual([
-      '정기검진 · NT 초음파',
-      '산후조리원 상담',
-    ])
+    expect(upcomingForToday(homeAppointments(pregnant), today).map((a) => a.title)).toEqual(['독감 접종', '정기검진 · NT 초음파'])
     // After a loss: NT / 조리원 / 정밀초음파 stay in 챙길 것 but not on 오늘.
     let s = backToPreparing(pregnant, today)
     expect(upcomingForToday(homeAppointments(s), today)).toEqual([])

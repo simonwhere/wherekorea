@@ -374,6 +374,7 @@ describe('what the partner can never do', () => {
       'week-done',
       'setup',
       'join-appointment',
+      'support',
     ])
     const forged = [
       { id: 'f1', kind: 'period', date: '2026-09-10' },

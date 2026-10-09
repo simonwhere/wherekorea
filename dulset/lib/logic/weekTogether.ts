@@ -18,6 +18,15 @@
 //    at all — there is never a 0 or '안 했어요' (the summary is simply empty).
 //  • During the 42 days after a pregnancy ended (and while the 'loss' quiet is
 //    on) everything here rests: no picks, no summary, no thanks asked for.
+//  • The pregnant stage runs the same loop (founder request 2026-10-09: 같이
+//    하는 거야) from its own catalogue (PREGNANT_WEEK_OPTIONS): dinner, a walk,
+//    a chore, an errand — relationship-side and practical, never medical.
+//    '검진 날 같이 가기' (CHECKUP_DAY_OPTION) takes the third place only in a
+//    week with a checkup / appointment of hers or of both of them, and a few
+//    picks belong to the third trimester only ('출산 가방 하나씩 채우기').
+//    Pregnancy weeks are known to both once the stage is pregnant (she switched
+//    it), so the trimester may shape the catalogue; nothing she logs privately
+//    does. The parenting stage keeps its own screens (no loop).
 //
 // Nothing here is a new state field: the answers live in `decisions` (lib/sync/
 // model.ts decide / undecide — answers that are not records), keyed by the
@@ -32,7 +41,7 @@ import { addDays, isISODate } from '../dates'
 import { decide, isLive, undecide } from '../sync/model'
 import type { AppState, AppointmentKind, ISODate, MemberId } from '../types'
 import { isWeekly, mondayOf } from './checks'
-import { recentlyEnded } from './pregnancy'
+import { gestationalAge, recentlyEnded } from './pregnancy'
 import { isSignal, signalById, signalIdOf } from './signals'
 import { activeRest } from './ttc'
 
@@ -68,6 +77,14 @@ export type WeekOptionId =
   | 'walk-together'
   | 'talk-10'
   | 'clinic-day'
+  // The pregnant stage (PREGNANT_WEEK_OPTIONS / THIRD_TRIMESTER_OPTIONS / CHECKUP_DAY_OPTION).
+  | 'weekend-walk'
+  | 'errand'
+  | 'baby-talk'
+  | 'bag-fill'
+  | 'route-check'
+  | 'baby-space'
+  | 'checkup-day'
 
 export interface WeekOption {
   id: WeekOptionId
@@ -101,8 +118,48 @@ export const CLINIC_DAY_OPTION: WeekOption = {
 /** How many picks a week offers. */
 export const WEEK_OPTION_COUNT = 3
 
+const option = (id: WeekOptionId): WeekOption => WEEK_OPTIONS.find((o) => o.id === id)!
+
+/**
+ * The pregnant stage's picks (relationship-side and practical — no medical
+ * content, no advice about her body). Three are offered each week, rotated
+ * per couple, like WEEK_OPTIONS.
+ */
+export const PREGNANT_WEEK_OPTIONS: readonly WeekOption[] = [
+  option('cook-dinner'),
+  option('chore'),
+  option('evening-free'),
+  option('talk-10'),
+  { id: 'weekend-walk', text: '주말에 같이 천천히 산책하기', doneText: '주말에 같이 산책했어요' },
+  { id: 'errand', text: '장보기·심부름 한 번 맡기', doneText: '장보기를 한 번 맡았어요' },
+  { id: 'baby-talk', text: '아기 이야기 10분 나누기', doneText: '아기 이야기를 나눴어요' },
+]
+
+/** Added to the pregnant catalogue from 임신 28주 (the third trimester) on. */
+export const THIRD_TRIMESTER_OPTIONS: readonly WeekOption[] = [
+  { id: 'bag-fill', text: '출산 가방 하나씩 채우기', doneText: '출산 가방을 같이 채웠어요' },
+  { id: 'route-check', text: '병원 가는 길 미리 같이 가 보기', doneText: '병원 가는 길을 같이 가 봤어요' },
+  { id: 'baby-space', text: '아기 맞을 자리 하나 정리하기', doneText: '아기 맞을 자리를 정리했어요' },
+]
+
+/**
+ * Offered (in the third place) only in a pregnant week with a checkup or
+ * another appointment of hers or of both of them (sharedCheckupInWeek).
+ */
+export const CHECKUP_DAY_OPTION: WeekOption = {
+  id: 'checkup-day',
+  text: '검진 날 같이 가기',
+  doneText: '검진 날 같이 갔어요',
+}
+
 export function weekOptionById(id: string): WeekOption | undefined {
-  return id === CLINIC_DAY_OPTION.id ? CLINIC_DAY_OPTION : WEEK_OPTIONS.find((o) => o.id === id)
+  if (id === CLINIC_DAY_OPTION.id) return CLINIC_DAY_OPTION
+  if (id === CHECKUP_DAY_OPTION.id) return CHECKUP_DAY_OPTION
+  return (
+    WEEK_OPTIONS.find((o) => o.id === id) ??
+    PREGNANT_WEEK_OPTIONS.find((o) => o.id === id) ??
+    THIRD_TRIMESTER_OPTIONS.find((o) => o.id === id)
+  )
 }
 
 // ── Keys (decisions) ────────────────────────────────────────
@@ -125,9 +182,12 @@ export function weekQuiet(state: WeekState, today: ISODate): boolean {
   return recentlyEnded(state, today) || activeRest(state, today)?.reason === 'loss'
 }
 
-/** '이번 주 우리 둘' runs while preparing, outside the quiet. */
+/**
+ * '이번 주 우리 둘' runs while preparing and while pregnant (founder request
+ * 2026-10-09), outside the quiet. Not in the parenting stage.
+ */
 export function weekTogetherOn(state: WeekState, today: ISODate): boolean {
-  return state.stage === 'preparing' && isISODate(today) && !weekQuiet(state, today)
+  return (state.stage === 'preparing' || state.stage === 'pregnant') && isISODate(today) && !weekQuiet(state, today)
 }
 
 function tracksCycle(state: Pick<AppState, 'couple'>, member: MemberId): boolean {
@@ -158,6 +218,30 @@ export function sharedAppointmentInWeek(state: Pick<AppState, 'appointments'>, w
   )
 }
 
+/** The appointment kinds a '검진 날' is (a visit, a test, a shot — not 주사·약 at home or admin). */
+const CHECKUP_KINDS: readonly AppointmentKind[] = ['hospital', 'test', 'vaccine']
+
+/**
+ * A live checkup / test / vaccine appointment of the carrier's own or of both
+ * of them somewhere in `week` (pregnant stage: '검진 날 같이 가기'). Her
+ * appointments are shared in 챙길 것 once she is pregnant; a done one still
+ * counts, so the week's picks stay the same all week.
+ */
+export function sharedCheckupInWeek(state: Pick<AppState, 'appointments' | 'couple'>, week: WeekKey): boolean {
+  const end = addDays(week, 6)
+  const carrier = state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
+  return state.appointments.some(
+    (a) => (a.who === 'both' || a.who === carrier) && isLive(a) && CHECKUP_KINDS.includes(a.kind) && a.date >= week && a.date <= end,
+  )
+}
+
+/** Is the week (read on its Monday, so the picks hold all week) in the third trimester (임신 28주~)? */
+export function thirdTrimesterWeek(state: Pick<AppState, 'pregnancy'>, week: WeekKey): boolean {
+  const p = state.pregnancy
+  if (!p || !isISODate(p.lmp) || (p.dueDateOverride !== undefined && !isISODate(p.dueDateOverride))) return false
+  return gestationalAge(p, week).trimester === 3
+}
+
 /**
  * What seeds the rotation for a couple: the moment their space was created
  * (AppState.createdAt — set once, never edited, the same on every phone and
@@ -169,22 +253,32 @@ function coupleSeed(state: Pick<AppState, 'createdAt' | 'couple'>): string {
 
 /**
  * The three picks offered to `partnerId` in the week of `today`: a
- * deterministic rotation of WEEK_OPTIONS by (week, couple) — the couple's
- * space (coupleSeed) seeds it, so both phones and the link agree — with
- * CLINIC_DAY_OPTION in the third place in a week with a shared appointment.
- * Nothing about the cycle goes in. Empty for the cycle owner, outside the
- * preparing stage and during the quiet (weekQuiet).
+ * deterministic rotation by (week, couple) — the couple's space (coupleSeed)
+ * seeds it, so both phones and the link agree. While preparing: WEEK_OPTIONS,
+ * with CLINIC_DAY_OPTION in the third place in a week with a shared
+ * appointment. While pregnant: PREGNANT_WEEK_OPTIONS (+ THIRD_TRIMESTER_OPTIONS
+ * from 28주, read on the week's Monday), with CHECKUP_DAY_OPTION in the third
+ * place in a week with a checkup of hers or of both (sharedCheckupInWeek).
+ * Nothing about the cycle goes in. Empty for the cycle owner, in the
+ * parenting stage and during the quiet (weekQuiet).
  */
 export function weekOptions(state: AppState, today: ISODate, partnerId: MemberId): WeekOption[] {
   if (!weekTogetherOn(state, today) || tracksCycle(state, partnerId)) return []
   const week = weekOf(today)
-  const seed = `${coupleSeed(state)}|${week}|`
-  const ranked = [...WEEK_OPTIONS]
+  const pregnant = state.stage === 'pregnant'
+  const pool = pregnant
+    ? [...PREGNANT_WEEK_OPTIONS, ...(thirdTrimesterWeek(state, week) ? THIRD_TRIMESTER_OPTIONS : [])]
+    : [...WEEK_OPTIONS]
+  // The preparing seed is unchanged, so a couple's preparing weeks offer what they always did.
+  const seed = `${coupleSeed(state)}|${week}|${pregnant ? 'pregnant|' : ''}`
+  const ranked = pool
     .map((o) => ({ o, h: hash32(seed + o.id) }))
     .sort((x, y) => x.h - y.h || (x.o.id < y.o.id ? -1 : 1))
     .map((x) => x.o)
   const picks = ranked.slice(0, WEEK_OPTION_COUNT)
-  if (sharedAppointmentInWeek(state, week)) picks[WEEK_OPTION_COUNT - 1] = CLINIC_DAY_OPTION
+  if (pregnant) {
+    if (sharedCheckupInWeek(state, week)) picks[WEEK_OPTION_COUNT - 1] = CHECKUP_DAY_OPTION
+  } else if (sharedAppointmentInWeek(state, week)) picks[WEEK_OPTION_COUNT - 1] = CLINIC_DAY_OPTION
   return picks
 }
 
@@ -270,8 +364,8 @@ export function shortCheckLabel(label: string): string {
  * ('걷기 3일') · a weekly check-in (without its name: '체크인 했어요') · a signal
  * of his own. Every line counts something that happened — nothing is ever 0,
  * and a week with nothing comes back empty (the screen then shows no line and
- * no button). Empty during the quiet and outside the preparing stage. His
- * pick itself never shows here, only once it is done.
+ * no button). Empty during the quiet and outside the preparing / pregnant
+ * stages. His pick itself never shows here, only once it is done.
  */
 export function partnerWeekSummary(state: AppState, today: ISODate, partnerId: MemberId): WeekDeed[] {
   if (!weekTogetherOn(state, today)) return []

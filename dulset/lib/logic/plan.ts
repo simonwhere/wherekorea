@@ -36,6 +36,7 @@ import {
   type RoadmapTemplate,
 } from '@/lib/logic/roadmap'
 import { PREGNANCY_DAYS, dueDate, gestationalAge } from '@/lib/logic/pregnancy'
+import { isLive } from '@/lib/sync/model'
 import type {
   Appointment,
   AppointmentKind,
@@ -133,9 +134,13 @@ function usableTasks(list: CustomTask[]): CustomTask[] {
   })
 }
 
-/** Appointments with a real date (the list and its date math skip broken ones). */
+/**
+ * Appointments with a real date that still exist (the list and its date math
+ * skip broken ones, and a tombstone — `deletedAt`, lib/sync/model — is never a
+ * booking: its day must not reach 챙길 것, his together card or the link).
+ */
 export function usableAppointments(list: Appointment[]): Appointment[] {
-  return list.filter((a) => isISODate(a.date))
+  return list.filter((a) => isISODate(a.date) && isLive(a))
 }
 
 type RoadmapState = Pick<AppState, 'couple' | 'pregnancy' | 'baby' | 'planDone' | 'milestones' | 'customTasks'>

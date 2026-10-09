@@ -6,15 +6,17 @@
 // helpers that themselves use notifications) doesn't form an import cycle.
 
 import { ROADMAP } from '../content/roadmap'
-import { diffDays, formatKo, isISODate } from '../dates'
-import { MEMBER_IDS, type AppState, type Appointment, type CustomTask, type ISODate, type MemberId } from '../types'
-import { appointmentNotices } from './appointments'
+import { addDays, diffDays, formatKo, isISODate } from '../dates'
+import { isLive } from '../sync/model'
+import { MEMBER_IDS, type AppState, type Appointment, type AppointmentKind, type CustomTask, type ISODate, type MemberId } from '../types'
+import { APPOINTMENT_KIND_EMOJI, appointmentNotices } from './appointments'
 import type { Notice } from './notifications'
 import { monthlyTask, partnerId } from './partnerTrack'
 import { planItems } from './plan'
 import { recentlyEnded } from './pregnancy'
 import { noticeStatus } from './treatments'
 import { partnerTaskVisible } from './ttcFlow'
+import { weekQuiet } from './weekTogether'
 
 let phaseByTemplate: Map<string, string> | undefined
 function templatePhase(id: string): string | undefined {
@@ -37,9 +39,107 @@ export function isForEndedPregnancy(
   return phase.startsWith('pregnancy') || (phase === 'birth' && !state.baby)
 }
 
-/** Appointment reminders, minus visits that belonged to an ended pregnancy. */
+/**
+ * Appointment reminders, minus visits that belonged to an ended pregnancy (and
+ * tombstones — a deleted appointment is never a reminder). While pregnant, the
+ * 함께하는 사람's heads-up the day before one of HER appointments says what he
+ * can do (togetherAppointmentNotice).
+ */
 export function appointmentReminders(state: AppState, today: ISODate): Notice[] {
-  return appointmentNotices(state, today, (a) => isForEndedPregnancy(state, a))
+  const list = appointmentNotices(state, today, (a) => !isLive(a) || isForEndedPregnancy(state, a))
+  if (!togetherNoticesOn(state, today)) return list
+  const tomorrow = addDays(today, 1)
+  const carrier = carrierId(state)
+  const hers = new Map(
+    state.appointments.filter((a) => a.who === carrier && isLive(a) && !a.done && a.date === tomorrow).map((a) => [fyiKey(a, partnerId(state)), a]),
+  )
+  return list.map((n) => {
+    const a = n.key ? hers.get(n.key) : undefined
+    return a ? togetherAppointmentNotice(state, a, n) : n
+  })
+}
+
+// ── 같이 챙길 것: his heads-up the day before (2026-10-09) ────
+//
+// What she looks after keeps showing on his screens, so the day before one
+// of HER appointments (or one of her own dated items) while pregnant, he
+// gets one gentle line with what he can do: '🏥 내일 지은님 정기 검진이에요' ·
+// '같이 갈 수 있으면 시간 비워 두기 · 10월 10일 (토) 14:00'. The words are the
+// title she already shares in 챙길 것 and the item's support line (lib/content
+// roadmap `support`) — nothing from her cycle, no result, no note. Keys carry
+// the appointment / item id and its day only:
+//   'appt:<id>:<date>:fyi:<member>'           — the appointment's own heads-up
+//     (lib/logic/appointments), reworded: one notice, never two;
+//   'deadline:together:<task id>:<due>:<member>' — her own dated item.
+// Both prefixes open 챙길 것 (today.noticeTarget). Not for someone whose alert
+// style is 'off' (they keep the plain heads-up), not in the quiet after a loss;
+// the lock screen hides the words in 잠금화면 숨김 (useNotificationEngine).
+
+/** The generic line when the appointment is not linked to an item with a support line. */
+export const TOGETHER_VISIT_LINE = '같이 갈 수 있으면 시간 비워 두기'
+export const TOGETHER_TASK_LINE = '도울 게 있는지 물어보기'
+
+const VISIT_KINDS: readonly AppointmentKind[] = ['hospital', 'test', 'vaccine', 'injection']
+
+function carrierId(state: Pick<AppState, 'couple'>): MemberId {
+  return state.couple.members.find((m) => m.tracksCycle)?.id ?? 'a'
+}
+
+const fyiKey = (a: Appointment, to: MemberId): string => `appt:${a.id}:${a.date}:fyi:${to}`
+
+/** 'deadline:together:<task id>:<due>:<member>' — her dated item, the day before. */
+export function togetherTaskKey(taskId: string, due: ISODate, to: MemberId): string {
+  return `deadline:together:${taskId}:${due}:${to}`
+}
+
+/** While pregnant, outside the quiet, for a partner whose alert style is not 'off'. */
+function togetherNoticesOn(state: AppState, today: ISODate): boolean {
+  if (state.stage !== 'pregnant' || !isISODate(today) || weekQuiet(state, today)) return false
+  return (state.settings.alertStyle?.[partnerId(state)] ?? 'soft') !== 'off'
+}
+
+/** '이에요' after a final consonant, '예요' after a vowel; nothing after a non-Hangul end. */
+function ieyo(word: string): string {
+  const code = word.trim().charCodeAt(word.trim().length - 1)
+  if (code < 0xac00 || code > 0xd7a3) return ''
+  return (code - 0xac00) % 28 === 0 ? '예요' : '이에요'
+}
+
+function nameOf(state: AppState, id: MemberId): string {
+  const name = state.couple.members.find((m) => m.id === id)?.name?.trim()
+  return name ? `${name}님` : '기록하는 사람'
+}
+
+/** His heads-up for one of her appointments tomorrow, in place of the plain one. */
+function togetherAppointmentNotice(state: AppState, a: Appointment, plain: Notice): Notice {
+  const linked = a.taskId ? ROADMAP.find((t) => t.id === a.taskId)?.support : undefined
+  const line = linked ?? (VISIT_KINDS.includes(a.kind) ? TOGETHER_VISIT_LINE : TOGETHER_TASK_LINE)
+  const when = `${formatKo(a.date)}${a.time ? ` ${a.time}` : ''}`
+  return {
+    ...plain,
+    title: `${APPOINTMENT_KIND_EMOJI[a.kind]} 내일 ${nameOf(state, a.who as MemberId)} ${a.title}${ieyo(a.title)}`,
+    body: `${line} · ${when}${a.place ? ` · ${a.place}` : ''}`,
+  }
+}
+
+/**
+ * Her own dated items (직접 추가, who = her) due tomorrow, while pregnant: one
+ * heads-up for him ('📝 내일 지은님 …' · '도울 게 있는지 물어보기').
+ */
+export function togetherTaskNotices(state: AppState, today: ISODate): Notice[] {
+  if (!togetherNoticesOn(state, today)) return []
+  const tomorrow = addDays(today, 1)
+  const carrier = carrierId(state)
+  const to = partnerId(state)
+  return state.customTasks
+    .filter((c) => c.who === carrier && isLive(c) && !c.doneAt && c.due === tomorrow)
+    .map((c) => ({
+      key: togetherTaskKey(c.id, c.due!, to),
+      to,
+      kind: 'system' as const,
+      title: `📝 내일 ${nameOf(state, carrier)} ${c.title}`,
+      body: `${TOGETHER_TASK_LINE} · ${formatKo(c.due!)}`,
+    }))
 }
 
 /** Days before the last day on which a reminder goes out. */
@@ -167,6 +267,8 @@ export function planDeadlineNotices(state: AppState, today: ISODate): Notice[] {
   out.push(...noticeExpiryNotices(state, today))
   // His month task's dates (N30) — the only roadmap-chain notices while preparing.
   out.push(...monthlyTaskNotices(state, today))
+  // Her own dated items, the day before, for him (pregnant stage).
+  out.push(...togetherTaskNotices(state, today))
   if (state.stage === 'preparing') return out
   for (const it of planItems(state, today)) {
     if (it.custom || !it.deadline || it.status === 'done' || it.lapsed || !it.end || it.pending) continue

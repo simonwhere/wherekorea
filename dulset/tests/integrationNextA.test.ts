@@ -11,7 +11,7 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { parseCachedView } from '@/components/link/model'
 import { BABY_CHECKED_AT, CHECKUPS, MILESTONES, VACCINE_ANCHORS } from '@/lib/content/baby'
 import { DATE_IDEAS, DATE_IDEA_AUDIT } from '@/lib/content/dateIdeas'
@@ -49,6 +49,7 @@ import {
   partnerEventProblem,
   type PartnerEvent,
 } from '@/lib/logic/partnerEvents'
+import { supportKey } from '@/lib/logic/together'
 import {
   LINK_DAYS,
   cleanCoupleLink,
@@ -508,8 +509,28 @@ function redacted(day: PartnerDay): string {
   // His clinic week (N32): the couple's own appointment days — not cycle dates.
   const clinic = copy.clinic as { appointments: Array<Record<string, unknown>> } | undefined
   if (clinic) for (const a of clinic.appointments) delete a.date
+  // 같이 챙길 것 (2026-10-09): a booked day (pregnant / parenting) or the day a window opens.
+  const plan = copy.togetherPlan as { items: Array<Record<string, unknown>> } | undefined
+  if (plan) for (const it of plan.items) delete it.date
+  // The pregnant stage card's next checkup (an appointment's day) and his own items' windows in 내 준비.
+  const card = copy.stageCard as { checkup?: Record<string, unknown> } | undefined
+  if (card?.checkup) delete card.checkup.date
+  const prep = copy.myPrep as { items?: Array<Record<string, unknown>> } | undefined
+  for (const it of prep?.items ?? []) {
+    delete it.from
+    delete it.until
+  }
   return JSON.stringify(copy)
 }
+
+/**
+ * Let the worker's event loop turn between chunks of a long synchronous
+ * property walk: vitest's worker → main RPC (onTaskUpdate) times out after
+ * 60 s, and back-to-back walks under a loaded machine used to cross that.
+ */
+const yieldToRunner = () => new Promise<void>((resolve) => setImmediate(resolve))
+// …and between tests: the runner itself goes from one synchronous test to the next without a turn.
+beforeEach(() => yieldToRunner())
 
 const calm = (s: AppState) =>
   s.settings.alertStyle[PARTNER] !== 'explicit' ||
@@ -643,7 +664,7 @@ function checkSnapshot(m: Made, tag: string, full = true): PartnerSnapshot {
 }
 
 describe('the partner snapshot never carries owner-only or lens-forbidden data — random states × random lenses × seven days', () => {
-  it('for 160 random couple spaces (seeded)', { timeout: 300_000 }, () => {
+  it('for 160 random couple spaces (seeded)', { timeout: 300_000 }, async () => {
     let covers = 0
     let told = 0
     let strips = 0
@@ -651,6 +672,7 @@ describe('the partner snapshot never carries owner-only or lens-forbidden data �
     const copies = new Set<string>()
     const levels = new Set<ShareLevel>()
     for (let seed = 1; seed <= 160; seed++) {
+      if (seed % 20 === 0) await yieldToRunner()
       const m = randomState(seed)
       const snap = checkSnapshot(m, `seed ${seed} (${m.day})`)
       const d0 = snap.days[0]!
@@ -670,7 +692,7 @@ describe('the partner snapshot never carries owner-only or lens-forbidden data �
     expect(copies.size).toBeGreaterThanOrEqual(7)
   })
 
-  it('for every combination of the lens switches on four moments of one space', { timeout: 300_000 }, () => {
+  it('for every combination of the lens switches on four moments of one space', { timeout: 300_000 }, async () => {
     const switches: Array<(s: AppState, on: boolean) => AppState> = [
       (s, on) => setPersonalPref(s, PARTNER, 'lowPressure', on),
       (s, on) => setPersonalPref(s, PARTNER, 'homeDiscreet', on),
@@ -684,6 +706,7 @@ describe('the partner snapshot never carries owner-only or lens-forbidden data �
     for (const style of ['explicit', 'soft', 'off'] as const) {
       for (const level of ['none', 'week', 'details'] as const) {
         for (let bits = 0; bits < 1 << switches.length; bits++) {
+          if (bits % 8 === 0) await yieldToRunner()
           for (const m of made) {
             let s = { ...m.state, settings: { ...m.state.settings, alertStyle: { ...m.state.settings.alertStyle, [PARTNER]: style } } }
             s = setShareLevel(s, OWNER, level)
@@ -793,6 +816,10 @@ function randomRawEvent(r: Rng, s: AppState, day: ISODate): Record<string, unkno
     case 'join-appointment':
       ev.appointmentId = pick(r, [...s.appointments.map((a) => a.id), ...s.appointments.map((a) => a.id), 'nope', 'has space', 9, undefined])
       break
+    case 'support':
+      ev.itemId = pick(r, ['p1-first-visit', 'pre-folic', 'pre-checkup-partner', 'pre-dental', 'nope', 'has space', 9, undefined])
+      ev.on = pick(r, [true, true, false, 'yes', undefined])
+      break
     case 'period':
     case 'lh':
     case 'test':
@@ -820,6 +847,7 @@ const ALLOWED_KEYS: Record<PartnerEvent['kind'], string[]> = {
   'week-done': ['id', 'from', 'kind', 'date'],
   setup: ['id', 'from', 'kind', 'habits', 'alertStyle'],
   'join-appointment': ['id', 'from', 'kind', 'appointmentId'],
+  support: ['id', 'from', 'kind', 'itemId', 'on'],
 }
 
 describe('partner events: everything outside the allowed kinds is rejected, everything else applies once and never touches her data', () => {
@@ -879,8 +907,10 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
           const newKeys = Object.keys(next.decisions).filter((k) => !(k in s.decisions))
           const weekKeys = newKeys.filter((k) => k.startsWith('week-pick:') || k.startsWith('week-done:'))
           const joinKey = ev.kind === 'join-appointment' ? appointmentJoinKey(ev.appointmentId, PARTNER) : undefined
+          // [같이 할게요] (together.supportItem): his answer to that one roadmap item.
+          const supportK = ev.kind === 'support' && ev.on ? supportKey(ev.itemId, PARTNER) : undefined
           expect(
-            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup') && k !== joinKey),
+            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup') && k !== joinKey && k !== supportK),
             tag,
           ).toEqual([appliedEventKey(ev.id)])
           if (joinKey) {
