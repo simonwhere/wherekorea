@@ -94,7 +94,7 @@ describe('/link — 같이 챙길 것', () => {
     expect(Object.keys(ev).sort()).toEqual(['from', 'id', 'itemId', 'kind', 'on'])
     expect(ev).toMatchObject({ from: 'a', itemId: 'pre-checkup-carrier', on: true })
     expect(await within(row).findByText('같이 하기로 했어요')).toBeTruthy()
-    expect(await screen.findByText('‘임신 전 기본 검사’ 같이 할게요. 지은님에게 전해져요')).toBeTruthy()
+    expect(await screen.findByText('‘임신 전 기본 검사’ 같이 하기로 했어요. 지은님에게 전해져요')).toBeTruthy()
     // Her phone applies it: the same key the app's own button writes.
     s = applyPartnerEvent(s, ev, TODAY)
     expect(s.decisions[supportKey('pre-checkup-carrier', 'a')]).toBe(TODAY)
@@ -104,6 +104,7 @@ describe('/link — 같이 챙길 것', () => {
     const off = store().events[link.coupleId]!.filter((r) => r.event.kind === 'support')[1]!.event
     expect(off).toMatchObject({ itemId: 'pre-checkup-carrier', on: false })
     expect(await within(row).findByRole('button', { name: '‘임신 전 기본 검사’ 같이 할게요' })).toBeTruthy()
+    expect(await screen.findByText('같이 하기를 취소했어요')).toBeTruthy()
     s = applyPartnerEvent(s, off, TODAY)
     expect(s.decisions[supportKey('pre-checkup-carrier', 'a')]).toBeUndefined()
   })

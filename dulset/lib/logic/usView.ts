@@ -10,6 +10,7 @@ import { FERTILITY_CHECK_GUIDE } from '../content/programs'
 import { addDays, addMonths, diffDays, formatKo, isISODate, todayISO } from '../dates'
 import type { AppNotification, AppState, Baby, CustomAnniversary, DiaryEntry, ISODate, MemberId, Pregnancy, Stage } from '../types'
 import { anniversariesBetween, daysSince, type AnniversaryEvent } from './anniversary'
+import { appointmentsFor } from './appointments'
 import { dayOfLife } from './baby'
 import { DIARY_NAME, groupByMonth, removeEntry } from './diary'
 import { ALBUM_CAPTION_MAX, STAGE_SHORT, entryStageLabel, excerpt } from './diaryExport'
@@ -496,7 +497,7 @@ export interface PartnerProgressLine {
  * own phone (his card is the task itself), nothing in the 42 quiet days after
  * a loss, and a finished or long-lapsed chain rests after
  * PARTNER_PROGRESS_KEEP_DAYS. Only his own records feed it (his ticks and the
- * test appointment linked to his row), so it tells her nothing new about
+ * test appointment linked to his row — unless he kept it '나만 보기'), so it tells her nothing new about
  * anyone's health. The check's name follows her voice: 가임력 only for an
  * explicit voice, and just '검사' when her home cards are discreet.
  */
@@ -518,7 +519,8 @@ export function partnerProgressLine(state: AppState, today: ISODate, viewer: Mem
   let step: string | undefined
   if (chain.step === 'test') {
     if (stale(chain.testBy)) return undefined
-    const booked = stepAppointment(state.appointments, testIdFor(state, partner.id), today)
+    // His '나만 보기' booking stays his: her line reads as if it were not there.
+    const booked = stepAppointment(appointmentsFor(state.appointments, viewer), testIdFor(state, partner.id), today)
     step = booked ? `${testName} 예약했어요` : `${checkName} 지원 신청했어요`
   } else if (chain.step === 'claim') {
     if (stale(chain.claimBy)) return undefined

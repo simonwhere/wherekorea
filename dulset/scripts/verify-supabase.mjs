@@ -12,9 +12,12 @@
 //   create_couple → issue_token → publish_snapshot (a synthetic snapshot with
 //   no health data at all) → snapshot_by_token (the link reads it) →
 //   send_event → pull_events → record_link_open → link_open_days →
-//   revoke_token → snapshot_by_token again (must read nothing) →
-//   delete_couple (removes the throwaway couple and, by cascade, its token,
-//   snapshot, event and '링크 연 날' row).
+//   extend_token (the live link renews itself while 둘셋 is in use: its
+//   expiry moves later) → revoke_token → extend_token again (a revoked link
+//   is never renewed: null) → snapshot_by_token again (must read nothing —
+//   the extend attempt did not revive it) → delete_couple (removes the
+//   throwaway couple and, by cascade, its token, snapshot, event and '링크 연
+//   날' row).
 //
 // It never prints the key (only its kind and length — redacted from every
 // server reply, every network error and even an unexpected crash), refuses a
@@ -54,7 +57,9 @@ export const STEPS = [
   { id: 'pull', fn: 'pull_events', label: '이벤트 받아 오기' },
   { id: 'open', fn: 'record_link_open', label: '링크 연 날 기록' },
   { id: 'days', fn: 'link_open_days', label: '링크 연 날 읽기' },
+  { id: 'extend', fn: 'extend_token', label: '쓰는 동안 링크 연장' },
   { id: 'revoke', fn: 'revoke_token', label: '링크 해제' },
+  { id: 'extendRevoked', fn: 'extend_token', label: '해제한 링크는 연장되지 않아요' },
   { id: 'revoked', fn: 'snapshot_by_token', label: '해제 뒤 읽기는 막혀요' },
   { id: 'cleanup', fn: 'delete_couple', label: '테스트 데이터 지우기' },
 ]
@@ -364,17 +369,41 @@ export async function verifySupabase({ url, anonKey, fetch: doFetch = globalThis
   else if (d.ok) fail(step('days'), d, `연 날이 0이에요: ${said(d)}`, '7단계(링크 연 날 기록)가 막혔는지 봐요. 서버 시계가 서울 날짜와 하루 넘게 다르면 이렇게 나와요.')
   else fail(step('days'), d)
 
-  // 9–10. The link stops working at once.
+  // 9. The link renews itself while 둘셋 is in use (her phone, at most once a day): the live token's expiry moves later.
+  const issuedUntil = i.ok && typeof i.json === 'string' ? Date.parse(i.json) : NaN
+  const xt = await call('extend_token', { p_owner_key: ownerKey, p_couple_id: coupleId, p_token: token, p_days: 2 })
+  const extendedUntil = xt.ok && typeof xt.json === 'string' ? Date.parse(xt.json) : NaN
+  if (Number.isFinite(extendedUntil) && (!Number.isFinite(issuedUntil) || extendedUntil > issuedUntil)) pass(step('extend'), xt)
+  else if (xt.ok)
+    fail(
+      step('extend'),
+      xt,
+      xt.json === null || xt.json === undefined ? '살아 있는 링크인데 연장되지 않았어요' : `만료 시각이 늘지 않았어요: ${said(xt)}`,
+      'extend_token이 살아 있는 토큰의 expires_at을 늘리는지 schema.sql 최신본을 다시 실행해요. 2단계(링크 토큰 발급)의 메모도 봐요.',
+    )
+  else fail(step('extend'), xt)
+
+  // 10–12. The link stops working at once — and a revoked link is never renewed (extend gives null; it still reads nothing).
   const v = await call('revoke_token', { p_owner_key: ownerKey, p_couple_id: coupleId, p_token: token })
   if (v.ok) pass(step('revoke'), v)
   else fail(step('revoke'), v)
+  const xr = await call('extend_token', { p_owner_key: ownerKey, p_couple_id: coupleId, p_token: token, p_days: 2 })
+  if (xr.ok && (xr.json === null || xr.json === undefined)) pass(step('extendRevoked'), xr, '연장 안 됨')
+  else if (xr.ok)
+    fail(
+      step('extendRevoked'),
+      xr,
+      '해제한 링크가 연장됐어요',
+      'extend_token이 revoked_at과 expires_at을 보는지 schema.sql 최신본을 다시 실행해요(issue_token으로 연장하면 해제가 풀려요).',
+    )
+  else fail(step('extendRevoked'), xr)
   const g = await call('snapshot_by_token', { p_token: token })
   if (g.ok && Array.isArray(g.json) && g.json.length === 0) pass(step('revoked'), g, '읽은 줄 없음')
   else if (!g.ok && !g.network && g.status >= 400 && g.status < 500) pass(step('revoked'), g, '거절됨')
-  else if (g.ok) fail(step('revoked'), g, '해제한 링크로 아직 읽혀요', 'snapshot_by_token이 revoked_at을 보는지 schema.sql을 확인하고 다시 실행해요. 9단계(링크 해제)의 결과도 봐요.')
+  else if (g.ok) fail(step('revoked'), g, '해제한 링크로 아직 읽혀요', 'snapshot_by_token이 revoked_at을 보는지 schema.sql을 확인하고 다시 실행해요. 10단계(링크 해제)·11단계(해제한 링크 연장)의 결과도 봐요.')
   else fail(step('revoked'), g)
 
-  // 11. Leave nothing behind.
+  // 13. Leave nothing behind.
   const x = await call('delete_couple', { p_owner_key: ownerKey, p_couple_id: coupleId })
   const cleaned = x.ok && x.json === true
   if (cleaned) pass(step('cleanup'), x)

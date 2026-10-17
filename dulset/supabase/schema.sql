@@ -44,6 +44,18 @@
 --     so a new kind like 'join-appointment' (N32) needs no change here: the
 --     owner's phone reads every event through cleanPartnerEvent.
 --
+-- 2026-10-17 (the link renews itself while 둘셋 is in use):
+--   • extend_token(owner key, couple, token, days) renews a LIVE token —
+--     known, this couple's, not revoked, not expired — to now + days, never
+--     shorter; returns the expiry, or null when the token is not live. Her
+--     phone calls it after a publish, at most once a day
+--     (lib/logic/partnerLink.renewedExpiry, lib/useLinkSync), so a link only
+--     stops after 30 days without her opening the app (e.g. not inside the
+--     42 quiet days after a loss). Never from his page: his opens must not
+--     move the expiry her 설정 shows (a read receipt — positioning §6).
+--     Not issue_token: that upserts with revoked_at = null and would revive
+--     a revoked link; an expired link is not revived either.
+
 -- Trust model, honestly: there is no account. The owner key and the share
 -- token are the secrets (the server keeps their hashes; the strings travel
 -- over TLS inside RPC calls). Whoever has the link sees the snapshot until it
@@ -110,8 +122,9 @@ create table if not exists public.link_opens (
 
 -- A snapshot is seven days of a page's worth of text (v2, ~25 KB; 128 KB
 -- at most); an event is a handful of ids.
--- Tokens live 30 days by default, 90 at most. A couple's link may send at
--- most 200 events a day (the app itself allows far fewer taps).
+-- Tokens live 30 days by default, 90 at most; extend_token moves a live one
+-- to 30 days from the day her phone last used the app. A couple's link may
+-- send at most 200 events a day (the app itself allows far fewer taps).
 
 -- ── Internal helpers (not callable from the API — see policies.sql) ──
 
@@ -260,6 +273,37 @@ begin
   if v_expires is null then
     raise exception 'token belongs to another couple' using errcode = '42501';
   end if;
+  return v_expires;
+end
+$$;
+
+-- Renew a LIVE share token while her phone keeps using 둘셋 (2026-10-17):
+-- to now + p_days (1–90, like issue_token), never shorter. Only a token of
+-- this couple that is neither revoked nor expired; returns the new expiry,
+-- or null when there is no such token (an expired or revoked link stays
+-- dead — she sends a new one). The owner key is checked like every owner
+-- call (dulset_owner_couple → 403 for a couple the key does not own).
+create or replace function public.extend_token(p_owner_key text, p_couple_id uuid, p_token text, p_days integer default 30)
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_couple uuid := public.dulset_owner_couple(p_owner_key, p_couple_id);
+  v_days integer := least(greatest(coalesce(p_days, 30), 1), 90);
+  v_expires timestamptz;
+begin
+  if p_token is null or length(p_token) < 16 then
+    return null;
+  end if;
+  update public.couple_tokens
+     set expires_at = greatest(expires_at, now() + make_interval(days => v_days))
+   where token_hash = public.dulset_hash(p_token)
+     and couple_id = v_couple
+     and revoked_at is null
+     and expires_at > now()
+  returning expires_at into v_expires;
   return v_expires;
 end
 $$;

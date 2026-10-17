@@ -77,7 +77,11 @@
 // every lens × moment × day): period dates, LH results, pregnancy tests,
 // personalLog, '나만 보기' entries, 관계일, treatment notes or counts,
 // appointment titles and notes, her own appointments, positivePending /
-// bleeding, a cycle day when not shared, a banned word. The AppState never
+// bleeding, a cycle day when not shared, a banned word — and nothing about
+// her '나만 보기' appointments (Appointment.privateTo, 2026-10-17): every day
+// is built from the state as he may read it (appointments.withAppointmentsFor),
+// so the snapshot is byte for byte the one without them
+// (tests/appointmentPrivacy.test.ts). The AppState never
 // goes anywhere: this is a projection for one viewer, not a sync. For the
 // owner herself it is null — her own view is never published.
 //
@@ -91,7 +95,7 @@ import { isLive } from '../sync/model'
 import type { ReceivedEvent } from '../sync/transport'
 import type { AppState, AppointmentKind, CheckKind, ISODate, ISODateTime, MemberId, Role, Stage } from '../types'
 import { templateById } from '../content/roadmap'
-import { CLINIC_KIND_WORD, compareAppointments } from './appointments'
+import { CLINIC_KIND_WORD, appointmentsFor, compareAppointments, withAppointmentsFor } from './appointments'
 import { activeItems, isDone, isWeekly, mondayOf, nudgeableItem, weekCount, weeklyDone } from './checks'
 import { coverView, heroLine, type HeroLine } from './cover'
 import { describeStrip } from './cycleRing'
@@ -694,7 +698,7 @@ export const CHECKUP_ROLE = { both: '둘이 같이 가는 날이에요', hers: T
 export function linkCheckup(state: AppState, day: ISODate, partner: MemberId): SnapshotCheckup | undefined {
   const owner = cycleOwnerId(state)
   if (partner === owner) return undefined
-  const next = state.appointments
+  const next = appointmentsFor(state.appointments, partner)
     .filter(
       (a) =>
         isLive(a) &&
@@ -797,7 +801,7 @@ export function clinicOn(state: AppState, day: ISODate): boolean {
 export function linkClinic(state: AppState, day: ISODate, partner: MemberId): SnapshotClinic | undefined {
   if (!clinicOn(state, day) || weekQuiet(state, day) || partner === cycleOwnerId(state)) return undefined
   const until = addDays(day, CLINIC_WEEK_DAYS - 1)
-  const appointments = state.appointments
+  const appointments = appointmentsFor(state.appointments, partner)
     .filter(
       (a) =>
         isLive(a) &&
@@ -831,6 +835,10 @@ function snapshotSay(say: NonNullable<Moment['say']>): NonNullable<SnapshotMomen
 
 /** One date as the page shows it, and the moment's phase (for the forecast rule). */
 function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberId): { day: PartnerDay; kind: MomentKind | undefined } {
+  // His page is read from the state as he may read it: her '나만 보기'
+  // appointments are not in it at all, so no card, date, count or option moves
+  // because of them (appointments.withAppointmentsFor).
+  state = withAppointmentsFor(state, partner)
   // The moment card, word for word (ttcMoment applies the partner's lens:
   // homeVoice, canSeeCycleDetails, fertileHintsAllowed, homeDiscreetFor) —
   // on the 'link' surface, where a sentence that points to 설정 is reworded.

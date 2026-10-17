@@ -151,7 +151,7 @@ describe('toast timer', () => {
           <Grab />
         </ToastProvider>,
       )
-      act(() => show('같이 챙길게요'))
+      act(() => show('같이 하기로 했어요 · 지은님 화면에도 보여요'))
       expect(vi.getTimerCount()).toBe(1)
       view.unmount()
       expect(vi.getTimerCount()).toBe(0)

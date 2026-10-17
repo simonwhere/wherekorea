@@ -58,6 +58,71 @@ export function attendees(a: Pick<Appointment, 'who'>): MemberId[] {
   return a.who === 'both' ? ['a', 'b'] : [a.who]
 }
 
+// ── '나만 보기' (2026-10-17) ─────────────────────────────────
+//
+// Founder decision ("추천대로 1~3번 다 진행해줘", 2026-10-17 ②): her own
+// appointments reach his screens only when she shares them — a choice per
+// appointment, shared by default (2026-10-09: her tasks keep showing on his
+// screens). Appointment.privateTo works like DiaryEntry.privateTo: the person
+// going marks their own appointment, and the other member never meets it —
+// no row, no notice, no link day, no export, and nothing computed for them
+// moves because of it (the output is exactly what it would be without the
+// appointment: 화면이 바뀌는 것도 정보). The rule is the same for both members.
+//
+// EVERY read of the appointments on behalf of a viewer goes through
+// appointmentsFor / withAppointmentsFor (tests/appointmentPrivacy.test.ts).
+
+/**
+ * The member an appointment is '나만 보기' for, or undefined (shared). The
+ * mark holds only on the person's own appointment (`who === privateTo`): a
+ * '둘이 함께' one is always shared, and a mark on the other person's one would
+ * hide their own visit from them — storage.normalize and sanitizeBackup drop
+ * such a mark, and this reads it the same way.
+ */
+export function privateOwner(a: Pick<Appointment, 'who' | 'privateTo'>): MemberId | undefined {
+  return (a.privateTo === 'a' || a.privateTo === 'b') && a.privateTo === a.who ? a.privateTo : undefined
+}
+
+/** May `viewer` see this appointment? Shared ones: both. '나만 보기': only its owner. */
+export function canSeeAppointment(a: Pick<Appointment, 'who' | 'privateTo'>, viewer: MemberId): boolean {
+  const owner = privateOwner(a)
+  return owner === undefined || owner === viewer
+}
+
+/** The appointments `viewer` may see — the same list (same array) when nothing is hidden from them. */
+export function appointmentsFor<A extends Pick<Appointment, 'who' | 'privateTo'>>(list: readonly A[], viewer: MemberId): A[] {
+  return list.every((a) => canSeeAppointment(a, viewer)) ? (list as A[]) : list.filter((a) => canSeeAppointment(a, viewer))
+}
+
+/** The appointments both members may see (no '나만 보기' one) — the same array when there is none. */
+export function sharedAppointments<A extends Pick<Appointment, 'who' | 'privateTo'>>(list: readonly A[]): A[] {
+  return list.every((a) => privateOwner(a) === undefined) ? (list as A[]) : list.filter((a) => privateOwner(a) === undefined)
+}
+
+/**
+ * The state as `viewer` may read it for anything about appointments: the
+ * same object when nothing is hidden from them, else a copy whose list leaves
+ * out the other member's '나만 보기' ones. For read-only view models only —
+ * never return it from an update (it would drop the hidden ones).
+ */
+export function withAppointmentsFor<S extends Pick<AppState, 'appointments'>>(state: S, viewer: MemberId): S {
+  const list = appointmentsFor(state.appointments, viewer)
+  return list === state.appointments ? state : { ...state, appointments: list }
+}
+
+/**
+ * The record with its '나만 보기' mark only when the mark holds (privateOwner);
+ * any other `privateTo` is dropped and the appointment stays, shared. The same
+ * object when there is nothing to drop.
+ */
+export function cleanPrivateTo<A extends object>(a: A): A {
+  if (!('privateTo' in a)) return a
+  const r = a as unknown as Pick<Appointment, 'who' | 'privateTo'>
+  if (privateOwner(r) !== undefined) return a
+  const { privateTo: _dropped, ...rest } = a as A & { privateTo?: unknown }
+  return rest as A
+}
+
 /** Date, then time (untimed first), then title. */
 export function compareAppointments(a: Appointment, b: Appointment): number {
   if (a.date !== b.date) return a.date < b.date ? -1 : 1
@@ -87,6 +152,12 @@ export interface AppointmentInput {
   kind: AppointmentKind
   note?: string
   taskId?: string
+  /**
+   * '나만 보기': the person going, on their own appointment only (privateOwner).
+   * In an update, `privateTo: undefined` shares it again; leaving the key out
+   * keeps it as it is.
+   */
+  privateTo?: MemberId
 }
 
 export function addAppointment(state: AppState, input: AppointmentInput, createdBy: MemberId): AppState {
@@ -103,13 +174,14 @@ export function addAppointment(state: AppState, input: AppointmentInput, created
     ...(input.place?.trim() ? { place: input.place.trim() } : {}),
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
+    ...(input.privateTo && input.privateTo === input.who ? { privateTo: input.privateTo } : {}),
   }
   return { ...state, appointments: [...state.appointments, a] }
 }
 
 export function updateAppointment(state: AppState, id: string, patch: Partial<AppointmentInput>): AppState {
   if (patch.time !== undefined && !isValidTime(patch.time)) return state
-  return {
+  const updated: AppState = {
     ...state,
     appointments: state.appointments.map((a) => {
       if (a.id !== id) return a
@@ -117,9 +189,40 @@ export function updateAppointment(state: AppState, id: string, patch: Partial<Ap
       if (!next.time) delete next.time
       if (!next.place?.trim()) delete next.place
       if (!next.note?.trim()) delete next.note
-      return next
+      // '나만 보기' holds only on the person's own appointment: switching who to
+      // '둘이 함께' or to the other person shares it again (cleanPrivateTo).
+      return cleanPrivateTo(next)
     }),
   }
+  // Made '나만 보기': what the other member was already told about it goes too.
+  return withoutHiddenAppointmentNotices(updated, id)
+}
+
+/**
+ * The other member's notices about a '나만 보기' appointment — the day-before
+ * heads-up ('🏥 내일 지은님 일정: …', 'appt:<id>:<date>:fyi:<member>') that went
+ * out while it was still shared — leave the state, read and dismissed ones
+ * too (the 🔔 list is a screen; the title would stay in it). Matched by
+ * recipient and the 'appt:<id>:' prefix (not by date: the same edit may move
+ * the day), so the owner's own reminders stay. The appointment's row leaves
+ * the other member's screens at the same moment, so nothing new is told. If
+ * it is shared again, mergeNotices may send the heads-up again. A phone
+ * notification already shown cannot be taken back (AppointmentSheet says so).
+ * The same state when there is nothing to drop.
+ */
+export function withoutHiddenAppointmentNotices(state: AppState, id: string): AppState {
+  const a = state.appointments.find((x) => x.id === id)
+  const owner = a ? privateOwner(a) : undefined
+  if (owner === undefined) return state
+  const prefix = `appt:${id}:`
+  const kept = state.notifications.filter((n) => n.to === owner || !n.key?.startsWith(prefix))
+  return kept.length === state.notifications.length ? state : { ...state, notifications: kept }
+}
+
+/** Whether `to` already holds a notice about appointment `id` (the sheet's '앞으로 …' line). */
+export function hasAppointmentNotice(state: Pick<AppState, 'notifications'>, id: string, to: MemberId): boolean {
+  const prefix = `appt:${id}:`
+  return state.notifications.some((n) => n.to === to && !!n.key?.startsWith(prefix))
 }
 
 export function setAppointmentDone(state: AppState, id: string, done: boolean): AppState {
@@ -157,7 +260,10 @@ export function appointmentNotices(
     const when = until === 1 ? '내일' : '오늘'
     const going = attendees(a)
     const place = a.place ? ` · ${a.place}` : ''
+    // '나만 보기': only its owner hears about it — the other member gets no
+    // heads-up at all (their notices are what they would be without it).
     for (const m of going) {
+      if (!canSeeAppointment(a, m)) continue
       out.push({
         key: `appt:${a.id}:${a.date}:${until}:${m}`,
         to: m,
@@ -166,8 +272,8 @@ export function appointmentNotices(
         body: `${whenLabel(a)}${place}${a.who === 'both' ? ' · 둘이 함께' : ''}`,
       })
     }
-    if (a.who !== 'both' && until === 1) {
-      const other: MemberId = a.who === 'a' ? 'b' : 'a'
+    const other: MemberId = a.who === 'a' ? 'b' : 'a'
+    if (a.who !== 'both' && until === 1 && canSeeAppointment(a, other)) {
       out.push({
         key: `appt:${a.id}:${a.date}:fyi:${other}`,
         to: other,

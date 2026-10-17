@@ -1,19 +1,19 @@
 # Next A 준비 — 창업자용 설정 안내 (Supabase · 카톡 링크 · 앱 전환 · 푸시)
 
-> 2026-10-02 기준, 2026-10-03 갱신(Now 3: 일주일 버티는 링크 N20 · 링크 첫 30초 N22 · '이번 주 우리 둘' N21 · 링크 연 날 카운터), 2026-10-04 갱신(N25 준비: **키를 받으면 몇 분 안에 확인하는 순서 — 바로 아래 '키를 받았을 때 빠른 순서'**, `scripts/verify-supabase.mjs`, `.env.local.example`, SQL 보완).
+> 2026-10-02 기준, 2026-10-03 갱신(Now 3: 일주일 버티는 링크 N20 · 링크 첫 30초 N22 · '이번 주 우리 둘' N21 · 링크 연 날 카운터), 2026-10-04 갱신(N25 준비: **키를 받으면 몇 분 안에 확인하는 순서 — 바로 아래 '키를 받았을 때 빠른 순서'**, `scripts/verify-supabase.mjs`, `.env.local.example`, SQL 보완), 2026-10-17 갱신(링크 자동 연장: `extend_token`, 아래 §7 1번·6번).
 
 ## 키를 받았을 때 빠른 순서 (N25, 2026-10-04)
 
 키(URL·anon key)가 있으면 아래 네 가지만 하면 돼요. 막히면 확인 스크립트가 어느 단계에서 왜 막혔는지 한국어로 알려 줘요.
 
-1. **SQL은 창업자가 Supabase에서 직접 실행해요.** anon 키로는 표를 만들 수 없어요(그래서 안전한 거예요). Supabase 대시보드 → **SQL Editor** → `supabase/schema.sql` 붙여 넣고 Run → 이어서 `supabase/policies.sql` Run. 둘 다 여러 번 실행해도 괜찮아요. 2026-10-04에 고친 SQL(`create_couple`이 앱이 만든 커플 id를 받음, `delete_couple` 추가)을 아직 안 돌렸다면 다시 한 번 실행해요.
+1. **SQL은 창업자가 Supabase에서 직접 실행해요.** anon 키로는 표를 만들 수 없어요(그래서 안전한 거예요). Supabase 대시보드 → **SQL Editor** → `supabase/schema.sql` 붙여 넣고 Run → 이어서 `supabase/policies.sql` Run. 둘 다 여러 번 실행해도 괜찮아요. 2026-10-04에 고친 SQL(`create_couple`이 앱이 만든 커플 id를 받음, `delete_couple` 추가)이나 2026-10-17에 더한 `extend_token`(쓰는 동안 링크 자동 연장)을 아직 안 돌렸다면 다시 한 번 실행해요.
 2. **Claude Code 클라우드 환경이면 Network access에 `*.supabase.co`를 허용해요.** 지금 이 환경은 바깥 주소를 정책으로 막고 있어서, 허용하지 않으면 확인 스크립트가 1단계에서 '네트워크에서 막혔어요'로 끝나요. 세션 제목 줄의 클라우드 환경 메뉴 → **Edit** → **Network access** → **Custom** → **Allowed domains**에 `*.supabase.co`를 더해요. 패키지 매니저 기본 목록(npm 등)은 그대로 둬요(지우면 `npm ci`가 막혀요). 자세한 화면: https://code.claude.com/docs/en/cloud-environments#network-access
 3. **환경 변수는 채팅이 아니라 환경 설정에 넣어요.** 같은 Edit 화면의 환경 변수(API credentials 칸이 있으면 그곳)에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 두 이름으로 넣어요. **새 세션부터** 읽혀요(지금 열린 세션에는 안 보여요). 내 컴퓨터라면 `cp .env.local.example .env.local` 뒤 값을 채워요(.env.local은 git에 안 올라가요). anon(또는 publishable) 키만 — service_role·secret 키는 스크립트가 거절해요.
 4. **확인 스크립트를 돌려요**(`dulset/` 안에서):
    ```bash
    node scripts/verify-supabase.mjs
    ```
-   환경 변수 → 없으면 `.env.local` 순서로 두 값을 읽고, 버리는 데이터로 앱과 똑같은 왕복을 해요: `create_couple → issue_token → publish_snapshot`(건강 기록이 하나도 없는 가짜 스냅숏) `→ snapshot_by_token → send_event → pull_events → record_link_open → link_open_days → revoke_token →` 해제 뒤 다시 읽기(**읽히면 FAIL**) `→ delete_couple`(만든 줄을 cascade로 모두 지움). 결과는 단계마다 PASS/FAIL·HTTP 상태·고칠 것 한 줄이에요. 키 값은 어디에도 출력하지 않아요(종류와 길이만).
+   환경 변수 → 없으면 `.env.local` 순서로 두 값을 읽고, 버리는 데이터로 앱과 똑같은 왕복을 해요: `create_couple → issue_token → publish_snapshot`(건강 기록이 하나도 없는 가짜 스냅숏) `→ snapshot_by_token → send_event → pull_events → record_link_open → link_open_days → extend_token`(살아 있는 링크의 만료가 늘어나야 PASS) `→ revoke_token → extend_token`(해제한 링크는 `null`이어야 PASS) `→` 해제 뒤 다시 읽기(**읽히면 FAIL**) `→ delete_couple`(만든 줄을 cascade로 모두 지움). 결과는 단계마다 PASS/FAIL·HTTP 상태·고칠 것 한 줄이에요. 키 값은 어디에도 출력하지 않아요(종류와 길이만).
 
 | 스크립트가 말하는 것 | 뜻 | 할 일 |
 |---|---|---|
@@ -23,6 +23,8 @@
 | HTTP 403 | 키·정책(권한) 문제 | policies.sql 실행 여부, 키가 이 프로젝트 것인지 |
 | HTTP 400 | 인자 모양이 다름 | schema.sql 최신본 다시 실행 |
 | 해제 뒤 읽기 FAIL | 해제한 링크로 아직 읽혀요 | schema.sql 다시 실행(그대로면 다음 세션에 결과를 붙여 주세요) |
+| 쓰는 동안 링크 연장 · 해제한 링크는 연장되지 않아요 FAIL (HTTP 404) | `extend_token`이 없음(2026-10-17 전 SQL) | schema.sql → policies.sql 다시 실행. 그 전에도 앱은 동작해요 — 링크가 30일 뒤 멈추는 것만 예전과 같아요 |
+| 해제한 링크는 연장되지 않아요 FAIL (HTTP 200) | 해제한 링크가 연장됐어요 | schema.sql 최신본 다시 실행(`extend_token`은 해제·만료된 토큰을 건드리지 않아야 해요) |
 | 테스트 데이터 지우기 FAIL | `delete_couple`이 없음(예전 SQL) | 메모에 나온 `delete from public.couples where id = '…';`를 SQL Editor에서 실행 |
 
 종료 코드: 0 모두 통과 · 1 한 단계 이상 FAIL · 2 두 값이 없거나 쓸 수 없는 키. 프록시가 있는 환경(클라우드)에서는 스크립트가 `NODE_USE_ENV_PROXY=1`로 자기 자신을 한 번 다시 실행해요(Node 22.21 이상). 스크립트의 요청 모양은 앱(`lib/sync/supabaseTransport.ts`)과 같은지 `tests/verifySupabase.test.ts`가 지켜요.
@@ -34,7 +36,7 @@
 | 조각 | 지금 | 켜면 |
 |---|---|---|
 | 데이터 모델 | `schemaVersion: 4`(공유 범위 3단계 `settings.shareLevel`), 기록마다 `id`·`updatedAt`(저장할 때 `lib/store.tsx`가 바뀐 기록에 찍어요 — `lib/sync/model.ts` `stampChanges`; 톰스톤 `deletedAt` 자리), 결정(알렸어요·괜찮아요·남편 화면 이벤트 적용 표시)은 `decisions` 필드, 두 탭 동기화 표시는 상태 밖(`dulset:sync:v1`), 링크는 `couple.link`(커플 id + 토큰의 SHA-256 — 토큰 원문은 아내 폰 `dulset:link`에만), '링크에 표지 사진'은 `settings.coverOnLink`, 저장할 때 자동 마이그레이션 (`lib/sync/migrations.ts`) | 그대로 |
-| 전송 (`lib/sync/transport.ts`) | **모의**: 같은 브라우저의 localStorage + BroadcastChannel. 탭 두 개가 두 폰이에요. 기기 밖으로 아무것도 안 나가요. 토큰은 처음 발급된 커플에 묶여요(다른 커플이 그 토큰으로 올리거나 해제하면 `foreign-token` 오류) | 빌드할 때 아래 환경 변수 두 개가 있으면 **Supabase** |
+| 전송 (`lib/sync/transport.ts`) | **모의**: 같은 브라우저의 localStorage + BroadcastChannel. 탭 두 개가 두 폰이에요. 기기 밖으로 아무것도 안 나가요. 토큰은 처음 발급된 커플에 묶여요(다른 커플이 그 토큰으로 올리거나 해제하면 `foreign-token` 오류). 해제한 토큰은 지우지 않고 `revokedAt`을 남겨서(서버의 `revoked_at`처럼) 그 뒤에 그 토큰으로 올려도 거절돼요 | 빌드할 때 아래 환경 변수 두 개가 있으면 **Supabase** |
 | 서버 쪽 | `supabase/schema.sql` + `policies.sql` 준비만 (실행해 본 적 없음) | SQL Editor에서 실행 |
 | 남편 화면·카톡 공유·설정 표시 | 있어요: `/link/#t=<토큰>` 페이지(`app/link`, `components/link/*`), 설정 › 연결(링크 만들기·카톡으로 보내기·새 링크·해제·'링크에 표지 사진'), 온보딩 4화면의 '카톡으로 링크 보내기', 설정 › 데이터의 `TRANSPORT_LABEL` 줄. 모의 전송에서는 같은 브라우저의 다른 탭이 남편 폰이에요 | 그대로 (전송만 Supabase로) |
 | 스냅숏 v2 (N20) | 아내 폰이 **오늘~+6일 7칸**을 한 번에 올려요(`days[]`, `validUntil` = 오늘+6). 남편 페이지는 자기 날짜의 칸을 그려서, 아내가 며칠 앱을 안 열어도 일주일은 그대로 돌아가요. 미래 칸은 그날 스냅숏과 똑같이 렌즈를 거치고, 예측만으로 바뀌는 '늦음'은 앞 칸을 그대로 둬요. 남편 이벤트는 **전송이 받은 시각**(`receivedAt` — 모의는 그 탭의 시계, 서버는 `created_at`)의 날짜로 검사해요 | 그대로 |
@@ -87,7 +89,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 
 ## 5. 확인하기
 
-0. 먼저 `node scripts/verify-supabase.mjs` — 서버 함수 11단계를 버리는 데이터로 돌려 보고 PASS/FAIL 표를 보여 줘요(맨 위 '빠른 순서'). 여기서 모두 PASS면 아래는 앱 쪽 확인이에요.
+0. 먼저 `node scripts/verify-supabase.mjs` — 서버 함수 13단계를 버리는 데이터로 돌려 보고 PASS/FAIL 표를 보여 줘요(맨 위 '빠른 순서'). 여기서 모두 PASS면 아래는 앱 쪽 확인이에요.
 1. 환경 변수를 넣고 `npm run build` → 앱의 **설정 › 데이터**에 **'연결: Supabase'**가 보이면 빌드가 변수를 읽은 거예요. ('연결: 이 기기 안 (모의)'면 변수가 비었거나 빌드 전에 넣지 않은 거예요.) — 설정 › 연결에도 같은 줄이 있어요; 코드의 문구는 `lib/sync/transport.ts` `TRANSPORT_LABEL`에 있어요.
 2. 브라우저 개발자 도구 → Network에서 `rest/v1/rpc/create_couple` → `publish_snapshot` 호출이 200으로 끝나는지 봐요. 403이면 주인 키·토큰 검사에서 걸린 것, 400이면 인자 모양이 다른 것, 404면 SQL이 안 돌아간 거예요.
 3. Supabase **Table Editor → partner_snapshots**에 한 줄이 생기고, `payload` 안에 생리·LH·임테기 날짜가 **없는지** 눈으로 확인해요(이름, 날짜별 카드 문구 7칸 `days[]`, 이번 달 할 일, 체크 항목 이름, 이번 주 고를 것 3개만 있어야 해요).
@@ -104,13 +106,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ…
 
 ## 7. 카카오톡 공유 흐름 (①에서 화면이 붙으면)
 
-1. 아내 폰: 설정 › 연결 → **'링크 만들기'** → **'카톡으로 보내기'** → 앱이 랜덤 토큰을 만들고(첫 전송 때 토큰이 등록돼요, 30일) → 링크 `https://<앱 주소>/link/#t=<토큰>` (정적 export는 `out/link/index.html`이라 어떤 호스트에서도 열려요).
+1. 아내 폰: 설정 › 연결 → **'링크 만들기'** → **'카톡으로 보내기'** → 앱이 랜덤 토큰을 만들고(첫 전송 때 토큰이 등록돼요. 아내가 둘셋을 쓰는 동안 하루 한 번 30일로 다시 늘어나요 — `extend_token`) → 링크 `https://<앱 주소>/link/#t=<토큰>` (정적 export는 `out/link/index.html`이라 어떤 호스트에서도 열려요).
 2. `navigator.share`(iOS는 공유 시트, Android는 카톡 선택)로 보내요. 카톡 미리보기(OG 태그)에는 **앱 이름만**, 건강 단어 없음 — `app/link/layout.tsx`가 제목 '둘셋'과 '설치 없이 보는 화면이에요'만 내보내고 검색 색인도 막아요(noindex).
 3. 남편: 카톡 안 브라우저에서 링크가 열려요 — 설치 없이 바로 보여요. 맨 위에 '카카오톡 안에서 열었어요 · 사파리나 크롬으로 열면 홈 화면에 둘 수 있어요' 안내와 [사파리/크롬으로 열기](카카오톡의 `kakaotalk://web/openExternal`, 토큰이 든 주소 그대로) · [주소 복사]가 떠요. 사파리·크롬에서는 아래쪽에 '홈 화면에 두기' 카드(iPhone: 사파리 공유 → 홈 화면에 추가 / Android: 크롬 메뉴 → 홈 화면에 추가)가 떠요. 둘 다 ✕로 닫으면 그 기기에서는 다시 안 떠요(`components/link/LinkInstall.tsx`).
 4. 처음 연 기기: 세 줄 카드('이게 뭐예요 · 지은님이 고른 것만 보여요 · 내 할 일 하나')와 30초 설정(담배·술 2문항, 소식 받는 방식). [이대로 시작하기]는 답한 것만 `setup` 이벤트로 보내고, [나중에 할게요]는 그대로 둬요(`components/link/LinkIntro.tsx`).
 5. 남편 화면: 우리의 주간 띠 · 이번 달 할 일(링크를 만든 뒤 2주는 신청 단계가 맨 위) · '이번 주 우리 둘'(셋 중 하나 → [했어요], 내 준비 한 줄, 지은님의 고마워요) · 신호 답장 · 콕/응원 · 자기 체크. 생리·LH·임테기·컨디션·나만 보기는 **애초에 스냅샷에 없어요**.
-6. 아내 폰이 열릴 때마다(그리고 기록이 바뀔 때) 오늘~+6일 스냅샷을 다시 올려요. 아내 폰이 일주일 넘게 안 열리면 남편 화면은 '새 화면은 곧 채워져요 · 지은님 폰이 열리면 다시 채워져요'로 바뀌고, 그동안에도 신호와 응원은 보낼 수 있어요. 링크는 30일 뒤 만료, 설정에서 언제든 해제.
-7. 안내 문구에 넣을 것: "이 링크는 남편에게만 보내요. 링크가 있는 사람은 만료 전까지 이 화면을 볼 수 있어요."
+6. 아내 폰이 열릴 때마다(그리고 기록이 바뀔 때) 오늘~+6일 스냅샷을 다시 올려요. 아내 폰이 일주일 넘게 안 열리면 남편 화면은 '새 화면은 곧 채워져요 · 지은님 폰이 열리면 다시 채워져요'로 바뀌고, 그동안에도 신호와 응원은 보낼 수 있어요. 링크는 **아내가 둘셋을 쓰는 동안 자동으로 연장**돼요(아내 폰이 스냅숏을 올린 뒤 하루 한 번 `extend_token`으로 그날부터 30일 — `lib/logic/partnerLink.ts` `renewedExpiry`, `lib/useLinkSync.ts` `renewLinkOnTransport`). 그래서 유산 뒤 42일처럼 조용한 기간에도 아내가 가끔 앱을 열면 링크가 살아 있어요. **아내가 30일 동안 둘셋을 열지 않으면 만료되고**, 만료된 링크는 되살리지 않아요(설정 › 연결에서 새 링크를 보내요 — 아내 설정과 남편 화면 모두 '링크가 만료됐어요'). 연장은 아내가 앱을 쓴 것만 세요 — 남편이 링크를 연 것으로는 늘어나지 않아요(설정의 만료일이 읽음 표시가 되면 안 돼서, `positioning.md` §6). 설정에서 언제든 해제.
+7. 안내 문구에 넣을 것: "이 링크는 남편에게만 보내요. 링크가 있는 사람은 링크가 열려 있는 동안 이 화면을 볼 수 있어요."
 8. (N31) 링크 아래 '매주 이 시간에 알려 받기': 남편이 요일을 고르면 그 자리에서 반복 .ics('둘셋 · 이번 주 우리', 매주 저녁 8시)를 만들어요. 캘린더에는 **토큰 없는 `/link/`**만 들어가고, 그 폰에서 열면 브라우저가 기억한 토큰(`dulset:link-token:v1`)으로 열려요. 서버로 가는 것은 없어요.
 9. (N32) '병원과 함께' 모드가 켜져 있으면 링크의 카드 안에 앞으로 7일의 남편·'둘이 함께' 일정(날짜·시각·장소·종류 한 단어 — 제목·메모·시술·횟수는 없음)과 [같이 갈게요]가 보여요. 누르면 `join-appointment` 이벤트(일정 id만)가 가고, 아내 폰은 `decisions`에 남기고 🔔 하나로 알려요. 난임치료휴가 한 줄(남성 근로자도 · 2026-11-27부터 유급 4일, 연 6일)은 `docs/research/kr-programs.json`의 출처와 함께 보여요. 병원을 찾거나 추천하는 기능은 없어요.
 

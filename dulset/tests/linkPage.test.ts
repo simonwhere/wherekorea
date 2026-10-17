@@ -489,14 +489,17 @@ describe('owner ⇄ partner page over the mock transport', () => {
       expect(buildPartnerSnapshot(state, TODAY, partner)!.days[0]!.signal).toBeUndefined()
     }
 
-    // 설정 › 연결 → 링크 해제: the mock forgets the token; the page sees nothing → '링크가 만료됐어요'.
+    // 설정 › 연결 → 링크 해제: the mock marks the token revoked; the page sees nothing → '링크가 만료됐어요'.
     expect(revokeMockToken(storage, link.token)).toBe(true)
     expect(await page.fetchSnapshot(token!)).toBeNull()
     expect(revokeMockToken(storage, link.token)).toBe(false)
-    // The snapshot and the events stay (a new link for the same couple continues).
+    // The snapshot and the events stay (a new link for the same couple continues); the token is a tombstone.
     const store = parseMockStore(storage.getItem(MOCK_SYNC_KEY))
     expect(store.snapshots[link.coupleId]).toBeDefined()
-    expect(store.tokens[link.token]).toBeUndefined()
+    expect(store.tokens[link.token]!.revokedAt).toBeDefined()
+    // A publish under it (a second owner tab a moment late) is refused and brings nothing back.
+    await expect(owner.publishSnapshot(link.coupleId, link.token, snap2)).rejects.toThrow()
+    expect(await page.fetchSnapshot(token!)).toBeNull()
     // A page event with the dead token is refused.
     await expect(page.sendEvent(token!, { id: 'tap-9', kind: 'cheer' })).rejects.toThrow()
 
@@ -728,8 +731,10 @@ describe('link model — 같이 챙길 것 (2026-10-09)', () => {
     expect(togetherFoldLabel(2, true)).toBe('접기')
     expect(togetherBlockSub('지은님')).toBe('지은님이 챙기는 것도 같이 봐요. [같이 할게요]를 누르면 지은님에게 전해져요.')
     expect(togetherBlockSub('하나')).toMatch(/^하나가 /)
-    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', true, '지은님')).toBe('‘국민행복카드’ 같이 할게요. 지은님에게 전해져요')
-    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', false, '지은님')).toBe('‘국민행복카드’ 같이 하기를 취소했어요')
+    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', true, '지은님')).toBe(
+      '‘국민행복카드’ 같이 하기로 했어요. 지은님에게 전해져요',
+    )
+    expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', false, '지은님')).toBe('같이 하기를 취소했어요')
     for (const t of ROADMAP) {
       expect(togetherShort(t.title), t.id).toBe(shortTitle(t.title))
       for (const on of [true, false]) expect(supportToast(t.title, on, '지은님'), t.id).not.toMatch(/숙제|실패|노력|오늘 꼭|기한 지남|안 했어요/)

@@ -163,7 +163,7 @@ function Row({
         <p className={cx('mt-0.5 text-sm font-semibold', done ? 'text-ink-3' : 'text-ink')}>{row.title}</p>
         {!done ? <p className="mt-0.5 text-xs leading-relaxed text-ink-3">{row.why}</p> : null}
         {!done && row.status !== 'past' && together?.support ? (
-          <div className="mt-1 flex items-center gap-2" data-support-line>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2" data-support-line>
             <p className="flex min-w-0 flex-1 items-start gap-1.5 text-xs leading-relaxed text-ink-2">
               <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />
               <span className="min-w-0">
@@ -171,7 +171,13 @@ function Row({
                 {together.support}
               </span>
             </p>
-            <SupportButton itemId={together.id} title={row.title} supported={together.supported} canSupport={together.canSupport} />
+            <SupportButton
+              itemId={together.id}
+              short={together.short}
+              supported={together.supported}
+              canSupport={together.canSupport}
+              saidClassName="-mb-1 basis-full pl-5"
+            />
           </div>
         ) : null}
         {!done && together?.supportedBy ? (

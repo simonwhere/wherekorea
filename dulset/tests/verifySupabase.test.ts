@@ -1,7 +1,7 @@
 // scripts/verify-supabase.mjs (N25 prep) against a fake Supabase: an
 // in-memory server that keeps the rules of supabase/schema.sql (owner key +
-// couple id, token hashes with revoke, events once per id, '링크 연 날' per
-// day, delete with cascade) and answers like PostgREST (404 for a missing
+// couple id, token hashes with expiry and revoke, extend only a live token,
+// events once per id, '링크 연 날' per day, delete with cascade) and answers like PostgREST (404 for a missing
 // function, 401 for a wrong key, 403 for a refused owner / token). The
 // script must walk the whole round trip, say PASS / FAIL with the HTTP status
 // and a Korean hint, clean up after itself — and never print the key.
@@ -74,6 +74,8 @@ interface FakeOptions {
   missing?: string[]
   /** snapshot_by_token ignores revoked_at (a broken server). */
   readsRevoked?: boolean
+  /** extend_token renews (and un-revokes) a revoked token, as issue_token would (a broken server). */
+  extendsRevoked?: boolean
   /** The key the project accepts. */
   key?: string
 }
@@ -88,7 +90,7 @@ function fakeSupabase(opts: FakeOptions = {}) {
   const key = opts.key ?? ANON
   const hash = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex')
   const couples = new Map<string, string>() // id → owner hash
-  const tokens = new Map<string, { couple: string; revoked: boolean }>()
+  const tokens = new Map<string, { couple: string; revoked: boolean; expires: number }>()
   const snapshots = new Map<string, { version: number; payload: unknown }[]>()
   const events = new Map<string, { id: string; kind: string; payload: unknown; created_at: string }[]>()
   const opens = new Map<string, Map<string, number>>()
@@ -104,6 +106,7 @@ function fakeSupabase(opts: FakeOptions = {}) {
     return r && (!r.revoked || opts.readsRevoked) ? r : null
   }
   const seoul = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10)
+  const clampDays = (d: unknown) => Math.min(90, Math.max(1, typeof d === 'number' ? d : 30))
 
   function handle(fn: string, body: Record<string, unknown>, headers: Record<string, string>) {
     calls.push({ fn, body, headers })
@@ -119,8 +122,19 @@ function fakeSupabase(opts: FakeOptions = {}) {
       case 'issue_token': {
         const c = owner(body)
         if (!c) return denied()
-        tokens.set(hash(String(body.p_token)), { couple: c, revoked: false })
-        return reply(200, new Date(Date.now() + 86_400_000).toISOString())
+        const expires = Date.now() + clampDays(body.p_days) * 86_400_000
+        tokens.set(hash(String(body.p_token)), { couple: c, revoked: false, expires })
+        return reply(200, new Date(expires).toISOString())
+      }
+      case 'extend_token': {
+        const c = owner(body)
+        if (!c) return denied()
+        const t = tokens.get(hash(String(body.p_token)))
+        const live = t && t.couple === c && (!t.revoked || opts.extendsRevoked) && t.expires > Date.now()
+        if (!t || !live) return reply(200, null)
+        if (opts.extendsRevoked) t.revoked = false
+        t.expires = Math.max(t.expires, Date.now() + clampDays(body.p_days) * 86_400_000)
+        return reply(200, new Date(t.expires).toISOString())
       }
       case 'publish_snapshot': {
         const c = owner(body)
@@ -307,7 +321,9 @@ describe('verify-supabase: the whole round trip against a fake project', () => {
     await t2.pullEvents(id, '')
     await t2.recordLinkOpen(tok, '2026-10-04')
     await t2.linkOpenDays(id, '2026-10-03', '2026-10-05')
+    expect(await t2.extendToken(id, tok, 2)).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     await t2.revokeToken(id, tok)
+    expect(await t2.extendToken(id, tok, 2)).toBeNull()
     await t2.deleteCouple(id)
     const keysOf = (calls: Call[], fn: string) => Object.keys(calls.find((c) => c.fn === fn)!.body).sort()
     for (const s of V.STEPS) expect(keysOf(f.calls, s.fn), s.fn).toEqual(keysOf(appCalls.calls, s.fn))
@@ -362,6 +378,33 @@ describe('verify-supabase: the whole round trip against a fake project', () => {
     expect(old.steps.filter((s) => s.result === 'FAIL').map((s) => s.id)).toEqual(['cleanup'])
   })
 
+  it('the link renews itself while in use: extend moves a live token later; after revoke it gives null and the token stays dead', async () => {
+    const f = fakeSupabase()
+    const r = await V.verifySupabase({ url: URL, anonKey: ANON, fetch: f.fetch })
+    const ext = f.calls.filter((c) => c.fn === 'extend_token')
+    expect(ext).toHaveLength(2)
+    // An owner call: the owner key, the couple, the token, the days — the app's arguments (supabaseTransport.extendToken).
+    expect(Object.keys(ext[0]!.body).sort()).toEqual(['p_couple_id', 'p_days', 'p_owner_key', 'p_token'])
+    expect(r.steps.find((s) => s.id === 'extend')).toMatchObject({ result: 'PASS', status: 200 })
+    expect(r.steps.find((s) => s.id === 'extendRevoked')).toMatchObject({ result: 'PASS', note: '연장 안 됨' })
+    // The order: extend before revoke, the revoked extend before the read that must see nothing.
+    const order = V.STEPS.map((s) => s.id)
+    expect(order.indexOf('extend')).toBeLessThan(order.indexOf('revoke'))
+    expect(order.indexOf('revoke')).toBeLessThan(order.indexOf('extendRevoked'))
+    expect(order.indexOf('extendRevoked')).toBeLessThan(order.indexOf('revoked'))
+    // A server that renews (un-revokes) a revoked link fails step 11 — and the read after it fails too.
+    const broken = await V.verifySupabase({ url: URL, anonKey: ANON, fetch: fakeSupabase({ extendsRevoked: true }).fetch })
+    const s11 = broken.steps.find((s) => s.id === 'extendRevoked')!
+    expect(s11).toMatchObject({ result: 'FAIL', status: 200, note: '해제한 링크가 연장됐어요' })
+    expect(s11.hint).toContain('revoked_at')
+    expect(broken.steps.find((s) => s.id === 'revoked')).toMatchObject({ result: 'FAIL' })
+    // An older project without extend_token: both extend steps say to run the SQL again; the rest still pass.
+    const old = await V.verifySupabase({ url: URL, anonKey: ANON, fetch: fakeSupabase({ missing: ['extend_token'] }).fetch })
+    expect(old.steps.filter((s) => s.result === 'FAIL').map((s) => s.id)).toEqual(['extend', 'extendRevoked'])
+    expect(old.steps.find((s) => s.id === 'extend')!.hint).toContain('schema.sql → policies.sql')
+    expect(old.cleaned).toBe(true)
+  })
+
   it('never prints the key — not even when the server echoes it back in an error', async () => {
     const echo: FetchLike = async (_url, init) => ({ status: 401, text: async () => JSON.stringify({ message: `bad key ${init.headers.apikey}` }) })
     const r = await V.verifySupabase({ url: URL, anonKey: ANON, fetch: echo })
@@ -382,7 +425,7 @@ describe('verify-supabase: the whole round trip against a fake project', () => {
     expect(rows).toHaveLength(V.STEPS.length)
     const resultCol = rows.map((l) => V.displayWidth(l.slice(0, l.indexOf('PASS'))))
     expect(new Set(resultCol).size).toBe(1)
-    expect(table).toContain('11단계 모두 통과')
+    expect(table).toContain('13단계 모두 통과')
     expect(table).toContain('테스트로 만든 줄은 모두 지웠어요')
   })
 })
@@ -429,8 +472,8 @@ describe('verify-supabase: as a real process (env / .env.local, exit codes)', ()
 
   it('reads the two names from the environment, passes every step, exits 0 and prints no key', async () => {
     const { code, out } = await run({ NEXT_PUBLIC_SUPABASE_URL: base, NEXT_PUBLIC_SUPABASE_ANON_KEY: ANON })
-    expect(out).toContain('11단계 모두 통과')
-    expect(out.match(/PASS/g)).toHaveLength(11)
+    expect(out).toContain('13단계 모두 통과')
+    expect(out.match(/PASS/g)).toHaveLength(13)
     expect(out.includes(ANON)).toBe(false)
     expect(out).toContain('읽은 곳: 환경 변수')
     expect(code).toBe(0)

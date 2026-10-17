@@ -12,6 +12,7 @@
 import { addDays, diffDays, isISODate } from '../dates'
 import type { AppState, Appointment, CoverPhoto, DiaryEntry, ISODate, MemberId, PeriodLog, Pregnancy, PregnancyTest } from '../types'
 import { anniversariesBetween, anniversaryAlertsEnabled, anniversaryDayOnly, daysSince } from './anniversary'
+import { appointmentsFor } from './appointments'
 import { canSeeCycleDetails } from './prefs'
 import { QUIET_DAYS_AFTER_END, recentlyEnded } from './pregnancy'
 import { isSignal, pendingSignal } from './signals'
@@ -295,6 +296,9 @@ export function memoryFor(
   if (sees ? onPeriodStart(state.periods, today) || sadTestOn(state, today) : onToldPeriodStart(state, today)) return undefined
   const monthDay = today.slice(5)
   const year = Number(today.slice(0, 4))
+  // A clinic day skips a memory only when it is one `viewer` may see: the other
+  // member's '나만 보기' appointment never takes a line away from them.
+  const clinicDays = state.appointments ? appointmentsFor(state.appointments, viewer) : undefined
   let best: (Memory & { createdAt: string }) | undefined
   for (const e of state.diary) {
     if (!isISODate(e.date) || e.date.slice(5) !== monthDay) continue
@@ -303,7 +307,7 @@ export function memoryFor(
     if (e.privateTo !== undefined) continue
     if (e.stage === 'pregnant') continue
     if (insideEndedPregnancy(state.pregnancy, e.date)) continue
-    if (onPeriodStart(state.periods, e.date) || sadTestOn(state, e.date) || clinicDayOn(state.appointments, e.date)) continue
+    if (onPeriodStart(state.periods, e.date) || sadTestOn(state, e.date) || clinicDayOn(clinicDays, e.date)) continue
     if (COVER_WORDS.test(e.text)) continue
     // The nearest year; within it, the day's first entry.
     if (!best || years < best.years || (years === best.years && e.createdAt < best.createdAt)) {

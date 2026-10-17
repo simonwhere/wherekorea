@@ -3,12 +3,29 @@
 // Everything stays in this browser's localStorage under one key (so 모든 기록
 // 지우기 removes it with the other 'dulset:' keys). A publish or an event
 // reaches the other tab through the 'storage' event the browser fires for
-// that key, plus a BroadcastChannel where there is one. No network, no
-// expiry of its own (a share token lives until it is revoked or the key is
-// cleared; the owner's phone revokes an expired link — lib/useLinkSync) —
-// the server-side rules live in supabase/ and are what the real transport
-// relies on. A token is bound to the couple it was first issued for: another
-// couple can neither publish under it nor revoke it ('foreign-token').
+// that key, plus a BroadcastChannel where there is one. No network. Each
+// token carries the expiry the server keeps (issued: now + MOCK_TOKEN_DAYS,
+// moved by extendToken while 둘셋 is in use, never shortened), and the
+// PARTNER-side calls honour it as the server's do (snapshot_by_token,
+// send_event, record_link_open all ask `expires_at > now()`): once its end
+// has passed — she has not opened 둘셋 for 30 days — his page reads nothing,
+// an event is refused and the counter records nothing, so his tab shows
+// '링크가 만료됐어요' on that day, not '지은님 폰이 열리면 다시 채워져요' (QA
+// 2026-10-17: the mock used to read past the end until her phone revoked it).
+// `now()` follows the page's `?today=` pin, so pin both tabs in a demo. The
+// owner's phone also revokes an expired link the first time it sees it
+// (lib/useLinkSync). extendToken answers as the server's extend_token does:
+// a live token is renewed, an expired or revoked one gets null and stays dead. A revoked
+// token stays in the store with its `revokedAt` (as the server's row keeps
+// revoked_at): a later publish under it is refused ('unknown-token', as
+// publish_snapshot's 42501), and the page's reads, events and the counter
+// treat it as unknown — so a second owner tab whose publish fires just after
+// 링크 해제 in the other tab never brings it back. Only issueToken clears the
+// mark (the server's issue_token upsert sets revoked_at = null). The
+// server-side rules live in supabase/ and are what the real transport relies
+// on. A token is bound to the couple it was first issued for: another couple
+// can neither publish under it nor revoke it ('foreign-token'), and gets
+// null from extendToken.
 //
 // Storage and the channel are injectable, so tests drive two "tabs" over
 // one fake storage without a browser.
@@ -64,11 +81,42 @@ export interface MockMessage {
   what: 'snapshot' | 'event'
 }
 
+export interface MockToken {
+  coupleId: string
+  issuedAt: ISODateTime
+  expiresAt?: ISODateTime
+  /** Set by revokeToken (a tombstone, as the server's revoked_at): the token never opens or publishes again. */
+  revokedAt?: ISODateTime
+}
+
+/** A token the mock still honours: known and not revoked (any `revokedAt` read from storage counts as revoked). */
+export function liveMockToken(t: MockToken | undefined): t is MockToken {
+  return !!t && !t.revokedAt
+}
+
+/** A local-date-prefixed stamp (what now() gives); anything else from storage is not trusted. */
+const isStamp = (v: unknown): v is ISODateTime =>
+  typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v) && isISODate(v.slice(0, 10))
+/** Stamps compare by their wall-clock part (one device's clock, one offset). */
+const wall = (iso: ISODateTime) => iso.slice(0, 19)
+/** `days` (1–90, as the server clamps) after a stamp, keeping its time of day and offset. */
+const stampPlusDays = (at: ISODateTime, days: number): ISODateTime =>
+  addDays(at.slice(0, 10), Math.max(1, Math.min(90, days))) + at.slice(10)
+
+/** The expiry a mock token carries (older stores: issuedAt + MOCK_TOKEN_DAYS), or null when neither stamp is readable. */
+export function mockTokenExpiry(t: Pick<MockToken, 'issuedAt' | 'expiresAt'>): ISODateTime | null {
+  if (isStamp(t.expiresAt)) return t.expiresAt
+  return isStamp(t.issuedAt) ? stampPlusDays(t.issuedAt, MOCK_TOKEN_DAYS) : null
+}
+
 export interface MockStore {
   /** The latest envelope per couple. */
   snapshots: Record<string, SnapshotEnvelope>
-  /** Share token → couple (issued on first publish). */
-  tokens: Record<string, { coupleId: string; issuedAt: ISODateTime }>
+  /**
+   * Share token → couple (issued on first publish), the expiry the server would keep (absent on older
+   * stores: issuedAt + MOCK_TOKEN_DAYS) and, once revoked, revokedAt (kept: a tombstone).
+   */
+  tokens: Record<string, MockToken>
   /** Events per couple, in arrival order, each with the moment this device took it in. */
   events: Record<string, ReceivedEvent[]>
   /** '링크 연 날': couple → day → how many opens (lib/sync/linkOpens.ts). */
@@ -207,6 +255,8 @@ export function pinnedNowISO(search: string | undefined = typeof window !== 'und
 
 export interface MockTransport extends Transport {
   readonly kind: 'mock'
+  /** Renew a live token of this couple (Transport.extendToken); null for an unknown, foreign, expired or revoked one. */
+  extendToken(coupleId: string, token: string, days?: number): Promise<ISODateTime | null>
   /** The whole store, for 설정 › 데이터 (how many events wait) and tests. */
   read(): MockStore
   /** Forget everything (the wipe does this through the 'dulset:' prefix too). */
@@ -238,16 +288,20 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
       throw new MockTransportError('storage')
     }
   }
-  const coupleOf = (store: MockStore, token: string): string => {
+  /** A token his page may use right now: live and before its end (the server's `revoked_at is null and expires_at > now()`). */
+  // The clock is read once, and only for a live token; the stamp comes back so an event is taken in at that same moment.
+  const openToken = (store: MockStore, token: string): { t: MockToken; at: ISODateTime } | undefined => {
     const t = store.tokens[token]
-    if (!t) throw new MockTransportError('unknown-token')
-    return t.coupleId
+    if (!liveMockToken(t)) return undefined
+    const at = now()
+    const end = mockTokenExpiry(t)
+    return end && wall(at) < wall(end) ? { t, at } : undefined
   }
-  /** The token's binding for `coupleId`: its existing one, a fresh one, never another couple's. */
-  const bind = (store: MockStore, coupleId: string, token: string, at: ISODateTime): MockStore['tokens'][string] => {
+  /** The token's binding for `coupleId`: its existing one (revoked or not), a fresh one, never another couple's. */
+  const bind = (store: MockStore, coupleId: string, token: string, at: ISODateTime): MockToken => {
     const t = store.tokens[token]
     if (t && t.coupleId !== coupleId) throw new MockTransportError('foreign-token')
-    return t ?? { coupleId, issuedAt: at }
+    return t ?? { coupleId, issuedAt: at, expiresAt: stampPlusDays(at, MOCK_TOKEN_DAYS) }
   }
 
   /** The couple's events after `since`, cleaned: what the other tab wrote is as untrusted as a server row. */
@@ -265,11 +319,14 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
 
     async publishSnapshot(coupleId, token, snapshot) {
       const store = read()
-      const version = (store.snapshots[coupleId]?.version ?? 0) + 1
       const at = now()
+      const bound = bind(store, coupleId, token, at)
+      // Never under a revoked token (the server's publish_snapshot raises 42501): it stays dead.
+      if (bound.revokedAt) throw new MockTransportError('unknown-token')
+      const version = (store.snapshots[coupleId]?.version ?? 0) + 1
       write({
         ...store,
-        tokens: { ...store.tokens, [token]: bind(store, coupleId, token, at) },
+        tokens: { ...store.tokens, [token]: bound },
         snapshots: { ...store.snapshots, [coupleId]: { coupleId, token, version, publishedAt: at, snapshot } },
       })
       channel?.post({ coupleId, what: 'snapshot' })
@@ -278,10 +335,25 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     async issueToken(coupleId, token, days = MOCK_TOKEN_DAYS) {
       const store = read()
       const at = now()
-      const bound = bind(store, coupleId, token, at)
-      if (!store.tokens[token]) write({ ...store, tokens: { ...store.tokens, [token]: bound } })
-      // The mock keeps no expiry: the owner's phone enforces it (lib/useLinkSync revokes an expired link).
-      return addDays(at.slice(0, 10), Math.max(1, Math.min(90, days))) + at.slice(10)
+      const { revokedAt: _cleared, ...bound } = bind(store, coupleId, token, at)
+      // As the server's issue_token: the expiry is set to now + days and revoked_at is cleared.
+      const expiresAt = stampPlusDays(at, days)
+      write({ ...store, tokens: { ...store.tokens, [token]: { ...bound, expiresAt } } })
+      return expiresAt
+    },
+
+    async extendToken(coupleId, token, days = MOCK_TOKEN_DAYS) {
+      // As the server's extend_token: only a live token of this couple, never shorter, never revived.
+      const store = read()
+      const t = store.tokens[token]
+      if (!liveMockToken(t) || t.coupleId !== coupleId) return null
+      const at = now()
+      const current = mockTokenExpiry(t)
+      if (!current || wall(at) >= wall(current)) return null
+      const next = stampPlusDays(at, days)
+      const expiresAt = wall(next) > wall(current) ? next : current
+      if (expiresAt !== t.expiresAt) write({ ...store, tokens: { ...store.tokens, [token]: { ...t, expiresAt } } })
+      return expiresAt
     },
 
     async revokeToken(coupleId, token) {
@@ -289,27 +361,31 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
       const t = store.tokens[token]
       if (!t) return
       if (t.coupleId !== coupleId) throw new MockTransportError('foreign-token')
-      const tokens = { ...store.tokens }
-      delete tokens[token]
-      write({ ...store, tokens })
+      // Already revoked: nothing changes (the server keeps the first revoked_at).
+      if (t.revokedAt) return
+      write({ ...store, tokens: { ...store.tokens, [token]: { ...t, revokedAt: now() } } })
       channel?.post({ coupleId, what: 'snapshot' })
     },
 
     async fetchSnapshot(token) {
       failIfOffline()
       const store = read()
-      const t = store.tokens[token]
-      if (!t) return null
-      return store.snapshots[t.coupleId]?.snapshot ?? null
+      // Unknown, revoked or past its end: nothing (the server's snapshot_by_token returns no rows).
+      const open = openToken(store, token)
+      if (!open) return null
+      return store.snapshots[open.t.coupleId]?.snapshot ?? null
     },
 
     async sendEvent(token, ev) {
       failIfOffline()
       const store = read()
-      const coupleId = coupleOf(store, token)
+      // Unknown, revoked or past its end: refused (the server's send_event raises 42501).
+      const open = openToken(store, token)
+      if (!open) throw new MockTransportError('unknown-token')
+      const coupleId = open.t.coupleId
       const list = store.events[coupleId] ?? []
       if (list.some((r) => eventId(r.event) === eventId(ev))) return
-      const events = [...list, { receivedAt: now(), event: ev }].slice(-MOCK_EVENTS_MAX)
+      const events = [...list, { receivedAt: open.at, event: ev }].slice(-MOCK_EVENTS_MAX)
       write({ ...store, events: { ...store.events, [coupleId]: events } })
       channel?.post({ coupleId, what: 'event' })
     },
@@ -323,13 +399,13 @@ export function createMockTransport(opts: MockTransportOptions = {}): MockTransp
     },
 
     async recordLinkOpen(token, day) {
-      // Never throws: an unknown or revoked token, a bad day, a full storage or (simulated) offline records nothing.
+      // Never throws: an unknown, revoked or expired token, a bad day, a full storage or (simulated) offline records nothing.
       try {
         if (offline()) return
         const store = read()
-        const t = store.tokens[token]
-        if (!t || !isISODate(day)) return
-        const ev: LinkOpenEvent = { coupleId: t.coupleId, day }
+        const open = openToken(store, token)
+        if (!open || !isISODate(day)) return
+        const ev: LinkOpenEvent = { coupleId: open.t.coupleId, day }
         write({ ...store, opens: countLinkOpen(store.opens, ev) })
       } catch {
         /* the page never breaks over a counter */

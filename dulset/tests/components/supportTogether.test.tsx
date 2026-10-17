@@ -82,18 +82,15 @@ describe('his preparing home: 지은님 챙길 것 · 같이', () => {
     expect(before(week, c)).toBe(true)
     expect(before(c, prep)).toBe(true)
 
-    // [같이 할게요] → remembered as his answer; a second tap takes it back.
-    const btn = within(first).getByRole('button', { name: /같이 할게요/ })
-    expect(btn.getAttribute('aria-pressed')).toBe('false')
-    fireEvent.click(btn)
+    // [같이 할게요] → remembered as his answer and read as '같이 하기로 했어요' + [취소] (the link's wording);
+    // [취소] takes it back.
+    fireEvent.click(within(first).getByRole('button', { name: `‘${expected[0]!.short}’ 같이 할게요` }))
     expect(probe.current.state!.decisions?.[supportKey(expected[0]!.id, HIM)]).toBe(T0)
-    expect(
-      within(first)
-        .getByRole('button', { name: /같이 할게요/ })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
-    fireEvent.click(within(first).getByRole('button', { name: /같이 할게요/ }))
+    expect(within(first).getByRole('status').textContent).toBe('같이 하기로 했어요')
+    expect(within(first).queryByRole('button', { name: /같이 할게요$/ })).toBeNull()
+    fireEvent.click(within(first).getByRole('button', { name: `‘${expected[0]!.short}’ 같이 하기 취소` }))
     expect(isSupported(probe.current.state!, expected[0]!.id, HIM)).toBe(false)
+    expect(within(first).getByRole('button', { name: /같이 할게요$/ })).toBeTruthy()
   })
 
   it('her home has no such card (the items are hers)', () => {
@@ -131,15 +128,13 @@ describe('her side: 민수님이 같이 챙긴대요', () => {
     expect(within(row).queryByRole('button', { name: /같이 할게요/ })).toBeNull()
   })
 
-  it('his 챙길 것: her row has his line and the pressed toggle; his own row has none', () => {
+  it('his 챙길 것: her row has his line and ‘같이 하기로 했어요’ + [취소]; his own row has none', () => {
     renderApp(<PlanTab />, { state: supported(), viewer: HIM, today: T0 })
     const hers = planRow('pre-checkup-carrier')!
     expect(hers.querySelector('[data-support-line]')?.textContent).toContain('검사 날 같이 가기')
-    expect(
-      within(hers)
-        .getByRole('button', { name: /같이 할게요/ })
-        .getAttribute('aria-pressed'),
-    ).toBe('true')
+    expect(within(hers).getByRole('status').textContent).toBe('같이 하기로 했어요')
+    expect(within(hers).getByRole('button', { name: '‘임신 전 기본 검사’ 같이 하기 취소' })).toBeTruthy()
+    expect(within(hers).queryByRole('button', { name: /같이 할게요$/ })).toBeNull()
     const his = planRow('pre-checkup-partner')!
     expect(his.querySelector('[data-support-line]')).toBeNull()
   })

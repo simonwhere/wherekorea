@@ -2,11 +2,13 @@
 
 > **아직 실제 프로젝트에서 돌려 본 적이 없어요.** 클라이언트(`lib/sync/supabaseTransport.ts`)의 요청 모양은 가짜 fetch로 단위 테스트했고, SQL은 문법만 다시 읽었어요(2026-10-04 다시 읽음). 키가 생기면 SQL을 실행한 뒤 **`node scripts/verify-supabase.mjs`** 한 번이면 모든 함수를 버리는 데이터로 돌려 보고 PASS/FAIL 표를 보여 줘요(`docs/next-a-setup.md` 맨 위 '키를 받았을 때 빠른 순서').
 >
+> 2026-10-17에 더한 것: `extend_token(p_owner_key, p_couple_id, p_token, p_days=30)` — 아내가 둘셋을 쓰는 동안 링크가 스스로 연장돼요(살아 있는 토큰만, 줄이지 않음, 하루 한 번). 만료·해제된 토큰은 `null`이고 되살아나지 않아요. 이미 SQL을 돌린 프로젝트는 `schema.sql` → `policies.sql`을 한 번 더 실행해요(없으면 앱은 연장만 못 하고 그대로 동작해요).
+>
 > 2026-10-04에 고친 것: `create_couple(p_owner_key, p_couple_id)` — 앱이 폰에서 만든 커플 id를 그대로 등록해요(같은 키·id로 다시 불러도 그대로, 다른 기기 것이면 403). 전에는 등록 호출이 없어서 실제로는 첫 publish부터 403이 났을 거예요. `couples.owner_key_hash`의 unique를 뺐고(주인 확인은 늘 id + 해시), `delete_couple`을 더했어요. 이벤트 종류(`kind`)는 길이만 보는 글자라서 새 종류(`join-appointment`, N32)에 SQL을 고칠 필요가 없어요.
 
 | 파일 | 하는 일 | 실행 순서 |
 |---|---|---|
-| `schema.sql` | 표 5개 + API 함수(RPC) 11개 + 내부 도우미 4개 | 1 |
+| `schema.sql` | 표 5개 + API 함수(RPC) 12개 + 내부 도우미 4개 | 1 |
 | `policies.sql` | RLS 켜기, 표 접근 전부 막기, 함수만 열기 | 2 |
 
 둘 다 여러 번 실행해도 괜찮아요(`if not exists` / `create or replace`).
@@ -29,6 +31,7 @@
 | 아내 폰 | `create_couple(p_owner_key, p_couple_id)` → uuid | 키 32자 이상. 폰이 만든 id를 등록(멱등), 다른 기기 것이면 403. id 없이 부르면 새 id |
 | 아내 폰 | `delete_couple(p_owner_key, p_couple_id)` → 지웠는지 | 주인 키 일치. 커플과 그 아래 토큰·스냅숏·이벤트·링크 연 날이 cascade로 함께 지워져요(확인 스크립트의 정리, 나중에 연결 해제). 연구 중인 커플에는 쓰지 않아요 |
 | 아내 폰 | `issue_token(p_owner_key, p_couple_id, p_token, p_days=30)` → 만료 시각 | 주인 키 일치, 1~90일 |
+| 아내 폰 | `extend_token(p_owner_key, p_couple_id, p_token, p_days=30)` → 만료 시각 또는 `null` | 주인 키 일치, 1~90일. **살아 있는 토큰만**(이 커플 것·해제 안 됨·만료 안 됨) `greatest(지금 만료, now() + p_days)`로 늘려요 — 줄이지 않아요. 아니면 `null`(만료·해제된 링크는 되살아나지 않아요). 아내 폰이 스냅숏을 올린 뒤 하루 한 번 불러요. 남편이 링크를 연 것으로는 늘어나지 않아요(설정의 만료일이 읽음 표시가 되지 않게) |
 | 아내 폰 | `revoke_token(...)` | 주인 키 일치 |
 | 아내 폰 | `publish_snapshot(p_owner_key, p_couple_id, p_token, p_payload, p_published_at)` → 버전 | 주인 키, 64 KB, 토큰 처음 쓰면 30일로 발급, 최근 3개 버전만 보관 |
 | 아내 폰 | `pull_events(p_owner_key, p_couple_id, p_since)` → 줄들 | 주인 키, 200개 |
@@ -52,7 +55,7 @@
 
 ## 솔직한 한계 (지금 단계)
 
-1. **토큰이 곧 비밀**이에요. 링크가 새면 만료(최대 90일)나 해제 전까지 스냅샷을 읽을 수 있어요. 카톡으로 보낼 때 "이 링크는 남편에게만"을 화면에 적어요.
+1. **토큰이 곧 비밀**이에요. 링크가 새면 만료(아내가 둘셋을 마지막으로 연 날부터 30일, 한 번 연장에 최대 90일)나 해제 전까지 스냅샷을 읽을 수 있어요. 카톡으로 보낼 때 "이 링크는 남편에게만"을 화면에 적어요.
 2. **주인 키가 곧 비밀**이에요. 아내 폰 localStorage(`dulset:sync:ownerKey`)에 있고, 브라우저 데이터를 지우면 사라져요 → 새 커플 id가 만들어지고 예전 링크는 죽어요. 복구 방법이 없어요(의도).
 3. anon key는 공개 키예요. 남용은 함수 안의 크기·횟수 검사와 Supabase 자체 한도로만 막아요.
 4. 누가 언제 읽었는지는 `created_at` / `read_at` 외에 기록하지 않아요.

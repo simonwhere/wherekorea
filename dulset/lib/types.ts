@@ -548,6 +548,15 @@ export interface Appointment extends SyncMarks {
   taskId?: string
   createdBy: MemberId
   done?: boolean
+  /**
+   * '나만 보기' (2026-10-17, same meaning as DiaryEntry.privateTo): only this
+   * member sees the appointment — nowhere on the other member's screens,
+   * notices, link or exports, and nothing computed for them moves because of
+   * it. Valid only on the person's own appointment (`who === privateTo`); a
+   * '둘이 함께' one is always shared. Unset = shared (the default). Read
+   * through lib/logic/appointments.ts canSeeAppointment / appointmentsFor.
+   */
+  privateTo?: MemberId
 }
 
 export type RoadmapPhase = 'preconception' | 'pregnancy-1st' | 'pregnancy-2nd' | 'pregnancy-3rd' | 'birth' | 'postpartum'

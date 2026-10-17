@@ -341,6 +341,13 @@ export const PREP_APPOINTMENTS = {
   semen: '정액검사',
 } as const
 
+/**
+ * 지은's own appointment in the preparing demo that only she sees ('나만 보기',
+ * Appointment.privateTo): a neutral title, ten days ahead — after the two
+ * shared ones the home lists, so both people's cards start the same.
+ */
+export const DEMO_PRIVATE_APPOINTMENT = { title: '피부과 진료', place: '동네 피부과', time: '18:30', daysAhead: 10 } as const
+
 /** Days before `today` that the preparing couple applied at 보건소 (임신 사전건강관리). */
 export const PREP_APPLIED_DAYS_AGO = 9
 
@@ -655,6 +662,21 @@ function demoPreparing(today: ISODate, now: Date): AppState {
       who: 'b',
       kind: 'hospital',
       taskId: 'pre-dental',
+    },
+    'b',
+  )
+  // One of 지은's own, '나만 보기' (Appointment.privateTo, 2026-10-17): only her
+  // screens show it, with its lock — on 민수's side it is nowhere.
+  s = appointment(
+    s,
+    {
+      date: addDays(today, DEMO_PRIVATE_APPOINTMENT.daysAhead),
+      time: DEMO_PRIVATE_APPOINTMENT.time,
+      title: DEMO_PRIVATE_APPOINTMENT.title,
+      place: DEMO_PRIVATE_APPOINTMENT.place,
+      who: 'b',
+      kind: 'hospital',
+      privateTo: 'b',
     },
     'b',
   )

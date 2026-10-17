@@ -33,7 +33,7 @@
 import { FERTILITY_CHECK_GUIDE, type ClaimDocId } from '../content/programs'
 import { diffDays, formatKo } from '../dates'
 import type { Appointment, AppState, ISODate, MemberId } from '../types'
-import { setAppointmentDone } from './appointments'
+import { privateOwner, setAppointmentDone, withAppointmentsFor } from './appointments'
 import { isClinicMode } from './clinic'
 import { ageFromBirthYear } from './notifications'
 import {
@@ -429,6 +429,10 @@ function chainStale(chain: FertilityChain, today: ISODate): boolean {
  * urgent first.
  */
 export function monthlyTask(state: AppState, today: ISODate, member: MemberId): MonthlyTask | undefined {
+  // Every reader shows the task to `member` (their home, his link, his notices,
+  // his events): only the appointments they may see book or date it — the
+  // other member's '나만 보기' one never does (appointments.withAppointmentsFor).
+  state = withAppointmentsFor(state, member)
   const items = planItems(state, today)
   const open = items.filter(
     (i) => i.status !== 'done' && !i.lapsed && !i.pending && i.owners.includes(member) && !NOT_MONTHLY.has(i.id),
@@ -488,6 +492,44 @@ export function completeMonthlyTask(
   }
   if (task.step === 'claim') return setFertilityClaimed(state, done, at, by, member)
   return tickItem(task.id, done, at, by)(state)
+}
+
+// ── [다녀왔어요] on an appointment (챙길 것 › 다가오는 일정) ─────────
+
+/**
+ * The linked item's tick for a visit, dated to the visit (a test's claim
+ * deadline counts from the day of the test, and the 임신 사전건강관리 apply date
+ * starts its 3-month test window), or today when the visit lies ahead. The
+ * application ticks the person going (both for '둘이 함께'). tickItem and
+ * setFertilityApplied re-check the state they are applied to and never re-date
+ * a tick. The same state when the appointment has no linked item.
+ */
+export function tickForAppointment(state: AppState, id: string, today: ISODate, by: MemberId): AppState {
+  const a = state.appointments.find((x) => x.id === id)
+  if (!a?.taskId) return state
+  const at = a.date <= today ? a.date : today
+  if (a.taskId === FERTILITY_APPLY_ID) {
+    const members: MemberId[] = a.who === 'both' ? ['a', 'b'] : [a.who]
+    return members.reduce((acc, m) => setFertilityApplied(acc, m, true, at, by), state)
+  }
+  return tickItem(a.taskId, true, at, by)(state)
+}
+
+/**
+ * [다녀왔어요] / [했어요] on an appointment: marks it done (or not) and, for a
+ * shared one, ticks its linked item too (tickForAppointment). A '나만 보기'
+ * appointment ticks nothing by itself: the item's tick shows on the other
+ * member's 챙길 것 row with its date ('✓ 10.12 지은 챙김'), so a tick dated to
+ * the private visit would tell them about it (AGENTS.md 공유 범위 — their side
+ * reads exactly as without the appointment). PlanTab asks instead
+ * ('챙길 것에도 체크할까요? · 민수님 화면에도 보여요') and ticks only on a yes.
+ */
+export function markAppointmentDone(state: AppState, id: string, done: boolean, today: ISODate, by: MemberId): AppState {
+  const a = state.appointments.find((x) => x.id === id)
+  if (!a) return state
+  const next = setAppointmentDone(state, id, done)
+  if (!done || privateOwner(a) !== undefined) return next
+  return tickForAppointment(next, id, today, by)
 }
 
 /** Prefill for [일정 잡기] on the test step: the test, for this person, linked to their test row. */

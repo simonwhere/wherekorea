@@ -145,9 +145,9 @@ export default function DoneStep({
               </p>
             ) : null}
             <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-              링크는 {LINK_DAYS}일 동안 열리고 설정 › 연결에서 언제든 바꾸거나 해제할 수 있어요 · 초대 코드{' '}
-              <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄ 버튼으로도 {partner}님 화면을
-              볼 수 있어요.
+              링크는 내가 둘셋을 쓰는 동안 저절로 연장되고({LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요) 설정 › 연결에서 언제든 바꾸거나
+              해제할 수 있어요 · 초대 코드 <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄
+              버튼으로도 {partner}님 화면을 볼 수 있어요.
             </p>
           </>
         ) : (

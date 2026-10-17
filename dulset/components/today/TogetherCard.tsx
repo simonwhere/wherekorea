@@ -18,6 +18,9 @@
 // The rows are compact (one line + the support line): the card sits below the
 // moment, so the home's fold rule (moment title + action above the tab bar)
 // is untouched; on a short phone the rows tighten a little more.
+// [같이 할게요] sits in the right column; once said, '같이 하기로 했어요' + [취소]
+// (lib/content/supportCopy — the link's wording) is wider, so it drops under
+// the row's text instead of squeezing the title (2026-10-17).
 
 import type { TabKey } from '@/components/AppShell'
 import SupportButton from '@/components/plan/SupportButton'
@@ -97,7 +100,10 @@ function Row({ row }: { row: TogetherItem }) {
   // A shared item with no day yet reads '예정' like hers do (togetherRow gives it no label).
   const label = row.label ?? (done ? null : NEUTRAL_UPCOMING_LABEL)
   return (
-    <li className="flex items-start gap-3 py-2.5 [@media(max-height:700px)]:py-2" data-together-row={row.id}>
+    <li
+      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 py-2.5 [@media(max-height:700px)]:py-2"
+      data-together-row={row.id}
+    >
       <span aria-hidden className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2">
         <Icon name={ROADMAP_KIND_ICON[row.kind]} className="h-[17px] w-[17px]" />
       </span>
@@ -127,11 +133,12 @@ function Row({ row }: { row: TogetherItem }) {
       </div>
       <SupportButton
         itemId={row.id}
-        title={row.short}
+        short={row.short}
         supported={row.supported}
         canSupport={row.canSupport}
         done={done}
         className="mt-0.5"
+        saidClassName="col-span-2 col-start-2 row-start-2 -mb-1"
       />
     </li>
   )

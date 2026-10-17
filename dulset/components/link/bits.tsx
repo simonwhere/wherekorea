@@ -53,7 +53,8 @@ export function Pill({
       disabled={disabled}
       aria-label={ariaLabel}
       className={cx(
-        "relative inline-flex h-10 shrink-0 items-center justify-center gap-1 rounded-full px-3.5 text-[13.5px] font-bold transition-colors before:absolute before:-inset-y-0.5 before:inset-x-0 before:content-['']",
+        // 40px to look at, 44px to tap: the ::before reaches 3.5px above and below (from inside the outline tone's 1.5px border too).
+        "relative inline-flex h-10 shrink-0 items-center justify-center gap-1 rounded-full px-3.5 text-[13.5px] font-bold transition-colors before:absolute before:-inset-y-[3.5px] before:inset-x-0 before:content-['']",
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-40',
         tone === 'primary' && 'bg-brand text-white hover:bg-brand/90',
         tone === 'soft' && 'bg-surface-2 text-ink hover:bg-line/60',

@@ -9,7 +9,7 @@ import { ROADMAP } from '../content/roadmap'
 import { addDays, diffDays, formatKo, isISODate } from '../dates'
 import { isLive } from '../sync/model'
 import { MEMBER_IDS, type AppState, type Appointment, type AppointmentKind, type CustomTask, type ISODate, type MemberId } from '../types'
-import { APPOINTMENT_KIND_EMOJI, appointmentNotices } from './appointments'
+import { APPOINTMENT_KIND_EMOJI, appointmentNotices, appointmentsFor } from './appointments'
 import type { Notice } from './notifications'
 import { monthlyTask, partnerId } from './partnerTrack'
 import { planItems } from './plan'
@@ -43,15 +43,21 @@ export function isForEndedPregnancy(
  * Appointment reminders, minus visits that belonged to an ended pregnancy (and
  * tombstones — a deleted appointment is never a reminder). While pregnant, the
  * 함께하는 사람's heads-up the day before one of HER appointments says what he
- * can do (togetherAppointmentNotice).
+ * can do (togetherAppointmentNotice). A '나만 보기' appointment reminds only its
+ * owner: the other member gets no heads-up 'appt:<id>:<date>:fyi:<member>' for
+ * it (appointments.appointmentNotices) — their notices are what they would be
+ * without it.
  */
 export function appointmentReminders(state: AppState, today: ISODate): Notice[] {
   const list = appointmentNotices(state, today, (a) => !isLive(a) || isForEndedPregnancy(state, a))
   if (!togetherNoticesOn(state, today)) return list
   const tomorrow = addDays(today, 1)
   const carrier = carrierId(state)
+  const to = partnerId(state)
   const hers = new Map(
-    state.appointments.filter((a) => a.who === carrier && isLive(a) && !a.done && a.date === tomorrow).map((a) => [fyiKey(a, partnerId(state)), a]),
+    appointmentsFor(state.appointments, to)
+      .filter((a) => a.who === carrier && isLive(a) && !a.done && a.date === tomorrow)
+      .map((a) => [fyiKey(a, to), a]),
   )
   return list.map((n) => {
     const a = n.key ? hers.get(n.key) : undefined

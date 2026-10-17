@@ -10,7 +10,7 @@ import { cx, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { WEEKLY_QUESTION, doneIds, isWeekly, weeklyCheckInName } from '@/lib/logic/checks'
-import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
+import { APPOINTMENT_KIND_LABEL, privateOwner } from '@/lib/logic/appointments'
 import { stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem } from '@/lib/types'
@@ -30,8 +30,9 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
   const weekly = weeklyRows(state, me.id, today)
   const done = doneIds(state, me.id, today)
   const prog = dailyProgress(state, me.id, today)
-  // Every appointment today or tomorrow (a clinic day can have two or three).
-  const appts = soonAppointments(homeAppointments(state), today)
+  // Every appointment today or tomorrow (a clinic day can have two or three) —
+  // the ones I may see: never the other person's '나만 보기' one.
+  const appts = soonAppointments(homeAppointments(state, me.id), today)
 
   const toggle = (item: CheckItem) => {
     const now = stampOn(today)
@@ -104,6 +105,13 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
                   {appt.title}
                 </span>
                 <span className="mt-px block truncate text-[12.5px] text-ink-3">
+                  {privateOwner(appt) === me.id ? (
+                    // Mine alone ('나만 보기'): the lock and the words, as in 챙길 것.
+                    <span className="font-semibold text-ink-2" data-only-me>
+                      <Icon name="lock" className="mr-0.5 inline-block h-3 w-3 align-[-1px]" strokeWidth={2.2} />
+                      나만 보기 ·{' '}
+                    </span>
+                  ) : null}
                   {appt.time ? `${appt.time} · ` : ''}
                   {whoLabel(appt.who, state.couple.members, me.id)}
                   {appt.place ? ` · ${appt.place}` : ''}

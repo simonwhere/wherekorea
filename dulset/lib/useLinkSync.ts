@@ -24,6 +24,13 @@
 // coupleLinkOf), kept in step by useLinkSync on the owner's tab, so a backup
 // and 설정 know a link exists without ever carrying the secret. The key
 // starts with 'dulset:' so 모든 기록 지우기 clears it with the rest.
+//
+// The link renews itself while 둘셋 is in use (2026-10-17): after a publish
+// succeeds on the owner's tab, renewLinkOnTransport asks the transport to
+// extend the live token (at most once a day — partnerLink.renewedExpiry) and,
+// only when it did, moves the record's expiry; the couple.link mirror follows.
+// Only HER use counts — never his opens or events (her 설정 shows the expiry;
+// an expiry that moved when he opened the link would be a read receipt).
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 import { localNowISO } from './logic/notifications'
@@ -31,9 +38,11 @@ import { addDays } from './dates'
 import { hasAppliedEvent } from './logic/partnerEvents'
 import {
   coupleLinkOf,
+  LINK_DAYS,
   linkStatus,
   makeLink,
   parseLinkRecord,
+  renewedExpiry,
   revokeLinkRecord,
   sameCoupleLink,
   setCoupleLink,
@@ -44,8 +53,8 @@ import { partnerId } from './logic/partnerTrack'
 import { stampOn } from './logic/today'
 import { cycleOwnerId } from './logic/ttcFlow'
 import type { AppApi } from './store'
-import { MOCK_SYNC_KEY, parseMockStore, type StorageLike } from './sync/mockTransport'
-import { transport, transportKind, type TransportKind } from './sync/transport'
+import { MOCK_SYNC_KEY, liveMockToken, parseMockStore, pinnedNowISO, type StorageLike } from './sync/mockTransport'
+import { transport, transportKind, type Transport, type TransportKind } from './sync/transport'
 import type { ISODateTime } from './types'
 
 // ── The record (pure helpers live in lib/logic/partnerLink.ts) ──
@@ -56,11 +65,13 @@ export {
   isToken,
   linkDaysLeft,
   linkExpiry,
+  linkShownStatus,
   linkStatus,
   makeLink,
   newCoupleId,
   parseLinkRecord,
   randomToken,
+  renewedExpiry,
   revokeLinkRecord,
   shareText,
   shareURL,
@@ -143,12 +154,12 @@ export function useLinkRecord(): LinkRecord | null {
  * the mock transport) — kept for tests and tools that hold the storage
  * rather than a transport. Returns whether the token was known.
  */
-export function revokeMockToken(storage: StorageLike, token: string): boolean {
+export function revokeMockToken(storage: StorageLike, token: string, at: ISODateTime = pinnedNowISO()): boolean {
   const store = parseMockStore(storage.getItem(MOCK_SYNC_KEY))
-  if (!store.tokens[token]) return false
-  const tokens = { ...store.tokens }
-  delete tokens[token]
-  storage.setItem(MOCK_SYNC_KEY, JSON.stringify({ ...store, tokens }))
+  const t = store.tokens[token]
+  if (!liveMockToken(t)) return false
+  // A tombstone, as the mock's revokeToken keeps (never deleted: a later publish under it is refused).
+  storage.setItem(MOCK_SYNC_KEY, JSON.stringify({ ...store, tokens: { ...store.tokens, [token]: { ...t, revokedAt: at } } }))
   return true
 }
 
@@ -156,6 +167,48 @@ export function revokeMockToken(storage: StorageLike, token: string): boolean {
 export async function revokeOnTransport(link: Pick<LinkRecord, 'coupleId' | 'token'>): Promise<void> {
   const t = await transport()
   if (t.revokeToken) await t.revokeToken(link.coupleId, link.token)
+}
+
+// ── Renewing while 둘셋 is in use (2026-10-17) ─────────────
+
+/**
+ * Renew the link on the transport — the owner's tab calls it after a publish
+ * succeeded (useLinkSync). When it is due (partnerLink.renewedExpiry: an
+ * active link, at most once a day, never shorter), the transport extends the
+ * live token, and only when the transport says it did does the record get
+ * the new expiry — the LOCAL stamp from the helper, so 설정 keeps counting on
+ * her clock. Returns the record to keep, or null when nothing changed: not
+ * due, a transport without extendToken, a token the transport no longer
+ * holds as live, or a failed call — 설정 then keeps telling the truth and
+ * never claims an extension the transport did not take.
+ */
+export async function renewLinkOnTransport(
+  link: LinkRecord,
+  nowISO: ISODateTime,
+  t: Pick<Transport, 'extendToken'>,
+): Promise<LinkRecord | null> {
+  const renewed = renewedExpiry(link, nowISO)
+  if (!renewed || !t.extendToken) return null
+  try {
+    const took = await t.extendToken(link.coupleId, link.token, LINK_DAYS)
+    if (!took) return null
+  } catch {
+    return null
+  }
+  return { ...link, expiresAt: renewed }
+}
+
+/**
+ * Keep a renewal on this device: written only if the record is still the one
+ * that was renewed (same token, not revoked, same expiry as before the call)
+ * — a 새 링크 or 링크 해제 pressed while the call was out wins. Returns whether
+ * it was written.
+ */
+export function keepRenewal(before: LinkRecord, renewed: LinkRecord): boolean {
+  const latest = readLink()
+  if (!latest || latest.token !== before.token || latest.coupleId !== before.coupleId) return false
+  if (latest.revokedAt || latest.expiresAt !== before.expiresAt) return false
+  return writeLink({ ...latest, expiresAt: renewed.expiresAt })
 }
 
 // ── Mutations (설정 › 연결, the onboarding's last screen) ────
@@ -295,6 +348,9 @@ export function pullSince(today: string, nowMs: number = Date.now()): ISODateTim
  *    transport says something changed; apply the new ones with update(fn),
  *    each on the day it was taken in (applyReceivedEvents).
  * An expired link is revoked on the transport the first time it is seen.
+ * After a publish succeeds, the link is renewed while 둘셋 is in use
+ * (renewLinkOnTransport, at most once a day): an active link's expiry moves
+ * to LINK_DAYS from today; an expired one is never revived.
  */
 export function useLinkSync(app: AppApi): void {
   const { state, update, today, viewer } = app
@@ -312,6 +368,8 @@ export function useLinkSync(app: AppApi): void {
   todayRef.current = today
   /** token + snapshot JSON of the last successful publish from this tab. */
   const lastPublished = useRef<string>('')
+  /** token + day of the last renewal attempt from this tab (one try a day, even when the transport says no). */
+  const lastRenewTry = useRef<string>('')
 
   // An expired link: tell the transport once, and keep the record as revoked.
   useEffect(() => {
@@ -340,10 +398,26 @@ export function useLinkSync(app: AppApi): void {
     const timer = window.setTimeout(() => {
       void (async () => {
         try {
+          // The record may have changed in another tab since this render (링크 해제, 새 링크): never
+          // publish under a token this device no longer holds as live.
+          const live = readLink()
+          if (!live || live.token !== token || live.coupleId !== coupleId || live.revokedAt) return
           const t = await transport()
           await t.publishSnapshot(coupleId, token, snapshot)
           lastPublished.current = key
           setStatus({ kind: t.kind, publishedAt: localNowISO(), error: null })
+          // 둘셋 is in use on her phone: renew the link (at most once a day; a no or an error leaves the record alone).
+          const day = todayRef.current
+          const current = readLink()
+          const tryKey = `${token}\n${day}`
+          if (current && current.token === token && current.coupleId === coupleId && lastRenewTry.current !== tryKey) {
+            const nowISO = stampOn(day)
+            if (renewedExpiry(current, nowISO)) {
+              lastRenewTry.current = tryKey
+              const renewed = await renewLinkOnTransport(current, nowISO, t)
+              if (renewed) keepRenewal(current, renewed)
+            }
+          }
         } catch (e) {
           setStatus({ error: errorText(e) })
         }

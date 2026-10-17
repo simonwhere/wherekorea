@@ -14,10 +14,11 @@
 // The first TOGETHER_FOLD rows show; the rest open with 'N개 더 보기', so the
 // rest of his page stays within reach.
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
+import { SUPPORT_CANCEL, SUPPORT_LABEL, SUPPORT_PRESSED, supportAriaLabel, supportCancelAriaLabel } from '@/lib/content/supportCopy'
 import type { SnapshotTogetherPlan } from '@/lib/logic/partnerSnapshot'
 import type { LinkTogetherItem } from '@/lib/logic/together'
 import { Pill } from './bits'
@@ -34,32 +35,48 @@ const STATUS_TONE: Record<LinkTogetherItem['status'], string> = {
  * [같이 할게요] for one item — or, once said, '같이 하기로 했어요' with 취소. Also
  * drawn by the stage card for the item its next visit is booked for
  * (LinkStage), whose row then leaves this list. Nothing when it can't be said.
+ * The app's button says the same words (lib/content/supportCopy, 2026-10-17).
  */
 export function SupportToggle({ item, onSupport }: { item: LinkTogetherItem; onSupport: (item: LinkTogetherItem, on: boolean) => void }) {
   const short = togetherShort(item.title)
+  const offerRef = useRef<HTMLDivElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  // Focus follows a tap here to what replaced the tapped button, like the app's (components/plan/SupportButton).
+  const moveFocus = useRef(false)
+  useEffect(() => {
+    if (!moveFocus.current) return
+    moveFocus.current = false
+    if (item.supported) cancelRef.current?.focus()
+    else offerRef.current?.querySelector('button')?.focus()
+  }, [item.supported])
+  const answer = (on: boolean) => {
+    moveFocus.current = true
+    onSupport(item, on)
+  }
   if (item.supported) {
     return (
       <div className="mt-1.5 flex flex-wrap items-center gap-x-1">
         <span role="status" className="inline-flex min-h-10 items-center gap-1 text-[13.5px] font-bold text-ok" data-together-supported>
           <Icon name="check" className="h-4 w-4" strokeWidth={2.6} />
-          같이 하기로 했어요
+          {SUPPORT_PRESSED}
         </span>
         <button
+          ref={cancelRef}
           type="button"
-          onClick={() => onSupport(item, false)}
-          aria-label={`‘${short}’ 같이 하기 취소`}
+          onClick={() => answer(false)}
+          aria-label={supportCancelAriaLabel(short)}
           className="inline-flex min-h-[44px] items-center px-2 text-[12.5px] font-bold text-ink-3 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
-          취소
+          {SUPPORT_CANCEL}
         </button>
       </div>
     )
   }
   if (!item.canSupport) return null
   return (
-    <div className="mt-2">
-      <Pill tone="outline" icon="plus" onClick={() => onSupport(item, true)} ariaLabel={`‘${short}’ 같이 할게요`}>
-        같이 할게요
+    <div ref={offerRef} className="mt-2">
+      <Pill tone="outline" icon="plus" onClick={() => answer(true)} ariaLabel={supportAriaLabel(short)}>
+        {SUPPORT_LABEL}
       </Pill>
     </div>
   )

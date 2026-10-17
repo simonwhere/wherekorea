@@ -7,6 +7,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Disclaimer, useToast } from '@/components/ui'
 import TreatmentsCard from '@/components/clinic/TreatmentsCard'
+import UndoToast, { type UndoMessage } from '@/components/log/UndoToast'
 import AppointmentList from '@/components/plan/AppointmentList'
 import AppointmentSheet from '@/components/plan/AppointmentSheet'
 import CustomTaskSheet from '@/components/plan/CustomTaskSheet'
@@ -27,26 +28,30 @@ import {
   type PlanItem,
 } from '@/lib/logic/plan'
 import { ROADMAP_CHECKED_AT } from '@/lib/content/roadmap'
-import { setAppointmentDone } from '@/lib/logic/appointments'
-import { FERTILITY_APPLY_ID, appliedInfo, setFertilityApplied } from '@/lib/logic/partnerTrack'
+import { privateOwner } from '@/lib/logic/appointments'
+import { FERTILITY_APPLY_ID, appliedInfo, markAppointmentDone, setFertilityApplied, tickForAppointment } from '@/lib/logic/partnerTrack'
 import { removeCustomTask } from '@/lib/logic/roadmap'
 import { showsTreatmentCounter } from '@/lib/logic/treatments'
 import { useApp } from '@/lib/store'
 import type { Appointment, AppState, ISODate, MemberId } from '@/lib/types'
 
 type ApptSheet = { draft: AppointmentDraft; editing?: Appointment } | null
+/** '챙길 것에도 체크할까요?' after [다녀왔어요] on my own '나만 보기' appointment. */
+type TickOffer = UndoMessage & { appointmentId: string }
 
 export default function PlanTab() {
-  const { state, update, today, me } = useApp()
+  const { state, update, today, me, partner } = useApp()
   const toast = useToast()
   const [filter, setFilter] = useState<PhaseFilter>('stage')
   const [apptSheet, setApptSheet] = useState<ApptSheet>(null)
   const [customOpen, setCustomOpen] = useState(false)
+  const [tickOffer, setTickOffer] = useState<TickOffer | null>(null)
 
   const items = useMemo(() => planItems(state, today), [state, today])
 
   const closeAppt = useCallback(() => setApptSheet(null), [])
   const closeCustom = useCallback(() => setCustomOpen(false), [])
+  const dropOffer = useCallback(() => setTickOffer(null), [])
 
   // The 임신 사전건강관리 application is per person (N14): the couple's row is
   // both of them, and each person's own tick sits under it.
@@ -79,17 +84,21 @@ export default function PlanTab() {
   const markAppointment = (a: Appointment, done: boolean) => {
     const task = a.taskId ? items.find((i) => i.id === a.taskId) : undefined
     const tickTask = done && !!task && task.status !== 'done'
-    // The item is dated to the visit (a test's claim deadline counts from the
-    // day of the test, not the day it was ticked). tickItem re-checks on the
-    // state it's applied to (it never re-dates a tick).
-    const at = a.date <= today ? a.date : today
-    update((s) => {
-      const next = setAppointmentDone(s, a.id, done)
-      if (!done || !a.taskId) return next
-      if (a.taskId === FERTILITY_APPLY_ID) return applyBoth(next, true, at, a.who)
-      return tickItem(a.taskId, true, at, me.id)(next)
-    })
-    if (done) toast.show(tickTask ? '챙길 것에도 체크했어요 ✓' : '완료로 표시했어요 ✓')
+    // The linked item is ticked dated to the visit (markAppointmentDone) — but
+    // never by itself for my '나만 보기' one: its tick, with the visit's date,
+    // would show on the other person's 챙길 것 row. Asked instead.
+    const ask = tickTask && privateOwner(a) === me.id
+    update((s) => markAppointmentDone(s, a.id, done, today, me.id))
+    setTickOffer(ask ? { id: Date.now(), text: `챙길 것에도 체크할까요? ${partner.name}님 화면에도 보여요`, appointmentId: a.id } : null)
+    if (done && !ask) toast.show(tickTask ? '챙길 것에도 체크했어요 ✓' : '완료로 표시했어요 ✓')
+  }
+
+  const acceptOffer = () => {
+    if (!tickOffer) return
+    const id = tickOffer.appointmentId
+    update((s) => tickForAppointment(s, id, today, me.id))
+    setTickOffer(null)
+    toast.show('챙길 것에도 체크했어요 ✓')
   }
 
   const defaultPhase = filter === 'stage' || filter === 'all' ? currentPhase(state, today) : filter
@@ -134,6 +143,7 @@ export default function PlanTab() {
         />
       ) : null}
       {customOpen ? <CustomTaskSheet defaultPhase={defaultPhase} onClose={closeCustom} /> : null}
+      <UndoToast message={tickOffer} onUndo={acceptOffer} onExpire={dropOffer} actionLabel="체크하기" />
     </div>
   )
 }

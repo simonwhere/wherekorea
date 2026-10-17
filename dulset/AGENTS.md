@@ -75,7 +75,7 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - 터치 영역은 44px 이상이에요. 아이콘만 있는 버튼에는 `aria-label`을 붙여요.
 - **import 순환 주의**: `lib/logic/pregnancyView.ts` → `notifications.ts`로 이어지고, `lib/content/roadmap.ts`는 모듈 최상위에서 `prenatalKey` 같은 `const`를 호출해요. 그래서 `notifications.ts`, `appointments.ts`, `pregnancyView.ts`, `babyView.ts`에서 `content/roadmap`이나 `logic/plan`을 import하지 마세요. 로드맵이 필요한 알림은 `planNotices.ts`에 둬요. `lib/logic/settings.ts`는 다른 로직 파일을 많이 불러오니 `notifications.ts`, `anniversary.ts`, `cover.ts`, `pregnancy.ts`, `ttc.ts`, `prefs.ts`, `cycle.ts`, `positiveBleeding.ts`, `intimacy.ts`, `treatments.ts`, `logs.ts`에서 `settings.ts`를 import하지 마세요. `tests/integrationNextB.test.ts`가 `lib/logic` 안의 값 import 순환이 0개인지 검사해요.
 - 코드 서식은 `.prettierrc`(세미콜론 없음 · 작은따옴표 · 끝 쉼표 · 140칸)를 따라요. 설정 없이 `prettier --write`를 돌리면 파일 전체가 큰따옴표·세미콜론·80칸으로 바뀌니 하지 마세요.
-- 서버 호출은 두 가지만 해요: 남편 링크 전송(`lib/sync/transport.ts` — 아내 폰이 렌즈를 거쳐 만든 스냅숏과 남편의 이벤트)과 연구용 '링크 연 날' 카운터(커플 id·날짜·횟수만, 아내 화면에는 어떤 형태로도 보이지 않아요). 원본 건강 기록(생리·LH·임테기 기록, 컨디션·나만 보기·관계일)은 어느 쪽으로도 보내지 않아요. 분석·광고 SDK와 외부 폰트는 추가하지 않아요.
+- 서버 호출은 두 가지만 해요: 남편 링크 전송(`lib/sync/transport.ts` — 아내 폰이 렌즈를 거쳐 만든 스냅숏과 남편의 이벤트, 그리고 아내가 둘셋을 쓰는 동안 하루 한 번 링크를 늘리는 `extendToken`. 아내의 사용만 세고 남편이 연 것으로는 늘지 않아요 — 만료일이 읽음 표시가 되지 않게)과 연구용 '링크 연 날' 카운터(커플 id·날짜·횟수만, 아내 화면에는 어떤 형태로도 보이지 않아요). 원본 건강 기록(생리·LH·임테기 기록, 컨디션·나만 보기·관계일)은 어느 쪽으로도 보내지 않아요. 분석·광고 SDK와 외부 폰트는 추가하지 않아요.
 
 ## 제품·문구 규칙 (꼭 지켜요)
 
@@ -86,6 +86,7 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - **공유 범위**: 주기 기록(생리·LH·임테기)은 주기 주인만 해요(`canLogCycle`). 상대가 무엇을 볼지는 주인이 정해요(`settings.shareLevel` = `none` 날짜 없음 / `week` 우리의 주간(기본) / `details` 자세히, `lib/logic/prefs.ts`의 `shareLevelOf` · `canSeeWeekBand` · `canSeeCycleDetails`). 넓히는 쪽은 주인의 동의를 한 번 더 받고, 좁히는 쪽은 바로 적용돼요. 화면을 새로 만들 때 `lib/logic/calendarView.ts`의 `cycleLens(state, viewer)`로 보이는 범위를 정해요.
   - 자세히가 아닌 상대의 화면은 `lib/logic/cycleRing.ts`의 `sharedWeek` 하나로 정해요(기록한 생리 시작일만 써요. LH·테스트는 안 쓰고, 생리 1~3일·쉬는 주기·병원과 함께·양성 확인 전에는 꺼져요). 날짜 없음이면 띠·날짜·주기 단계가 상대 화면 어디에도 없어요.
   - **알리지 않은 기록은 상대 화면을 바꾸지 않아요**(앱, 링크의 7일 칸 모두). 남편이 보는 것은 아내가 보낸 것(신호·[알리기]·공유 동의)이나 자기 것뿐이고, 화면이 바뀌는 것도 정보예요. `tests/leakInference.test.ts`·`tests/integrationNow3.test.ts`가 지켜요.
+  - 일정 '나만 보기'(`Appointment.privateTo`, 2026-10-17)는 가는 사람 본인 일정에만 붙고 기본은 공유예요. 상대를 위해 일정을 읽는 곳(화면·알림·링크·요약·내보내기)은 모두 `lib/logic/appointments.ts`의 `appointmentsFor` / `withAppointmentsFor`를 거쳐서, 상대 쪽 결과가 그 일정이 없을 때와 똑같아요(`tests/appointmentPrivacy.test.ts`). 그래서 나만 보기 일정의 [다녀왔어요]는 걸린 챙길 것 항목을 저절로 체크하지 않고(체크 날짜가 상대 줄에 보여요 — `partnerTrack.markAppointmentDone`, 본인이 [체크하기]로 고르면 체크), 공유 일정을 나만 보기로 바꾸면 상대에게 이미 간 'appt:<id>:' 알림도 빠져요(`appointments.withoutHiddenAppointmentNotices`).
   - 상대에게는 횟수 문장('하루나 이틀에 한 번' 등)을 보이지 않아요(알림·달력·요약 모두).
   - 남편 화면의 우리의 주간 아이디어·`#date` 띠는 `lib/logic/dateIdeas.ts`의 `partnerHintState` 하나로 정해요(홈 카드·링크 아이디어·`dateBanner` 셋 다, 소스 검사 테스트가 지켜요). 남편의 주기 탭·홈·링크가 같은 창을 그리려면 `cycleLens`/`sharedWeek`에 `decisions`·`notifications`(아내가 [알리기]로 보낸 `period-told:<시작일>`)를 함께 넘겨요.
   - '해 줄 말 · 아껴 둘 말'(`lib/logic/signals.ts`의 `sayForTold`·`sayForSignal`)은 아내가 보낸 순간(신호, [알리기])에만 붙고, 앱과 링크가 같은 줄을 그려요(`components/signals/SayText.tsx`). 답 2개는 'signal' 이벤트로 돌아오고 `partnerEvents.toldAnswerOpen`이 그 카드가 있는 동안 한 번만 받아요.

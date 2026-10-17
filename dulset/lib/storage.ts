@@ -1,6 +1,7 @@
 // Versioned localStorage persistence. Everything stays on the device in the
 // prototype — no server ever sees cycle or health data.
 
+import { cleanPrivateTo } from './logic/appointments'
 import { cleanCover } from './logic/cover'
 import { cleanCoupleLink } from './logic/partnerLink'
 import { BACKUP_MAX_BYTES, extraStorageKeys, sanitizeBackup } from './logic/settings'
@@ -112,7 +113,10 @@ export function normalize(state: AppState): AppState {
     growth: arr(s.growth),
     milestones: arr(s.milestones),
     anniversaries: arr(s.anniversaries),
-    appointments: arr(s.appointments),
+    // '나만 보기' (privateTo) holds only on the person's own appointment
+    // (appointments.privateOwner): any other mark is dropped, the appointment
+    // stays — shared. A damaged entry passes through for sanitizeBackup.
+    appointments: arr<AppState['appointments'][number]>(s.appointments).map((a) => (a && typeof a === 'object' ? cleanPrivateTo(a) : a)),
     planDone: s.planDone ?? {},
     customTasks: arr(s.customTasks),
     pregnancyTests: arr(s.pregnancyTests),
@@ -151,7 +155,8 @@ export function normalize(state: AppState): AppState {
       ...(coverOnLink ? { coverOnLink } : {}),
     },
     // personalLog, cycleNotes, restCycle (+ until), positivePending
-    // (+ bleedingSince), treatments, leaveDays, intimacy, diary[].privateTo,
+    // (+ bleedingSince), treatments, leaveDays, intimacy, diary[].privateTo
+    // (appointments[].privateTo is checked above),
     // lhTests[].slot, customTasks[].deadlineAlerts and the sync marks
     // (records' id / updatedAt / deletedAt) ride along in `...s`;
     // sanitizeBackup checks them (parseState always runs both).

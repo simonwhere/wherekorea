@@ -25,6 +25,7 @@
 
 import { diffDays, formatKo, isISODate } from '../dates'
 import type { AppState, ISODate, MemberId } from '../types'
+import { withAppointmentsFor } from './appointments'
 import { weekCount, weekCountLabel } from './checks'
 import { fertilityChain, testIdFor, type FertilityChain, type TaskStage } from './partnerTrack'
 import { OVERDUE_GRACE_DAYS, planItems, stepAppointment, type PlanItem } from './plan'
@@ -215,6 +216,8 @@ export function pregnantPrepLine(items: readonly PrepItem[], today: ISODate): st
  */
 export function myPrep(state: AppState, today: ISODate, member: MemberId): MyPrep {
   if (!isISODate(today) || canLogCycle(state, member) || weekQuiet(state, today)) return {}
+  // His own bar: only the bookings he may see (never her '나만 보기' one).
+  state = withAppointmentsFor(state, member)
   const n = weekCount(state, member, today)
   const week = n > 0 ? { weekCount: weekCountLabel(n) } : {}
   if (state.stage === 'pregnant') {

@@ -24,8 +24,9 @@
 //    localStorage; the server stores its SHA-256. Publishing and pulling
 //    need it. It never leaves this device except inside those calls.
 //  • the share token — a random string the owner puts in the link she sends
-//    (카카오톡); the server stores its hash with an expiry. Whoever has the
-//    link sees the snapshot until it expires or she revokes it.
+//    (카카오톡); the server stores its hash with an expiry, which her phone
+//    renews while she keeps using 둘셋 (extend_token, at most once a day).
+//    Whoever has the link sees the snapshot until it expires or she revokes it.
 // There is no account. Supabase Auth anonymous sign-in is the next step
 // (Next A ②/③) and replaces the owner key with auth.uid() in RLS.
 
@@ -163,6 +164,8 @@ export interface SupabaseTransport extends Transport {
   deleteCouple(coupleId: string): Promise<boolean>
   /** Issue (or extend) a share token for the link; returns the expiry the server set. */
   issueToken(coupleId: string, token: string, days?: number): Promise<string>
+  /** Renew a live token (extend_token): the new expiry, or null when the server holds it as expired, revoked or another couple's. */
+  extendToken(coupleId: string, token: string, days?: number): Promise<string | null>
   /** The link stops working at once. */
   revokeToken(coupleId: string, token: string): Promise<void>
   /** Events the owner has handled, so a later pull can skip them (read_at). */
@@ -258,6 +261,14 @@ export function createSupabaseTransport(opts: SupabaseTransportOptions): Supabas
       const expires = await rpc<string>('issue_token', { p_owner_key: owner, p_couple_id: coupleId, p_token: token, p_days: days })
       if (typeof expires !== 'string') throw new SupabaseTransportError('bad-response', 'issue_token: no expiry')
       return expires
+    },
+
+    async extendToken(coupleId, token, days = TOKEN_DAYS_DEFAULT) {
+      // Not issue_token: that upserts with revoked_at = null and would revive a revoked link.
+      const owner = needOwner()
+      await ensureCouple(coupleId)
+      const expires = await rpc<string | null>('extend_token', { p_owner_key: owner, p_couple_id: coupleId, p_token: token, p_days: days })
+      return typeof expires === 'string' && expires ? expires : null
     },
 
     async revokeToken(coupleId, token) {

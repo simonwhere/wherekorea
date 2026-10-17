@@ -8,7 +8,9 @@ import { dLabel, formatKo, parts, weekdayKo } from '@/lib/dates'
 import {
   APPOINTMENT_KIND_LABEL,
   appointmentIcsEvent,
+  appointmentsFor,
   pastAppointments,
+  privateOwner,
   removeAppointment,
   upcomingAppointments,
 } from '@/lib/logic/appointments'
@@ -27,7 +29,11 @@ function doneLabel(a: Pick<Appointment, 'kind'>): string {
   return a.kind === 'admin' || a.kind === 'other' ? '했어요' : '다녀왔어요'
 }
 
-/** 다가오는 일정: shared hospital / test / admin appointments. */
+/**
+ * 다가오는 일정: hospital / test / admin appointments as `me` may see them —
+ * the shared ones and my own '나만 보기' ones (with a lock), never the other
+ * member's '나만 보기' ones (appointments.appointmentsFor).
+ */
 export default function AppointmentList({
   onAdd,
   onEdit,
@@ -38,20 +44,20 @@ export default function AppointmentList({
   /** Mark done / not done (also ticks the linked 챙길 것 item). */
   onDone: (a: Appointment, done: boolean) => void
 }) {
-  const { state, today } = useApp()
+  const { state, today, me } = useApp()
   const [showPast, setShowPast] = useState(false)
   const [pastShown, setPastShown] = useState(PAST_PAGE)
   const pastId = useId()
-  const list = usableAppointments(state.appointments)
+  const list = usableAppointments(appointmentsFor(state.appointments, me.id))
   const upcoming = upcomingAppointments(list, today)
   const past = pastAppointments(list, today)
 
   return (
     <section className="mt-6" aria-labelledby={`${pastId}-title`}>
       <SectionTitle
-        sub="둘 중 누가 추가해도 같이 보여요"
+        sub="기본은 둘이 같이 봐요 · 내 일정은 나만 보기로 둘 수 있어요"
         action={
-          <button type="button" onClick={onAdd} className={btnBrand}>
+          <button type="button" onClick={onAdd} className={cx(btnBrand, 'shrink-0 whitespace-nowrap')}>
             ＋ 일정 추가
           </button>
         }
@@ -147,7 +153,9 @@ function AppointmentRow({
   const joinedBy = appt.who === 'both' ? appointmentJoinedBy(state, appt.id) : []
   const iJoined = joinedBy.includes(me.id)
   const othersJoined = members.filter((m) => m.id !== me.id && joinedBy.includes(m.id))
-  const canJoin = !past && !iJoined && me.id !== cycleOwner.id && !!joinableAppointment(state, appt.id, today)
+  const canJoin = !past && !iJoined && me.id !== cycleOwner.id && !!joinableAppointment(state, appt.id, today, me.id)
+  // Mine alone ('나만 보기'): the other person's screens never show it.
+  const onlyMe = privateOwner(appt) === me.id
   const join = () => {
     update((s) => joinAppointment(s, me.id, appt.id, today))
     const other = members.find((m) => m.id !== me.id)
@@ -187,6 +195,7 @@ function AppointmentRow({
               {APPOINTMENT_KIND_LABEL[appt.kind]}
               {appt.done ? ` · ${doneLabel(appt)} ✓` : ''}
             </span>
+            {onlyMe ? <OnlyMeMark /> : null}
           </div>
           {confirming ? null : (
             <button
@@ -275,5 +284,21 @@ function AppointmentRow({
         )}
       </div>
     </li>
+  )
+}
+
+/** '나만 보기' on my own appointment: a small lock and the words (the other person never sees the row). */
+export function OnlyMeMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cx(
+        'inline-flex items-center gap-0.5 rounded-full bg-surface-2 px-1.5 py-px text-[10.5px] font-semibold text-ink-2',
+        className,
+      )}
+      data-only-me
+    >
+      <Icon name="lock" className="h-3 w-3" strokeWidth={2.2} />
+      나만 보기
+    </span>
   )
 }

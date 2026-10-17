@@ -43,7 +43,7 @@ import type {
   PregnancyTestResult,
   RestCycle,
 } from '../types'
-import { CLINIC_KIND_WORD, upcomingAppointments } from './appointments'
+import { CLINIC_KIND_WORD, appointmentsFor, upcomingAppointments, withAppointmentsFor } from './appointments'
 import {
   CLINIC_LABEL,
   LH_LABEL,
@@ -641,7 +641,9 @@ export function ttcMoment(state: AppState, today: ISODate, viewer: MemberId, opt
   const voice = homeVoice(state, viewer)
   const details = canSeeCycleDetails(state, viewer)
   const ctx: Ctx = {
-    state,
+    // The card names appointments (the clinic card): only ones `viewer` may see
+    // — the other member's '나만 보기' one never reaches it (appointments.withAppointmentsFor).
+    state: withAppointmentsFor(state, viewer),
     today,
     phase,
     voice,
@@ -1739,7 +1741,9 @@ export function vaccineRestHint(state: AppState, today: ISODate, viewer: MemberI
   for (const [itemId, v] of Object.entries(LIVE_VACCINE_ITEMS)) {
     const dates = [
       state.planDone[itemId]?.at,
-      ...state.appointments.filter((a) => a.taskId === itemId && a.done && a.date <= today).map((a) => a.date),
+      ...appointmentsFor(state.appointments, viewer)
+        .filter((a) => a.taskId === itemId && a.done && a.date <= today)
+        .map((a) => a.date),
     ].filter((d): d is ISODate => !!d && d <= today)
     for (const at of dates) {
       const until = v.months ? addMonths(at, v.months) : addDays(at, v.days ?? 28)

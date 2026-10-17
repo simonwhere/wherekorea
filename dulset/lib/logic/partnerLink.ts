@@ -18,7 +18,10 @@ import type { AppState, CoupleLink, ISODateTime } from '../types'
 
 // ── The record ──────────────────────────────────────────────
 
-/** A link lives this long (supabase/schema.sql issue_token's default). */
+/**
+ * A link lives this long after her phone last opened 둘셋 (supabase/schema.sql
+ * issue_token's and extend_token's default; renewedExpiry moves it each day).
+ */
 export const LINK_DAYS = 30
 /** The path of the partner page in the static export (app/link/page.tsx). */
 export const LINK_PATH = '/link/'
@@ -123,6 +126,48 @@ export function linkStatus(link: Pick<LinkRecord, 'expiresAt' | 'revokedAt'> | n
   if (link.revokedAt) return 'revoked'
   if (wall(nowISO) >= wall(link.expiresAt)) return 'expired'
   return 'active'
+}
+
+/**
+ * What 설정 › 연결 shows: linkStatus, except that a link her phone revoked
+ * BECAUSE it had expired (lib/useLinkSync tells the transport the first time
+ * it sees an expired link, stamping revokedAt at or after expiresAt) still
+ * reads as expired — it stopped because 둘셋 went unopened for LINK_DAYS, not
+ * because she pressed 링크 해제.
+ */
+export function linkShownStatus(link: Pick<LinkRecord, 'expiresAt' | 'revokedAt'> | null | undefined, nowISO: ISODateTime): LinkStatus {
+  const s = linkStatus(link, nowISO)
+  if (s === 'revoked' && link?.revokedAt && wall(link.revokedAt) >= wall(link.expiresAt)) return 'expired'
+  return s
+}
+
+// ── Renewal (2026-10-17) ────────────────────────────────────
+//
+// The link renews itself while 둘셋 is in use: on each day her phone opens
+// the app (the owner's tab that publishes the snapshot — lib/useLinkSync
+// renewLinkOnTransport), the expiry moves to LINK_DAYS from that day, so a
+// quiet stretch (the 42 days after a loss) never ends it while she still
+// opens 둘셋; LINK_DAYS without opening and it stops. "In use" is HER use
+// only — never his opens or events: 설정 › 연결 shows the expiry, and an
+// expiry that moved when he opened the link would be a read receipt
+// (docs/positioning.md §6).
+
+/**
+ * The renewed expiry (LINK_DAYS from `nowISO`, a local stamp) for an active
+ * link, or null when there is nothing to do: never for a revoked or expired
+ * link (an expired link is not revived — she sends a new one), never shorter
+ * (a `?today=` pinned in the past leaves it alone), and at most once a day
+ * (only while the expiry's date is before today + LINK_DAYS).
+ */
+export function renewedExpiry(
+  link: Pick<LinkRecord, 'expiresAt' | 'revokedAt'> | null | undefined,
+  nowISO: ISODateTime,
+): ISODateTime | null {
+  if (!link || linkStatus(link, nowISO) !== 'active') return null
+  const next = linkExpiry(nowISO)
+  if (wall(next) <= wall(link.expiresAt)) return null
+  if (link.expiresAt.slice(0, 10) >= next.slice(0, 10)) return null
+  return next
 }
 
 /** Whole days left before the link expires (0 on its last day; never negative). */

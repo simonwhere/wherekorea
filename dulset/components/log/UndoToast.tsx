@@ -14,16 +14,19 @@ export const UNDO_MS = 5_000
 /**
  * "기록했어요 · 되돌리기" toast. Lives outside the sheet (portal on <body>) so it
  * outlasts the sheet closing; `data-live-region` keeps it out of the sheet's
- * inert backdrop when another sheet opens meanwhile.
+ * inert backdrop when another sheet opens meanwhile. `actionLabel` names the
+ * button when it does something else than undo (챙길 것: '체크하기').
  */
 export default function UndoToast({
   message,
   onUndo,
   onExpire,
+  actionLabel = '되돌리기',
 }: {
   message: UndoMessage | null
   onUndo: () => void
   onExpire: () => void
+  actionLabel?: string
 }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -43,7 +46,7 @@ export default function UndoToast({
       {message ? (
         <div
           key={message.id}
-          className="pointer-events-auto flex max-w-md items-center gap-1 rounded-full bg-ink py-1 pl-4 pr-1 text-sm font-medium text-bg shadow-lg"
+          className="pointer-events-auto flex max-w-md items-center gap-1 rounded-3xl bg-ink py-1 pl-4 pr-1 text-sm font-medium text-bg shadow-lg"
         >
           <span className="min-w-0 py-1.5">{message.text}</span>
           <button
@@ -51,7 +54,7 @@ export default function UndoToast({
             onClick={onUndo}
             className="h-11 shrink-0 rounded-full px-3 text-sm font-bold text-bg underline underline-offset-2 hover:bg-bg/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-bg"
           >
-            되돌리기
+            {actionLabel}
           </button>
         </div>
       ) : null}

@@ -27,8 +27,9 @@
 //    time, place, title or note. While preparing her bookings stay in the app.
 //
 // What it reads: 챙길 것's own model (plan.planItems — ticks, windows from the
-// due date, the couple's own items), the appointments linked to an item, and
-// `decisions`. Nothing from her cycle, no test result, no personalLog, no
+// due date, the couple's own items), the appointments linked to an item that
+// the viewer may see (never the other member's '나만 보기' one — 2026-10-17),
+// and `decisions`. Nothing from her cycle, no test result, no personalLog, no
 // '나만 보기' — so the view never moves with anything she logs privately.
 // Pregnancy weeks / the due date are known to both once the stage is pregnant
 // (she switched it), which is all the windows need.
@@ -42,6 +43,7 @@ import { ROADMAP, planKey } from '../content/roadmap'
 import { addDays, diffDays, formatKo, isISODate } from '../dates'
 import { decide, isLive, undecide } from '../sync/model'
 import type { AppState, ISODate, MemberId, RoadmapPhase } from '../types'
+import { appointmentsFor } from './appointments'
 import { mondayOf } from './checks'
 import { linkedAppointment, planItems, tickSince, type PlanItem } from './plan'
 import { STAGE_PHASES, ownersOf, type ItemStatus, type RoadmapKind } from './roadmap'
@@ -284,7 +286,9 @@ export function togetherRow(state: AppState, today: ISODate, viewer: MemberId, i
   const quiet = !isISODate(today) || weekQuiet(state, today)
   const whose = whoseFor(item, viewer)
   const carrier = carrierOf(state)
-  const booked = linkedAppointment(state.appointments, item.id, today)
+  // Only a booking the viewer may see dates the row: the other member's
+  // '나만 보기' appointment never moves it (appointments.appointmentsFor).
+  const booked = linkedAppointment(appointmentsFor(state.appointments, viewer), item.id, today)
   const base = {
     id: item.id,
     custom: item.custom,
@@ -549,6 +553,8 @@ export function linkTogether(
   const datesFromBookings = state.stage !== 'preparing'
   const doneFrom = addDays(today, -(DONE_SHOWN_DAYS - 1))
   const skip = new Set(opts.exclude ?? [])
+  // His side: her '나만 보기' appointments date nothing here (appointments.appointmentsFor).
+  const bookings = appointmentsFor(state.appointments, partnerId)
   const open: Array<Ranked & { it: LinkTogetherItem }> = []
   const done: Array<Ranked & { it: LinkTogetherItem }> = []
   planItems(state, today).forEach((item, idx) => {
@@ -556,7 +562,7 @@ export function linkTogether(
     const whose = whoseFor(item, partnerId)
     if (whose === 'mine') return
     if (item.status !== 'done' && (item.pending || item.lapsed)) return
-    const booked = datesFromBookings ? linkedAppointment(state.appointments, item.id, today)?.date : undefined
+    const booked = datesFromBookings ? linkedAppointment(bookings, item.id, today)?.date : undefined
     const n = neutralStatus(item, today, booked)
     if (!n) return
     if (n.date && diffDays(today, n.date) > NEAR_DAYS) return

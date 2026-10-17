@@ -1,12 +1,19 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { Button, Field, Sheet, inputClass, textareaClass, useToast } from '@/components/ui'
+import { Button, Field, Sheet, Toggle, inputClass, textareaClass, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { templateById } from '@/lib/content/roadmap'
 import { addDays, formatKo, isISODate } from '@/lib/dates'
-import { APPOINTMENT_KIND_LABEL, addAppointment, needsTime, updateAppointment } from '@/lib/logic/appointments'
+import {
+  APPOINTMENT_KIND_LABEL,
+  addAppointment,
+  hasAppointmentNotice,
+  needsTime,
+  privateOwner,
+  updateAppointment,
+} from '@/lib/logic/appointments'
 import { useApp } from '@/lib/store'
 import { APPOINTMENT_KINDS, type Appointment, type AppointmentKind } from '@/lib/types'
 import { ChoiceChips, FieldError } from './bits'
@@ -36,8 +43,10 @@ const ERROR_TEXT: Record<DraftError, string> = {
 }
 
 /**
- * Add or edit a shared appointment (병원·검사·접종·신청). Both phones see it,
- * and reminders go out the day before / the morning of.
+ * Add or edit an appointment (병원·검사·접종·신청). Both phones see it — unless
+ * the person going keeps their own one '나만 보기' ('{partner}님에게도 보여요'
+ * off, Appointment.privateTo; on by default, 2026-10-17) — and reminders go
+ * out the day before / the morning of.
  */
 export default function AppointmentSheet({
   initial,
@@ -53,6 +62,8 @@ export default function AppointmentSheet({
   const toast = useToast()
   const errorId = useId()
   const [draft, setDraft] = useState<AppointmentDraft>(initial)
+  // '{partner}님에게도 보여요' — on (shared) unless the appointment being edited is already '나만 보기' for me.
+  const [shared, setShared] = useState(() => !editing || privateOwner(editing) !== me.id)
   const [error, setError] = useState<DraftError | null>(null)
   const [a, b] = state.couple.members
   // Past visits count too (a test already taken, a clinic day written up at night).
@@ -60,9 +71,19 @@ export default function AppointmentSheet({
   const task = draft.taskId ? (templateById(draft.taskId) ?? state.customTasks.find((c) => c.id === draft.taskId)) : undefined
 
   const timed = needsTime(draft.kind)
+  // The choice is the person going's, on their own appointment only: '둘 다'
+  // is always shared, and so is the other person's visit.
+  const mine = draft.who === me.id
+  const privateTo = mine && !shared ? me.id : undefined
+  // Already told (the day-before heads-up went to {partner} while it was
+  // shared): the 🔔 one goes with the switch (updateAppointment), but a phone
+  // notification already shown cannot be taken back — so the line says '앞으로'.
+  const told = !!editing && hasAppointmentNotice(state, editing.id, partner.id)
 
   const set = <K extends keyof AppointmentDraft>(key: K, value: AppointmentDraft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }))
+    // Switching who to '둘 다' or to the other person shares it again.
+    if (key === 'who' && value !== me.id) setShared(true)
     if (error === key || (key === 'time' && error === 'time-required') || (key === 'kind' && error === 'time-required')) setError(null)
   }
 
@@ -80,13 +101,15 @@ export default function AppointmentSheet({
       kind: draft.kind,
       note: draft.note,
       taskId: draft.taskId,
+      // Always sent: undefined shares an edited one again (updateAppointment).
+      privateTo,
     }
     if (editing) {
       update((s) => updateAppointment(s, editing.id, { ...input, time: draft.time }))
       toast.show('일정을 고쳤어요')
     } else {
       update((s) => addAppointment(s, input, me.id))
-      toast.show(`${partner.name}님 화면에도 보여요`)
+      toast.show(privateTo ? '나만 보는 일정으로 넣었어요' : `${partner.name}님 화면에도 보여요`)
     }
     onClose()
   }
@@ -109,6 +132,8 @@ export default function AppointmentSheet({
           kind: draft.kind,
           note: draft.note,
           taskId: draft.taskId,
+          // The copy keeps '나만 보기' as the form has it now.
+          privateTo,
         },
         me.id,
       ),
@@ -196,6 +221,28 @@ export default function AppointmentSheet({
               { value: b.id, label: b.name },
             ]}
           />
+          {mine ? (
+            // '나만 보기' (2026-10-17): on = shared (the default, as before); off = only me.
+            <div className="mt-2 rounded-xl border border-line px-3" data-share-toggle>
+              <Toggle
+                checked={shared}
+                onChange={setShared}
+                label={`${partner.name}님에게도 보여요`}
+                description={
+                  shared ? undefined : (
+                    <span className="inline-flex items-start gap-1">
+                      <Icon name="lock" className="mt-px h-3.5 w-3.5 text-ink-2" strokeWidth={2} />
+                      <span>
+                        {told
+                          ? `앞으로 ${partner.name}님 화면·알림·링크에 나오지 않아요. 이미 폰에 뜬 알림은 남을 수 있어요`
+                          : `${partner.name}님 화면·알림·링크에 나오지 않아요`}
+                      </span>
+                    </span>
+                  )
+                }
+              />
+            </div>
+          ) : null}
         </div>
 
         <div>
@@ -232,7 +279,8 @@ export default function AppointmentSheet({
             {draft.who === 'both' ? '둘 다' : draft.who === me.id ? '나' : `${partner.name}님`}
             에게 <b className="font-semibold text-ink">{isISODate(draft.date) ? formatKo(draft.date) : '그날'}</b> 전날과 당일에 알림이
             가요.
-            {draft.who !== 'both' ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
+            {/* A '나만 보기' one tells no one else — never promise the heads-up then. */}
+            {draft.who !== 'both' && !privateTo ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
           </span>
         </div>
 

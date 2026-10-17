@@ -776,6 +776,9 @@ export function sanitizeBackup(raw: AppState): AppState | null {
       if (raw.time !== undefined) a.time = raw.time
       if (raw.done === true) a.done = true
       for (const k of ['place', 'note', 'taskId']) if (isStr(raw[k])) a[k] = raw[k]
+      // '나만 보기': only on the person's own appointment (appointments.privateOwner) —
+      // a mark on '둘이 함께' or on the other person's visit would hide it from them.
+      if (isMemberId(raw.privateTo) && raw.privateTo === raw.who) a.privateTo = raw.privateTo
       for (const k of ['updatedAt', 'deletedAt']) if (isStamp(raw[k])) a[k] = raw[k]
       return a as unknown as Appointment
     }),

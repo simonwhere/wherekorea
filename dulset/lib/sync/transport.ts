@@ -15,6 +15,11 @@
 // partnerSnapshot.applyReceivedEvents), so a reply is never lost because her
 // phone stayed closed for a few days.
 //
+// Since 2026-10-17 the share token renews itself while 둘셋 is in use: her
+// phone, after a publish, asks the transport to extend the live token
+// (extendToken, at most once a day — lib/logic/partnerLink.renewedExpiry), so
+// the link only stops after LINK_DAYS without her opening the app.
+//
 // The '링크 연 날' counter (N25 decision 2026-10-03, lib/sync/linkOpens.ts):
 // the partner's page records that the link was opened today
 // (recordLinkOpen — the token and nothing else; the transport files it as
@@ -114,6 +119,17 @@ export interface Transport {
    * on first use anyway, so the owner's phone need not call this.
    */
   issueToken?(coupleId: string, token: string, days?: number): Promise<ISODateTime>
+  /**
+   * Optional: renew a LIVE share token (known, this couple's, not revoked,
+   * not expired) to `days` from now — never shorter. Returns the expiry the
+   * transport keeps, or null when the token is not live there (an expired or
+   * revoked link is never revived: she sends a new one). The owner's phone
+   * calls it while 둘셋 is in use (lib/useLinkSync renewLinkOnTransport, at
+   * most once a day); never on the partner's side — his opens must not move
+   * the expiry her 설정 › 연결 shows (that would be a read receipt).
+   * Not issueToken: issuing upserts and would un-revoke a revoked token.
+   */
+  extendToken?(coupleId: string, token: string, days?: number): Promise<ISODateTime | null>
   /**
    * Optional: the link stops working at once — the partner's next fetch gets
    * null (lib/useLinkSync revokeOnTransport; 설정 › 연결 → 링크 해제 and a

@@ -13,7 +13,8 @@
 --
 -- Honest limits of this stage (no auth yet):
 --   • the share token IS the secret for reading a snapshot and sending
---     events — a leaked link reads until it expires (≤ 90 days) or she revokes it;
+--     events — a leaked link reads until it expires (30 days after her phone
+--     last used the app, extend_token; ≤ 90 days per renewal) or she revokes it;
 --   • the owner key IS the secret for publishing and pulling — it lives in
 --     her phone's localStorage; a wiped browser loses it (a new couple id is
 --     created; the old link dies). No way to recover it — by design, for now;
@@ -50,6 +51,8 @@ revoke execute on function public.dulset_cleanup() from public, anon, authentica
 grant execute on function public.create_couple(text, uuid) to anon, authenticated;
 grant execute on function public.delete_couple(text, uuid) to anon, authenticated;
 grant execute on function public.issue_token(text, uuid, text, integer) to anon, authenticated;
+-- The link renews itself while her phone keeps using 둘셋 (live tokens only, never shorter).
+grant execute on function public.extend_token(text, uuid, text, integer) to anon, authenticated;
 grant execute on function public.revoke_token(text, uuid, text) to anon, authenticated;
 grant execute on function public.publish_snapshot(text, uuid, text, jsonb, timestamptz) to anon, authenticated;
 grant execute on function public.pull_events(text, uuid, timestamptz) to anon, authenticated;

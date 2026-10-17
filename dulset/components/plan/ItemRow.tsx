@@ -6,9 +6,11 @@ import { Icon } from '@/components/ui/icons'
 import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
 import { ROADMAP_AUDIT } from '@/lib/content/roadmap'
 import { formatShort, isISODate } from '@/lib/dates'
+import { appointmentsFor, privateOwner } from '@/lib/logic/appointments'
 import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Appointment, MemberId } from '@/lib/types'
+import { OnlyMeMark } from './AppointmentList'
 import { CheckBox, ExternalLink, Owners, Pill, btnDanger, btnGhost, btnSecondary } from './bits'
 import SupportButton from './SupportButton'
 import { togetherRow, type TogetherItem } from '@/lib/logic/together'
@@ -117,7 +119,9 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
   const neutral = row.whose === 'theirs'
   const pill = neutral ? neutralPill(row) : statusPill(item, state.stage)
   const cd = neutral ? undefined : countdown(item, today)
-  const appt = linkedAppointment(state.appointments, item.id, today)
+  // Only a booking I may see: the other person's '나만 보기' one is not here at all — no
+  // '예약됨' on my row, and [일정 잡기] as if there were none (appointments.appointmentsFor).
+  const appt = linkedAppointment(appointmentsFor(state.appointments, me.id), item.id, today)
   const t = item.template
   // lib/content/data audit: false until a person has checked the item against its official original ('미확인').
   const unverified = !!t && ROADMAP_AUDIT[t.id]?.verified === false
@@ -166,8 +170,9 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
         </p>
         {/* What the 함께하는 사람 can do to share it, and [같이 할게요] (together.ts). */}
         {/* Not on one whose time went by (a lapsed window; her passed deadline reads as nothing on his screen). */}
+        {/* Once said, '같이 하기로 했어요' + [취소] takes its own line under the support text (lib/content/supportCopy). */}
         {row.support && !quiet && !done && !item.lapsed && !(neutral && item.status === 'overdue') ? (
-          <div className="mt-1 flex items-center gap-2" data-support-line>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2" data-support-line>
             <p className="flex min-w-0 flex-1 items-start gap-1.5 text-xs leading-relaxed text-ink-2">
               <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />
               <span className="min-w-0">
@@ -175,7 +180,13 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
                 {row.support}
               </span>
             </p>
-            <SupportButton itemId={item.id} title={item.title} supported={row.supported} canSupport={row.canSupport} />
+            <SupportButton
+              itemId={item.id}
+              short={row.short}
+              supported={row.supported}
+              canSupport={row.canSupport}
+              saidClassName="-mb-1 basis-full pl-5"
+            />
           </div>
         ) : null}
         {/* Her screen: his [같이 할게요] on this item. */}
@@ -219,6 +230,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               {appt.time ? ` ${appt.time}` : ''} 예약됨
             </button>
           ) : null}
+          {appt && !done && privateOwner(appt) === me.id ? <OnlyMeMark /> : null}
         </div>
 
         {compact ? null : (

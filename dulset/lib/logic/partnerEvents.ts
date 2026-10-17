@@ -70,6 +70,7 @@ import { addDays, diffDays, formatKo, isISODate } from '../dates'
 import { applyHabitAnswers, type HabitPatch } from '../initial'
 import { decide, decided, isLive } from '../sync/model'
 import type { AlertStyle, Appointment, AppState, ISODate, MemberId } from '../types'
+import { appointmentsFor } from './appointments'
 import { isDone, isWeekly, nudgeableItem, weeklyDone } from './checks'
 import { canNudge, mergeNotices, sendCheer, sendNudge } from './notifications'
 import { PARTNER_SETUP_KEY } from './onboarding'
@@ -338,7 +339,7 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
       // Only fixed values got through cleanPartnerEvent; they are his own rows and his own alert style.
       return null
     case 'join-appointment': {
-      const a = joinableAppointment(state, ev.appointmentId, today)
+      const a = joinableAppointment(state, ev.appointmentId, today, partner)
       if (!a || hasJoinedAppointment(state, a.id, partner)) return 'appointment'
       return null
     }
@@ -484,8 +485,11 @@ export function joinableAppointment(
   state: Pick<AppState, 'appointments' | 'stage' | 'pregnancy' | 'baby' | 'customTasks'>,
   appointmentId: string,
   today: ISODate,
+  member?: MemberId,
 ): Appointment | undefined {
-  const a = state.appointments.find((x) => x.id === appointmentId)
+  // Only one `member` may see: never the other member's '나만 보기' appointment
+  // (a '둘이 함께' one is always shared — this is the belt to that braces).
+  const a = (member ? appointmentsFor(state.appointments, member) : state.appointments).find((x) => x.id === appointmentId)
   if (!a || !isLive(a) || a.done || a.who !== 'both' || !isISODate(a.date) || a.date < today) return undefined
   if (isForEndedPregnancy(state, a)) return undefined
   return a
@@ -510,7 +514,7 @@ export function joinAppointment(
   today: ISODate,
   nowISO: string = stampOn(today),
 ): AppState {
-  const a = joinableAppointment(state, appointmentId, today)
+  const a = joinableAppointment(state, appointmentId, today, member)
   if (!a || hasJoinedAppointment(state, a.id, member)) return state
   const to: MemberId = member === 'a' ? 'b' : 'a'
   const name = memberName(state, member)

@@ -11,7 +11,7 @@ import { Card, cx, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { formatKo } from '@/lib/dates'
-import { APPOINTMENT_KIND_LABEL } from '@/lib/logic/appointments'
+import { APPOINTMENT_KIND_LABEL, privateOwner } from '@/lib/logic/appointments'
 import { recentlyEnded } from '@/lib/logic/pregnancy'
 import { useApp } from '@/lib/store'
 import { LinkButton } from './bits'
@@ -39,10 +39,14 @@ function CardHead({ icon, title, sub, onMore }: { icon: IconName; title: string;
 
 // ── 다가오는 일정 ───────────────────────────────────────────
 
-/** The next two appointments within two weeks (hidden when there are none). */
+/**
+ * The next two appointments within two weeks (hidden when there are none) —
+ * the ones I may see: my own '나만 보기' ones with their lock, never the other
+ * person's (model.homeAppointments with the viewer).
+ */
 export function UpcomingCard({ onNavigate }: { onNavigate: Nav }) {
   const { state, today, me } = useApp()
-  const list = upcomingForToday(homeAppointments(state), today)
+  const list = upcomingForToday(homeAppointments(state, me.id), today)
   if (list.length === 0) return null
   const members = state.couple.members
   const openPlan = () => onNavigate('plan')
@@ -74,6 +78,13 @@ export function UpcomingCard({ onNavigate }: { onNavigate: Nav }) {
                     {a.time ? ` ${a.time}` : ''}
                   </span>
                   <span className="block truncate text-xs text-ink-3">
+                    {privateOwner(a) === me.id ? (
+                      // Mine alone ('나만 보기'): the lock and the words, as in 오늘 할 일 and 챙길 것.
+                      <span className="font-semibold text-ink-2" data-only-me>
+                        <Icon name="lock" className="mr-0.5 inline-block h-3 w-3 align-[-1px]" strokeWidth={2.2} />
+                        나만 보기 ·{' '}
+                      </span>
+                    ) : null}
                     {whoLabel(a.who, members, me.id)}
                     {a.place ? ` · ${a.place}` : ''}
                   </span>

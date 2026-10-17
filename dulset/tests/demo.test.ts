@@ -16,6 +16,7 @@ import {
   DEMO_COUPLE_DAYS,
   DEMO_COVER,
   DEMO_FEEL_DAYS,
+  DEMO_PRIVATE_APPOINTMENT,
   DEMO_START_VIEWER,
   DEMO_TREATMENT,
   PREP_APPLIED_DAYS_AGO,
@@ -47,7 +48,7 @@ import {
   type OnboardingChoices,
 } from '@/lib/demo'
 import { nextAnniversaries } from '@/lib/logic/anniversary'
-import { addAppointment, isValidTime, upcomingAppointments } from '@/lib/logic/appointments'
+import { addAppointment, appointmentsFor, isValidTime, privateOwner, upcomingAppointments } from '@/lib/logic/appointments'
 import { nextKoreanDay } from '@/lib/logic/baby'
 import { CLAIM_KEY } from '@/lib/logic/babyView'
 import { activeItems, coupleStreak, firstCheckedDate, isDone, itemsFor, progress, streak } from '@/lib/logic/checks'
@@ -801,10 +802,24 @@ describe('demo 우리 둘 · 챙길 것', () => {
 
   it('preparing: applied at 보건소 together, then 지은’s check, her dentist, 민수’s test, one task of their own', () => {
     const s = createDemoState(today, NOW, 'preparing')
-    expect(upcomingAppointments(s.appointments, today).map((a) => [a.title, a.who, diffDays(today, a.date)])).toEqual([
+    const ahead = (viewer: 'a' | 'b') =>
+      upcomingAppointments(appointmentsFor(s.appointments, viewer), today).map((a) => [a.title, a.who, diffDays(today, a.date)])
+    // What both of them see (민수's list): the shared ones.
+    expect(ahead('a')).toEqual([
       ['산부인과 임신 전 검사', 'b', 5],
       ['치과 검진·스케일링', 'b', 8],
       ['정액검사', 'a', 12],
+    ])
+    // 지은's list adds her own '나만 보기' one, after the two her home lists (2026-10-17).
+    expect(ahead('b')).toEqual([
+      ['산부인과 임신 전 검사', 'b', 5],
+      ['치과 검진·스케일링', 'b', 8],
+      [DEMO_PRIVATE_APPOINTMENT.title, 'b', DEMO_PRIVATE_APPOINTMENT.daysAhead],
+      ['정액검사', 'a', 12],
+    ])
+    const onlyHers = s.appointments.filter((a) => privateOwner(a) !== undefined)
+    expect(onlyHers.map((a) => [a.title, a.who, a.privateTo, a.kind, a.taskId])).toEqual([
+      [DEMO_PRIVATE_APPOINTMENT.title, 'b', 'b', 'hospital', undefined],
     ])
     expect(Object.keys(s.planDone).sort()).toEqual(['pre-folic', 'pre-habits-partner', 'pre-health-check-support', 'pre-rubella'])
     // 임신 사전건강관리 is applied for at 보건소 *before* the test (no refund for a
@@ -817,7 +832,7 @@ describe('demo 우리 둘 · 챙길 것', () => {
     expect(apply.note).toContain('검사 전에')
     expect(apply.date).toBe(addDays(today, -PREP_APPLIED_DAYS_AGO))
     expect(s.planDone['pre-health-check-support']!.at).toBe(apply.date)
-    const [carrier, , semen] = upcomingAppointments(s.appointments, today)
+    const [carrier, , semen] = upcomingAppointments(appointmentsFor(s.appointments, 'a'), today)
     for (const test of [carrier!, semen!]) {
       expect(test.date > apply.date).toBe(true)
       expect(test.place).not.toContain('보건소')

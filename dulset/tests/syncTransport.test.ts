@@ -118,11 +118,13 @@ describe('mock transport: two tabs over one storage', () => {
     await her.publishSnapshot('couple-1', TOKEN, again)
     expect(await him.fetchSnapshot(TOKEN)).toEqual(again)
     const store = parseMockStore(storage.getItem(MOCK_SYNC_KEY))
+    // His read of the live token took one tick of the shared clock too (it checks the token's end, as
+    // the server's snapshot_by_token asks expires_at > now()), so the second publish is at :02.
     expect(store.snapshots['couple-1']).toMatchObject({
       coupleId: 'couple-1',
       token: TOKEN,
       version: 2,
-      publishedAt: '2026-10-02T09:00:01+09:00',
+      publishedAt: '2026-10-02T09:00:02+09:00',
     })
     expect(store.tokens[TOKEN]).toMatchObject({ coupleId: 'couple-1' })
     expect(storage.keys()).toEqual([MOCK_SYNC_KEY])

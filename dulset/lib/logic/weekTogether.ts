@@ -40,6 +40,7 @@
 import { addDays, isISODate } from '../dates'
 import { decide, isLive, undecide } from '../sync/model'
 import type { AppState, AppointmentKind, ISODate, MemberId } from '../types'
+import { withAppointmentsFor } from './appointments'
 import { isWeekly, mondayOf } from './checks'
 import { gestationalAge, recentlyEnded } from './pregnancy'
 import { isSignal, signalById, signalIdOf } from './signals'
@@ -258,12 +259,16 @@ function coupleSeed(state: Pick<AppState, 'createdAt' | 'couple'>): string {
  * with CLINIC_DAY_OPTION in the third place in a week with a shared
  * appointment. While pregnant: PREGNANT_WEEK_OPTIONS (+ THIRD_TRIMESTER_OPTIONS
  * from 28주, read on the week's Monday), with CHECKUP_DAY_OPTION in the third
- * place in a week with a checkup of hers or of both (sharedCheckupInWeek).
+ * place in a week with a checkup of hers or of both (sharedCheckupInWeek) —
+ * one he may see: her '나만 보기' appointments count for nothing here.
  * Nothing about the cycle goes in. Empty for the cycle owner, in the
  * parenting stage and during the quiet (weekQuiet).
  */
 export function weekOptions(state: AppState, today: ISODate, partnerId: MemberId): WeekOption[] {
   if (!weekTogetherOn(state, today) || tracksCycle(state, partnerId)) return []
+  // The picks are his (both phones and the link draw his): her '나만 보기'
+  // checkup never makes a week a checkup week (appointments.withAppointmentsFor).
+  state = withAppointmentsFor(state, partnerId)
   const week = weekOf(today)
   const pregnant = state.stage === 'pregnant'
   const pool = pregnant

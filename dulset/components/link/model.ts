@@ -19,6 +19,7 @@
 // 것's [같이 할게요] marks (2026-10-09: her items on his page, each with what he
 // can do; a tap reads as said at once, her phone confirms it).
 
+import { SUPPORT_TOAST_OFF, supportToastLinkOn } from '@/lib/content/supportCopy'
 import { diffDays, formatKo, weekdayKo } from '@/lib/dates'
 import type { SetupDrinks, SetupHabits } from '@/lib/logic/partnerEvents'
 import type {
@@ -164,10 +165,13 @@ export function togetherShort(title: string): string {
   return s.length > 18 ? `${s.slice(0, 17)}…` : s
 }
 
-/** The toast after a tap: said, or taken back — and that it reaches her. */
+/**
+ * The toast after a tap: said ('‘국민행복카드’ 같이 하기로 했어요. 지은님에게 전해져요'),
+ * or taken back ('같이 하기를 취소했어요') — the app's button says the same
+ * (lib/content/supportCopy, 2026-10-17).
+ */
 export function supportToast(title: string, on: boolean, ownerName: string): string {
-  const name = togetherShort(title)
-  return on ? `‘${name}’ 같이 할게요. ${ownerName}에게 전해져요` : `‘${name}’ 같이 하기를 취소했어요`
+  return on ? supportToastLinkOn(togetherShort(title), ownerName) : SUPPORT_TOAST_OFF
 }
 
 /**

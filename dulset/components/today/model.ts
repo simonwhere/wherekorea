@@ -3,7 +3,7 @@
 import { ROADMAP } from '@/lib/content/roadmap'
 import { dLabel, diffDays, isISODate } from '@/lib/dates'
 import { daysSince, onThisDay, type AnniversaryEvent } from '@/lib/logic/anniversary'
-import { upcomingAppointments } from '@/lib/logic/appointments'
+import { appointmentsFor, sharedAppointments, upcomingAppointments } from '@/lib/logic/appointments'
 import {
   activeDailyItems,
   activeWeeklyItems,
@@ -32,7 +32,12 @@ export function upcomingForToday(list: Appointment[], today: ISODate): Appointme
 const PREGNANCY_PHASES: readonly RoadmapPhase[] = ['pregnancy-1st', 'pregnancy-2nd', 'pregnancy-3rd']
 
 /**
- * Appointments the home screen may show for the couple's current stage.
+ * Appointments the home screen may show `viewer` for the couple's current stage.
+ *
+ * Only the ones `viewer` may see (lib/logic/appointments appointmentsFor):
+ * the other member's '나만 보기' appointments are not there at all. Without a
+ * viewer, every '나만 보기' appointment is left out (a caller that does not
+ * say who is looking never shows one).
  *
  * While preparing, visits booked for a pregnancy (정밀초음파, 조리원 상담 …)
  * belong to a pregnancy that isn't happening now — typically one that ended —
@@ -42,9 +47,11 @@ const PREGNANCY_PHASES: readonly RoadmapPhase[] = ['pregnancy-1st', 'pregnancy-2
  */
 export function homeAppointments(
   state: Pick<AppState, 'stage' | 'pregnancy' | 'baby' | 'appointments'>,
+  viewer?: MemberId,
   templates: readonly RoadmapTemplate[] = ROADMAP,
 ): Appointment[] {
-  if (state.stage !== 'preparing') return state.appointments
+  const seen = viewer ? appointmentsFor(state.appointments, viewer) : sharedAppointments(state.appointments)
+  if (state.stage !== 'preparing') return seen
   const p = state.pregnancy
   const bornFromIt = !!p && !!state.baby && state.baby.birthDate >= p.lmp
   const hidden = new Set(
@@ -52,7 +59,7 @@ export function homeAppointments(
       .filter((t) => PREGNANCY_PHASES.includes(t.phase) || (t.phase === 'birth' && !!p?.endedAt && !bornFromIt))
       .map((t) => t.id),
   )
-  return state.appointments.filter((a) => !a.taskId || !hidden.has(a.taskId))
+  return seen.filter((a) => !a.taskId || !hidden.has(a.taskId))
 }
 
 /** '오늘' · '내일' · 'D-5'. */

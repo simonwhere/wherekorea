@@ -28,7 +28,7 @@ import type {
   TreatmentKind,
   TreatmentOutcome,
 } from '../types'
-import { APPOINTMENT_KIND_LABEL } from './appointments'
+import { APPOINTMENT_KIND_LABEL, appointmentsFor } from './appointments'
 import { confidenceLabel, cycleHistory, type CycleHistoryRow } from './calendarView'
 import { activeItems } from './checks'
 import { clinicSince } from './clinic'
@@ -336,9 +336,10 @@ function checkupsOf(state: Pick<AppState, 'planDone' | 'milestones'>, members: r
   return out.sort((x, y) => (x.doneAt < y.doneAt ? -1 : x.doneAt > y.doneAt ? 1 : 0))
 }
 
-function appointmentsOf(state: Pick<AppState, 'appointments'>, today: ISODate): SummaryAppointment[] {
+/** The clinic appointments of the last months that `viewer` may see (never the other member's '나만 보기' one). */
+function appointmentsOf(state: Pick<AppState, 'appointments'>, viewer: MemberId, today: ISODate): SummaryAppointment[] {
   const from = addMonths(today, -CLINIC_APPOINTMENT_MONTHS)
-  return state.appointments
+  return appointmentsFor(state.appointments, viewer)
     .filter((a) => isISODate(a.date) && a.date <= today && a.date >= from)
     .sort((a, b) => -byDateTime(a, b))
     .map((a) => ({
@@ -417,7 +418,7 @@ export function clinicSummary(state: AppState, viewer: MemberId, today: ISODate,
     includesLH: includeLH,
     medications: medicationsOf(state, members),
     checkups: checkupsOf(state, members),
-    appointments: appointmentsOf(state, today),
+    appointments: appointmentsOf(state, viewer, today),
     treatments: treatments.map(treatmentRow),
     ...(treatments.length ? { support: supportCounts(state) } : {}),
     leave: leaveOf(state, members, today),

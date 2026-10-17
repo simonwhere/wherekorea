@@ -238,6 +238,7 @@ export function createInitialState(input: OnboardingInput, now = new Date()): Ap
     growth: [],
     milestones: [],
     anniversaries: [],
+    // Each appointment starts shared; '나만 보기' (privateTo) is set per appointment.
     appointments: [],
     planDone: {},
     customTasks: [],

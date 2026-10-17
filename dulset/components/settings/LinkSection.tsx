@@ -2,7 +2,9 @@
 
 // 설정 › 연결 (Next A ①): the link she sends so the partner sees his page
 // without installing anything — make it, send it (the share sheet, 카카오톡
-// is on it; else copy), see when it expires, replace it, stop it — and, in
+// is on it; else copy), see when it expires (it renews itself while 둘셋 is
+// in use on this phone and stops after LINK_DAYS unopened — lib/useLinkSync
+// renewLinkOnTransport; his opens never move it), replace it, stop it — and, in
 // plain words, what the link carries and what never leaves this phone
 // (lib/logic/partnerSnapshot). Below it, the prototype's own ways to see
 // the other person's screen (⇄, two tabs) and the simulated 초대 코드.
@@ -32,6 +34,7 @@ import { TRANSPORT_LABEL } from '@/lib/sync/transport'
 import {
   LINK_DAYS,
   linkDaysLeft,
+  linkShownStatus,
   linkStatus,
   revokeLink,
   rotateLink,
@@ -80,6 +83,8 @@ export default function LinkSection() {
   const sync = useLinkSyncStatus()
   const now = stampOn(today)
   const status = linkStatus(link, now)
+  // What the box says: a link her phone revoked because it had expired still reads as stopped (not as 해제).
+  const shown = linkShownStatus(link, now)
   const isOwner = me.id === cycleOwner.id
   // The link is always for the person who does not track the cycle.
   const other = state.couple.members.find((m) => m.id !== cycleOwner.id) ?? partner
@@ -185,32 +190,45 @@ export default function LinkSection() {
         ) : (
           <>
             <div
-              className={cx('mt-3 flex items-start gap-2.5 rounded-xl p-3', status === 'active' ? 'bg-ok-soft' : 'bg-surface-2')}
+              className={cx('mt-3 flex items-start gap-2.5 rounded-xl p-3', shown === 'active' ? 'bg-ok-soft' : 'bg-surface-2')}
               role="status"
-              data-link-status={status}
+              data-link-status={shown}
             >
-              <Icon name={status === 'active' ? 'link' : 'clock'} className="mt-0.5 h-5 w-5 shrink-0 text-ink-2" />
+              <Icon name={shown === 'active' ? 'link' : 'clock'} className="mt-0.5 h-5 w-5 shrink-0 text-ink-2" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink">
-                  {status === 'active'
-                    ? `링크가 열려 있어요 · ${isISODate(expiresOn) ? formatKo(expiresOn, { weekday: false }) : ''}까지 (D-${daysLeft})`
-                    : status === 'expired'
-                      ? '링크가 만료됐어요'
-                      : status === 'revoked'
-                        ? '링크를 해제했어요'
-                        : orphan
-                          ? '이 폰에는 링크 토큰이 없어요'
-                          : '아직 링크가 없어요'}
+                  {shown === 'active' ? (
+                    <>
+                      링크가 열려 있어요 · {isISODate(expiresOn) ? formatKo(expiresOn, { weekday: false }) : ''}까지{' '}
+                      <span className="whitespace-nowrap">(D-{daysLeft})</span>
+                    </>
+                  ) : shown === 'expired' ? (
+                    // The same word as his screen (components/link/model.ts noticeCopy).
+                    '링크가 만료됐어요'
+                  ) : shown === 'revoked' ? (
+                    '링크를 해제했어요'
+                  ) : orphan ? (
+                    '이 폰에는 링크 토큰이 없어요'
+                  ) : (
+                    '아직 링크가 없어요'
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-                  {status === 'active'
+                  {shown === 'active'
                     ? sync.publishedAt
                       ? `마지막 전송 ${timeKo(sync.publishedAt)}${sync.pulledAt ? ` · 마지막 확인 ${timeKo(sync.pulledAt)}` : ''}`
                       : '첫 화면을 준비하고 있어요'
                     : orphan
                       ? `전에 만든 링크가 있지만(${isISODate(stateLink.expiresAt.slice(0, 10)) ? formatKo(stateLink.expiresAt.slice(0, 10), { weekday: false }) : ''}까지) 이 폰에서는 쓸 수 없어요. 새 링크를 만들어 ${other.name}님에게 다시 보내 주세요.`
-                      : `링크는 ${LINK_DAYS}일 동안 열리고, 언제든 바꾸거나 해제할 수 있어요.`}
+                      : shown === 'expired'
+                        ? `링크는 내가 둘셋을 ${LINK_DAYS}일 동안 안 열면 만료돼요. 새 링크를 만들어 ${other.name}님에게 다시 보내 주세요.`
+                        : `링크는 내가 둘셋을 쓰는 동안 저절로 연장되고, ${LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요. ${other.name}님이 링크를 여는 것과는 상관없어요. 언제든 바꾸거나 해제할 수 있어요.`}
                 </p>
+                {shown === 'active' ? (
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-2" data-link-renew>
+                    내가 둘셋을 쓰는 동안 저절로 연장돼요 · {LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요
+                  </p>
+                ) : null}
                 {sync.error ? <p className="mt-0.5 text-xs text-warn">{sync.error}</p> : null}
               </div>
             </div>
@@ -312,7 +330,7 @@ export default function LinkSection() {
             ))}
           </ul>
           <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
-            이 링크는 {other.name}님에게만 보내요. 링크가 있는 사람은 만료 전까지 이 화면을 볼 수 있어요.
+            이 링크는 {other.name}님에게만 보내요. 링크가 있는 사람은 링크가 열려 있는 동안 이 화면을 볼 수 있어요.
           </p>
         </div>
       </Card>
