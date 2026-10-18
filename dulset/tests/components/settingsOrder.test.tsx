@@ -79,7 +79,8 @@ describe('설정 › 첫 화면 while preparing (N27)', () => {
     const toggle = within(home).getByRole('switch', { name: /기념일 알림/ })
     expect(toggle.getAttribute('aria-checked')).toBe('false')
     expect(within(home).queryByRole('switch', { name: /N년 전 오늘/ })).toBeNull()
-    expect(home.textContent).toContain('우리 탭(기록장)')
+    // No pointer line to where the switch went (2026-10-18 copy sweep: no explaining lines).
+    expect(home.textContent).not.toContain('우리 탭(기록장)')
     fireEvent.click(toggle)
     expect(probe.current.state!.settings.anniversaryAlerts).toBe(true)
   })

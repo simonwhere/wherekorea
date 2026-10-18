@@ -7,7 +7,7 @@
 // 준비 (his own progress, no zeros) and, when she sent one, her [고마워요] for
 // the rest of the week. A pick is a 'week-pick' event, [했어요] a 'week-done'
 // event — ids and a date only. What he picked is not shown to her; only
-// [했어요] is (her home's '이번 주 민수님'). Nothing here is shown in the quiet
+// [했어요] is (her home's '이번 주 민수님'). No helper lines under the title. Nothing here is shown in the quiet
 // after a loss: the snapshot carries no week then.
 
 import { useState } from 'react'
@@ -56,14 +56,11 @@ export default function LinkWeek({
             <Icon name="check" className="h-5 w-5 shrink-0 text-ok" strokeWidth={2.6} />
             <span className="min-w-0">{week.doneText ?? picked?.text}</span>
           </p>
-          <p className="mt-1 text-[13px] leading-[1.5] text-ink-2">이번 주 하나를 했어요. 다음 주 월요일에 새로 골라요.</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-ink-2">다음 주 월요일에 새로 골라요</p>
         </div>
       ) : choosing ? (
         <>
           <h3 className="mt-1 text-[17px] font-extrabold tracking-[-0.03em] text-ink">이번 주 내가 맡을 것 하나</h3>
-          <p className="mt-0.5 text-[12.5px] leading-[1.5] text-ink-3">
-            셋 중 하나를 골라요. 고른 건 {ownerName}님에게 보이지 않고, [했어요]를 누르면 전해져요.
-          </p>
           <div role="group" aria-label="이번 주 맡을 것" className="mt-3 grid gap-2">
             {week.options.map((o) => {
               const on = o.id === week.pick
@@ -101,7 +98,6 @@ export default function LinkWeek({
       ) : picked ? (
         <>
           <h3 className="mt-1 text-[17px] font-extrabold tracking-[-0.03em] text-ink">{picked.text}</h3>
-          <p className="mt-0.5 text-[12.5px] leading-[1.5] text-ink-3">이번 주 안에 하면 돼요. 하고 나서 눌러 주세요.</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Pill tone="primary" icon="check" onClick={onDone}>
               했어요

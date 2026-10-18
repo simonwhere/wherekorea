@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 // pitch (가임기 예상 알림 …), so this route overrides it. The page is also kept
 // out of search indexes: it is one couple's, behind a token.
 const TITLE = '둘셋'
-const DESCRIPTION = '설치 없이 보는 화면이에요. 받은 링크로 열어 주세요.'
+const DESCRIPTION = '설치 없이 바로 열려요.'
 
 export const metadata: Metadata = {
   title: TITLE,

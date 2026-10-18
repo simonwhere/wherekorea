@@ -1,6 +1,6 @@
 'use client'
 
-// '매주 이 시간에 알려 받기' on the partner page (Now 3 N31) — the one weekly
+// '매주 이 시간에 알림 받기' on the partner page (Now 3 N31) — the one weekly
 // prompt that needs no server (docs/positioning.md §4 #7): he picks a day,
 // and his phone's own calendar gets a repeating event '둘셋 · 이번 주 우리'
 // (lib/logic/ics weeklyLinkIcs — RRULE FREQ=WEEKLY, no health word, nothing
@@ -45,17 +45,14 @@ export default function LinkWeekly({
   const [day, setDay] = useState<WeeklyDay>(() => weeklyDayOf(today))
   return (
     <section
-      aria-label="매주 이 시간에 알려 받기"
+      aria-label="매주 이 시간에 알림 받기"
       className={cx('rounded-card bg-surface px-[18px] py-4 shadow-warm dark:border dark:border-line/70 dark:shadow-none', className)}
     >
       <p className="flex items-center gap-1.5 text-[12.5px] font-bold tracking-[-0.01em] text-brand-ink">
         <Icon name="cal" className="h-4 w-4 shrink-0" />
-        매주 이 시간에 알려 받기
+        매주 이 시간에 알림 받기
       </p>
-      <p className="mt-1 text-[13px] leading-[1.55] text-ink-2">
-        고른 요일 {timeWords(WEEKLY_LINK_DEFAULT_TIME)}에 휴대폰 캘린더가 ‘둘셋 · 이번 주 우리’를 알려 줘요. 링크의 비밀 주소는 넣지 않아요.
-      </p>
-      <div role="group" aria-label="알려 받을 요일" className="mt-3 grid grid-cols-7 gap-1">
+      <div role="group" aria-label="알림 받을 요일" className="mt-3 grid grid-cols-7 gap-1">
         {WEEKLY_DAYS.map((d) => {
           const on = d === day
           return (
@@ -81,7 +78,7 @@ export default function LinkWeekly({
           캘린더에 넣기
         </Pill>
         <span className="text-[12px] text-ink-3">
-          매주 {WEEKLY_DAY_LABEL[day]}요일 {timeWords(WEEKLY_LINK_DEFAULT_TIME)} · 이 폰에서 열면 바로 보여요
+          매주 {WEEKLY_DAY_LABEL[day]}요일 {timeWords(WEEKLY_LINK_DEFAULT_TIME)}
         </span>
       </div>
     </section>

@@ -7,7 +7,6 @@
 // checkboxes sit on one screen. Copy and the legal notes live in ./consentCopy.
 
 import { cx } from '@/components/ui'
-import { Icon, type IconName } from '@/components/ui/icons'
 import { draftNames, draftOwner, type OnboardingDraft } from '@/lib/onboardingDraft'
 import {
   GeneralConsentNotice,
@@ -39,28 +38,13 @@ export default function ConsentStep({
   const owner = draftOwner(draft)
   const iAmOwner = owner === 'a'
   const partner = names.b
-  const points: Array<{ icon: IconName; text: string }> = [
-    { icon: 'phone', text: '지금은 이 기기에만 저장해요. 서버가 없고, 동의하기 전에는 아무것도 저장하지 않았어요.' },
-    { icon: 'users', text: `체크 현황, 할 일, 신호, 병원 일정은 함께 봐요. 날짜를 얼마나 보여 줄지는 ${names[owner]}님이 정해요.` },
-    { icon: 'trash', text: '기록은 직접 지울 때까지만 보관해요. 설정에서 한 번에 지울 수 있어요.' },
-  ]
 
   return (
     <div className="space-y-4">
-      <ul className="space-y-2 rounded-xl2 border border-line bg-surface p-3.5 shadow-card">
-        {points.map((p) => (
-          <li key={p.icon} className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-2">
-            <Icon name={p.icon} className="mt-px h-[18px] w-[18px] shrink-0 text-ink-2" />
-            <span>{p.text}</span>
-          </li>
-        ))}
-      </ul>
-
       {iAmOwner ? (
         <fieldset className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-          <legend className="float-left mb-1 w-full text-sm font-bold text-ink">{partner}님에게 보여 줄 것</legend>
-          <p className="mb-3 text-xs leading-relaxed text-ink-3">내 주기 기록이라 내가 정해요. 설정 › 공유 범위에서 언제든 바꿀 수 있어요.</p>
-          <div className="grid gap-2">
+          <legend className="float-left mb-3 w-full text-sm font-bold text-ink">{partner}님에게 보여 줄 것</legend>
+          <div className="clear-both grid gap-2">
             {SHARE_OPTIONS.map((o) => {
               const on = share === o.value
               return (
@@ -99,10 +83,7 @@ export default function ConsentStep({
         </fieldset>
       ) : (
         <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-          <p className="text-sm font-bold text-ink">자세한 주기 기록은 {names[owner]}님이 정해요</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-3">
-            처음에는 ‘우리의 주간’만 함께 봐요. 날짜를 얼마나 보여 줄지(날짜 없음 · 우리의 주간 · 자세히)는 {names[owner]}님이 직접 골라요.
-          </p>
+          <p className="text-sm font-bold text-ink">공유 범위는 {names[owner]}님이 정해요</p>
         </div>
       )}
 
@@ -122,8 +103,8 @@ export default function ConsentStep({
       />
 
       <p className="px-1 text-[11px] leading-relaxed text-ink-3">
-        생리·가임기·테스트 결과는 개인정보보호법 제23조의 민감정보라, 다른 동의와 따로 받아요. 가임기는 참고용 예상이라 피임이나
-        진단 목적으로는 쓰지 말아 주세요.
+        생리·가임기·테스트 결과는 개인정보보호법 제23조의 민감정보라서 다른 동의와 따로 받아요. 가임기는 참고용 예상이니 피임이나
+        진단에는 쓰지 마세요.
       </p>
     </div>
   )

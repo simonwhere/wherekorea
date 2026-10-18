@@ -318,7 +318,8 @@ describe('alertPreview', () => {
   it('off and low-pressure send no fertile message', () => {
     expect(alertPreview('off', { lowPressure: false, isCycleOwner: false }).message).toBeNull()
     expect(alertPreview('off', { lowPressure: false, isCycleOwner: false }).note).toContain('숨겨져요')
-    expect(alertPreview('off', { lowPressure: false, isCycleOwner: true }).note).toContain('그대로 볼 수')
+    // Hers says only what stops (no '…은 그대로' reassurance — 2026-10-18 copy sweep).
+    expect(alertPreview('off', { lowPressure: false, isCycleOwner: true }).note).toBe('가임기 알림은 오지 않아요.')
     const low = alertPreview('explicit', { lowPressure: true, isCycleOwner: true, window })
     expect(low.message).toBeNull()
     expect(low.note).toContain('부담 없이')
@@ -343,14 +344,14 @@ describe('alertPreview', () => {
     }
   })
 
-  it('describes the preparing stage by the tabs it has (no 데이트 tab)', () => {
-    expect(STAGE_INFO.preparing.body).not.toContain('데이트')
-    for (const info of Object.values(STAGE_INFO)) expect(info.body).toMatch(/요\.$/)
+  it('names each stage plainly, with no filler line under it (2026-10-18 copy sweep)', () => {
+    expect(Object.values(STAGE_INFO).map((i) => i.label)).toEqual(['임신 준비 중', '임신 중', '육아 중'])
+    for (const info of Object.values(STAGE_INFO)) expect(Object.keys(info).sort()).toEqual(['icon', 'label'])
   })
 
   it('discreet lock screen hides the content', () => {
     const msg = { title: '💞 가임기가 다가왔어요', body: '...' }
-    expect(lockScreenText(msg, true)).toEqual({ title: '둘셋', body: '새 알림이 있어요 💌' })
+    expect(lockScreenText(msg, true)).toEqual({ title: '둘셋', body: '새 알림이 있어요' })
     expect(lockScreenText(msg, false)).toBe(msg)
   })
 })

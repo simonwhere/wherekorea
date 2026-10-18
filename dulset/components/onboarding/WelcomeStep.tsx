@@ -14,9 +14,6 @@ import type { Stage } from '@/lib/types'
 export const WELCOME_LINE = '남편이 같이 하는 임신 준비'
 export const WELCOME_SUB = '기록하는 사람 혼자 챙기지 않게 — 부부·예비부부·사실혼, 함께 준비하는 두 사람 누구나'
 
-/** The fifth promise (review G11), one short line so 시작하기 still sits above the fold at 375×667. */
-const NO_ADS_LINE = '광고도, 추적 SDK도 없어요 · 기록은 이 폰에만'
-
 // Only the preparing couple here: the 임신 중 · 육아 중 examples moved to
 // 설정 › 정보 (N27 — a first look of '커플 앱 + 임신 앱' is not the product).
 const DEMO: { stage: Stage; icon: IconName; label: string } = { stage: 'preparing', icon: 'sprout', label: '준비 중 예시 보기' }
@@ -79,17 +76,13 @@ export default function WelcomeStep({
         </div>
         <p className="mt-3 text-[21px] font-extrabold leading-[1.3] tracking-[-0.035em] text-ink">{WELCOME_LINE}</p>
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-ink-2 [word-break:keep-all]">{WELCOME_SUB}</p>
-        <p className="mt-4 flex items-center gap-2 text-[12.5px] font-semibold leading-[1.45] text-ink-2">
-          <Icon name="ban" className="h-[18px] w-[18px] shrink-0 text-ink-3" strokeWidth={2} />
-          {NO_ADS_LINE}
-        </p>
 
         <Button
           size="lg"
           full
           onClick={onStart}
           // ! because Button's own radius/type classes can sort later in the CSS.
-          className="mt-3.5 h-[54px] !rounded-full !text-[17px] !font-extrabold tracking-[-0.02em]"
+          className="mt-5 h-[54px] !rounded-full !text-[17px] !font-extrabold tracking-[-0.02em]"
         >
           시작하기
         </Button>
@@ -102,10 +95,6 @@ export default function WelcomeStep({
           <h2 id="demo-title" className="text-[14.5px] font-extrabold text-ink">
             예시로 둘러보기
           </h2>
-          <p className="mt-1 text-[12.5px] leading-normal text-ink-3">
-            가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요. 주기를 기록하는 지은님 화면에서 시작하고, 위쪽 ⇄로 민수님
-            화면도 볼 수 있어요. 둘러본 뒤 설정에서 지우고 새로 시작하면 돼요.
-          </p>
           <button
             type="button"
             onClick={() => onDemo(DEMO.stage)}
@@ -114,7 +103,6 @@ export default function WelcomeStep({
             <Icon name={DEMO.icon} className="h-[18px] w-[18px] text-ink-3" />
             {DEMO.label}
           </button>
-          <p className="mt-2 text-[11.5px] leading-normal text-ink-3">임신 중·육아 중 예시는 둘러보는 중에 설정 › 정보에서 열 수 있어요.</p>
         </section>
       </div>
     </main>

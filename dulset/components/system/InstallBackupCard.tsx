@@ -36,9 +36,7 @@ export default function InstallBackupCard() {
           <Icon name="phone" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-ink-2" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-ink">홈 화면에 추가해 두세요</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-              홈 화면에 추가하면 사파리의 7일 삭제를 피할 수 있어요. 알림은 앱이 열려 있을 때만 와요.
-            </p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">브라우저에서는 7일 동안 안 열면 기록이 지워질 수 있어요.</p>
             <p className="mt-1 text-[11px] leading-relaxed text-ink-3">{INSTALL_STEPS[device.platform]}</p>
             {device.canPrompt ? (
               <button type="button" className={rowAction} onClick={() => void install()}>
@@ -58,11 +56,9 @@ export default function InstallBackupCard() {
           <Icon name="box" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-ink-2" />
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-ink">
-              {nudge.kind === 'stale' ? `백업한 지 ${nudge.days}일 지났어요` : '아직 이 기기에서 받은 백업 파일이 없어요'}
+              {nudge.kind === 'stale' ? `백업한 지 ${nudge.days}일 지났어요` : '아직 백업 파일이 없어요'}
             </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-              기록은 이 기기에만 있어요. 일주일에 한 번 백업 파일을 받아 두면 폰을 바꿔도 되살릴 수 있어요.
-            </p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">일주일에 한 번 백업해 두면 폰을 바꿔도 되살릴 수 있어요.</p>
             <button type="button" className={rowAction} onClick={goToBackup}>
               백업하기
             </button>

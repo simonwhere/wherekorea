@@ -318,18 +318,17 @@ export function setTtcStart(state: AppState, date: string | undefined, today: IS
 
 /** The line under "주기 설정" explaining which numbers predictions use right now (the accepted gap follows 긴 주기: 15~90일). */
 export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: number, cycle?: Pick<CycleSettings, 'longCycles'>): string {
-  if (stats.source === 'logs') return '생리 기록이 쌓여서 지금은 기록 평균으로 예상해요. 아래 주기 길이는 기록이 부족할 때만 쓰여요.'
-  if (periodCount >= 2)
-    return `기록 사이 간격이 15~${maxCycleLength(cycle)}일일 때만 평균에 넣어요. 그런 기록이 생기기 전까지는 아래 값으로 예상해요.`
-  return '생리 시작일을 두 번 이상 기록하면 기록으로 평균을 계산해요. 그 전까지는 아래 값으로 예상해요.'
+  if (stats.source === 'logs') return '생리 기록 평균으로 예상해요.'
+  if (periodCount >= 2) return `간격이 15~${maxCycleLength(cycle)}일인 기록만 평균에 넣어요.`
+  return '생리 시작일을 두 번 이상 기록하면 평균으로 예상해요.'
 }
 
 // ── Alert preview ───────────────────────────────────────────
 
 export const ALERT_STYLE_OPTIONS: ReadonlyArray<{ value: AlertStyle; label: string; hint: string }> = [
-  { value: 'explicit', label: '가임기라고 알려 주세요', hint: '예상 날짜와 함께 알려 드려요' },
+  { value: 'explicit', label: '가임기라고 알려 주세요', hint: '예상 날짜와 함께 와요' },
   { value: 'soft', label: '‘우리의 주간’처럼 은근하게', hint: '건강 용어 없이, 둘만의 시간으로' },
-  { value: 'off', label: '받지 않을래요', hint: '가임기 알림만 쉬어요 · 생리 예정·병원 일정 알림은 그대로 와요' },
+  { value: 'off', label: '받지 않을래요', hint: '가임기 알림만 쉬어요' },
 ]
 
 export function alertStyleLabel(style: AlertStyle): string {
@@ -354,21 +353,21 @@ export function alertPreview(
     return {
       message: null,
       // Low-pressure is each person's own choice (prefs.lowPressureFor).
-      note: '부담 없이 모드라 날짜 알림과 카운트다운 없이 지내요. 내 화면과 알림에만 적용돼요. 체크·응원 알림은 그대로 와요.',
+      note: '부담 없이 모드라 날짜 알림과 카운트다운이 없어요. 내 화면과 알림에만 적용돼요.',
     }
   }
   if (style === 'off') {
     return {
       message: null,
       note: opts.isCycleOwner
-        ? '가임기 알림은 오지 않아요. 달력의 예상 표시는 그대로 볼 수 있어요.'
-        : '가임기 알림은 오지 않고, 달력에서도 예상 가임기 표시가 숨겨져요. 체크·응원 알림은 그대로 와요.',
+        ? '가임기 알림은 오지 않아요.'
+        : '가임기 알림이 오지 않고, 달력에서도 예상 가임기 표시가 숨겨져요.',
     }
   }
   if (style === 'soft') {
     return {
       message: { title: SOFT_FERTILE_TITLE, body: softFertileBody(opts.isCycleOwner) },
-      note: '우리의 주간이 시작되기 하루 전에 한 번만, 건강 용어 없이 알려 드려요.',
+      note: '우리의 주간 하루 전에 건강 용어 없이 한 번 와요.',
     }
   }
   const w = opts.window
@@ -379,21 +378,21 @@ export function alertPreview(
         ? `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`
         : '예상 가임기 날짜를 알려 드려요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.',
     },
-    note: '예상 가임기 하루 전과, 가능성이 가장 높은 날들에 알려 드려요.',
+    note: '예상 가임기 하루 전과 가능성이 가장 높은 날에 와요.',
   }
 }
 
 /** Lock-screen version of a notification (discreet mode hides the content). */
 export function lockScreenText(message: { title: string; body: string }, discreet: boolean): { title: string; body: string } {
-  return discreet ? { title: '둘셋', body: '새 알림이 있어요 💌' } : message
+  return discreet ? { title: '둘셋', body: '새 알림이 있어요' } : message
 }
 
 // ── Stage ───────────────────────────────────────────────────
 
-export const STAGE_INFO: Record<Stage, { icon: string; label: string; body: string }> = {
-  preparing: { icon: '🌱', label: '임신 준비 중', body: '두 사람의 매일 체크, 주기 기록, 챙길 것을 함께 보고 있어요.' },
-  pregnant: { icon: '🤰', label: '임신 중', body: '주수와 검사 일정, 태교일기를 함께 챙기고 있어요.' },
-  parenting: { icon: '👶', label: '육아 중', body: '아기의 하루하루와 기념일을 함께 기록하고 있어요.' },
+export const STAGE_INFO: Record<Stage, { icon: string; label: string }> = {
+  preparing: { icon: '🌱', label: '임신 준비 중' },
+  pregnant: { icon: '🤰', label: '임신 중' },
+  parenting: { icon: '👶', label: '육아 중' },
 }
 
 /**

@@ -104,7 +104,7 @@ export default function LinkSignals({
         ))}
       </div>
       <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
-        {left > 0 ? `‘쉬어요’도 똑같이 좋은 신호예요. 오늘 ${left}번 더 보낼 수 있어요.` : '오늘 신호는 다 보냈어요. 내일 또 보내요.'}
+        {left > 0 ? `오늘 ${left}번 더 보낼 수 있어요` : '오늘 신호는 다 보냈어요'}
       </p>
     </Card>
   )

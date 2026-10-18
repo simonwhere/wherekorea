@@ -1587,12 +1587,12 @@ describe('병원과 함께일 때 남편의 주 (N32)', () => {
 
   it('the 난임치료휴가 line comes from the research files and lib/logic/treatments.ts, with its source and ‘회사마다 달라요’', () => {
     const line = clinicLeaveLine('2026-10-04')
-    expect(line.text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요 · 2026년 11월 27일부터 유급 4일(연 6일)')
-    expect(line.text).toContain(`유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`)
-    expect(line.note).toBe('회사마다 달라요')
+    expect(line.text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요. 2026년 11월 27일부터 연 6일 중 4일이 유급이에요.')
+    expect(line.text).toContain(`연 ${LEAVE_DAYS_PER_YEAR}일 중 ${PAID_LEAVE_DAYS.from}일이 유급`)
+    expect(line.note).toBe('회사마다 달라요.')
     expect(line.source).toEqual({ label: CLINIC_LEAVE_SOURCE.label, url: CLINIC_LEAVE_SOURCE.url })
     // From the day it takes effect, no future date in it.
-    expect(clinicLeaveLine(PAID_LEAVE_CHANGE).text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요 · 유급 4일(연 6일)')
+    expect(clinicLeaveLine(PAID_LEAVE_CHANGE).text).toBe('난임치료휴가는 남성 근로자도 쓸 수 있어요. 연 6일 중 4일이 유급이에요.')
     // The source is one the research file lists for the finding (no number without a source).
     const research = JSON.parse(readFileSync(path.resolve(__dirname, '../docs/research/kr-programs.json'), 'utf8')) as {
       findings: Array<{ id?: string; sources?: string[]; effective?: string }>

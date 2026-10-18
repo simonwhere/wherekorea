@@ -19,7 +19,7 @@ function openTab(tab: NoticeTab) {
 
 /** In-app inbox for the current viewer (the prototype's stand-in for push). */
 export default function NotificationsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { state, update, today, me, partner } = useApp()
+  const { state, update, today, me } = useApp()
 
   // AppShell passes a new arrow every render; the Sheet re-runs its open effect
   // (and moves focus to the panel) whenever onClose changes. Keep one stable callback.
@@ -85,11 +85,7 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
       </div>
 
       {list.length === 0 ? (
-        <EmptyState
-          icon="bell"
-          title="새 알림이 없어요"
-          body={`${partner.name}님이 콕 찌르거나 응원을 보내면 여기에 보여요.`}
-        />
+        <EmptyState icon="bell" title="새 알림이 없어요" />
       ) : (
         <div className="space-y-4">
           {groups.today.length > 0 ? (
@@ -101,10 +97,6 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
         </div>
       )}
 
-      <p className="mt-5 rounded-xl bg-surface-2 p-3 text-[11px] leading-relaxed text-ink-3">
-        실제 앱에서는 푸시 알림으로 두 사람 폰에 동시에 가요. 지금은 프로토타입이라 앱 안 알림함과 (설정에서 켜면)
-        브라우저 알림으로 보여 드려요.
-      </p>
     </Sheet>
   )
 }

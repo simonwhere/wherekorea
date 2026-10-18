@@ -22,10 +22,8 @@ export function WhosePhoneChooser({
 }) {
   return (
     <div>
-      <p className="text-sm leading-relaxed text-ink-2">
-        {note ?? '이 폰에서는 고른 사람의 화면으로 열려요. 같은 기록을 두 사람이 각자 폰에서 봐요.'}
-      </p>
-      <div role="group" aria-label="이 폰의 주인" className="mt-4 grid grid-cols-2 gap-2">
+      {note ? <p className="mb-4 text-sm leading-relaxed text-ink-2">{note}</p> : null}
+      <div role="group" aria-label="이 폰의 주인" className="grid grid-cols-2 gap-2">
         {members.map((m) => (
           <button
             key={m.id}
@@ -46,7 +44,6 @@ export function WhosePhoneChooser({
           </button>
         ))}
       </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-ink-3">나중에 설정 › 우리 둘에서 바꿀 수 있어요. 위쪽 ⇄ 버튼은 잠깐 상대 화면을 보는 용도예요.</p>
     </div>
   )
 }

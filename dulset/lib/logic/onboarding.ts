@@ -54,7 +54,7 @@ export const PAST_START_ERROR_TEXT: Record<PastStartError, string> = {
   'too-old': '2년 안의 날짜로 넣어 주세요.',
   'too-close': `다른 시작일과 ${MIN_CYCLE}일 이상 떨어져야 해요. 같은 생리라면 하나만 남겨요.`,
   duplicate: '이미 넣은 날이에요.',
-  full: `최근 시작일은 ${PAST_STARTS_MAX}개까지 넣을 수 있어요. 나머지는 주기 탭에서 언제든 더 넣을 수 있어요.`,
+  full: `최근 시작일은 ${PAST_STARTS_MAX}개까지 넣을 수 있어요. 나머지는 주기 탭에서 넣어요.`,
 }
 
 export interface PastStartContext {

@@ -229,7 +229,7 @@ export function tokenFromHash(hash: string): string | null {
 
 /** What the share sheet sends with the address. */
 export function shareText(partnerName: string): string {
-  return `${partnerName}님, 둘셋이에요. 설치 없이 이 링크로 우리 화면을 볼 수 있어요.`
+  return `${partnerName}님, 둘셋 링크예요. 설치 없이 바로 열려요.`
 }
 
 // ── SHA-256 (for the token's hash in the state) ─────────────

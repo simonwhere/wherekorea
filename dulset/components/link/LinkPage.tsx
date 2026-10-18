@@ -32,7 +32,7 @@
 // card's place with '이번 주 우리 둘' and 내 준비 under it.
 //
 // Now 3 adds: his clinic week's [같이 갈게요] ('join-appointment', N32), the
-// '내 준비' bar (N30), '매주 이 시간에 알려 받기' — a weekly .ics made right
+// '내 준비' bar (N30), '매주 이 시간에 알림 받기' — a weekly .ics made right
 // here that links to '/link/' WITHOUT the token (N31); a token-less open on
 // this phone uses the token this browser remembers (model LINK_TOKEN_KEY) —
 // and, when the transport cannot be reached while a page is on screen, a
@@ -42,6 +42,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CoverArt, { timeOfDay } from '@/components/cover/CoverArt'
 import Polaroid from '@/components/cover/Polaroid'
+import { objectParticle } from '@/components/today/bits'
 import { ToastProvider, useToast } from '@/components/ui'
 import { isISODate, todayISO } from '@/lib/dates'
 import { uid } from '@/lib/id'
@@ -382,7 +383,7 @@ function LinkScreen() {
       },
       onNudge: () => {
         setMarks((m) => ({ ...m, nudge: { at: Date.now() } }))
-        void send({ id: uid(), from: p.viewer, kind: 'nudge' }, `${owner.name}님에게 콕! 보냈어요`)
+        void send({ id: uid(), from: p.viewer, kind: 'nudge' }, `${owner.name}님에게 콕을 보냈어요`)
       },
       onCheer: () => {
         setMarks((m) => ({ ...m, cheers: [...m.cheers, Date.now()] }))
@@ -393,13 +394,13 @@ function LinkScreen() {
         if (!w) return
         const text = w.options.find((o) => o.id === optionId)?.text ?? ''
         setMarks((m) => ({ ...m, weekPick: { monday: w.monday, optionId, at: Date.now() } }))
-        void send({ id: uid(), from: p.viewer, kind: 'week-pick', optionId, date: today }, `이번 주는 ‘${text}’로 골랐어요`)
+        void send({ id: uid(), from: p.viewer, kind: 'week-pick', optionId, date: today }, `이번 주는 ‘${text}’${objectParticle(text)} 골랐어요`)
       },
       onWeekDone: () => {
         const w = p.week
         if (!w) return
         setMarks((m) => ({ ...m, weekDone: { monday: w.monday, at: Date.now() } }))
-        void send({ id: uid(), from: p.viewer, kind: 'week-done', date: today }, `했어요! ${owner.name}님에게 전해져요`)
+        void send({ id: uid(), from: p.viewer, kind: 'week-done', date: today }, `했어요. ${owner.name}님에게 전해져요`)
       },
       onJoin: (a: SnapshotAppointment) => {
         if (a.with !== 'both') return
@@ -421,7 +422,7 @@ function LinkScreen() {
         try {
           const origin = weeklyLinkOrigin(window.location.origin, window.location.pathname)
           downloadText('dulset-weekly.ics', weeklyLinkIcs(day, today, { origin }))
-          toast.show('캘린더 파일을 받았어요. 열어서 캘린더에 추가해 주세요')
+          toast.show('캘린더 파일을 받았어요. 열어서 추가해 주세요')
         } catch {
           toast.show('이 브라우저에서는 파일을 받을 수 없어요')
         }
@@ -436,7 +437,7 @@ function LinkScreen() {
   }
   const onSetup = (p: PartnerPage, fields: NonNullable<ReturnType<typeof setupFields>>) => {
     closeIntro()
-    void send({ id: uid(), from: p.viewer, kind: 'setup', ...fields }, `내 화면을 정했어요. ${ownerOf(p).name}님 폰이 열리면 반영돼요`)
+    void send({ id: uid(), from: p.viewer, kind: 'setup', ...fields }, '내 화면을 정했어요')
   }
 
   const copyAddress = async () => {
@@ -460,9 +461,8 @@ function LinkScreen() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-bg">
       <header className="pt-safe sticky top-0 z-30 bg-bg/[.92] backdrop-blur">
-        <div className="flex h-14 items-center justify-between gap-2 px-4">
+        <div className="flex h-14 items-center px-4">
           <span className="text-[20px] font-extrabold tracking-tight text-ink">둘셋</span>
-          <span className="truncate text-[11px] font-medium text-ink-3">설치 없이 보는 화면</span>
         </div>
       </header>
 
@@ -519,12 +519,8 @@ function LinkScreen() {
             }
             bottom={installCard}
             footer={
-              <footer className="mt-8 space-y-1.5 px-1 text-center text-[11.5px] leading-relaxed text-ink-3">
-                <p>설치 없이 보는 화면이에요</p>
-                <p>
-                  {ownerOf(page).name}님이 보낸 링크로만 열려요 ·{' '}
-                  {view.fromCache ? '마지막으로 받은 화면이에요' : `${clockKo(view.fetchedAt)} 기준`}
-                </p>
+              <footer className="mt-8 px-1 text-center text-[11.5px] leading-relaxed text-ink-3">
+                <p>{view.fromCache ? '마지막으로 받은 화면이에요' : `${clockKo(view.fetchedAt)} 기준`}</p>
               </footer>
             }
           />
@@ -577,7 +573,11 @@ function WaitingView({
       <Polaroid
         decorated={false}
         quiet
-        caption={<span className="min-w-0 truncate text-[12.5px] font-medium text-ink-3">{owner.name}님의 둘셋에서 왔어요</span>}
+        caption={
+          <span className="min-w-0 truncate text-[14.5px] font-bold tracking-[-0.02em] text-ink">
+            {viewerOf(snapshot).name} · {owner.name}
+          </span>
+        }
       >
         <CoverArt tod={timeOfDay(new Date().getHours())} quiet className="absolute inset-0" />
       </Polaroid>
@@ -590,7 +590,7 @@ function WaitingView({
           </Pill>
         </div>
       </div>
-      <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
+      <Heading>우리 신호</Heading>
       <LinkSignals snapshot={snapshot} left={left} onSend={onSignal} />
     </section>
   )

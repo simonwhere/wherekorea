@@ -33,7 +33,6 @@ import {
   viewWeek,
   prepItemWhen,
   supportToast,
-  togetherBlockSub,
   togetherShort,
   TOGETHER_BLOCK_TITLE,
   TOGETHER_FOLD,
@@ -311,11 +310,10 @@ describe('partner page view model', () => {
     expect(noticeCopy('expired').body).toBe('상대에게 새 링크를 받아 주세요.')
   })
 
-  it('the week-over notice never puts it on her: no “쉬고 있어요”, no “앱을 열면”, and says what still works', () => {
+  it('the week-over notice never puts it on her: no “쉬고 있어요”, no “앱을 열면” — one line, no explaining the buttons below', () => {
     const c = noticeCopy('stale', '지은')
     expect(`${c.title} ${c.body}`).not.toMatch(/쉬고 있어요|앱을 열면|열어 주세요|부탁/)
-    expect(c.body).toContain('지은님 폰이 열리면 다시 채워져요')
-    expect(c.body).toContain('신호와 응원')
+    expect(c.body).toBe('지은님 폰이 열리면 다시 채워져요.')
   })
 })
 
@@ -729,8 +727,6 @@ describe('link model — 같이 챙길 것 (2026-10-09)', () => {
     expect(TOGETHER_FOLD).toBe(3)
     expect(togetherFoldLabel(2, false)).toBe('2개 더 보기')
     expect(togetherFoldLabel(2, true)).toBe('접기')
-    expect(togetherBlockSub('지은님')).toBe('지은님이 챙기는 것도 같이 봐요. [같이 할게요]를 누르면 지은님에게 전해져요.')
-    expect(togetherBlockSub('하나')).toMatch(/^하나가 /)
     expect(supportToast('국민행복카드 (임신·출산 진료비) 신청', true, '지은님')).toBe(
       '‘국민행복카드’ 같이 하기로 했어요. 지은님에게 전해져요',
     )
@@ -739,7 +735,7 @@ describe('link model — 같이 챙길 것 (2026-10-09)', () => {
       expect(togetherShort(t.title), t.id).toBe(shortTitle(t.title))
       for (const on of [true, false]) expect(supportToast(t.title, on, '지은님'), t.id).not.toMatch(/숙제|실패|노력|오늘 꼭|기한 지남|안 했어요/)
     }
-    for (const t of [TOGETHER_BLOCK_TITLE, togetherBlockSub('지은님')]) expect(t).not.toMatch(/숙제|실패|노력|오늘 꼭|생리|배란|가임기/)
+    expect(TOGETHER_BLOCK_TITLE).not.toMatch(/숙제|실패|노력|오늘 꼭|생리|배란|가임기/)
   })
 
   it('pregnant 내 준비 rows read 했어요 · 지금 · N월 N일부터 — never a zero', () => {

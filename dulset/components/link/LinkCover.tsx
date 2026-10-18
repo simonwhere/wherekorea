@@ -120,9 +120,9 @@ export default function LinkCover({
               <span className="sr-only">{andParticle(me.name)} </span>
               {owner.name}
             </span>
-            <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">
-              {shown && snapshot.cover?.caption ? snapshot.cover.caption : `${owner.name}님의 둘셋에서 왔어요`}
-            </span>
+            {shown && snapshot.cover?.caption ? (
+              <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">{snapshot.cover.caption}</span>
+            ) : null}
           </>
         }
       >

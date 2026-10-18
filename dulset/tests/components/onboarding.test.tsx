@@ -62,7 +62,7 @@ describe('Onboarding · four screens', () => {
     next()
 
     // ③ 동의 + 공유: the default keeps the details private; both consents are required
-    expect(screen.getByRole('heading', { level: 1, name: '기록은 이렇게 지켜요' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: '시작하기 전에 확인해 주세요' })).toBeTruthy()
     const share = screen.getByRole('radio', { name: /우리의 주간 \(기본\)/ }) as HTMLInputElement
     expect(share.checked).toBe(true)
     const consent = screen.getByRole('button', { name: '동의하고 계속하기' }) as HTMLButtonElement

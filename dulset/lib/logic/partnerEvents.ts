@@ -528,7 +528,7 @@ export function joinAppointment(
         to,
         from: member,
         kind: 'system',
-        title: `🤝 ${name ? `${name}님이` : '같이'} 병원에 같이 간대요`,
+        title: name ? `🤝 ${name}님이 병원에 같이 간대요` : '🤝 병원에 같이 간대요',
         body: `${when}${a.place ? ` · ${a.place}` : ''}`,
       },
     ],

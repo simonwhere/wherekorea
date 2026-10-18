@@ -63,7 +63,7 @@ describe('/link — 같이 챙길 것', () => {
   it('shows her items and the shared ones with a neutral status and what he can do — never a warning about her', async () => {
     await openLink(demoState(TODAY))
     const block = await screen.findByRole('region', { name: '같이 챙길 것' })
-    expect(block.textContent).toContain('지은님이 챙기는 것도 같이 봐요')
+    expect(block.textContent).not.toContain('[같이 할게요]를 누르면')
     // Three rows first; the rest open with 'N개 더 보기' (and fold back).
     expect(block.querySelectorAll('[data-together-item]')).toHaveLength(3)
     const more = within(block).getByRole('button', { name: /^2개 더 보기/ })

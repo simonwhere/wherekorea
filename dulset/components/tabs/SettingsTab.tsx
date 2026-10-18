@@ -41,7 +41,6 @@ function anchorFromHash(): SettingsAnchor | null {
 /** Opened from the header ⚙️ (not a bottom tab), so it carries its own page heading. */
 export default function SettingsTab() {
   const { state } = useApp()
-  const preparing = state.stage === 'preparing'
 
   // Sections in screen order (the ones people reach for most sit near the top — review D-4):
   // 연결 and 공유 범위 right after 우리 둘 (N28), 우리 둘의 날 low while preparing (N27).
@@ -113,9 +112,6 @@ export default function SettingsTab() {
     <SectionsContext.Provider value={api}>
       <header className="mb-3 px-1">
         <h1 className="text-xl font-extrabold tracking-tight text-ink outline-none">설정</h1>
-        <p className="mt-1 text-sm text-ink-2">
-          {preparing ? '우리 둘 정보, 연결과 공유 범위, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요' : '우리 둘 정보, 연결, 내 알림, 첫 화면, 기록 백업을 여기서 관리해요'}
-        </p>
       </header>
       {/* Table of contents: one chip per section (sticky under the top bar while scrolling). */}
       <nav aria-label="설정 목차" style={{ top: stickyTop }} className="sticky z-20 -mx-4 mb-4 bg-bg/95 px-4 py-2 backdrop-blur">

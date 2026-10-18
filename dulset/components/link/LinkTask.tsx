@@ -5,11 +5,11 @@
 // with one action: the stage's [했어요], which sends a 'task-done' event
 // dated the snapshot's defaultDoneAt (the booked day once it has passed,
 // else today). Booking a date, ticking the claim papers and changing the
-// date happen in the app; the page says so where it matters. While the
+// date happen in the app. While the
 // booked day is still ahead ('예약됨'), there is no [받았어요] — the card says
 // '예약일 10월 15일' (partnerEvents.taskLocked: nothing is recorded before it).
 
-import { ExternalLink } from '@/components/today/bits'
+import { ExternalLink, objectParticle } from '@/components/today/bits'
 import { cx } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
@@ -109,7 +109,6 @@ function ClaimDocs({ task }: { task: SnapshotTask }) {
           </li>
         ))}
       </ul>
-      <p className="mt-1 text-[12px] text-ink-3">서류 체크는 앱에서 해요. 사진으로도 남겨 두면 든든해요.</p>
     </div>
   )
 }
@@ -139,6 +138,7 @@ export function LinkTaskBody({
   // The snapshot's day is its defaultDoneAt for a booked step: before the booked day nothing can be recorded.
   const locked = taskLocked(task, task.defaultDoneAt)
   const lockedOn = locked ? (task.appointment?.date ?? task.minDoneAt) : undefined
+  const bring = task.guide?.bring ?? '검사의뢰서'
 
   return (
     <div className={className}>
@@ -161,16 +161,13 @@ export function LinkTaskBody({
       ) : stage === 'booked' ? (
         <>
           <AppointmentLine task={task} muted={pastBooked} />
-          <p className="mt-0.5 text-[12.5px] text-ink-3">{`${task.guide?.bring ?? '검사의뢰서'} 챙기기 · 검사 준비는 병원 안내를 따라요.`}</p>
+          <p className="mt-0.5 text-[12.5px] text-ink-3">{`${bring}${objectParticle(bring)} 챙겨요. 검사 준비는 병원 안내를 따라요.`}</p>
         </>
       ) : (
         <>
           <GuideRows task={task} />
           {stage === 'claim' ? <ClaimDocs task={task} /> : null}
           {task.why ? <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-3">{task.why}</p> : null}
-          {stage === 'book' ? (
-            <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-3">병원 예약은 앱에서 잡아요. 이미 받았다면 아래에서 알려 주세요.</p>
-          ) : null}
         </>
       )}
 

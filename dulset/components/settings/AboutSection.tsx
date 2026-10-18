@@ -56,7 +56,7 @@ export default function AboutSection() {
   const label = OTHER_STAGE_DEMOS.find((d) => d.stage === asking)?.label ?? ''
 
   return (
-    <SettingsSection id="about" title="정보" sub="이 버전에서 되는 것과 안 되는 것">
+    <SettingsSection id="about" title="정보">
       <div className="grid gap-2">
         <Card tone="muted">
           <p className="text-sm leading-relaxed text-ink">
@@ -70,9 +70,6 @@ export default function AboutSection() {
 
         <Card>
           <h3 className="text-sm font-bold text-ink">다른 단계 예시</h3>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
-            임신한 뒤와 아기가 태어난 뒤의 화면을 가상의 커플 민수·지은의 기록으로 미리 볼 수 있어요.
-          </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {OTHER_STAGE_DEMOS.map((d) => (
               <Button key={d.stage} variant="secondary" onClick={() => setAsking(d.stage)}>
@@ -86,10 +83,7 @@ export default function AboutSection() {
 
       <Sheet open={asking !== null} onClose={busy ? noop : close} title={`${label} 열기`}>
         <p ref={textRef} tabIndex={-1} className="text-sm leading-relaxed text-ink outline-none">
-          예시를 열면 이 폰의 지금 기록 대신 민수·지은의 예시가 보여요. 지금 기록은 지워지고 되돌릴 수 없어요.
-        </p>
-        <p className="mt-2 text-xs leading-relaxed text-ink-3">
-          남겨 두고 싶은 기록이 있다면 먼저 전체 백업을 받아 두세요. 다른 탭에 열어 둔 둘셋도 함께 바뀌어요.
+          지금 기록은 지워지고 되돌릴 수 없어요.
         </p>
         <Button
           full

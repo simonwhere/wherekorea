@@ -116,7 +116,6 @@ export default function RestoreFullBackup({
             members={pending.state.couple.members}
             current={viewer}
             onPick={(id) => void finish(id)}
-            note="불러온 기록을 누구의 화면으로 열까요? 이 폰은 앞으로 그 사람 화면으로 열려요."
           />
         ) : null}
       </Sheet>
@@ -151,7 +150,7 @@ export function ImportConfirm({
         {packed > 0 ? (
           <>
             <dt className="font-semibold text-ink-3">사진</dt>
-            <dd className="text-ink">{packed}장 (함께 되살려요)</dd>
+            <dd className="text-ink">{packed}장</dd>
           </>
         ) : null}
         {sum.createdAt ? (
@@ -163,10 +162,7 @@ export function ImportConfirm({
       </dl>
       <p className="mt-3 text-sm leading-relaxed text-ink">지금 이 기기의 기록이 백업 내용으로 바뀌어요.</p>
       {packed === 0 && sum.photos > 0 ? (
-        <p className="mt-1 text-xs leading-relaxed text-ink-3">
-          사진 {sum.photos}장은 이 백업에 들어 있지 않아서, 이 기기에 없는 사진은 보이지 않을 수 있어요. 사진까지 옮기려면 ‘전체
-          백업(.zip)’으로 받아 주세요.
-        </p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-3">이 백업에는 사진이 없어서 사진 {sum.photos}장이 보이지 않을 수 있어요.</p>
       ) : null}
       <ConfirmActions confirmLabel={busy ? '불러오는 중…' : '불러오기'} onConfirm={onConfirm} onCancel={onCancel} cancelLabel="취소" busy={busy} />
     </div>

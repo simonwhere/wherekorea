@@ -15,7 +15,7 @@
 // moment card's place. Then '이번 주 우리 둘' (N21 — the pregnant stage too),
 // 같이 챙길 것 (2026-10-09: her items and the shared ones with what he can do
 // and [같이 할게요], LinkTogether), his '내 준비' bar (N30), his checks, 우리 한
-// 줄, 우리 신호, and '매주 이 시간에 알려 받기' (N31).
+// 줄, 우리 신호, and '매주 이 시간에 알림 받기' (N31).
 
 import { useMemo } from 'react'
 import { CHEERS_PER_DAY } from '@/lib/logic/partnerEvents'
@@ -185,7 +185,7 @@ export default function LinkBody({
       <Heading>오늘 할 일</Heading>
       <LinkChecks me={me} her={me.id === page.cycleOwner} checks={checks} onToggle={actions.onToggle} />
 
-      <Heading sub={pending ? `${owner.name}님의 신호에 답해 보세요` : undefined}>우리 한 줄</Heading>
+      <Heading>우리 한 줄</Heading>
       {where === 'us' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} className="mb-3" /> : null}
       <LinkUsLine
         snapshot={page}
@@ -198,7 +198,7 @@ export default function LinkBody({
         onReply={actions.onReply}
       />
 
-      <Heading sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</Heading>
+      <Heading>우리 신호</Heading>
       <LinkSignals snapshot={page} left={signalsLeft} onSend={actions.onSignal} />
 
       {/* The weekly prompt goes with '이번 주 우리 둘' — preparing and, since 2026-10-09, pregnant. */}

@@ -5,8 +5,7 @@ import CoupleDatesSheet from '@/components/us/CoupleDatesSheet'
 import { Button, Card } from '@/components/ui'
 import { IconTile, type IconName } from '@/components/ui/icons'
 import { dLabel, formatKo, isISODate } from '@/lib/dates'
-import { anniversaryDayOnly, daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
-import { anniversaryAlertsOn } from '@/lib/logic/settings'
+import { daysSince, nextAnniversaries } from '@/lib/logic/anniversary'
 import { useApp } from '@/lib/store'
 import { SettingsSection } from './bits'
 
@@ -51,7 +50,7 @@ export default function CoupleDaysSection() {
   const long = (d: string) => formatKo(d, { year: true, weekday: false })
 
   return (
-    <SettingsSection id="ourdays" title="우리 둘의 날" sub="함께한 날수와 100일·주년 기념일을 챙기는 기준이에요">
+    <SettingsSection id="ourdays" title="우리 둘의 날">
       <Card>
         <ul className="divide-y divide-line">
           <Row
@@ -89,15 +88,6 @@ export default function CoupleDaysSection() {
             기념일 보기 <span aria-hidden>→</span>
           </Button>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-          첫날을 1일로 세어요. 두 사람 화면에 똑같이 보이고,{' '}
-          {anniversaryAlertsOn(state.settings, state.stage)
-            ? anniversaryDayOnly(state.stage)
-              ? '기념일 당일에 둘 다에게 알려 드려요.'
-              : '기념일 7일 전과 당일에 둘 다에게 알려 드려요.'
-            : '기념일 알림은 ‘첫 화면’에서 켤 수 있어요.'}{' '}
-          첫 여행 같은 우리만의 날은 우리 탭의 ‘기념일’에서 더하고 고칠 수 있어요.
-        </p>
       </Card>
       <CoupleDatesSheet open={open} onClose={close} />
     </SettingsSection>

@@ -1,9 +1,8 @@
 'use client'
 
 // ④ 초대·설치: the partner link (Next A ①) — one tap makes the link and hands
-// it to the share sheet (카카오톡 is on it; without a sheet it is copied), how
-// the prototype shows the partner's screen meanwhile (⇄), and a one-picture
-// "홈 화면에 추가" with this phone's own steps — Safari drops a tab's storage
+// it to the share sheet (카카오톡 is on it; without a sheet it is copied), and
+// a one-picture "홈 화면에 추가" with this phone's own steps — Safari drops a tab's storage
 // after 7 days without a visit, a home-screen app keeps it (lib/persist
 // INSTALL_STEPS). The link's page fills in after 시작하기, when this phone
 // publishes its first snapshot (lib/useLinkSync).
@@ -58,12 +57,10 @@ function InstallArt() {
 }
 
 export default function DoneStep({
-  code,
   partner,
   ownerIsMe = true,
   onSent,
 }: {
-  code: string
   partner: string
   /** The person onboarding tracks the cycle: this phone publishes the link's page. Else the link is made on the partner's phone. */
   ownerIsMe?: boolean
@@ -99,9 +96,9 @@ export default function DoneStep({
       if (r === 'shared' || r === 'copied') onSent?.()
       setNote(
         r === 'shared'
-          ? `보냈어요. ${partner}님 화면은 아래 시작하기를 누르면 준비돼요.`
+          ? `보냈어요. 시작하기를 누르면 ${partner}님 화면이 채워져요.`
           : r === 'copied'
-            ? `링크를 복사했어요. 카톡에 붙여 넣어 주세요. ${partner}님 화면은 아래 시작하기를 누르면 준비돼요.`
+            ? `링크를 복사했어요. 카톡에 붙여 넣어 주세요. 시작하기를 누르면 ${partner}님 화면이 채워져요.`
             : '보내지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.',
       )
     } finally {
@@ -118,10 +115,7 @@ export default function DoneStep({
         </p>
         {ownerIsMe ? (
           <>
-            <p className="mt-1 text-xs leading-relaxed text-ink-2">
-              {partner}님은 앱을 설치하지 않아도 돼요. 링크 하나로 우리의 주간, 이번 달 할 일, 오늘 체크, 신호를 보고 답할 수 있어요. 기록은
-              이 폰에만 있고, 링크로는 화면 한 장만 가요.
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-2">{partner}님은 앱을 설치하지 않아도 돼요.</p>
             <button
               type="button"
               onClick={sendLink}
@@ -144,22 +138,11 @@ export default function DoneStep({
                 {url}
               </p>
             ) : null}
-            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-              링크는 내가 둘셋을 쓰는 동안 저절로 연장되고({LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요) 설정 › 연결에서 언제든 바꾸거나
-              해제할 수 있어요 · 초대 코드 <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄
-              버튼으로도 {partner}님 화면을 볼 수 있어요.
-            </p>
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">{LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.</p>
           </>
         ) : (
           <>
-            <p className="mt-1 text-xs leading-relaxed text-ink-2">
-              주기는 {partner}님이 기록하니, 설치 없이 보는 링크는 {partner}님이 앱을 쓰는 폰에서 만들어요(설정 › 연결). 링크로는 화면 한
-              장만 가고, 기록은 기록한 폰에만 있어요.
-            </p>
-            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-              초대 코드 <span className="font-mono font-bold tracking-widest text-ink-2">{code}</span> · 지금은 위쪽 ⇄ 버튼으로 {partner}님
-              화면을 볼 수 있어요.
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-2">링크는 {partner}님 폰에서 만들어요(설정 › 연결).</p>
           </>
         )}
       </section>
@@ -167,13 +150,10 @@ export default function DoneStep({
       <section aria-label="홈 화면에 추가" className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
         <InstallArt />
         <p className="mt-2 text-sm font-bold text-ink">{installed ? '홈 화면에서 열었어요' : '홈 화면에 추가해 두세요'}</p>
-        <p className="mt-1 text-xs leading-relaxed text-ink-2">
-          {installed
-            ? '이렇게 열면 사파리의 7일 삭제를 피할 수 있어요. 알림은 앱이 열려 있을 때만 와요.'
-            : '홈 화면에 추가하면 사파리의 7일 삭제를 피할 수 있어요. 알림은 앱이 열려 있을 때만 와요.'}
-        </p>
+        {installed ? null : (
+          <p className="mt-1 text-xs leading-relaxed text-ink-2">브라우저에서는 7일 동안 안 열면 기록이 지워질 수 있어요.</p>
+        )}
         {!installed && platform ? <p className="mt-1.5 text-xs leading-relaxed text-ink-3">{INSTALL_STEPS[platform]}</p> : null}
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">기록은 이 폰에만 있어요. 설정에서 언제든 백업 파일을 받을 수 있어요.</p>
       </section>
     </div>
   )

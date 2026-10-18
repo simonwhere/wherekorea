@@ -71,10 +71,10 @@ describe('챙길 것 · [같이 갈게요] on a 둘이 함께 appointment (N32)'
   })
 })
 
-describe('설정 › 내 알림 · 매주 이 시간에 알려 받기 (N31)', () => {
+describe('설정 › 내 알림 · 매주 이 시간에 알림 받기 (N31)', () => {
   it('is the partner’s, with a 월~일 picker and one download button', () => {
     renderApp(<AlertsSection />, { state: demoState(T0), viewer: PARTNER, today: T0 })
-    const days = screen.getByRole('group', { name: '알려 받을 요일' })
+    const days = screen.getByRole('group', { name: '알림 받을 요일' })
     const buttons = within(days).getAllByRole('button')
     expect(buttons.map((b) => b.textContent)).toEqual(['월', '화', '수', '목', '금', '토', '일'])
     // 2026-10-04 is a Sunday: today's day is picked first.
@@ -85,7 +85,7 @@ describe('설정 › 내 알림 · 매주 이 시간에 알려 받기 (N31)', ()
 
   it('is not on the cycle owner’s settings', () => {
     renderApp(<AlertsSection />, { state: demoState(T0), viewer: OWNER, today: T0 })
-    expect(screen.queryByRole('group', { name: '알려 받을 요일' })).toBeNull()
+    expect(screen.queryByRole('group', { name: '알림 받을 요일' })).toBeNull()
   })
 })
 

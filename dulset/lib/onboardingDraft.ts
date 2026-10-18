@@ -291,7 +291,7 @@ export function draftNames(d: OnboardingDraft): Record<MemberId, string> {
 export function stepProblem(step: number, d: OnboardingDraft, today: ISODate): string | null {
   if (step === 1) {
     const r = draftRoles(d)
-    if (!r.a) return '나의 역할을 골라 주세요.'
+    if (!r.a) return '내 역할을 골라 주세요.'
     if (!r.b) return '함께하는 사람의 역할을 골라 주세요.'
     const n = draftNames(d)
     if (n.a === n.b) return '두 사람 이름이 같아요. 구분할 수 있게 바꿔 주세요.'

@@ -85,13 +85,13 @@ export default function LinkChecks({
         {checks.week > 0 ? <Badge tone="ok">{weekCountLabel(checks.week)}</Badge> : null}
       </div>
       {checks.items.length === 0 ? (
-        <p className="mt-2 text-xs text-ink-3">아직 체크할 항목이 없어요. 항목은 앱에서 정해요.</p>
+        <p className="mt-2 text-xs text-ink-3">아직 체크할 항목이 없어요</p>
       ) : (
         <>
           <div className="mt-1 flex items-center gap-3">
             <ProgressBar
               value={prog.total ? prog.done / prog.total : 0}
-              label="나의 오늘 체크 진행률"
+              label="오늘 체크 진행률"
               tone={prog.complete ? 'ok' : her ? 'her' : 'him'}
             />
             <span className="shrink-0 text-xs font-bold tabular-nums text-ink-2">
@@ -107,7 +107,7 @@ export default function LinkChecks({
           </ul>
           {prog.complete ? (
             <p className="mt-3 text-center text-xs font-semibold text-ok" role="status">
-              오늘 체크를 모두 마쳤어요. 멋져요! 🎉
+              오늘 체크를 모두 마쳤어요
             </p>
           ) : null}
         </>

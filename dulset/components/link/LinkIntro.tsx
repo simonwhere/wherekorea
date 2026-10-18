@@ -1,9 +1,8 @@
 'use client'
 
 // The link's first 30 seconds (Now 3 N22): the first time this device opens
-// the page, three lines say what this is — 이게 뭐예요 · {owner}님이 고른 것만
-// 보여요 · 내 할 일 하나 — and a short setup lets him choose his own two habit
-// questions and how he hears about things, the same questions and words the
+// the page, one line says whose page this is, and a short setup lets him
+// choose his own two habit questions and how he hears about things, the same questions and words the
 // app's first-run sheet asks (components/onboarding/PartnerFirstRunSheet,
 // HabitQuestions — reused through their pure parts, ChoiceGroup / Group, and
 // the shared option lists in components/onboarding/partnerChoices).
@@ -42,12 +41,6 @@ export default function LinkIntro({
   const [draft, setDraft] = useState<SetupDraft>({})
   const fields = setupFields(draft)
 
-  const lines: Array<[string, string]> = [
-    ['이게 뭐예요', `${ownerName}님이 보낸 둘셋 화면이에요. 설치 없이 이 링크로 열려요.`],
-    [`${ownerName}님이 고른 것만 보여요`, `기록은 ${ownerName}님 폰에 있고, 여기에는 ${ownerName}님이 보여 주기로 한 것만 와요.`],
-    ['내 할 일 하나', '한 달에 큰 일 하나, 매주 작은 일 하나예요. 아래에서 골라요.'],
-  ]
-
   return (
     <section
       aria-label="처음 왔어요"
@@ -64,26 +57,10 @@ export default function LinkIntro({
           건너뛰기
         </button>
       </div>
-      <ol className="mt-2.5 space-y-2">
-        {lines.map(([head, body], i) => (
-          <li key={head} className="flex gap-2.5">
-            <span
-              aria-hidden
-              className="mt-px flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand-soft text-[12px] font-extrabold text-brand-ink"
-            >
-              {i + 1}
-            </span>
-            <p className="min-w-0 text-[13.5px] leading-[1.5] text-ink-2">
-              <b className="font-bold text-ink">{head}</b> · {body}
-            </p>
-          </li>
-        ))}
-      </ol>
+      <p className="mt-1 text-[13.5px] leading-[1.5] text-ink-2">{ownerName}님이 보낸 둘셋 화면이에요.</p>
 
       <div className="mt-4 space-y-4 border-t border-line/75 pt-4">
-        <p className="text-[13px] font-bold text-ink">
-          내 화면은 내가 정해요 <span className="font-medium text-ink-3">· 30초면 돼요</span>
-        </p>
+        <p className="text-[13px] font-bold text-ink">내 화면은 내가 정해요</p>
         <Group title="담배를 피우나요?">
           <ChoiceGroup<'no' | 'yes'>
             label="담배를 피우나요?"
@@ -111,10 +88,7 @@ export default function LinkIntro({
             options={STYLE_OPTIONS}
           />
         </Group>
-        <p className="text-[12px] leading-[1.5] text-ink-3">
-          체크 항목과 이 화면의 말투를 정하는 데만 써요. 고르지 않은 건 그대로 둬요. {ownerName}님의 자세한 기록은 {ownerName}님이
-          허용할 때만 보여요.
-        </p>
+        <p className="text-[12px] leading-[1.5] text-ink-3">체크 항목과 이 화면의 말투를 정하는 데만 써요.</p>
         <div className="flex flex-wrap items-center gap-2">
           <Pill tone="primary" onClick={() => (fields ? onSetup(fields) : onLater())}>
             이대로 시작하기

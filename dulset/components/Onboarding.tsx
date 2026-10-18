@@ -42,16 +42,16 @@ const STEPS: readonly StepKey[] = ['couple', 'cycle', 'consent', 'done']
 /** lib/onboardingDraft's stepProblem numbers the old seven steps; the four screens map onto those numbers. */
 const DRAFT_STEP: Record<StepKey, number> = { couple: 1, cycle: 2, consent: 5, done: 6 }
 
-function stepMeta(key: StepKey, names: { a: string; b: string }): { title: string; sub?: string } {
+function stepMeta(key: StepKey): { title: string; sub?: string } {
   switch (key) {
     case 'couple':
-      return { title: '우리 둘을 소개해 주세요', sub: '서로 부르는 이름이나 애칭이면 돼요.' }
+      return { title: '우리 둘을 소개해 주세요' }
     case 'cycle':
-      return { title: '주기를 알려 주세요', sub: '가임기 예상에 쓰여요. 몰라도 괜찮아요, 나중에 ‘+ 기록’에서 남기면 돼요.' }
+      return { title: '주기를 알려 주세요' }
     case 'consent':
-      return { title: '기록은 이렇게 지켜요', sub: '시작하기 전에 확인해 주세요.' }
+      return { title: '시작하기 전에 확인해 주세요' }
     default:
-      return { title: '준비됐어요! 이제 둘이 함께예요', sub: '쓰던 앱은 그대로 두세요 — 여기엔 시작일만 옮기면 돼요.' }
+      return { title: '준비됐어요', sub: '쓰던 앱은 그대로 두고, 여기엔 시작일만 옮기면 돼요.' }
   }
 }
 
@@ -114,7 +114,7 @@ export default function Onboarding() {
   const key = STEPS[step - 1] ?? 'done'
   const names = draftNames(draft)
   const last = key === 'done'
-  const meta = stepMeta(key, names)
+  const meta = stepMeta(key)
   const problem =
     stepProblem(DRAFT_STEP[key], draft, today) ?? (key === 'consent' && !sensitive ? '민감정보 수집·이용에도 따로 동의해 주세요.' : null)
 
@@ -164,7 +164,7 @@ export default function Onboarding() {
         return <ConsentStep draft={draft} patch={patch} sensitive={sensitive} onSensitive={setSensitive} share={share} onShare={setShare} />
       default:
         // The link is made on the cycle owner's phone (lib/useLinkSync publishes there only).
-        return <DoneStep code={code} partner={names.b} ownerIsMe={draftOwner(draft) === 'a'} onSent={markSent} />
+        return <DoneStep partner={names.b} ownerIsMe={draftOwner(draft) === 'a'} onSent={markSent} />
     }
   })()
 

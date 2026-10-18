@@ -391,7 +391,7 @@ export interface SnapshotCheckup {
    * What he does that day: the support line of the item it is booked for
    * ('같이 가기 · 확인서 받을 때 옆에 있기', '접종 날 같이 가기' — on hers the
    * same line his day-before 🔔 gives, planNotices.togetherAppointmentNotice);
-   * without one, '둘이 같이 가는 날이에요' for one they go to together and
+   * without one, '같이 가기' for one they go to together and
    * '같이 갈 수 있으면 시간 비워 두기' on hers.
    */
   role: string
@@ -586,10 +586,10 @@ export function prepChainText(state: AppState, day: ISODate, partner: MemberId):
   const c = fertilityChain(state, day, partner)
   if (c.step === 'apply') return undefined
   if (c.step === 'test') return '신청했어요, 다음은 검사'
-  if (c.step === 'claim') return '검사 받았어요, 다음은 청구'
+  if (c.step === 'claim') return '검사받았어요, 다음은 청구'
   if (c.appliedAt && c.testedAt && c.claimedAt) return '신청·검사·청구를 마쳤어요'
   if (c.appliedAt && c.testedAt) return '신청·검사를 마쳤어요'
-  return c.testedAt ? '검사 받았어요' : undefined
+  return c.testedAt ? '검사받았어요' : undefined
 }
 
 /** 내 준비 for `day` — undefined when every part would be empty. */
@@ -683,7 +683,7 @@ export function linkTogetherPlan(
 export const CHECKUP_KINDS: readonly AppointmentKind[] = ['hospital', 'test', 'vaccine']
 
 /** What he does on a checkup day: one they go to together, or one of hers he is welcome at. */
-export const CHECKUP_ROLE = { both: '둘이 같이 가는 날이에요', hers: TOGETHER_VISIT_LINE } as const
+export const CHECKUP_ROLE = { both: '같이 가기', hers: TOGETHER_VISIT_LINE } as const
 
 /**
  * His next shared checkup for `day` (pregnant stage): the first live, not-done
@@ -772,15 +772,17 @@ export const CLINIC_LEAVE_SOURCE = {
   checked: '2026-10-02',
 } as const
 
-/** '난임치료휴가는 남성 근로자도 쓸 수 있어요 · 2026년 11월 27일부터 유급 4일(연 6일)' — from that day on, '유급 4일(연 6일)'. */
+/**
+ * '난임치료휴가는 남성 근로자도 쓸 수 있어요. 2026년 11월 27일부터 연 6일 중 4일이
+ * 유급이에요.' — from that day on, '연 6일 중 4일이 유급이에요.' The note is the
+ * hedge (AGENTS: 회사마다 달라요).
+ */
 export function clinicLeaveLine(day: ISODate): SnapshotSourcedLine {
-  const paid =
-    day < PAID_LEAVE_CHANGE
-      ? `${formatKo(PAID_LEAVE_CHANGE, { year: true, weekday: false })}부터 유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`
-      : `유급 ${PAID_LEAVE_DAYS.from}일(연 ${LEAVE_DAYS_PER_YEAR}일)`
+  const paid = `연 ${LEAVE_DAYS_PER_YEAR}일 중 ${PAID_LEAVE_DAYS.from}일이 유급이에요.`
+  const from = day < PAID_LEAVE_CHANGE ? `${formatKo(PAID_LEAVE_CHANGE, { year: true, weekday: false })}부터 ` : ''
   return {
-    text: `난임치료휴가는 남성 근로자도 쓸 수 있어요 · ${paid}`,
-    note: '회사마다 달라요',
+    text: `난임치료휴가는 남성 근로자도 쓸 수 있어요. ${from}${paid}`,
+    note: '회사마다 달라요.',
     source: { label: CLINIC_LEAVE_SOURCE.label, url: CLINIC_LEAVE_SOURCE.url },
   }
 }

@@ -61,9 +61,7 @@ function RecoveryScreen({ onRetry }: { onRetry: () => void }) {
         </span>
       </p>
       <h1 className="mt-3 text-center text-xl font-bold text-ink">화면을 여는 중에 문제가 생겼어요</h1>
-      <p className="mt-2 text-center text-sm leading-relaxed text-ink-2">
-        저장된 기록 중 일부를 읽지 못했어요. 지금 기록을 파일로 받아 두고, 백업 파일로 복원하거나 새로 시작할 수 있어요.
-      </p>
+      <p className="mt-2 text-center text-sm leading-relaxed text-ink-2">저장된 기록 중 일부를 읽지 못했어요.</p>
       <div className="mt-6 grid gap-2">
         {raw ? (
           <Button full variant="secondary" onClick={() => downloadText(BACKUP_FILENAME, raw, 'application/json')}>

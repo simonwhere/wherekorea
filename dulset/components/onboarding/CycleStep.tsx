@@ -98,9 +98,7 @@ export default function CycleStep({
         {draft.periodUnknown ? (
           <div>
             <p className="text-xs font-semibold text-ink-2">{whose}마지막 생리 시작일</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-ink">
-              괜찮아요. 다음 생리가 시작되면 ‘+ 기록’에서 한 번만 남겨 주세요. 그때부터 예상을 보여 드릴게요.
-            </p>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink">다음 생리가 시작되면 ‘+ 기록’에 남겨 주세요.</p>
             <Button variant="secondary" className="mt-3" onClick={() => patch({ periodUnknown: false })}>
               날짜 입력하기
             </Button>
@@ -122,7 +120,6 @@ export default function CycleStep({
             <div className="mt-2.5">
               <QuickDateChips today={today} value={draft.lastPeriodStart} onPick={setLast} label="마지막 생리 시작일 빠른 선택" />
             </div>
-            <p className="mt-2 text-xs text-ink-3">대략적인 날이어도 괜찮아요.</p>
             <div aria-live="polite">
               {note ? (
                 <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-xs leading-relaxed text-ink-2">{note}</p>
@@ -155,16 +152,14 @@ export default function CycleStep({
           <span className="block text-sm font-bold text-ink">
             더 넣기 <span className="text-xs font-medium text-ink-3">(선택)</span>
           </span>
-          <span className="mt-0.5 block text-xs leading-relaxed text-ink-3">
-            평균 주기 · 생리 기간 · 배란테스트기. 몰라도 괜찮아요, 기록이 쌓이면 맞춰져요.
-          </span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-ink-3">평균 주기 · 생리 기간 · 배란테스트기</span>
         </span>
         <Icon name="chev" className={cx('h-4 w-4 shrink-0 text-ink-3 transition-transform', more && 'rotate-180')} strokeWidth={2.2} />
       </button>
 
       <div id={moreId} hidden={!more} className="space-y-4">
         <div className="space-y-3 rounded-xl2 border border-line bg-surface p-4 shadow-card">
-          <Group title="평균 주기" hint={`잘 모르면 ${CYCLE_RANGE.fallback}일로 둘게요. 시작일이 쌓이면 알아서 맞춰져요.`}>
+          <Group title="평균 주기">
             <NumberStepper
               label="평균 주기"
               unit="일"
@@ -179,7 +174,6 @@ export default function CycleStep({
               checked={draft.longCycles === true}
               onChange={setLong}
               label="주기가 45일 이상이거나 들쭉날쭉해요"
-              description="날짜 대신 넓은 예상 범위로 보여 드리고, 주기 길이를 90일까지 받아요."
             />
           </div>
           <div className="border-t border-line pt-3">
@@ -197,7 +191,7 @@ export default function CycleStep({
         </div>
 
         <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-          <Group title="배란테스트기(LH) 써요?" hint="양성을 기록하면 그 날짜에 맞춰 예상을 다시 계산해요. 안 써도 괜찮아요. 설정에서 바꿀 수 있어요.">
+          <Group title="배란테스트기(LH) 써요?">
             <ChoiceGroup
               label="배란테스트기 사용"
               options={USES_LH_OPTIONS}
@@ -255,7 +249,6 @@ function PastStarts({
         >
           <span aria-hidden>＋</span> 최근 시작일 더 넣기 <span className="text-xs font-medium text-ink-3">(선택)</span>
         </button>
-        <p className="text-xs leading-relaxed text-ink-3">쓰던 앱에 시작일이 있다면 몇 개만 옮겨도 첫 달부터 내 주기로 예상해요.</p>
       </div>
     )
 
@@ -263,11 +256,6 @@ function PastStarts({
     <div className="mt-3 border-t border-line pt-3">
       <p className="text-xs font-semibold text-ink-2">
         최근 시작일 더 넣기 <span className="font-medium text-ink-3">(선택 · 최대 {PAST_STARTS_MAX}개)</span>
-      </p>
-      <p className="mt-0.5 text-xs leading-relaxed text-ink-3">
-        {pastStarts.length === 0
-          ? '쓰던 앱에 시작일이 있다면 몇 개만 옮겨도 첫 달부터 내 주기로 예상해요. 최신 것부터 넣어요.'
-          : `${pastStarts.length}개 넣었어요. 이전 시작일부터 차례로 넣으면 돼요.`}
       </p>
       {pastStarts.length > 0 ? (
         <ul className="mt-2 flex flex-wrap gap-2" aria-label="넣은 시작일">

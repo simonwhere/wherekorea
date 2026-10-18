@@ -22,7 +22,7 @@ import { SUPPORT_CANCEL, SUPPORT_LABEL, SUPPORT_PRESSED, supportAriaLabel, suppo
 import type { SnapshotTogetherPlan } from '@/lib/logic/partnerSnapshot'
 import type { LinkTogetherItem } from '@/lib/logic/together'
 import { Pill } from './bits'
-import { TOGETHER_BLOCK_TITLE, TOGETHER_FOLD, togetherBlockSub, togetherFoldLabel, togetherShort } from './model'
+import { TOGETHER_BLOCK_TITLE, TOGETHER_FOLD, togetherFoldLabel, togetherShort } from './model'
 
 /** Neutral tones only — the brand for this week, quiet for later, ok once done. Never warn. */
 const STATUS_TONE: Record<LinkTogetherItem['status'], string> = {
@@ -149,7 +149,6 @@ export default function LinkTogether({
       )}
     >
       <p className="text-[12.5px] font-bold tracking-[-0.01em] text-brand-ink">{TOGETHER_BLOCK_TITLE}</p>
-      <p className="mt-0.5 text-[12.5px] leading-[1.5] text-ink-3">{togetherBlockSub(plan.ownerName)}</p>
       <ul id="together-rows" aria-label={TOGETHER_BLOCK_TITLE} className="mt-1 divide-y divide-line/70">
         {rows.map((item) => (
           <Row key={item.id} item={item} ownerName={plan.ownerName} onSupport={onSupport} />

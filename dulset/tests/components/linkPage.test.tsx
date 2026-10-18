@@ -58,7 +58,8 @@ describe('/link — the page for its own date, the first 30 seconds, the week', 
   it('shows the first-run card once per device; setup sends only what he answered', async () => {
     const link = await openLink(mondayState(), MONDAY)
     expect(await screen.findByText('민수님, 처음이죠?')).toBeTruthy()
-    expect(pageText()).toContain('지은님이 고른 것만 보여요')
+    expect(pageText()).toContain('지은님이 보낸 둘셋 화면이에요')
+    expect(pageText()).not.toContain('고른 것만')
     fireEvent.click(screen.getByRole('button', { name: '안 피워요' }))
     fireEvent.click(screen.getByRole('button', { name: '‘우리의 주간’처럼 은근하게' }))
     fireEvent.click(screen.getByRole('button', { name: '이대로 시작하기' }))
@@ -76,7 +77,7 @@ describe('/link — the page for its own date, the first 30 seconds, the week', 
     const week = await screen.findByRole('region', { name: '이번 주 우리 둘' })
     const options = week.querySelectorAll('[data-week-option]')
     expect(options).toHaveLength(3)
-    expect(pageText()).toContain('고른 건 지은님에게 보이지 않고')
+    expect(pageText()).not.toContain('고른 건 지은님에게 보이지 않고')
     fireEvent.click(options[1]!)
     await waitFor(() => expect(store().events[link.coupleId]?.some((r) => r.event.kind === 'week-pick')).toBe(true))
     const pick = store().events[link.coupleId]!.find((r) => r.event.kind === 'week-pick')!.event
@@ -86,7 +87,7 @@ describe('/link — the page for its own date, the first 30 seconds, the week', 
     const done = await screen.findByRole('button', { name: '했어요' })
     fireEvent.click(done)
     await waitFor(() => expect(store().events[link.coupleId]?.some((r) => r.event.kind === 'week-done')).toBe(true))
-    expect(await screen.findByText(/이번 주 하나를 했어요/)).toBeTruthy()
+    expect(await screen.findByText('다음 주 월요일에 새로 골라요')).toBeTruthy()
   })
 
   it('a later day of the week is drawn from the same snapshot; no cycle record word reaches the page', async () => {
@@ -153,7 +154,7 @@ describe('LinkPreview (설정 › 연결 · 민수님 화면 미리보기)', () 
     expect(root.hasAttribute('inert')).toBe(true)
     expect(pageText()).toContain('이번 주 우리 둘')
     expect(pageText()).not.toContain('처음이죠?')
-    expect(pageText()).toContain('미리보기예요')
+    expect(pageText()).not.toMatch(/미리보기예요|보내지 않아요/)
     expect(window.localStorage.getItem(MOCK_SYNC_KEY)).toBeNull()
   })
 })

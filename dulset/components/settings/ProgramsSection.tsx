@@ -19,7 +19,7 @@ export default function ProgramsSection() {
   const titleOf = (title: string) => (explicit ? title : title.replace('가임력 검사', '임신 전 검사'))
 
   return (
-    <SettingsSection id="programs" title="도움이 되는 정부 지원" sub="지금 단계에서 챙겨 볼 만한 제도예요">
+    <SettingsSection id="programs" title="도움이 되는 정부 지원">
       <ul className="grid gap-2">
         {programs.map((p) => (
           <Card as="li" key={p.id} className="py-3">
@@ -50,8 +50,7 @@ export default function ProgramsSection() {
         ))}
       </ul>
       <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">
-        금액·조건은 해마다 바뀌어요. 신청 전 공식 페이지에서 확인하세요 (확인일 {formatDot(PROGRAMS_CHECKED_AT)}). 지역마다 추가 지원이 있을
-        수 있어요.
+        금액·조건은 해마다 바뀌고 지역·보건소마다 달라요. 신청 전에 공식 페이지에서 확인하세요(확인일 {formatDot(PROGRAMS_CHECKED_AT)}).
       </p>
     </SettingsSection>
   )

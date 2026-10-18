@@ -43,7 +43,7 @@ export default function PartnerFirstRunSheet() {
     update((s) =>
       completePartnerFirstRun(s, viewer, { ...(asksHabits && answers ? { habits: answers } : {}), alertStyle: chosenStyle }, today, stampOn(today)),
     )
-    toast.show('내 화면을 준비했어요')
+    toast.show('저장했어요')
   }
 
   const daily = preview?.filter((i) => i.cadence !== 'weekly').map((i) => i.label) ?? []
@@ -52,30 +52,20 @@ export default function PartnerFirstRunSheet() {
   return (
     <Sheet open={open} onClose={keepDefaults} title={`${me.name}님, 처음이죠?`}>
       <div className="space-y-5">
-        <p className="text-sm leading-relaxed text-ink-2">
-          {partner.name}님이 둘셋을 시작했어요. 내 화면은 내가 정해요 — 아래만 고르면 돼요. 나중에 설정과 오늘 탭에서 언제든 바꿀 수
-          있어요.
-        </p>
+        <p className="text-sm leading-relaxed text-ink-2">{partner.name}님이 둘셋을 시작했어요.</p>
 
         {asksHabits ? (
           <section aria-label="내 생활 습관" className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-            <p className="mb-3 text-sm font-bold text-ink">매일 체크 항목을 고르는 데만 써요</p>
+            <p className="mb-3 text-sm font-bold text-ink">매일 체크할 것</p>
             <HabitQuestions habits={habits} setHabits={setHabits} />
-            <p aria-live="polite" className="mt-3 text-xs leading-relaxed text-ink-2">
-              {preview
-                ? `이렇게 시작할게요 · 매일 ${daily.join(' · ') || '없음'}${weekly.length ? ` · 주 1회 ${weekly.join(' · ')}` : ''}`
-                : '두 질문에 답하면 항목을 골라 드려요. 지금은 걷기 30분 하나예요.'}
+            <p aria-live="polite" className="mt-3 text-xs leading-relaxed text-ink-2 empty:hidden">
+              {preview ? `매일 ${daily.join(', ') || '없음'}${weekly.length ? ` · 주 1회 ${weekly.join(', ')}` : ''}` : ''}
             </p>
           </section>
         ) : null}
 
         <section aria-label="알림 방식" className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-          <p className="mb-1 text-sm font-bold text-ink">소식은 어떻게 받을까요?</p>
-          <p className="mb-3 text-xs leading-relaxed text-ink-3">
-            {me.tracksCycle
-              ? '내 주기라 날짜와 함께 받는 게 기본이에요. 바꿔도 돼요.'
-              : `지금은 ‘우리의 주간’처럼 은근하게 받아요. ${partner.name}님의 자세한 기록은 ${partner.name}님이 허용할 때만 보여요.`}
-          </p>
+          <p className="mb-3 text-sm font-bold text-ink">소식은 어떻게 받을까요?</p>
           <ChoiceGroup label="소식 받는 방식" options={STYLE_OPTIONS} columns={1} value={chosenStyle} onChange={setStyle} />
         </section>
 

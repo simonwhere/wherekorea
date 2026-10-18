@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, Field, NumberStepper, Toggle, cx, inputClass, useToast } from '@/components/ui'
-import { formatKo, isISODate } from '@/lib/dates'
+import { isISODate } from '@/lib/dates'
 import { cycleLengthRange } from '@/lib/initial'
 import { cycleStats } from '@/lib/logic/cycle'
 import { PERIOD_LENGTH_RANGE, cycleSourceNote, setCycle, setTtcStart, ttcBounds, validateTtcStart } from '@/lib/logic/settings'
@@ -22,26 +22,11 @@ export default function CycleSection() {
   const details = canSeeCycleDetails(state, viewer)
 
   return (
-    <SettingsSection
-      id="cycle-numbers"
-      title="주기 설정"
-      sub={owner ? `${cycleOwner.name}님 주기 기준 · 모든 값은 예상에 쓰는 참고값이에요` : `${cycleOwner.name}님이 관리해요`}
-    >
+    <SettingsSection id="cycle-numbers" title="주기 설정" sub={owner ? undefined : `${cycleOwner.name}님이 관리해요`}>
       <Card>
-        {owner ? (
-          <CycleNumbers />
-        ) : details ? (
-          <>
-            <CycleStatsNote />
-            <p className="mt-2 text-xs leading-relaxed text-ink-3">주기 길이와 생리 기간은 {cycleOwner.name}님이 바꿔요.</p>
-          </>
-        ) : (
-          <p className="text-xs leading-relaxed text-ink-2">
-            주기 기록과 설정은 {cycleOwner.name}님만 보고 바꿔요. 함께 준비를 시작한 날은 둘이 같이 정해요.
-          </p>
-        )}
+        {owner ? <CycleNumbers /> : details ? <CycleStatsNote /> : null}
 
-        <div className="mt-3 border-t border-line pt-3">
+        <div className={cx(owner || details ? 'mt-3 border-t border-line pt-3' : undefined)}>
           <TtcStartField />
         </div>
       </Card>
@@ -84,7 +69,7 @@ function CycleNumbers() {
   const range = cycleLengthRange(longCycles)
   const setLong = (next: boolean) => {
     update((s) => setCycle(s, { longCycles: next, cycleLength: Math.min(s.cycle.cycleLength, cycleLengthRange(next).max) }))
-    toast.show(next ? '넓은 범위로 예상할게요. LH 기록이 있으면 그걸 먼저 봐요' : '보통 범위로 예상할게요')
+    toast.show(next ? '넓은 범위로 예상해요' : '보통 범위로 예상해요')
   }
   return (
     <>
@@ -92,7 +77,7 @@ function CycleNumbers() {
       <div className="mt-2 divide-y divide-line">
         <StepperRow
           label="평균 주기 길이"
-          hint={fromLogs ? '지금은 기록 평균을 쓰고 있어요' : `생리 시작일부터 다음 시작일 전날까지 · ${range.min}~${range.max}일`}
+          hint={fromLogs ? undefined : `${range.min}~${range.max}일`}
           muted={fromLogs}
         >
           <NumberStepper
@@ -108,9 +93,8 @@ function CycleNumbers() {
           checked={longCycles}
           onChange={setLong}
           label="주기가 45일 이상이거나 들쭉날쭉해요"
-          description="예상을 넓은 범위로만 보여 주고, 긴 주기도 ‘기록 누락’으로 보지 않아요."
         />
-        <StepperRow label="생리 기간" hint="끝나는 날을 기록하지 않았을 때 써요">
+        <StepperRow label="생리 기간">
           <NumberStepper
             label="생리 기간"
             value={state.cycle.periodLength}
@@ -169,12 +153,7 @@ function TtcStartField() {
   return (
     <Field
       label="함께 준비를 시작한 날 (선택)"
-      hint={
-        error ??
-        (stored
-          ? `${formatKo(stored, { year: true })}부터 · 준비 기간에 맞춰 전문의 상담 시기를 부드럽게 알려 드려요.`
-          : '입력하면 준비 기간에 맞춰 전문의 상담 시기를 부드럽게 알려 드려요.')
-      }
+      hint={error ?? '전문의 상담 시기를 알려 줄 때 써요.'}
     >
       <input
         type="date"
@@ -190,12 +169,12 @@ function TtcStartField() {
   )
 }
 
-function StepperRow({ label, hint, muted, children }: { label: string; hint: string; muted?: boolean; children: React.ReactNode }) {
+function StepperRow({ label, hint, muted, children }: { label: string; hint?: string; muted?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
       <div className="min-w-0 flex-1">
         <p className={cx('text-sm font-medium', muted ? 'text-ink-2' : 'text-ink')}>{label}</p>
-        <p className="text-[11px] leading-relaxed text-ink-3">{hint}</p>
+        {hint ? <p className="text-[11px] leading-relaxed text-ink-3">{hint}</p> : null}
       </div>
       {children}
     </div>

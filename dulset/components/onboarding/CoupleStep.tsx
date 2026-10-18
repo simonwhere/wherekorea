@@ -24,7 +24,6 @@ function PersonFields({
   role,
   onRole,
   roleLabel,
-  roleHint,
 }: {
   legend: string
   name: string
@@ -33,7 +32,6 @@ function PersonFields({
   role: Role | undefined
   onRole: (r: Role) => void
   roleLabel: string
-  roleHint?: string
 }) {
   return (
     <fieldset className="space-y-4 rounded-xl2 border border-line bg-surface p-4 shadow-card">
@@ -52,7 +50,7 @@ function PersonFields({
           enterKeyHint="next"
         />
       </Field>
-      <Group title={roleLabel} hint={roleHint}>
+      <Group title={roleLabel}>
         <ChoiceGroup label={roleLabel} options={ROLE_OPTIONS} value={role} onChange={onRole} />
       </Group>
     </fieldset>
@@ -71,7 +69,6 @@ export default function CoupleStep({
   const roles = draftRoles(draft)
   const names = draftNames(draft)
   const owner = draftOwner(draft)
-  const suggested = draft.partnerRole === undefined && roles.b !== undefined
   const bothRoles = !!roles.a && !!roles.b
   return (
     <div className="space-y-4">
@@ -92,18 +89,10 @@ export default function CoupleStep({
         role={roles.b}
         onRole={(partnerRole) => patch({ partnerRole })}
         roleLabel="함께하는 사람은"
-        roleHint={suggested ? '내 선택에 맞춰 골라 뒀어요. 다르면 바꿔 주세요.' : undefined}
       />
 
       <div className="rounded-xl2 border border-line bg-surface p-4 shadow-card">
-        <Group
-          title="누구의 주기를 기록할까요?"
-          hint={
-            bothRoles
-              ? '생리·배테기 기록은 이 사람만 남겨요. 가임기 예상은 ‘우리의 주간’으로 함께 봐요.'
-              : '두 사람의 역할을 고르면 알아서 골라 드려요.'
-          }
-        >
+        <Group title="누구의 주기를 기록할까요?" hint={bothRoles ? undefined : '두 사람의 역할을 먼저 골라 주세요.'}>
           <ChoiceGroup<MemberId>
             label="주기를 기록할 사람"
             columns={2}

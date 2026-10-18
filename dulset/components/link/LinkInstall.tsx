@@ -70,7 +70,7 @@ export function LinkOutsideHint({
       <div className="flex items-start gap-2">
         <Icon name="ext" className="mt-0.5 h-[18px] w-[18px] shrink-0 text-ink-2" />
         <p className="min-w-0 flex-1 text-[13px] leading-[1.5] text-ink-2">
-          <b className="font-bold text-ink">{where} 안에서 열었어요.</b> 사파리나 크롬으로 열면 홈 화면에 두고 다시 열 수 있어요.
+          <b className="font-bold text-ink">{where} 안에서 열었어요.</b> 사파리나 크롬으로 열면 홈 화면에 둘 수 있어요.
         </p>
         <CloseButton onClick={onClose} label="안내 닫기" />
       </div>
@@ -116,7 +116,6 @@ export function LinkInstallCard({ platform, onClose, className }: { platform: De
               {platform === 'ios' ? 'iPhone' : 'Android'} · {steps.join(' → ')}
             </p>
           )}
-          <p className="mt-1 text-[12px] text-ink-3">앱을 설치하는 게 아니라, 이 화면을 바로 여는 아이콘이에요.</p>
         </div>
         <CloseButton onClick={onClose} label="홈 화면 안내 닫기" />
       </div>

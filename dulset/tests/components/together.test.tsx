@@ -351,7 +351,7 @@ describe('설정 › 공유 범위: three levels, the owner’s to choose', () =
     openShare()
     const share = document.getElementById('share')!
     expect(within(share).queryAllByRole('radio')).toHaveLength(0)
-    expect(share.textContent).toContain('날짜 없이 함께해요')
+    expect(share.textContent).toContain('날짜는 보이지 않아요. 지은님이 알려 준 것만 보여요.')
   })
 })
 
@@ -369,7 +369,7 @@ describe('설정 › 연결: 민수님 화면 미리보기', () => {
     // His own things are there: the week block and his checks.
     expect(within(page).getByLabelText('이번 주 우리 둘')).toBeTruthy()
     expect(page.textContent).toContain('오늘 할 일')
-    expect(page.textContent).toContain('여기서는 아무것도 보내지 않아요')
+    expect(page.textContent).not.toContain('아무것도 보내지 않아요')
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(MOCK_SYNC_KEY)).toBe(before)
   })
@@ -381,8 +381,8 @@ describe('설정 › 연결: 민수님 화면 미리보기', () => {
     fireEvent.click(screen.getByRole('button', { name: /미리보기 열기/ }))
     const frame = document.querySelector('[data-partner-preview]') as HTMLElement
     expect(frame.textContent).not.toMatch(/우리의 주간|가임기|배란/)
-    // And the list of what the link carries says the band does not go.
-    expect(pageText()).toContain('우리의 주간 띠와 날짜 (공유 범위: 날짜 없음)')
+    // The 'what the link carries' list is gone (2026-10-18 copy sweep); the preview above is the proof.
+    expect(pageText()).not.toMatch(/링크로 보내지는 것|절대 가지 않는 것/)
   })
 
   it('is the owner’s: 민수 has no preview button', () => {

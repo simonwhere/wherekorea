@@ -69,7 +69,7 @@ describe('/link — his clinic week (N32)', () => {
     const list = await screen.findByRole('list', { name: '이번 주 병원 일정' })
     expect(list.textContent).toContain('10월 7일 (수) 08:30')
     expect(list.textContent).toContain('병원 진료 · ○○의원 · 둘이 함께')
-    expect(pageText()).toContain('난임치료휴가는 남성 근로자도 쓸 수 있어요 · 2026년 11월 27일부터 유급 4일(연 6일)')
+    expect(pageText()).toContain('난임치료휴가는 남성 근로자도 쓸 수 있어요. 2026년 11월 27일부터 연 6일 중 4일이 유급이에요.')
     expect(pageText()).toContain('회사마다 달라요')
     const source = screen.getByRole('link', { name: /출처/ })
     expect(source.getAttribute('href')).toMatch(/^https:\/\//)
@@ -133,7 +133,7 @@ describe('/link — the booked test, 내 준비, the weekly reminder', () => {
 
   it('‘캘린더에 넣기’ makes a weekly .ics for the picked day that links to /link/ without the token', async () => {
     const link = await openLink(mondayState())
-    const card = await screen.findByRole('region', { name: '매주 이 시간에 알려 받기' })
+    const card = await screen.findByRole('region', { name: '매주 이 시간에 알림 받기' })
     // Today (a Monday) is picked first; he picks Friday.
     expect(card.querySelector('[data-weekly-day="MO"]')!.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(card.querySelector('[data-weekly-day="FR"]')!)

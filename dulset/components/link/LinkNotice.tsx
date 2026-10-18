@@ -16,11 +16,7 @@ export default function LinkNotice({ kind, ownerName, onRetry }: { kind: NoticeK
   const copy = noticeCopy(kind, ownerName)
   return (
     <section aria-label={copy.title} className="pt-2">
-      <Polaroid
-        decorated={false}
-        quiet
-        caption={<span className="min-w-0 truncate text-[12.5px] font-medium text-ink-3">둘셋 · 설치 없이 보는 화면</span>}
-      >
+      <Polaroid decorated={false} quiet caption={<span className="min-w-0 truncate text-[12.5px] font-medium text-ink-3">둘셋</span>}>
         <CoverArt tod={timeOfDay(new Date().getHours())} quiet className="absolute inset-0" />
       </Polaroid>
       <div className="mt-6 px-1 text-center">

@@ -29,7 +29,7 @@ export default function MembersSection() {
     setViewer(id)
     rememberDeviceViewer(id)
     const name = state.couple.members.find((m) => m.id === id)?.name ?? ''
-    toast.show(`이 폰은 ${name}님 폰으로 기억할게요`)
+    toast.show(`이 폰은 ${name}님 폰이에요`)
   }
   const ownerLabelId = useId()
   const ownerGroup = useId()
@@ -40,7 +40,7 @@ export default function MembersSection() {
   const canChangeOwner = canHandOverCycle(state, viewer)
 
   return (
-    <SettingsSection id="members" title="우리 둘" sub="이름과 역할은 두 사람 화면에 똑같이 보여요">
+    <SettingsSection id="members" title="우리 둘">
       <Card>
         <ul className="divide-y divide-line">
           {members.map((m) => (
@@ -99,10 +99,9 @@ export default function MembersSection() {
               )
             })}
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
-            생리·배테기·임테기 기록과 주기 예상, 주기 알림이 이 사람을 기준으로 해요. 기록도 이 사람만 남겨요.
-            {canChangeOwner ? '' : ` 기록이 있어서 ${cycleOwner.name}님만 바꿀 수 있어요.`}
-          </p>
+          {canChangeOwner ? null : (
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-3">기록이 있어서 {cycleOwner.name}님만 바꿀 수 있어요.</p>
+          )}
         </div>
       </Card>
 
@@ -110,7 +109,7 @@ export default function MembersSection() {
         {editingMember ? <MemberForm key={editingMember.id} member={editingMember} onDone={closeEdit} /> : null}
       </Sheet>
 
-      <Sheet open={!!ownerCandidate} onClose={closeOwner} title="주기 기록하는 사람 바꾸기">
+      <Sheet open={!!ownerCandidate} onClose={closeOwner} title="주기를 기록하는 사람 바꾸기">
         {ownerCandidate ? <OwnerConfirm member={ownerCandidate} onDone={closeOwner} /> : null}
       </Sheet>
 
@@ -120,7 +119,7 @@ export default function MembersSection() {
 }
 
 export function MemberForm({ member, onDone }: { member: Member; onDone: () => void }) {
-  const { update, today, viewer } = useApp()
+  const { update, today } = useApp()
   const toast = useToast()
   const [name, setName] = useState(member.name)
   const [role, setRole] = useState<Role>(member.role)
@@ -141,11 +140,6 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      {member.id !== viewer ? (
-        <p className="rounded-xl bg-surface-2 p-3 text-xs leading-relaxed text-ink-2">
-          {member.name}님의 정보예요. 바꾸면 {member.name}님 화면에도 똑같이 보여요.
-        </p>
-      ) : null}
       <Field label="이름 (앱에서 부를 이름)">
         <input
           className={inputClass}
@@ -184,7 +178,7 @@ export function MemberForm({ member, onDone }: { member: Member; onDone: () => v
         </div>
       </fieldset>
 
-      <Field label="출생 연도 (선택)" hint={yearError ?? '나이에 맞춰 전문의 상담 시기를 안내할 때만 써요. 비워 둬도 괜찮아요.'}>
+      <Field label="출생 연도 (선택)" hint={yearError ?? '전문의 상담 시기를 알려 줄 때 써요.'}>
         <input
           className={inputClass}
           type="number"
@@ -220,10 +214,7 @@ export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () =>
       <p className="text-sm leading-relaxed text-ink">
         {member.name}님의 주기를 기록하도록 바꿀까요? 주기 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-ink-3">
-        지금까지 기록한 생리 날짜는 그대로 남아요. 다른 사람의 기록이라면 주기 탭에서 정리해 주세요. 각자 고른 알림 방식은 바뀌지 않아요.
-        공유 범위가 ‘자세히’였다면 ‘우리의 주간’으로 돌아가고(‘날짜 없음’은 그대로), {member.name}님이 다시 정해요.
-      </p>
+      <p className="mt-2 text-xs leading-relaxed text-ink-3">공유 범위가 ‘자세히’였다면 ‘우리의 주간’으로 돌아가요.</p>
       <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
     </div>
   )

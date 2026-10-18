@@ -55,7 +55,7 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
         />
       </Group>
 
-      <Group title="이미 하고 있는 게 있나요? (선택, 여러 개 골라도 돼요)">
+      <Group title="이미 하고 있는 게 있나요? (선택)">
         <div className="grid grid-cols-2 gap-2">
           <PickToggle on={habits.exercises} onClick={() => set({ exercises: !habits.exercises })} icon="run" label="운동" />
           <PickToggle

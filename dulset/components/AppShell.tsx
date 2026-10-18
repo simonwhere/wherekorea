@@ -318,7 +318,6 @@ function MainApp() {
             type="button"
             onClick={() => setViewer(partner.id)}
             className="relative mr-0.5 flex h-9 items-center gap-1.5 rounded-full bg-surface-2 pl-1 pr-3 text-[13px] font-semibold text-ink-2 before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-            title="프로토타입: 한 기기에서 두 사람의 화면을 바꿔 볼 수 있어요"
           >
             <span className="flex [&>span]:h-7 [&>span]:w-7 [&>span]:text-[15px]">
               <Avatar member={me} size="sm" />
@@ -327,7 +326,7 @@ function MainApp() {
             <span aria-hidden className="text-ink-3">
               ⇄
             </span>
-            <span className="sr-only">{partner.name}의 화면으로 전환</span>
+            <span className="sr-only">{partner.name}님 화면으로 바꾸기</span>
           </button>
           <button
             type="button"

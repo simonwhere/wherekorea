@@ -124,7 +124,7 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
 
 // ── 같이 챙길 것 (2026-10-09) ───────────────────────────────
 
-/** The block's header and the line under it. */
+/** The block's header (no line under it — the rows say what they are). */
 export const TOGETHER_BLOCK_TITLE = '같이 챙길 것'
 /** Rows shown before 'N개 더 보기' — the rest of his page stays within reach. */
 export const TOGETHER_FOLD = 3
@@ -132,17 +132,6 @@ export const TOGETHER_FOLD = 3
 /** '2개 더 보기' · '접기'. */
 export function togetherFoldLabel(hidden: number, open: boolean): string {
   return open ? '접기' : `${hidden}개 더 보기`
-}
-
-export function togetherBlockSub(ownerName: string): string {
-  return `${ownerName}${subjectParticle(ownerName)} 챙기는 것도 같이 봐요. [같이 할게요]를 누르면 ${ownerName}에게 전해져요.`
-}
-
-/** '이' after a final consonant, '가' after a vowel (a non-Hangul end reads as a consonant). */
-function subjectParticle(word: string): string {
-  const code = word.trim().charCodeAt(word.trim().length - 1)
-  if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return '이'
-  return (code - 0xac00) % 28 === 0 ? '가' : '이'
 }
 
 /**
@@ -339,13 +328,13 @@ export type NoticeKind = 'expired' | 'nolink' | 'stale' | 'offline'
  * transport could not be reached (the full 'offline' notice is for when
  * there is nothing kept to draw).
  */
-export const OFFLINE_LINE = { title: '지금은 불러올 수 없어요', body: '마지막으로 받은 화면이에요. 인터넷이 돌아오면 저절로 새로 보여요.' } as const
+export const OFFLINE_LINE = { title: '지금은 불러올 수 없어요', body: '마지막으로 받은 화면이에요' } as const
 
 /**
  * The copy for each notice; the owner's name when the page knows it. No
  * health word, no detail. 'stale' (the week the snapshot covers is over)
  * never asks anything of her — it says what happens on its own (her phone
- * opening fills the page again) and what he can still do meanwhile.
+ * opening fills the page again); the signals and 응원 below need no line.
  */
 export function noticeCopy(kind: NoticeKind, ownerName?: string): { title: string; body: string } {
   const who = ownerName ? `${ownerName}님` : '상대'
@@ -355,7 +344,7 @@ export function noticeCopy(kind: NoticeKind, ownerName?: string): { title: strin
     case 'nolink':
       return { title: '링크 주소가 올바르지 않아요', body: '받은 링크를 그대로 열어 주세요.' }
     case 'stale':
-      return { title: '새 화면은 곧 채워져요', body: `${who} 폰이 열리면 다시 채워져요. 그동안 신호와 응원은 그대로 보낼 수 있어요.` }
+      return { title: '새 화면은 곧 채워져요', body: `${who} 폰이 열리면 다시 채워져요.` }
     default:
       return { title: '지금은 불러올 수 없어요', body: '인터넷을 확인하고 다시 열어 주세요.' }
   }

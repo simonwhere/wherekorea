@@ -531,21 +531,22 @@ describe('only her use renews the link', () => {
     }
   })
 
-  it('설정 › 연결 and the onboarding say it renews while SHE uses 둘셋 and stops after 30 days of her not opening 둘셋 (해요체)', () => {
+  it('설정 › 연결 and the onboarding say, in one line, it stops after 30 days of not opening 둘셋 (해요체)', () => {
     const section = readFileSync(join(ROOT, 'components/settings/LinkSection.tsx'), 'utf8')
-    // Who opens what is named (내가 · 둘셋을): never 'not opened for 30 days' with the link as the topic,
+    // What is not opened is named (둘셋을): never 'not opened for 30 days' with the link as the topic,
     // which reads as his opens keeping it alive — a read receipt (AGENTS.md: 만료일이 읽음 표시가 되지 않게).
-    expect(section).toContain('내가 둘셋을 쓰는 동안 저절로 연장돼요 · {LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요')
-    expect(section).toContain('링크는 내가 둘셋을 쓰는 동안 저절로 연장되고, ${LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요.')
-    expect(section).toContain('님이 링크를 여는 것과는 상관없어요')
-    expect(section).not.toMatch(/일 동안 열지 않으면|자동으로 연장/)
+    // One line, no extra explanation of who counts (founder copy sweep, 2026-10-18).
+    expect(section).toContain('{LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.')
+    expect(section).toContain('${LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.')
+    expect(section).not.toContain('님이 링크를 여는 것과는 상관없어요')
+    expect(section).not.toMatch(/일 동안 열지 않으면|자동으로 연장|링크를 \$?\{?LINK_DAYS\}?일 동안 안 열면/)
     expect(section).not.toContain('일 동안 열리고')
     expect(section).not.toContain('만료 전까지')
     // One word for a stopped link on both screens: hers says what his says (noticeCopy('expired')).
     expect(section).toContain("'링크가 만료됐어요'")
     expect(section).not.toMatch(/멈췄어요|멈춘 링크|멈춰요/)
     const done = readFileSync(join(ROOT, 'components/onboarding/DoneStep.tsx'), 'utf8')
-    expect(done).toContain('링크는 내가 둘셋을 쓰는 동안 저절로 연장되고({LINK_DAYS}일 동안 둘셋을 안 열면 만료돼요)')
+    expect(done).toContain('{LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.')
     expect(done).not.toMatch(/일 동안 열지 않으면|멈춰요/)
     for (const w of ['숙제', '실패', '노력']) {
       expect(section.includes(w), w).toBe(false)

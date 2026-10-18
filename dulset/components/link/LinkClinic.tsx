@@ -70,7 +70,7 @@ export default function LinkClinic({
       ) : null}
       <div className={cx('text-[12.5px] leading-[1.55] text-ink-2', list.length ? 'mt-1 border-t border-line/70 pt-2.5' : '')}>
         <p>
-          <b className="font-bold text-ink">알아 두면 좋아요</b> · {clinic.leave.text}. {clinic.leave.note}.
+          {clinic.leave.text} {clinic.leave.note}
         </p>
         <ExternalLink href={clinic.leave.source.url} className="-mb-2 text-[12px]">
           출처 {clinic.leave.source.label}

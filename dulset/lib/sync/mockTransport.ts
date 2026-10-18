@@ -143,9 +143,9 @@ export type MockErrorCode = 'unknown-token' | 'foreign-token' | 'storage' | 'off
 
 const MOCK_ERROR_TEXT: Record<MockErrorCode, string> = {
   'unknown-token': '이 링크는 더 이상 유효하지 않아요',
-  'foreign-token': '이 링크는 다른 두 사람의 것이에요',
+  'foreign-token': '다른 두 사람의 링크예요',
   storage: '이 기기에 저장할 수 없어요',
-  offline: '지금은 연결할 수 없어요 (모의 오프라인)',
+  offline: '지금은 연결할 수 없어요',
 }
 
 /**
