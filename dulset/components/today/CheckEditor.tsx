@@ -32,7 +32,7 @@ const CADENCES: { value: Cadence; label: string }[] = [
 ]
 
 /** One short line under the cadence choice. */
-const WEEKLY_NOTE = '금주·사우나 쉬기처럼 참는 습관에 써요. 콕은 가지 않아요.'
+const WEEKLY_NOTE = '금주·사우나 쉬기처럼 참는 습관에 써요.'
 
 const EVIDENCE_TONE: Record<Evidence, 'ok' | 'brand' | 'muted' | 'warn'> = {
   strong: 'ok',
@@ -87,7 +87,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="나의 체크 항목">
+    <Sheet open={open} onClose={onClose} title="내 체크 항목">
       {/* Current items */}
       <section aria-labelledby={`${kindGroup}-mine`}>
         <h3

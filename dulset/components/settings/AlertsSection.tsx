@@ -21,7 +21,6 @@ import {
   ALERT_STYLE_OPTIONS,
   acceptNudgesFor,
   alertPreview,
-  alertStyleLabel,
   alertStyleOf,
   homeDiscreetFor,
   lockScreenText,
@@ -57,13 +56,6 @@ import { weekdayIndex } from '@/lib/dates'
 function useExplicitWords(): boolean {
   const { state, viewer, cycleOwner } = useApp()
   return fertilityVoice(settingsFor(state.settings, viewer), viewer, viewer === cycleOwner.id) === 'explicit'
-}
-
-/** The partner's choice, named without health words (for a soft / off / 부담 없이 viewer). */
-const PLAIN_STYLE_LABEL: Record<AlertStyle, string> = {
-  explicit: '날짜와 함께 알림',
-  soft: '은근하게',
-  off: '받지 않음',
 }
 
 export default function AlertsSection() {
@@ -135,7 +127,7 @@ function HomeDiscreetToggle() {
             홈 카드까지 조용히 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
           </>
         }
-        description="오늘 화면의 카드와 띠가 ‘오늘의 우리’로만 보이고, 누르면 열려요."
+        description="오늘 화면의 카드와 띠는 눌러야 내용이 보여요."
       />
     </div>
   )
@@ -232,9 +224,8 @@ function LHStripsCard() {
 }
 
 function MyAlertStyle() {
-  const { state, update, viewer, me, partner, cycleOwner, today } = useApp()
+  const { state, update, viewer, me, cycleOwner, today } = useApp()
   const style = alertStyleOf(state, viewer)
-  const partnerStyle = alertStyleOf(state, partner.id)
   const isOwner = me.id === cycleOwner.id
   const low = lowPressureFor(state.settings, viewer)
   // Until the owner shares the details, the partner hears the shared "우리의
@@ -262,11 +253,8 @@ function MyAlertStyle() {
   return (
     <Card>
       <h3 id={headingId} className="text-sm font-bold text-ink">
-        {explicitWords ? `${me.name}님의 가임기 알림` : `${me.name}님의 알림 방식`}
+        {explicitWords ? '가임기 알림' : '알림 방식'}
       </h3>
-      <p className="mt-0.5 text-xs text-ink-3">
-        {partner.name}님 선택: {explicitWords ? alertStyleLabel(partnerStyle) : PLAIN_STYLE_LABEL[partnerStyle]}
-      </p>
 
       <div role="radiogroup" aria-labelledby={headingId} className={cx('mt-3 grid gap-2', low && 'opacity-60')}>
         {ALERT_STYLE_OPTIONS.map((o) => {
@@ -353,7 +341,7 @@ function LowPressureToggle() {
       />
       <details className="group">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-medium text-brand-ink [&::-webkit-details-marker]:hidden">
-          왜 이런 방식이 있나요?
+          근거 보기
           <Icon name="chev" className="ml-1 h-4 w-4 transition-transform group-open:rotate-180" strokeWidth={2.2} />
         </summary>
         <div className="pb-2 text-xs leading-relaxed text-ink-2">

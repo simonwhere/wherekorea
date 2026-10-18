@@ -39,7 +39,7 @@ export default function FertilityGuide({
 
   return (
     <>
-      <SectionTitle>{hidden ? '편하게 준비하기' : '정확도 높이기'}</SectionTitle>
+      <SectionTitle>{hidden ? '알아 둘 것' : '정확도 높이기'}</SectionTitle>
       <Card className="px-0 py-0">
         <ul className="divide-y divide-line">
           {sections.map((s) => (

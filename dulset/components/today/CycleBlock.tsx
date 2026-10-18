@@ -373,7 +373,7 @@ export default function CycleBlock({
         {m.guidance ? (
           <div className={cx(inner, 'text-[13px] leading-[1.55] text-ink-2')}>
             <p>
-              <b className="font-bold text-ink">몸 안내</b> · {m.guidance.text}
+              <b className="font-bold text-ink">회복 안내</b> · {m.guidance.text}
             </p>
             <p className="mt-1 text-[11.5px] text-ink-3">
               <ExternalLink href={m.guidance.source.url}>{m.guidance.source.name}</ExternalLink>
@@ -545,7 +545,7 @@ function VaccineRestCard({ hint }: { hint: VaccineRestHint }) {
           이번 주기는 쉬어요
         </PillButton>
         <PillButton size="md" variant="surface" className="min-w-0 flex-1" onClick={dismiss}>
-          괜찮아요
+          안 쉴게요
         </PillButton>
       </div>
       <div className="-mb-2 mt-1 flex flex-wrap gap-x-3">

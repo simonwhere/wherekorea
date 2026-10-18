@@ -109,7 +109,7 @@ export default function AppointmentSheet({
       toast.show('일정을 고쳤어요')
     } else {
       update((s) => addAppointment(s, input, me.id))
-      toast.show(privateTo ? '나만 보는 일정으로 넣었어요' : `${partner.name}님 화면에도 보여요`)
+      toast.show(privateTo ? '나만 보는 일정으로 넣었어요' : `일정을 넣었어요 · ${partner.name}님 화면에도 보여요`)
     }
     onClose()
   }
@@ -278,7 +278,7 @@ export default function AppointmentSheet({
         </Button>
         {editing ? (
           <Button type="button" full variant="ghost" onClick={duplicate}>
-            같은 일정 +{DUPLICATE_AFTER_DAYS}일 복제
+            {DUPLICATE_AFTER_DAYS}일 뒤 같은 일정 추가
           </Button>
         ) : null}
       </form>

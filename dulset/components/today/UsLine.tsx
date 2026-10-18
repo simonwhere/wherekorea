@@ -227,9 +227,10 @@ function ReplyLine({ reply, today, className }: { reply: ReceivedReply; today: I
   return (
     <div className={className} data-received-reply>
       <p className="text-xs font-semibold text-ink-3">
-        {sender ? `${sender.name}님이 답했어요` : '답장이 왔어요'}
+        {sender ? `${sender.name}님이 ` : ''}
+        {reply.answered ? <span className="font-normal">‘{reply.answered.text}’에 </span> : null}
+        {sender || reply.answered ? '답했어요' : '답장이 왔어요'}
         {when ? ` · ${when}` : ''}
-        {reply.answered ? <span className="font-normal"> · ‘{reply.answered.text}’에</span> : null}
       </p>
       <p
         className={cx(

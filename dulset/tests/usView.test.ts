@@ -210,12 +210,12 @@ describe('reactions', () => {
 describe('우리의 날들 chain', () => {
   it('shows only the links that apply, in story order', () => {
     const s = fresh('2026-03-01')
-    expect(ourDaysChain(s, '2026-09-26').map((l) => l.text)).toEqual(['함께 준비한 지 D+210'])
+    expect(ourDaysChain(s, '2026-09-26').map((l) => l.text)).toEqual(['함께 준비한 지 210일'])
     const dated = { ...s, couple: { ...s.couple, metDate: '2021-05-14', marriedDate: '2024-10-19' } }
     expect(ourDaysChain(dated, '2026-09-26').map((l) => l.text)).toEqual([
       '만난 지 1,962일',
       '결혼 1년',
-      '함께 준비한 지 D+210',
+      '함께 준비한 지 210일',
     ])
   })
 
@@ -242,7 +242,7 @@ describe('우리의 날들 chain', () => {
     const s = fresh('2026-03-01')
     const ended = backToPreparing(startPregnancy(s, '2026-05-01', '2026-06-10'), '2026-07-20')
     // 68 days after the end (quiet period over): D+69 from the day it ended, not D+210 from ttcStart.
-    expect(ourDaysChain(ended, '2026-09-26').map((l) => l.text)).toEqual(['함께 준비한 지 D+69'])
+    expect(ourDaysChain(ended, '2026-09-26').map((l) => l.text)).toEqual(['함께 준비한 지 69일'])
   })
 
   it('skips dates in the future and counts 결혼 in days during the first year', () => {

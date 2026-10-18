@@ -51,7 +51,7 @@ function before(a: Element, b: Element): boolean {
   return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
-describe('his preparing home: 지은님 챙길 것 · 같이', () => {
+describe('his preparing home: 지은님과 같이 챙길 것', () => {
   it('lists her near-term items with a neutral status, his support line and [같이 할게요] — between his week and 내 준비', () => {
     const probe = stateProbe()
     const state = demoState(T0)
@@ -67,7 +67,7 @@ describe('his preparing home: 지은님 챙길 것 · 같이', () => {
     const c = card()!
     expect(c).toBeTruthy()
     expect(c.getAttribute('data-together-card')).toBe('preparing')
-    expect(within(c).getByRole('heading', { name: /지은님 챙길 것 · 같이/ })).toBeTruthy()
+    expect(within(c).getByRole('heading', { name: /지은님과 같이 챙길 것/ })).toBeTruthy()
     const rows = c.querySelectorAll('[data-together-row]')
     expect([...rows].map((r) => r.getAttribute('data-together-row'))).toEqual(expected.map((r) => r.id))
     // Neutral words only — never a warning about her.
@@ -116,7 +116,7 @@ describe('her side: 민수님이 같이 챙긴대요', () => {
     renderApp(<TodayTab onNavigate={() => {}} />, { state, viewer: HER, today: T0 })
     const lines = usLine().querySelector('[data-support-lines]') as HTMLElement
     expect(lines).toBeTruthy()
-    expect(lines.textContent).toContain('민수님이 ‘임신 전 기본 검사’ 같이 챙긴대요')
+    expect(lines.textContent).toContain('민수님이 ‘임신 전 기본 검사’를 같이 챙긴대요')
   })
 
   it('shows it on the item in 챙길 것, and his own screen keeps the toggle on', () => {
@@ -212,7 +212,7 @@ describe('pregnant home', () => {
     expect(screen.queryByRole('region', { name: WEEK_BLOCK_TITLE })).toBeNull()
     const block = usLine().querySelector('[data-week-summary]') as HTMLElement
     expect(block.textContent).toContain(pick.doneText)
-    expect(usLine().querySelector('[data-support-lines]')?.textContent).toContain('민수님이 ‘NT(목덜미 투명대)’ 같이 챙긴대요')
+    expect(usLine().querySelector('[data-support-lines]')?.textContent).toContain('민수님이 ‘NT(목덜미 투명대)’를 같이 챙긴대요')
     fireEvent.click(within(block).getByRole('button', { name: /고마워요/ }))
     expect(probe.current.state!.decisions?.[`week-thanks:${'2026-10-05'}:${HER}`]).toBe(T0)
   })

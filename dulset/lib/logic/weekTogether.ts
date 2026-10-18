@@ -105,7 +105,7 @@ export const WEEK_OPTIONS: readonly WeekOption[] = [
   { id: 'walk-route', text: '주말 산책 코스 정하기', doneText: '주말 산책 코스를 정했어요' },
   { id: 'chore', text: '집안일 하나 맡기', doneText: '집안일 하나 맡았어요' },
   { id: 'weekend-plan', text: '주말 계획 먼저 잡기', doneText: '주말 계획을 먼저 잡았어요' },
-  { id: 'walk-together', text: '같이 걷는 30분 제안하기', doneText: '같이 걷자고 했어요' },
+  { id: 'walk-together', text: '30분 같이 걷자고 하기', doneText: '같이 걷자고 했어요' },
   { id: 'talk-10', text: '휴대폰 내려놓고 10분 이야기하기', doneText: '휴대폰 내려놓고 이야기했어요' },
 ]
 

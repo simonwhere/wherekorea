@@ -10,6 +10,7 @@
 // settings.ts and ttcFlow.ts import this file, so their flags are read inline).
 
 import { addDays, diffDays, isISODate } from '../dates'
+import { copula } from '../korean'
 import type { AppState, Appointment, CoverPhoto, DiaryEntry, ISODate, MemberId, PeriodLog, Pregnancy, PregnancyTest } from '../types'
 import { anniversariesBetween, anniversaryAlertsEnabled, anniversaryDayOnly, daysSince } from './anniversary'
 import { appointmentsFor } from './appointments'
@@ -338,17 +339,8 @@ export interface HeroLine {
 /** Days ahead an anniversary is mentioned on the cover — after the preparing stage (preparing: the day itself only). */
 export const HERO_ANNIVERSARY_DAYS = 7
 
-/** Digits read aloud without a final consonant: 이(2) 사(4) 오(5) 구(9). */
-const VOWEL_DIGITS = '2459'
-
-/** '이에요' after a final consonant, '예요' after a vowel (프러포즈예요 · 1,100일이에요 · 여행 2예요). */
-export function copula(word: string): string {
-  const last = word.trimEnd().slice(-1)
-  if (last >= '0' && last <= '9') return VOWEL_DIGITS.includes(last) ? '예요' : '이에요'
-  const code = last.charCodeAt(0) - 0xac00
-  if (!(code >= 0 && code <= 11171)) return '이에요'
-  return code % 28 === 0 ? '예요' : '이에요'
-}
+// copula lives in lib/korean (anniversary.ts needs it too, and cover.ts imports anniversary.ts).
+export { copula }
 
 /**
  * One line over the cover. First match wins:

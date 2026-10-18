@@ -42,7 +42,7 @@ export default function SetupCard({ className }: { className?: string }) {
   useEffect(() => setDismissed(readDismissed()), [])
 
   const missing: string[] = []
-  if (!me.birthYear) missing.push('내 출생연도')
+  if (!me.birthYear) missing.push('내 출생 연도')
   if (!isISODate(state.settings.ttcStart)) missing.push('함께 준비를 시작한 날')
   if (dismissed || missing.length === 0) return null
 

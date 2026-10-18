@@ -219,13 +219,9 @@ export function amenorrheaKey(cycleStart: ISODate, week: number, owner: MemberId
 /** The soft "우리의 주간" heads-up — no health words (설정's preview shows the same). */
 export const SOFT_FERTILE_TITLE = '💞 이번 주는 우리의 주간이에요'
 
-/**
- * Its body. Date ideas sit in the partner's 우리의 주간 card on 오늘, where the
- * notice opens (today.noticeTarget); the cycle owner's own card has none, so
- * the owner isn't promised any. (The 데이트 tab is gone: #date is only linked from that card.)
- */
-export function softFertileBody(isCycleOwner: boolean): string {
-  return isCycleOwner ? '둘만의 시간을 챙겨 봐요.' : '오늘 화면의 ‘우리의 주간’ 카드에 아이디어가 있어요.'
+/** Its body: the same for both people — the notice opens the 우리의 주간 card on 오늘 (today.noticeTarget). */
+export function softFertileBody(): string {
+  return '둘만의 시간을 챙겨 봐요.'
 }
 
 /**
@@ -349,7 +345,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
           kind: 'fertile-start',
           title: soft ? SOFT_FERTILE_TITLE : '💞 가임기가 다가왔어요',
           body: soft
-            ? softFertileBody(isOwner)
+            ? softFertileBody()
             : explicitFertileBody(w, isOwner && lh, isOwner),
         })
       }
@@ -400,8 +396,8 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
       const notice =
         threshold > 0 && months >= threshold && !checkupsDone(state)
           ? {
-              title: '🩺 전문의 상담을 고려해 볼 때예요',
-              body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아 보길 권해요. 보건소 ‘임신 사전건강관리’ 지원도 확인해 보세요.`,
+              title: '🩺 전문의 상담을 받아 볼 때예요',
+              body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나도 소식이 없으면 두 사람 모두 검사를 받아 보길 권해요. 보건소 ‘임신 사전건강관리’ 지원도 확인해 보세요.`,
             }
           : threshold === 0
             ? {
@@ -619,7 +615,7 @@ export function notifyCompleted(state: AppState, member: MemberId, partner: Memb
         from: member,
         kind: 'cheer',
         title: `✅ ${name}님이 오늘 체크를 모두 마쳤어요`,
-        body: '응원 한마디 보내 볼까요?',
+        body: '',
       },
     ],
     nowISO,

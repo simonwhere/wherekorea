@@ -220,7 +220,7 @@ const SPERM_COPY: TimerCopy = {
   notStarted: '습관을 처음 체크하는 날이 1일째예요.',
   stopped: '한동안 체크가 없었어요. 다시 체크하면 그날이 1일째예요.',
   running: '새 정자가 만들어지는 데 64~74일, 성숙하는 데 1~2주가 더 걸려 모두 약 3개월이에요.',
-  reached: '약 3개월을 이어 왔어요. 지금처럼 계속해요.',
+  reached: '약 3개월을 이어 왔어요.',
 }
 
 const FOLIC_COPY: TimerCopy = {

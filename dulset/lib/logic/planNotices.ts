@@ -124,7 +124,7 @@ function togetherAppointmentNotice(state: AppState, a: Appointment, plain: Notic
   return {
     ...plain,
     title: `${APPOINTMENT_KIND_EMOJI[a.kind]} 내일 ${nameOf(state, a.who as MemberId)} ${a.title}${ieyo(a.title)}`,
-    body: `${line} · ${when}${a.place ? ` · ${a.place}` : ''}`,
+    body: `${when}${a.place ? ` · ${a.place}` : ''} — ${line}`,
   }
 }
 

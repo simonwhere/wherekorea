@@ -121,7 +121,7 @@ describe('설정 마저 하기 (N27)', () => {
     }
     renderApp(<SetupCard />, { state, viewer: OWNER, today: T0 })
     const text = pageText()
-    expect(text).toContain('내 출생연도')
+    expect(text).toContain('내 출생 연도')
     expect(text).toContain('함께 준비를 시작한 날')
     expect(text).not.toContain('결혼한 날')
   })

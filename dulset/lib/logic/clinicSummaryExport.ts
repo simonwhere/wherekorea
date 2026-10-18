@@ -270,7 +270,7 @@ export function buildClinicSummaryHtml(s: ClinicSummary): string {
   const subs: string[] = []
   if (stats) subs.push(stats)
   if (s.totalCycles > s.cycles.length) subs.push(`기록된 주기 ${s.totalCycles}개 중 최근 ${s.cycles.length}개예요.`)
-  if (s.cycles.length) subs.push('일째는 생리 시작일을 1일째로 세요.')
+  if (s.cycles.length) subs.push('일째는 생리 시작일을 1일째로 셌어요.')
   if (subs.length) body.push(`<p class="sub">${subs.map(escapeHtml).join('<br>')}</p>`)
   body.push('</section>')
 
@@ -285,7 +285,7 @@ export function buildClinicSummaryHtml(s: ClinicSummary): string {
   }
 
   body.push(`<div class="notes"><ul>${s.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul></div>`)
-  body.push(`<footer>${escapeHtml(formatKo(s.generatedOn, { year: true, weekday: false }))}, 둘셋에서 두 사람이 남긴 기록을 모았어요.</footer>`)
+  body.push(`<footer>둘셋 · ${escapeHtml(formatKo(s.generatedOn, { year: true, weekday: false }))}</footer>`)
 
   return [
     '<!doctype html>',

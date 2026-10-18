@@ -318,7 +318,7 @@ export function setTtcStart(state: AppState, date: string | undefined, today: IS
 
 /** The line under "주기 설정" explaining which numbers predictions use right now (the accepted gap follows 긴 주기: 15~90일). */
 export function cycleSourceNote(stats: Pick<CycleStats, 'source'>, periodCount: number, cycle?: Pick<CycleSettings, 'longCycles'>): string {
-  if (stats.source === 'logs') return '생리 기록 평균으로 예상해요.'
+  if (stats.source === 'logs') return ''
   if (periodCount >= 2) return `간격이 15~${maxCycleLength(cycle)}일인 기록만 평균에 넣어요.`
   return '생리 시작일을 두 번 이상 기록하면 평균으로 예상해요.'
 }
@@ -361,12 +361,12 @@ export function alertPreview(
       message: null,
       note: opts.isCycleOwner
         ? '가임기 알림은 오지 않아요.'
-        : '가임기 알림이 오지 않고, 달력에서도 예상 가임기 표시가 숨겨져요.',
+        : '가임기 알림이 오지 않고, 달력에서도 예상 가임기가 보이지 않아요.',
     }
   }
   if (style === 'soft') {
     return {
-      message: { title: SOFT_FERTILE_TITLE, body: softFertileBody(opts.isCycleOwner) },
+      message: { title: SOFT_FERTILE_TITLE, body: softFertileBody() },
       note: '우리의 주간 하루 전에 건강 용어 없이 한 번 와요.',
     }
   }

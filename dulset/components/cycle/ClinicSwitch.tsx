@@ -23,7 +23,7 @@ export default function ClinicSwitch({ className }: { className?: string }) {
         checked={on}
         onChange={onChange}
         label={CLINIC_LABEL}
-        description={on ? '생리를 기록해도 그대로예요.' : undefined}
+        description={on ? '생리를 기록해도 꺼지지 않아요.' : undefined}
       />
     </Card>
   )

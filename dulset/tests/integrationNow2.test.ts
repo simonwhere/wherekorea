@@ -637,8 +637,8 @@ describe('병원과 함께 준비 중 (clinic): never ended by a period, pauses 
       expect(defaultLogKind(clinic, d, d)).toBe('period')
       expect(doctorAdvice(clinic, d)).toBeNull()
     }
-    expect(partnerTip(clinic, '2026-09-11', PARTNER)).toBe('결과를 묻지 말고, 병원 일정만 같이 챙겨요.')
-    expect(monthlyTask(clinic, '2026-09-11', PARTNER)?.tip).toBe('결과를 묻지 말고, 병원 일정만 같이 챙겨요.')
+    expect(partnerTip(clinic, '2026-09-11', PARTNER)).toBe('오늘 저녁 집안일을 맡아 봐요.')
+    expect(monthlyTask(clinic, '2026-09-11', PARTNER)?.tip).toBe('오늘 저녁 집안일을 맡아 봐요.')
     // The owner's card leads with the next appointment; the partner's names only his own or a
     // '둘이 함께' one, by a kind word — never her own, never a title (N32).
     const withVisit = addAppointment(clinic, { date: '2026-09-13', time: '08:00', title: '채혈·초음파', who: OWNER, kind: 'test' }, OWNER)

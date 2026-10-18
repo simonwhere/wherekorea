@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ChoiceButton, LoggedList, hhmm, ro, type LineLevel, type SaveLog } from '@/components/log/parts'
+import { ChoiceButton, LoggedList, hhmm, type LineLevel, type SaveLog } from '@/components/log/parts'
 import { Button } from '@/components/ui'
 import { PTEST_CHOICES, PTEST_EARLY_NOTE, ptestAfterCopy } from '@/lib/content/fertility'
 import { PTEST_LABEL, type FertilityView } from '@/lib/logic/calendarView'
@@ -38,7 +38,7 @@ export default function PTestPanel({
     save(
       (s) => addPregnancyTest(s, { id, date, time, result, by: viewer }, today).state,
       { kind: 'ptest', id },
-      `임테기 ${ro(PTEST_LABEL[result])} 남겼어요`,
+      `임테기 ${PTEST_LABEL[result]} 기록을 남겼어요`,
       { keepOpen: true },
     )
     setLogged(id)

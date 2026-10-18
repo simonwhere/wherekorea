@@ -109,13 +109,13 @@ export const SHARE_OPTIONS: ReadonlyArray<{ value: ShareChoice; label: string; s
     value: 'none',
     label: '날짜 없음',
     short: '날짜 없음',
-    hint: (p) => `${p}님 화면에 날짜와 띠가 없어요. 내가 알린 것만 보여요.`,
+    hint: (p) => `${p}님 화면에 날짜가 보이지 않아요. 주기 소식은 내가 알린 것만 보여요.`,
   },
   {
     value: 'week',
     label: '우리의 주간 (기본)',
     short: '우리의 주간',
-    hint: (p) => `${p}님에게 ‘우리의 주간’ 예상 띠까지 보여요. 생리일·테스트 결과는 나만 봐요.`,
+    hint: (p) => `${p}님에게 ‘우리의 주간’ 예상 날짜까지 보여요. 생리일·테스트 결과는 나만 봐요.`,
   },
   {
     value: 'details',

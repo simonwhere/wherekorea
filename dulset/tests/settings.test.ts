@@ -295,7 +295,7 @@ describe('cycleSourceNote', () => {
     expect(gap.source).toBe('settings')
     expect(cycleSourceNote(gap, 2)).toMatch(/15~60일/)
     const logs = cycleStats([{ start: '2026-08-01' }, { start: '2026-08-30' }], settings)
-    expect(cycleSourceNote(logs, 2)).toMatch(/기록 평균/)
+    expect(cycleSourceNote(logs, 2)).toBe('') // the average line above says it already
   })
 })
 
@@ -317,7 +317,7 @@ describe('alertPreview', () => {
 
   it('off and low-pressure send no fertile message', () => {
     expect(alertPreview('off', { lowPressure: false, isCycleOwner: false }).message).toBeNull()
-    expect(alertPreview('off', { lowPressure: false, isCycleOwner: false }).note).toContain('숨겨져요')
+    expect(alertPreview('off', { lowPressure: false, isCycleOwner: false }).note).toContain('보이지 않아요')
     // Hers says only what stops (no '…은 그대로' reassurance — 2026-10-18 copy sweep).
     expect(alertPreview('off', { lowPressure: false, isCycleOwner: true }).note).toBe('가임기 알림은 오지 않아요.')
     const low = alertPreview('explicit', { lowPressure: true, isCycleOwner: true, window })
@@ -333,7 +333,8 @@ describe('alertPreview', () => {
       const p = alertPreview('soft', { lowPressure: false, isCycleOwner, window })
       expect(`${p.message?.body}${p.note}`).not.toContain('데이트')
     }
-    expect(alertPreview('soft', { lowPressure: false, isCycleOwner: false }).message?.body).toContain('‘우리의 주간’ 카드')
+    // No pointer to where something shows (2026-10-18): the notice opens the card itself.
+    expect(alertPreview('soft', { lowPressure: false, isCycleOwner: false }).message?.body).toBe('둘만의 시간을 챙겨 봐요.')
   })
 
   it('has an option label for every style, with no pressure wording', () => {

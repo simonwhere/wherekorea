@@ -62,7 +62,7 @@ export default function HabitTimers() {
   const showHabit = !!other && (habit?.day !== undefined || hasHabits)
   if (!showHabit && !folic) return null
 
-  const who = (id: string, name: string) => (id === me.id ? '나' : `${name}님`)
+  const whose = (id: string, name: string) => (id === me.id ? '내' : `${name}님의`)
 
   return (
     <>
@@ -73,7 +73,7 @@ export default function HabitTimers() {
             <div>
               <h3 className="flex flex-wrap items-center gap-x-1.5 text-sm font-bold text-ink">
                 <Icon name="sprout" className="h-4 w-4 shrink-0 text-ink-2" />
-                {who(other.id, other.name)}의 건강 습관 <TimerLabel t={habit} tone="him" />
+                {whose(other.id, other.name)} 건강 습관 <TimerLabel t={habit} tone="him" />
               </h3>
             </div>
             <TimerBody t={habit} tone="him" />

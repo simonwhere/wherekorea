@@ -55,7 +55,7 @@ export default function HomeSection() {
               onChange={(next) => update((s) => setHideCover(s, viewer, next ? true : view.quiet ? false : undefined))}
               label={
                 <>
-                  내 화면에서는 그림만 보기 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
+                  표지 사진 대신 그림 보기 <span className="text-xs font-normal text-ink-3">(내 폰만)</span>
                 </>
               }
             />

@@ -80,7 +80,7 @@ export default function LinkChecks({
       <div className="flex items-center gap-2">
         <Bubble member={me} her={her} />
         <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
-          나의 체크 <span className="font-medium text-ink-3">· {me.name}</span>
+          내 체크 <span className="font-medium text-ink-3">· {me.name}</span>
         </h3>
         {checks.week > 0 ? <Badge tone="ok">{weekCountLabel(checks.week)}</Badge> : null}
       </div>

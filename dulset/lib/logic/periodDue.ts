@@ -80,13 +80,13 @@ export const PERIOD_DUE_COPY = {
     // Long enough to read as a footnote under the buttons (components/today/CycleBlock NOTE_BESIDE_MAX),
     // so the two actions stay above the tab bar on a 375×667 phone.
     // Evidence: docs/research/medical.json (NICE, 'When to seek evaluation') — the path itself never reaches the screen.
-    note: '생리가 불규칙하거나 없으면 1년을 기다리지 말고 더 일찍 상담하라고 권해요 (NICE).',
+    note: '생리가 불규칙하거나 없으면 1년을 기다리지 말고 상담을 받으라고 권해요 (NICE).',
     /** The DoctorCard line for the 'amenorrhea' reason (lib/logic/today.ts doctorAdvice). */
-    advice: '생리가 많이 늦어지고 있어요. 임신 테스트가 음성이고 생리가 불규칙하거나 없으면 더 일찍 상담하라고 권해요 (NICE).',
+    advice: '생리가 많이 늦어지고 있어요. 임신 테스트가 음성인데 생리가 불규칙하거나 없으면 1년을 기다리지 말고 상담을 받으라고 권해요 (NICE).',
     /** The quiet notice every AMENORRHEA_NOTICE_DAYS days (notifications.ts), to the owner only. */
     notice: {
       title: '🩺 생리가 많이 늦어지고 있어요',
-      body: '생리가 시작되면 기록해 주세요. 임신 테스트가 음성인데 생리가 없다면 병원에서 확인해 봐요. 생리가 불규칙하거나 없으면 1년을 기다리지 말고 더 일찍 상담하라고 권해요 (NICE).',
+      body: '생리가 시작되면 기록해 주세요. 임신 테스트가 음성인데 생리가 없으면 1년을 기다리지 말고 병원에서 확인해 봐요 (NICE).',
     },
   },
   /** 15 days or more past the range, not answered yet: a missed log is the likelier story. */

@@ -58,7 +58,7 @@ export default function InstallBackupCard() {
             <p className="text-xs font-semibold text-ink">
               {nudge.kind === 'stale' ? `백업한 지 ${nudge.days}일 지났어요` : '아직 백업 파일이 없어요'}
             </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">일주일에 한 번 백업해 두면 폰을 바꿔도 되살릴 수 있어요.</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-2">일주일에 한 번 백업해 두면 폰을 바꿔도 복원할 수 있어요.</p>
             <button type="button" className={rowAction} onClick={goToBackup}>
               백업하기
             </button>

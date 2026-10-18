@@ -142,6 +142,6 @@ describe('myPrep — his own progress, nothing of hers', () => {
       expect(text).not.toMatch(/숙제|실패|노력|오늘 꼭|관계를 가져야|0\/7|안 했어요|시작 전/)
     }
     // Past ~3 months: reached.
-    expect(myPrep(habitDays(couple(), '2026-06-20', 106), TODAY, PARTNER)).toMatchObject({ timerLabel: '생활 습관 약 3개월을 채웠어요', timerProgress: 1 })
+    expect(myPrep(habitDays(couple(), '2026-06-20', 106), TODAY, PARTNER)).toMatchObject({ timerLabel: '생활 습관 3개월을 채웠어요', timerProgress: 1 })
   })
 })

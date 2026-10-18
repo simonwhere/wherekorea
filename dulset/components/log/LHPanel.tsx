@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { ChoiceButton, LoggedList, hhmm, ro, type LineLevel, type SaveLog } from '@/components/log/parts'
+import { ChoiceButton, LoggedList, hhmm, type LineLevel, type SaveLog } from '@/components/log/parts'
 import { Button, cx, inputClass, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { LH_CHOICES } from '@/lib/content/fertility'
@@ -97,7 +97,7 @@ export default function LHPanel({
     save(
       (s) => addLHTest(s, inp, today, { replace }),
       { kind: 'lh', date },
-      `LH ${ro(label)} ${replace ? '바꿨어요' : '남겼어요'}${again}`,
+      `LH ${label} 기록${replace ? '으로 바꿨어요' : '을 남겼어요'}${again}`,
     )
   }
 
@@ -224,7 +224,7 @@ export default function LHPanel({
           className="rounded-xl border border-brand/40 bg-brand-soft/50 p-3 outline-none"
         >
           <p className="text-sm font-semibold leading-snug text-ink">
-            {lhWhen(asking.plan.target)} 기록({LH_LABEL[asking.plan.target.result]})을 {ro(LH_LABEL[asking.result])} 바꿀까요?
+            {lhWhen(asking.plan.target)} {LH_LABEL[asking.plan.target.result]} 기록을 {LH_LABEL[asking.result]} 기록으로 바꿀까요?
           </p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Button
@@ -299,10 +299,10 @@ function UsesLHAsk({ view, paused }: { view: FertilityView; paused: boolean }) {
     setChanging(false)
     toast.show(
       value === true
-        ? '좋아요. 결과는 여기에 남겨 주세요'
+        ? '결과는 여기에 남겨 주세요'
         : value === false
           ? 'LH 안내를 껐어요'
-          : '다음 주기에 다시 물어봐요',
+          : '다음 주기에 다시 물어볼게요',
     )
   }
 

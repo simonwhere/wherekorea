@@ -90,7 +90,7 @@ function ClaimDocs({ task }: { task: SnapshotTask }) {
   return (
     <div className="mt-2">
       <p className="text-[12.5px] font-bold text-ink-3">
-        청구 서류 {left === 0 ? '모두 챙겼어요 ✓' : `${task.docs.length - left}/${task.docs.length}`}
+        청구 서류 {left === 0 ? '모두 챙겼어요' : `${task.docs.length - left}/${task.docs.length}`}
       </p>
       <ul className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1">
         {task.docs.map((d) => (

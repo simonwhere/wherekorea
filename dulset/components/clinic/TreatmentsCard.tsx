@@ -98,7 +98,7 @@ export default function TreatmentsCard() {
           <h2 id="treatments-card-title" ref={headingRef} tabIndex={-1} className="text-[15px] font-bold text-ink outline-none">
             {TREATMENTS_CARD_TITLE}
           </h2>
-          <p className="mt-0.5 text-xs text-ink-3">기록한 회차 기준(출산당)이에요. 보건소마다 달라요.</p>
+          <p className="mt-0.5 text-xs text-ink-3">출산당 횟수를 기록한 회차로 셌어요. 보건소마다 달라요.</p>
         </div>
         {canEdit ? (
           <button type="button" onClick={() => setSheet({})} className={`${btnBrand} -mr-2 -mt-2 shrink-0`}>
@@ -130,7 +130,7 @@ export default function TreatmentsCard() {
         </p>
       ) : null}
       {counts.since ? (
-        <p className="mt-1.5 text-[11px] text-ink-3">{formatKo(counts.since, { year: true })} 출산 뒤 회차부터 다시 세요.</p>
+        <p className="mt-1.5 text-[11px] text-ink-3">{formatKo(counts.since, { year: true })} 출산 이후 회차만 셌어요.</p>
       ) : null}
 
       {/* 지원결정통지서 */}

@@ -41,6 +41,7 @@
 
 import { ROADMAP, planKey } from '../content/roadmap'
 import { addDays, diffDays, formatKo, isISODate } from '../dates'
+import { objectParticle } from '../korean'
 import { decide, isLive, undecide } from '../sync/model'
 import type { AppState, ISODate, MemberId, RoadmapPhase } from '../types'
 import { appointmentsFor } from './appointments'
@@ -488,7 +489,10 @@ export function partnerSupportLines(state: AppState, today: ISODate, ownerId: Me
     })
     .sort((a, b) => (a.day !== b.day ? (a.day > b.day ? -1 : 1) : a.itemId < b.itemId ? -1 : 1))
     .slice(0, SUPPORT_LINES_MAX)
-    .map(({ itemId, day }) => ({ itemId, day, text: `${who}이 ‘${shortTitle(items.get(itemId)!.title)}’ 같이 챙긴대요` }))
+    .map(({ itemId, day }) => {
+      const t = shortTitle(items.get(itemId)!.title)
+      return { itemId, day, text: `${who}이 ‘${t}’${objectParticle(t)} 같이 챙긴대요` }
+    })
 }
 
 // ── The link ────────────────────────────────────────────────

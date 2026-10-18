@@ -63,7 +63,7 @@ export function MyChecks() {
       <div className="flex items-center gap-2">
         <Avatar member={me} size="sm" />
         <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-ink">
-          나의 체크 <span className="font-medium text-ink-3">· {me.name}</span>
+          내 체크 <span className="font-medium text-ink-3">· {me.name}</span>
         </h3>
         {week > 0 ? <Badge tone="ok">{weekCountLabel(week)}</Badge> : null}
         <button
@@ -85,7 +85,7 @@ export function MyChecks() {
       ) : (
         <>
           <div className="mt-1 flex items-center gap-3">
-            <ProgressBar value={prog.total ? prog.done / prog.total : 0} label="나의 오늘 체크 진행률" tone={prog.complete ? 'ok' : tone} />
+            <ProgressBar value={prog.total ? prog.done / prog.total : 0} label="오늘 내 체크 진행률" tone={prog.complete ? 'ok' : tone} />
             <span className="shrink-0 text-xs font-bold tabular-nums text-ink-2">
               {prog.done}/{prog.total}
             </span>

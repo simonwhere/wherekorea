@@ -356,7 +356,7 @@ export function ourDaysChain(
     !lowPressureFor(state.settings, viewer) &&
     !recentlyEnded(state, today)
   ) {
-    out.push({ key: 'ttc', emoji: '🌱', text: `함께 준비한 지 D+${fmt(daysSince(ttc, today))}` })
+    out.push({ key: 'ttc', emoji: '🌱', text: `함께 준비한 지 ${fmt(daysSince(ttc, today))}일` })
   }
   const p = state.pregnancy
   if (state.stage === 'pregnant' && p && !p.endedAt) {

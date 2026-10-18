@@ -554,7 +554,7 @@ export interface Headline {
 }
 
 /** NICE NG257 framing, used wherever fertile-day estimates are hidden — on the owner's own screens. */
-export const NICE_LINE = '특정 날을 맞추기보다 2~3일에 한 번, 편한 리듬이면 좋아요.'
+export const NICE_LINE = '날짜를 맞추기보다 2~3일에 한 번이면 좋아요.'
 
 /** A partner's day with no dates shown (날짜 없음, or his alerts off): the same line every day, no frequency. */
 export const PARTNER_HIDDEN_DAY_LINE = '날짜 예상 없이 지내요.'
@@ -657,7 +657,7 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
             ? '가능성이 높은 날이에요 (예상)'
             : '가임기 예상 기간이에요',
         // ASRM 2022: every 1–2 days is best, 2–3 times a week nearly as good.
-        sub: `${formatKo(status.fertileEnd)}까지예요. 매일이 아니어도 일주일에 2~3번이면 거의 비슷해요.`,
+        sub: `${formatKo(status.fertileEnd)}까지예요. 매일이 아니어도 일주일에 2~3번이면 효과는 거의 같아요.`,
       }
     case 'after-fertile':
       // One "(예상)" per headline: the sub line carries it (periodDue.ts), the title stays plain.
@@ -693,7 +693,7 @@ export interface CycleSummary {
 export const CLINIC_PARTNER_HEADLINE: Headline = { title: CLINIC_LABEL, sub: '결과는 묻지 말고 일정만 챙겨요.' }
 
 /** The partner's hidden view (alerts off, 부담 없이, '날짜 없음'): no dates, and no 'every 2–3 days' either (positioning §6). */
-export const SHARED_HIDDEN_HEADLINE: Headline = { title: '우리 리듬대로 지내요' }
+export const SHARED_HIDDEN_HEADLINE: Headline = { title: '날짜 예상 없이 지내요' }
 
 /** The '평소 주' (N19): the same line every day outside the shared window — with or without her records. */
 export const SHARED_USUAL_HEADLINE: Headline = { title: '평소처럼 지내요' }
@@ -716,7 +716,7 @@ export function sharedHeadline(status: FertilityStatus, view: FertilityView, pau
 /** The owner's calendar headline through the quiet after a pregnancy ended (a 'loss' rest with its last day). */
 export function lossPauseHeadline(until: ISODate | undefined): Headline {
   return {
-    title: '천천히 해도 괜찮아요',
+    title: '쉬어 가는 중이에요',
     sub: until ? `${formatKo(until, { weekday: false })}까지 날짜 예상과 알림을 쉬어요.` : '날짜 예상과 알림을 쉬어요.',
   }
 }
@@ -916,11 +916,11 @@ function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: H
       return { title: AFTER_PREGNANCY_HEADLINE.title }
     case 'late':
       if (status.daysLate > LONG_LATE_DAYS) return { title: '최근 생리 기록이 없어요' }
-      return { title: own.title, sub: '재촉하지 말고 이야기하고 싶어 할 때 곁에 있어 주세요.' }
+      return { title: own.title, sub: '재촉하지 말고, 이야기를 꺼내면 들어 주세요.' }
     case 'fertile':
-      // The dates stay; the owner's "LH 테스트로 확인해 보면" is hers to act on, and the
-      // '일주일에 2~3번' line is a frequency line — never his (docs/positioning.md §6).
-      return { title: own.title, sub: `${formatKo(status.fertileEnd)}까지예요.` }
+      // Hidden view (his alerts off / 부담 없이): no window end — a sub that appears only on fertile days is itself the window.
+      // Otherwise the dates stay; '일주일에 2~3번' is a frequency line — never his (docs/positioning.md §6).
+      return view === 'hidden' ? own : { title: own.title, sub: `${formatKo(status.fertileEnd)}까지예요.` }
     case 'period':
       // Keep the next-window line; otherwise the owner's "끝나는 날도 기록해 두면…".
       return view !== 'hidden' && (status.nextFertileStart || status.fertileEnd)
@@ -931,7 +931,7 @@ function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: H
     case 'after-fertile':
       if (status.dueNow) return { title: own.title }
       // The hidden view keeps its neutral NICE line (no "waiting" framing).
-      return view === 'hidden' ? own : { title: own.title, sub: '증상은 묻지 말고 평소처럼 보내요.' }
+      return view === 'hidden' ? own : { title: own.title, sub: '증상은 묻지 말고 평소처럼 지내요.' }
     default:
       return own
   }
@@ -1027,7 +1027,7 @@ export function dayChanceLabel(info: DayInfo, view: FertilityView): string | nul
 }
 
 /** Shown on explicit-view days outside the estimated range (instead of a 낮음 rating). */
-export const OUTSIDE_RANGE_NOTE = '예상 범위 밖이에요. 예상은 주기마다 틀릴 수 있어요.'
+export const OUTSIDE_RANGE_NOTE = '예상 가임기 밖이에요. 예상은 주기마다 틀릴 수 있어요.'
 
 /**
  * One or two sentences explaining a tapped day, worded for the view. `canLog`
@@ -1049,7 +1049,7 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean, 
         ? '우리의 주간이에요 (예상).'
         : info.confidence === 'low'
           ? '달력으로 넓게 잡은 예상 범위예요.'
-          : '배란 예상일로 끝나는 6일, 가임기 예상 기간이에요.'
+          : '배란 예상일까지 이어지는 6일, 가임기 예상 기간이에요.'
     case 'possible':
       return view === 'soft' ? '우리의 주간 앞뒤로 여유를 둔 날이에요.' : '예상이 빗나갈 수 있어서 넓게 잡은 범위예요.'
     default:

@@ -27,7 +27,7 @@
 // carries it when it names a date or range; otherwise the title or the body
 // does, once — never twice on one card (estimateMarks / oneEstimate).
 
-import { FEEL_CHIPS, waitingWeekLine } from '../content/fertility'
+import { FEEL_CHIPS } from '../content/fertility'
 import { addDays, addMonths, diffDays, formatKo, formatShort, isBetween, isISODate } from '../dates'
 import type { LogKind } from '../logLauncher'
 import { decide, decided, decisionDay, liveOnly } from '../sync/model'
@@ -760,7 +760,7 @@ function ownerMoment(c: Ctx): MomentBody {
         role,
         copy: 'owner.after-loss',
         tone: 'muted',
-        eyebrow: '천천히 해도 괜찮아요',
+        eyebrow: '쉬어 가는 중',
         title: '몸과 마음을 먼저 챙겨요',
         body: until
           ? periodSince
@@ -909,7 +909,7 @@ function ownerMoment(c: Ctx): MomentBody {
         title: '이번 주기는 쉬어요',
         body:
           reason === 'vaccine'
-            ? '생백신을 맞으면 MMR은 4주, 수두는 접종할 때마다 1개월 동안 임신을 미루도록 안내해요.'
+            ? '생백신을 맞으면 MMR은 4주, 수두는 접종할 때마다 1개월 동안 임신을 미루라고 권해요.'
             : '날짜 예상과 알림을 잠시 쉬어요. 다음 생리를 기록하면 다시 켜져요.',
         note:
           reason === 'vaccine'
@@ -934,9 +934,7 @@ function ownerMoment(c: Ctx): MomentBody {
         tone: 'default',
         eyebrow: `생리 ${d}일째`,
         title: '이번 주기도 수고했어요',
-        body: afterPositive
-          ? '양성 뒤에 시작된 생리라 마음이 복잡할 수 있어요. 오늘은 몸을 따뜻하게 하고 푹 쉬어요.'
-          : '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
+        body: '',
         note: afterPositive ? '걱정되는 게 있으면 다니는 병원에 물어봐요.' : undefined,
         ...(periodTellState(c.state, start) === 'ask' ? { askTell: { start } } : {}),
         ...(lastFeels ? { lastFeels } : {}),
@@ -972,7 +970,7 @@ function ownerMoment(c: Ctx): MomentBody {
           body:
             voice === 'explicit'
               ? `예상 가임기(${day(p.fertileEnd)}까지)와 생리 기간이 겹쳐요.`
-              : `이번엔 우리의 주간(${day(p.fertileEnd)}까지, 예상)과 겹쳐요.`,
+              : `생리 기간이 우리의 주간(${day(p.fertileEnd)}까지, 예상)과 겹쳐요.`,
           secondary: TO_CYCLE,
         }
       }
@@ -1131,7 +1129,7 @@ function ownerMoment(c: Ctx): MomentBody {
           tone: 'default',
           eyebrow,
           title: `테스트까지 D-${diffDays(today, due.from)}`,
-          body: `생리 예정은 ${dueRange(due)} 무렵이에요${marked ? '' : ' (예상)'}. ${waitingWeekLine(sinceOv ?? d)}`,
+          body: `생리 예정은 ${dueRange(due)} 무렵이에요${marked ? '' : ' (예상)'}.`,
           note: '너무 이르면 음성일 수 있어요.',
           secondary: TO_CYCLE,
           early: true,
@@ -1207,7 +1205,7 @@ function ownerCalm(c: Ctx): MomentBody {
         role: 'owner',
         copy: 'owner.calm',
         tone: 'brand',
-        eyebrow: '우리의 속도로',
+        eyebrow: '부담 없이',
         title: '날짜는 신경 쓰지 않아도 괜찮아요',
         body: '주기 내내 2~3일에 한 번이면 충분해요.',
         note: '영국 NICE 지침(NG257, 2026)의 권고예요.',
@@ -1274,7 +1272,7 @@ function partnerMoment(c: Ctx): MomentBody {
         copy: 'partner.bleeding-told',
         tone: 'brand',
         eyebrow: `${owner}님이 알려 줬어요`,
-        title: '병원에 같이 가 줄 수 있어요',
+        title: '병원에 같이 가 주세요',
         body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
         ...toldSay(c, 'bleeding', bleedingToldKey(since)),
@@ -1299,8 +1297,8 @@ function partnerMoment(c: Ctx): MomentBody {
       copy: 'partner.after-loss',
       tone: 'muted',
       eyebrow: '오늘의 우리',
-      title: '서로를 천천히 챙겨요',
-      body: '지금은 곁에 있어 주는 것만으로 충분해요.',
+      title: '서로를 챙겨요',
+      body: '지금은 옆에 있어 주세요.',
       support: true,
     }
   }
@@ -1330,7 +1328,7 @@ function periodToldCard(c: Ctx): MomentBody | undefined {
     tone: 'default',
     eyebrow: `${c.ownerName}님이 알려 줬어요`,
     title: '이번 달은 쉬어 가요',
-    body: '따뜻한 차 한 잔, 컨디션을 챙겨 주세요.',
+    body: '따뜻한 차 한 잔 건네 주세요.',
     // The same two lines as `say` in one sentence — kept for screens that read only this (the link, until it draws `say`).
     partnerTip: PERIOD_PARTNER_TIP,
     ...toldSay(c, 'period', periodToldKey(start)),
@@ -1365,7 +1363,7 @@ function partnerWithDetails(c: Ctx): MomentBody {
         tone: 'default',
         eyebrow: voice === 'explicit' ? `${owner}님 생리 ${p.cycleDay ?? 1}일째` : `${owner}님의 하루`,
         title: `${owner}님 컨디션을 챙겨 주세요`,
-        body: '따뜻한 말 한마디가 힘이 돼요.',
+        body: '',
         // No 해 줄 말 here (N30): her shared details are not a moment she sent —
         // those lines come with [알리기] (periodToldCard) and her signals only.
       }
@@ -1422,7 +1420,7 @@ function partnerWithDetails(c: Ctx): MomentBody {
         tone: 'default',
         eyebrow: '오늘의 우리',
         title: '기다리는 시간이에요',
-        body: `재촉하지 말고 ${owner}님이 이야기하고 싶을 때 곁에 있어 주세요.`,
+        body: `재촉하지 말고, ${owner}님이 이야기를 꺼내면 들어 주세요.`,
         monthlyTask: true,
       }
 
@@ -1479,7 +1477,7 @@ function partnerTww(): MomentBody {
     tone: 'default',
     eyebrow: '이번 주의 우리',
     title: '기다리는 시간이에요',
-    body: '증상은 묻지 말고 평소처럼 보내요.',
+    body: '증상은 묻지 말고 평소처럼 지내요.',
     monthlyTask: true,
   }
 }

@@ -321,7 +321,7 @@ describe('[같이 할게요] round trip', () => {
     // Her row and her 우리 한 줄.
     const hers = togetherItems(s1, TODAY, OWNER).find((r) => r.id === 'p1-nt')!
     expect(hers.supportedBy).toBe('민수님이 같이 챙긴대요')
-    expect(partnerSupportLines(s1, TODAY, OWNER)).toEqual([{ itemId: 'p1-nt', day: TODAY, text: '민수님이 ‘NT(목덜미 투명대)’ 같이 챙긴대요' }])
+    expect(partnerSupportLines(s1, TODAY, OWNER)).toEqual([{ itemId: 'p1-nt', day: TODAY, text: '민수님이 ‘NT(목덜미 투명대)’를 같이 챙긴대요' }])
     // He takes it back: gone everywhere, the decisions as they were.
     const s2 = unsupportItem(s1, PARTNER, 'p1-nt')
     expect(s2.decisions).toEqual(s0.decisions)
@@ -650,7 +650,7 @@ describe('planNotices: his heads-up the day before her appointment (pregnant)', 
     expect(forHim[0]).toMatchObject({
       key: `appt:${a.id}:${a.date}:fyi:${PARTNER}`,
       title: '🏥 내일 지은님 정기 검진이에요',
-      body: `${TOGETHER_VISIT_LINE} · 10월 10일 (토) 10:00 · 병원`,
+      body: `10월 10일 (토) 10:00 · 병원 — ${TOGETHER_VISIT_LINE}`,
     })
     expect(`${forHim[0]!.title} ${forHim[0]!.body}`).not.toContain('메모')
     expect(noticeTarget(forHim[0]!.kind, 'pregnant', forHim[0]!.key)).toBe('plan')
@@ -662,7 +662,7 @@ describe('planNotices: his heads-up the day before her appointment (pregnant)', 
     s = addAppointment(s, { date: addDays(TODAY, 1), title: 'NT 검사', who: OWNER, kind: 'test', taskId: 'p1-nt' }, OWNER)
     const n = appointmentReminders(s, TODAY).find((x) => x.to === PARTNER)!
     expect(n.title).toBe('🔬 내일 지은님 NT 검사예요')
-    expect(n.body.startsWith('예약 시간 비워 두기 · ')).toBe(true)
+    expect(n.body.endsWith(' — 예약 시간 비워 두기')).toBe(true)
   })
 
   it('keeps the plain heads-up while preparing, for an alert style of off, and gives her nothing new', () => {

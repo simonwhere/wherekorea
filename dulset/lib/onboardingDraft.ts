@@ -189,7 +189,7 @@ export function periodDateNote(lastPeriodStart: string, cycleLength: number, tod
   if (!start) return null
   const ago = diffDays(start, today)
   if (ago <= cycleLength + DUE_SETTINGS_SPREAD || ago > PERIOD_MAX_AGE_DAYS) return null
-  return `${ago}일 전이라, 평균 주기(${cycleLength}일)보다 오래됐어요. 그 뒤에 생리가 있었다면 가장 최근 시작일로 넣어 주세요.`
+  return `${ago}일 전이라 평균 주기(${cycleLength}일)보다 오래됐어요. 그 뒤에 생리가 있었다면 가장 최근 시작일을 넣어 주세요.`
 }
 
 export interface DoctorPlan {
@@ -325,7 +325,7 @@ function coupleDateProblem(label: string, value: string, today: ISODate): string
 export function coupleDatesNote(d: Pick<OnboardingDraft, 'metDate' | 'marriedDate'>, today: ISODate): string | null {
   const met = coupleDate(d.metDate, today)
   const married = coupleDate(d.marriedDate, today)
-  return met && married && married < met ? '결혼한 날이 처음 만난 날보다 앞서요. 맞는지 한 번 확인해 주세요.' : null
+  return met && married && married < met ? '결혼한 날이 처음 만난 날보다 앞서요. 맞는지 한번 확인해 주세요.' : null
 }
 
 /** When the couple started trying, as it will be saved ('이번 달부터' = today). */

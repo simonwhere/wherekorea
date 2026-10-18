@@ -5,7 +5,7 @@ import { QuickDateChips } from '@/components/onboarding/parts'
 import { addDays, diffDays, formatKo } from '@/lib/dates'
 import { dayActions, periodCovering } from '@/lib/logic/calendarView'
 import { logPeriodEnd, movePeriodStart, openPeriodOn, removePeriodLog } from '@/lib/logic/logs'
-import { PERIOD_ASK_DAYS, logPeriodOrBleeding, periodStartDuringPositive } from '@/lib/logic/ttcFlow'
+import { logPeriodOrBleeding, periodStartDuringPositive } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
 
@@ -26,14 +26,8 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
       save((s) => logPeriodOrBleeding(s, d, viewer, today), { kind: 'period' }, '출혈 시작일로 남겼어요. 홈에서 안내를 확인해 주세요')
       return
     }
-    // The same days the home card says 수고했어요 for a start logged late (ttcFlow.PERIOD_ASK_DAYS).
-    const recent = diffDays(d, today) < PERIOD_ASK_DAYS
     const word = dayWord(d, today)
-    save(
-      (s) => logPeriodOrBleeding(s, d, viewer, today),
-      { kind: 'period' },
-      recent ? `이번 주기도 수고했어요. ${word} 시작으로 남겼어요` : `${word} 생리 시작으로 남겼어요`,
-    )
+    save((s) => logPeriodOrBleeding(s, d, viewer, today), { kind: 'period' }, `${word} 생리 시작으로 남겼어요`)
   }
 
   if (covering) {
@@ -109,7 +103,7 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
       )
     return (
       <div className="space-y-3">
-        <p className="text-[13px] leading-relaxed text-ink-2">마지막 생리가 시작된 날을 골라 주세요. 대략이어도 괜찮아요.</p>
+        <p className="text-[13px] leading-relaxed text-ink-2">마지막 생리가 시작된 날을 골라 주세요. 정확하지 않아도 괜찮아요.</p>
         <BigAction label={isToday ? '오늘 시작' : `${day} 시작`} onClick={() => first(date)} />
         <div>
           <p className="mb-1.5 text-xs font-semibold text-ink-2">또는</p>

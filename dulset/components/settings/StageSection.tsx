@@ -179,7 +179,7 @@ export function BirthForm({ onDone }: { onDone: () => void }) {
     if (error) return
     const baby = toBaby({ name, birthDate, sex })
     update((s) => recordBirth(s, baby))
-    toast.show(`${baby.name}, 반가워요. 축하해요!`)
+    toast.show(`${baby.name}, 반가워요!`)
     onDone()
     openTab('baby')
   }

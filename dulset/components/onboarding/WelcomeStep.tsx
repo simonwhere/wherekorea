@@ -53,12 +53,7 @@ export default function WelcomeStep({
         {/* A preview of the home's cover: the couple's own photo will hang here. */}
         <div className="welcome-cover mt-2.5 px-3">
           <Polaroid
-            caption={
-              <>
-                <span />
-                <Icon name="cam" className="h-4 w-4 text-ink-3" />
-              </>
-            }
+            caption={<Icon name="cam" className="ml-auto h-4 w-4 text-ink-3" />}
           >
             <CoverArt tod={timeOfDay(hour)} />
           </Polaroid>

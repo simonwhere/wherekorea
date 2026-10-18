@@ -211,7 +211,7 @@ function OwnerChoice() {
 
 /** What each level means on the partner's own phone, read-only. */
 const PARTNER_LINE: Record<ShareChoice, (owner: string) => string> = {
-  none: (o) => `날짜는 보이지 않아요. ${o}님이 알려 준 것만 보여요.`,
+  none: (o) => `날짜는 보이지 않아요. 주기 소식은 ${o}님이 알려 준 것만 보여요.`,
   week: () => '‘우리의 주간’ 예상만 보여요.',
   details: () => '생리일, 배테기·임테기 결과까지 보여요.',
 }

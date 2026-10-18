@@ -51,7 +51,7 @@ function copy(b: Banner, earlier: boolean): { icon: IconName; title: string; bod
       icon: 'sprout',
       title: earlier ? '기록이 이 폰에 쌓이고 있어요' : '첫 기록을 남겼어요',
       body: b.installed
-        ? '백업해 두면 폰을 바꿔도 되살릴 수 있어요.'
+        ? '백업해 두면 폰을 바꿔도 복원할 수 있어요.'
         : '브라우저에서는 7일 동안 안 열면 기록이 지워질 수 있어요.',
     }
   }
@@ -67,7 +67,7 @@ function copy(b: Banner, earlier: boolean): { icon: IconName; title: string; bod
   if (b.reason === 'stale') {
     return { icon: 'box', title: `백업한 지 ${b.nudge?.days ?? 0}일 지났어요`, body: '일주일에 한 번 백업해 두세요.' }
   }
-  return { icon: 'box', title: '아직 백업 파일이 없어요', body: '백업해 두면 폰을 바꿔도 되살릴 수 있어요.' }
+  return { icon: 'box', title: '아직 백업 파일이 없어요', body: '백업해 두면 폰을 바꿔도 복원할 수 있어요.' }
 }
 
 /** Go to 설정 › 데이터와 개인정보 (#data, 전체 백업). */

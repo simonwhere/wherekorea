@@ -5,6 +5,7 @@
 
 import { addDays, addMonths, diffDays } from '../dates'
 import { uid } from '../id'
+import { copula } from '../korean'
 import type { AppState, CustomAnniversary, ISODate, Settings, Stage } from '../types'
 import type { Notice } from './notifications'
 
@@ -188,7 +189,7 @@ export function anniversaryNotices(state: AppState, today: ISODate): Notice[] {
         key: `anniv:${e.key}:${e.date}:${until}:${to}`,
         to,
         kind: 'milestone',
-        title: until === 0 ? `${e.emoji} 오늘은 ${e.title}` : `${e.emoji} ${e.title}까지 일주일 남았어요`,
+        title: until === 0 ? `${e.emoji} 오늘은 ${e.title}${copula(e.title)}` : `${e.emoji} ${e.title}까지 일주일 남았어요`,
         body: until === 0 ? '오늘을 우리 기록에 남겨 볼까요?' : '어떻게 보낼지 같이 정해 볼까요?',
       })
     }

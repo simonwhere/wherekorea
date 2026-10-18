@@ -52,7 +52,7 @@ describe('the partner’s 주기 tab', () => {
 
   it('on 날짜 없음: no frequency section and no estimate note for him; she keeps both', () => {
     renderApp(<CycleTab />, { state: withLevel(demoState(T0), 'none'), viewer: PARTNER, today: T0 })
-    expect(pageText()).toContain('우리 리듬대로 지내요')
+    expect(pageText()).toContain('날짜 예상 없이 지내요')
     expect(pageText()).not.toContain('얼마나 자주면 될까요?')
     expect(pageText()).not.toContain(ESTIMATE_DISCLAIMER)
     cleanup()

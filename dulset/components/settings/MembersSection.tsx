@@ -212,9 +212,11 @@ export function OwnerConfirm({ member, onDone }: { member: Member; onDone: () =>
   return (
     <div>
       <p className="text-sm leading-relaxed text-ink">
-        {member.name}님의 주기를 기록하도록 바꿀까요? 주기 예상과 주기 알림이 {member.name}님 기준으로 바뀌어요.
+        주기를 기록하는 사람을 {member.name}님으로 바꿀까요? 주기 예상과 알림이 {member.name}님 기준으로 바뀌어요.
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-ink-3">공유 범위가 ‘자세히’였다면 ‘우리의 주간’으로 돌아가요.</p>
+      <p className="mt-2 text-xs leading-relaxed text-ink-3">
+        지금까지 남긴 주기 기록도 {member.name}님에게 보여요. 공유 범위가 ‘자세히’였다면 ‘우리의 주간’으로 돌아가요.
+      </p>
       <ConfirmActions confirmLabel={`${member.name}님으로 바꾸기`} onConfirm={confirm} onCancel={onDone} />
     </div>
   )

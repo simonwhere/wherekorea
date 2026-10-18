@@ -9,7 +9,7 @@ import { copula } from '@/lib/logic/cover'
 import { dueDate, formatGA, gestationalAge } from '@/lib/logic/pregnancy'
 import { TRIMESTER_LABEL } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
-import { Badge, ProgressBar } from './bits'
+import { Badge, ProgressBar, topicParticle } from './bits'
 
 type Nav = (tab: TabKey) => void
 
@@ -104,7 +104,7 @@ function ParentingHero({ onNavigate }: { onNavigate: Nav }) {
   if (age.days < 0) {
     // Birth date typed ahead of `today` (e.g. a pinned demo date) — don't show "0일째".
     return (
-      <HeroCard tone="brand" eyebrow="곧 만나요" title={`${b.name} ${formatKo(b.birthDate)} 태어날 예정`}>
+      <HeroCard tone="brand" eyebrow="곧 만나요" title={`${b.name}${topicParticle(b.name)} ${formatKo(b.birthDate, { weekday: false })}에 태어날 예정이에요`}>
         <Button full className="mt-3" onClick={() => onNavigate('baby')}>
           아기 정보 보기
         </Button>

@@ -11,7 +11,7 @@ import { ExternalLink } from './bits'
 export default function LossSupport({ className, heading = true }: { className?: string; heading?: boolean }) {
   return (
     <section aria-label="도움이 되는 안내" className={className}>
-      {heading ? <h3 className="text-sm font-bold text-ink">필요할 때 꺼내 봐요</h3> : null}
+      {heading ? <h3 className="text-sm font-bold text-ink">받을 수 있는 지원</h3> : null}
       <ul className={cx('divide-y divide-line/80', heading && 'mt-1')}>
         {LOSS_SUPPORT.map((item) => (
           <li key={item.id} className="py-[11px]">

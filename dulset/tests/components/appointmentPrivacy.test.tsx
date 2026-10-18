@@ -126,7 +126,7 @@ describe('the appointment sheet: 민수님에게도 보여요', () => {
       { state, viewer: HER, today: T0 },
     )
     expect(toggle()!.getAttribute('aria-checked')).toBe('false')
-    fireEvent.click(screen.getByRole('button', { name: /같은 일정 \+2일 복제/ }))
+    fireEvent.click(screen.getByRole('button', { name: /2일 뒤 같은 일정 추가/ }))
     const copy = lastAdded(probe.current.state!)
     expect(copy.id).not.toBe(appt.id)
     expect(copy.date).toBe(addDays(appt.date, 2))
@@ -261,7 +261,7 @@ describe('[다녀왔어요] on her 나만 보기 visit (챙길 것): his 챙길 
     const item = carrierItem(probe.current.state!)
     expect(item.status).toBe('done')
     expect(item.doneAt).toBe(VISIT)
-    expect(pageText()).toContain('챙길 것에도 체크했어요 ✓')
+    expect(pageText()).toContain('챙길 것에도 체크했어요')
     expect(screen.queryByRole('button', { name: '체크하기' })).toBeNull()
   })
 })

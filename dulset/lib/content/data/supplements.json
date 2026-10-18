@@ -264,7 +264,7 @@
       "kind": "habit",
       "audience": "both",
       "evidence": "limited",
-      "summary": "성인은 하루 7시간 이상 자는 게 좋아요. 수면과 임신 가능성을 직접 잇는 근거는 아직 적어요.",
+      "summary": "성인은 하루 7시간 이상 자면 좋아요. 수면과 임신 가능성을 직접 잇는 근거는 아직 적어요.",
       "source": {
         "name": "미국 CDC (수면)",
         "url": "https://www.cdc.gov/sleep/about/index.html"

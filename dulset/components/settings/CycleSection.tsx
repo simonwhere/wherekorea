@@ -53,7 +53,7 @@ function CycleStatsNote() {
           ) : null}
         </p>
       ) : null}
-      <p className={cx('text-xs leading-relaxed text-ink-2', fromLogs && 'mt-1')}>{note}</p>
+      {note ? <p className={cx('text-xs leading-relaxed text-ink-2', fromLogs && 'mt-1')}>{note}</p> : null}
     </div>
   )
 }

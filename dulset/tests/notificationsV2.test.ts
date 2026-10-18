@@ -267,14 +267,13 @@ describe('the expected period is a range: 내일 예정 · 늦음 · 임신 테�
 describe('the soft 우리의 주간 notice: what it promises and where it opens', () => {
   const soft = () => fresh({ alertStyle: { a: 'soft', b: 'soft' } })
 
-  it('points the partner at the 우리의 주간 card on 오늘, and promises the owner no ideas', () => {
+  it('reads the same for both people, with no pointer to where something shows', () => {
     const n = scheduledNotices(soft(), '2026-09-11')
     const [toA] = fertileTo(n, 'a') // 민수, the partner
     const [toB] = fertileTo(n, 'b') // 지은, whose cycle it is (soft by choice)
-    expect(toA!.body).toBe(softFertileBody(false))
-    expect(toA!.body).toContain('오늘 화면의 ‘우리의 주간’ 카드')
-    expect(toB!.body).toBe(softFertileBody(true))
-    expect(toB!.body).not.toContain('아이디어')
+    expect(toA!.body).toBe(softFertileBody())
+    expect(toB!.body).toBe(softFertileBody())
+    for (const x of [toA!, toB!]) expect(x.body).not.toMatch(/아이디어|카드/)
     for (const x of [toA!, toB!]) {
       expect(`${x.title} ${x.body}`).not.toMatch(/가임|배란|LH|가능성|데이트|숙제|노력|실패|오늘 꼭|관계를 가져야/)
       // Opens the home card, where the ideas are.

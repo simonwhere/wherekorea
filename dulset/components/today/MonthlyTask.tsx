@@ -53,15 +53,15 @@ const WHEN_TITLE: Record<NonNullable<MonthlyTask['step']>, string> = {
 }
 
 const WHEN_HINT: Record<NonNullable<MonthlyTask['step']>, string> = {
-  apply: '신청한 날부터 검사 마감(3개월)을 세요.',
-  test: '검사한 날부터 청구 마감(1개월)을 세요.',
+  apply: '검사 마감(3개월)은 신청한 날부터 계산해요.',
+  test: '청구 마감(1개월)은 검사한 날부터 계산해요.',
   claim: '청구 후 3개월 안에 입금돼요.',
 }
 
 const MIN_TEXT: Record<NonNullable<MonthlyTask['step']>, string> = {
-  apply: '오늘까지의 날짜를 골라 주세요.',
-  test: '신청한 날 이후, 오늘까지의 날짜를 골라 주세요.',
-  claim: '검사한 날 이후, 오늘까지의 날짜를 골라 주세요.',
+  apply: '오늘이나 이전 날짜를 골라 주세요.',
+  test: '신청한 날과 오늘 사이에서 골라 주세요.',
+  claim: '검사한 날과 오늘 사이에서 골라 주세요.',
 }
 
 /** '언제 했어요?' — chips for today / yesterday / the booked day, and a date field. */

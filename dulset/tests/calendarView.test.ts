@@ -651,7 +651,7 @@ describe('day sheet helpers', () => {
     const info = dayInfo(base(), '2026-09-22')
     expect(info.phase).toBe('none')
     expect(explainDay(info, 'soft', false)).not.toMatch(/가임기|배란/)
-    expect(explainDay(info, 'explicit', false)).toBe('예상 범위 밖이에요. 예상은 주기마다 틀릴 수 있어요.')
+    expect(explainDay(info, 'explicit', false)).toBe('예상 가임기 밖이에요. 예상은 주기마다 틀릴 수 있어요.')
     expect(explainDay(info, 'hidden', false)).not.toMatch(/가임기|배란/)
     expect(explainDay(dayInfo(base(), '2026-05-20'), 'explicit', true)).toContain('기록 전')
   })
@@ -699,9 +699,9 @@ describe('guide in the hidden view', () => {
   })
 
   it('personal doctor line follows the 12/6-month rule', () => {
-    expect(doctorAgeLine('지은', 33)).toBe('지은님(33세) 기준으로는 1년 동안 소식이 없으면 상담을 받아 보세요.')
+    expect(doctorAgeLine('지은', 33)).toBe('지은님은 33세라 1년 동안 소식이 없으면 상담을 받아 보세요.')
     expect(doctorAgeLine('지은', 36)).toContain('6개월')
-    expect(doctorAgeLine('지은', 41)).toBe('지은님(41세) 기준으로는 기다리지 말고 지금 상담해 보세요.')
+    expect(doctorAgeLine('지은', 41)).toBe('지은님은 41세라 기다리지 말고 지금 상담해 보세요.')
   })
 })
 
@@ -922,9 +922,12 @@ describe('cycleSummary through the lens', () => {
     expect(all).not.toMatch(/기록해 주세요|LH 테스트를 해 보면|임신 테스트를 해 봐도/)
     expect(all).not.toMatch(PRESSURE_WORDS)
     // After the window: a calm "don't ask" line (review: 배란 뒤 남편 화면).
-    expect(cycleSummary(base(), '2026-09-20', 'soft', { owner: false }).headline.sub).toBe('증상은 묻지 말고 평소처럼 보내요.')
+    expect(cycleSummary(base(), '2026-09-20', 'soft', { owner: false }).headline.sub).toBe('증상은 묻지 말고 평소처럼 지내요.')
     // …but no waiting framing in the hidden view.
     expect(cycleSummary(base(), '2026-09-20', 'hidden', { owner: false }).headline.sub ?? '').not.toMatch(/기다리는|증상/)
+    // Hidden view on fertile days: no window end — a sub that shows only on those days is itself the window.
+    for (const d of ['2026-09-08', '2026-09-12', '2026-09-16'])
+      expect(cycleSummary(base(), d, 'hidden', { owner: false }).headline.sub, d).toBeUndefined()
     // Late: same title, no nudge to test.
     const late = cycleSummary(base(), '2026-10-02', 'explicit', { owner: false }).headline
     expect(late.title).toBe('생리 예정일이 3일 지났어요')
@@ -1107,12 +1110,12 @@ describe('the loss quiet on the calendar (Next B)', () => {
     const lens = cycleLens(s, 'b', '2026-10-10')
     expect(pauseHeadline('rest', 'explicit', true, lens.rest)).toEqual(lossPauseHeadline('2026-10-31'))
     expect(lossPauseHeadline('2026-10-31').sub).toContain('10월 31일까지')
-    expect(lossPauseHeadline(undefined).title).toBe('천천히 해도 괜찮아요')
+    expect(lossPauseHeadline(undefined).title).toBe('쉬어 가는 중이에요')
     expect(pauseHeadline('rest', 'soft', false, lens.rest)).toEqual({ title: '이번 주기는 쉬어 가요' })
     expect(pauseHeadline('rest', 'explicit', true).title).toBe('이번 주기는 쉬어요')
     const inside = { ...s, periods: [...s.periods, { start: '2026-10-25' }] }
     const summary = cycleSummary(inside, '2026-10-26', 'explicit', cycleLens(inside, 'b', '2026-10-26'))
-    expect(summary.headline.title).toBe('천천히 해도 괜찮아요')
+    expect(summary.headline.title).toBe('쉬어 가는 중이에요')
     expect(summary.rows.map((r) => r.key)).toEqual(['avg'])
     expect(summary.nextPeriod).toBeUndefined()
     const text = `${summary.headline.title} ${summary.headline.sub} ${summary.rows.map((r) => `${r.label} ${r.value} ${r.sub ?? ''}`).join(' ')}`

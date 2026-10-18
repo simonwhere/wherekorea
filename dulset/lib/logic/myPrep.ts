@@ -111,7 +111,7 @@ function timerPart(state: AppState, member: MemberId, today: ISODate): Pick<MyPr
   const me = state.couple.members.find((m) => m.id === member)
   if (!me || !isSpermSide(me)) return {}
   const t = habitTimer(state, member, today)
-  if (t.state === 'reached') return { timerLabel: '생활 습관 약 3개월을 채웠어요', timerProgress: 1 }
+  if (t.state === 'reached') return { timerLabel: '생활 습관 3개월을 채웠어요', timerProgress: 1 }
   if (t.state === 'not-started' || t.day === undefined) return {}
   return { timerLabel: `생활 습관 ${t.label} · 약 3개월 중`, timerProgress: t.progress }
 }

@@ -404,7 +404,7 @@ describe('오늘 해 줄 수 있는 것', () => {
     // Late, not shared: the same neutral rotation as any '평소 주' day (he can't see it's late).
     expect(partnerTip(s, '2026-10-12', 'a')).toBe(neutralPartnerTip('2026-10-12'))
     // Late, shared: don't bring it up first.
-    expect(partnerTip(shared(s), '2026-10-12', 'a')).toBe('먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.')
+    expect(partnerTip(shared(s), '2026-10-12', 'a')).toBe('좋아하는 간식을 하나 사 가요.')
   })
 
   it('rotates the waiting week, 우리의 주간 and 곧 우리의 주간 by the date (N24): never one line for days on end', () => {

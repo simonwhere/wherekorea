@@ -36,7 +36,7 @@ export default function LeaveSheet({ onClose }: { onClose: () => void }) {
       return
     }
     update((s) => addLeaveDay(s, member, date))
-    toast.show(`${name}님 ${formatKo(date)} 휴가로 적었어요`)
+    toast.show(`${formatKo(date, { weekday: false })}을 ${name}님 휴가로 적었어요`)
   }
 
   const remove = (d: string) => {

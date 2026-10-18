@@ -972,7 +972,7 @@ function demoParenting(today: ISODate, now: Date): AppState {
   s = diary(s, birth, 'a', 'parenting', '콩이가 태어났어요. 3.2kg, 50cm. 지은이가 정말 고생 많았어요. 셋이 된 첫날.', '🥰')
   s = diary(s, addDays(birth, 47), 'b', 'parenting', '눈 맞추고 처음으로 방긋 웃었어요! 민수는 출근해서 영상으로만 봤대요.', '😊')
   s = diary(s, addDays(birth, 49), 'a', 'parenting', '50일 사진 찍는 날. 콩이는 내내 잠만 잤어요.', '😌')
-  s = diary(s, addDays(today, -2), 'b', 'parenting', '새벽 수유를 민수가 바꿔 줘서 네 시간을 푹 잤어요. 고마워요.', '😴')
+  s = diary(s, addDays(today, -2), 'b', 'parenting', '새벽 수유를 민수가 대신해 줘서 네 시간을 푹 잤어요. 고마워요.', '😴')
   s = plan(s, {
     date: addDays(today, 5),
     title: '콩이 백일 — 셋이 가족사진',

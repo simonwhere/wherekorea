@@ -550,7 +550,7 @@ export function bookingDraft(state: AppState, member: MemberId, today: ISODate):
 // ── '오늘 해 줄 수 있는 것' ─────────────────────────────────
 
 /** Clinic cycles (N13): the clinic sets the timing, so the partner keeps to the schedule. */
-export const CLINIC_PARTNER_TIP = '결과를 묻지 말고, 병원 일정만 같이 챙겨요.'
+export const CLINIC_PARTNER_TIP = '오늘 저녁 집안일을 맡아 봐요.'
 
 /**
  * Tips by what the partner's moment card already says (ttcMoment's copy key
@@ -565,7 +565,7 @@ export const CLINIC_PARTNER_TIP = '결과를 묻지 말고, 병원 일정만 같
  * The founder reads the list once (positioning §4 #9).
  */
 const TIPS_BY_COPY: Partial<Record<MomentCopyKey, readonly string[]>> = {
-  // (The moment card's body already says '증상은 묻지 말고 평소처럼 보내요' — not twice on one screen.)
+  // (The moment card's body already says '증상은 묻지 말고 평소처럼 지내요' — not twice on one screen.)
   'partner.tww': [
     '좋아하는 간식을 하나 챙겨 봐요.',
     '이번 주말에 같이 할 일을 정해 봐요.',
@@ -587,14 +587,14 @@ const TIPS_BY_COPY: Partial<Record<MomentCopyKey, readonly string[]>> = {
     '집안일 하나를 미리 끝내 둬요.',
     '평일 저녁 하나를 비워 둘 수 있는지 살펴봐요.',
   ],
-  'partner.late-shared': ['먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.'],
+  'partner.late-shared': ['좋아하는 간식을 하나 사 가요.'],
   'partner.positive-told': ['병원에 같이 갈 수 있는 날을 미리 비워 둬요.'],
   'partner.period-shared': ['가벼운 산책을 제안해 봐요.'],
 }
 
 /** Day-to-day things that fit any day of the cycle (rotated by date, so the card changes). */
 export const NEUTRAL_PARTNER_TIPS: readonly string[] = [
-  '오늘 저녁, 서로의 하루를 한 가지씩 물어봐요.',
+  '오늘 저녁, 하루 어땠는지 물어봐요.',
   '집안일 하나를 맡아 봐요.',
   '30분 같이 걷자고 해 봐요.',
   '좋아하는 간식을 하나 사 가요.',

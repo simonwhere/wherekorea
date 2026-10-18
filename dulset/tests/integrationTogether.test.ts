@@ -497,7 +497,7 @@ describe("2. [같이 할게요]: 'support' events round-trip like the app's butt
       s = { ...s, decisions: { ...s.decisions, [supportKey('p1-flu', her)]: TODAY, 'support:nope:x': TODAY, [supportKey('nope', him)]: TODAY } }
       const lines = partnerSupportLines(s, TODAY, her)
       expect(lines.map((l) => l.itemId)).toEqual(['p1-nt'])
-      expect(lines[0]!.text).toMatch(/^민수님이 ‘.+’ 같이 챙긴대요$|^지은님이 ‘.+’ 같이 챙긴대요$/)
+      expect(lines[0]!.text).toMatch(/^민수님이 ‘.+’[을를] 같이 챙긴대요$|^지은님이 ‘.+’[을를] 같이 챙긴대요$/)
       expect(partnerSupportLines(s, TODAY, him)).toEqual([])
       expect(partnerSupportLines(endPregnancy(s, TODAY), addDays(TODAY, 10), her)).toEqual([])
     }
@@ -617,8 +617,9 @@ describe('4. his heads-up the day before her appointment — alert style, stage,
                   reworded++
                   expect(n.title, where).toMatch(/^\S+ 내일 (지은|민수)님 정기 검진이에요$/)
                   const line = taskId ? (templateById(taskId)!.support ?? '') : ['hospital', 'test', 'vaccine', 'injection'].includes(kind) ? TOGETHER_VISIT_LINE : TOGETHER_TASK_LINE
-                  expect(n.body, where).toBe(`${line} · ${n.body.split(' · ').slice(1).join(' · ')}`)
-                  expect(n.body.startsWith(`${line} · `), where).toBe(true)
+                  // Time and place first, then what he can do after a dash — never one long ' · ' chain.
+                  expect(n.body, where).toBe(`${n.body.split(' — ')[0]} — ${line}`)
+                  expect(n.body.endsWith(` — ${line}`), where).toBe(true)
                 } else {
                   expect(n.title, where).toContain('일정: 정기 검진')
                   expect(n.body, where).toBe('다녀오면 어땠는지 물어봐 주세요.')
@@ -898,8 +899,8 @@ describe('7. old saves load and read cleanly', () => {
         // The seeded examples: her flu shot tomorrow (his 🔔 says what he can do) and one answer of his her screens read.
         const fyi = appointmentReminders(s, TODAY).filter((n) => n.to === him && n.key?.includes(':fyi:'))
         expect(fyi.map((n) => n.title)).toEqual(['💉 내일 지은님 독감 접종이에요'])
-        expect(fyi[0]!.body.startsWith(`${templateById('p1-flu')!.support} · `)).toBe(true)
-        expect(partnerSupportLines(s, TODAY, herOf(s)).map((l) => l.text)).toEqual(['민수님이 ‘태아검진 시간’ 같이 챙긴대요'])
+        expect(fyi[0]!.body.endsWith(` — ${templateById('p1-flu')!.support}`)).toBe(true)
+        expect(partnerSupportLines(s, TODAY, herOf(s)).map((l) => l.text)).toEqual(['민수님이 ‘태아검진 시간’을 같이 챙긴대요'])
         expect(snap.days[0]!.stageCard?.checkup).toMatchObject({ date: addDays(TODAY, 1), with: 'hers' })
         expect(diffDays(TODAY, snap.days[0]!.stageCard!.checkup!.date)).toBe(1)
       }

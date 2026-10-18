@@ -51,7 +51,7 @@ function stepMeta(key: StepKey): { title: string; sub?: string } {
     case 'consent':
       return { title: '시작하기 전에 확인해 주세요' }
     default:
-      return { title: '준비됐어요', sub: '쓰던 앱은 그대로 두고, 여기엔 시작일만 옮기면 돼요.' }
+      return { title: '준비됐어요' }
   }
 }
 

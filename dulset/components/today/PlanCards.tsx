@@ -167,7 +167,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
         icon="list"
         title="이번 주 챙길 것"
         sub={
-          allDone ? '이번 주 챙길 것을 모두 챙겼어요.' : overdue ? '기한이 지난 일이 있어요.' : undefined
+          allDone ? '모두 챙겼어요.' : overdue ? '기한이 지난 일이 있어요.' : undefined
         }
         onMore={openPlan}
       />

@@ -100,7 +100,7 @@ export default function CoupleStep({
             onChange={(cycleOwner) => patch({ cycleOwner })}
             disabled={!bothRoles}
             options={[
-              { value: 'a', label: `${names.a} (나)` },
+              { value: 'a', label: names.a === '나' ? '나' : `${names.a} (나)` },
               { value: 'b', label: names.b },
             ]}
           />

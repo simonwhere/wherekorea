@@ -81,7 +81,7 @@ export function DoctorCard() {
         <Icon name="steth" className="h-4 w-4 shrink-0" strokeWidth={2} />
         함께 확인해 봐요
       </p>
-      <h3 className="mt-1 text-base font-bold leading-snug text-ink">혼자 고민하지 말고 두 사람 모두 검사를 받아 보세요</h3>
+      <h3 className="mt-1 text-base font-bold leading-snug text-ink">두 사람 모두 검사를 받아 보세요</h3>
       <ul className="mt-2 space-y-1 text-sm leading-relaxed text-ink-2">
         {lines.map((l) => (
           <li key={l}>{l}</li>

@@ -63,13 +63,13 @@ export default function PlanTab() {
       const done = item.status !== 'done'
       if (item.id === FERTILITY_APPLY_ID && !item.custom) update((s) => applyBoth(s, done, today, 'both'))
       else update(tickItem(item.id, done, today, me.id))
-      if (done) toast.show('챙겼어요 ✓')
+      if (done) toast.show('챙겼어요')
     },
     onToggleMember: (item: PlanItem, member: MemberId) => {
       const name = state.couple.members.find((m) => m.id === member)?.name ?? ''
       const done = !appliedInfo(state.planDone, member)
       update((s) => setFertilityApplied(s, member, done, today, me.id))
-      toast.show(done ? `${name}님 신청으로 체크했어요 ✓` : `${name}님 신청을 되돌렸어요`)
+      toast.show(done ? `${name}님 신청으로 체크했어요` : `${name}님 신청을 되돌렸어요`)
     },
     onSchedule: (item: PlanItem) => setApptSheet({ draft: draftForItem(item, today) }),
     onOpenAppointment: (a: Appointment) => setApptSheet({ draft: draftFromAppointment(a), editing: a }),
@@ -88,7 +88,7 @@ export default function PlanTab() {
     const ask = tickTask && privateOwner(a) === me.id
     update((s) => markAppointmentDone(s, a.id, done, today, me.id))
     setTickOffer(ask ? { id: Date.now(), text: `챙길 것에도 체크할까요? ${partner.name}님 화면에도 보여요`, appointmentId: a.id } : null)
-    if (done && !ask) toast.show(tickTask ? '챙길 것에도 체크했어요 ✓' : '완료로 표시했어요 ✓')
+    if (done && !ask) toast.show(tickTask ? '챙길 것에도 체크했어요' : '체크했어요')
   }
 
   const acceptOffer = () => {
@@ -96,7 +96,7 @@ export default function PlanTab() {
     const id = tickOffer.appointmentId
     update((s) => tickForAppointment(s, id, today, me.id))
     setTickOffer(null)
-    toast.show('챙길 것에도 체크했어요 ✓')
+    toast.show('챙길 것에도 체크했어요')
   }
 
   const defaultPhase = filter === 'stage' || filter === 'all' ? currentPhase(state, today) : filter

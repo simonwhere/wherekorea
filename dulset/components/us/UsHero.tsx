@@ -67,7 +67,6 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
           <p className="text-xs font-semibold text-ink-2">함께한 지</p>
           <p className="mt-0.5 text-[34px] font-extrabold leading-none tracking-tight text-ink tabular-nums">
             D+{daysSince(met, today).toLocaleString('ko-KR')}
-            <span className="ml-0.5 text-lg font-bold">일</span>
           </p>
           <p className="mt-1.5 text-xs text-ink-2">{formatKo(met, { year: true, weekday: false })}에 처음 만났어요</p>
         </div>

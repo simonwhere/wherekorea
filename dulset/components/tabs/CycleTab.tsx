@@ -169,7 +169,7 @@ export default function CycleTab() {
             checked={clinic}
             onChange={toggleClinic}
             label={CLINIC_LABEL}
-            description={clinic ? '생리를 기록해도 그대로예요.' : undefined}
+            description={clinic ? '생리를 기록해도 꺼지지 않아요.' : undefined}
           />
         </Card>
       ) : null}
@@ -260,7 +260,6 @@ export default function CycleTab() {
           <IconTile name="hospital" size="sm" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink">{CLINIC_SUMMARY_SHEET_TITLE}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-3">주기·검사·일정·시술 기록을 한 장으로 모아요.</p>
           </div>
           <Button variant="secondary" onClick={() => setSummaryOpen(true)} className="shrink-0">
             만들기

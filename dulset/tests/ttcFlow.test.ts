@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import afterLossEvidence from '@/docs/research/after-loss.json'
 import { dailyItems, dailyProgress, doneThisWeek, nudgeTarget, soonAppointment, weeklyDue, weeklyRows } from '@/components/today/model'
-import { FEEL_CHIPS, WAITING_WEEK_LINES, waitingWeekLine } from '@/lib/content/fertility'
+import { FEEL_CHIPS } from '@/lib/content/fertility'
 import { addDays } from '@/lib/dates'
 import { PERSONAL_DEFAULTS, createInitialState } from '@/lib/initial'
 import { addAppointment } from '@/lib/logic/appointments'
@@ -269,22 +269,15 @@ describe('owner moments (explicit)', () => {
     expect(due.secondary).toEqual({ type: 'log', kind: 'period', label: '생리 시작 기록' })
   })
 
-  it('the waiting card changes with the day: one self-care line a day, no medical claim, and her own feel chip', () => {
-    const bodies = new Set<string>()
-    for (let i = 0; i < WAITING_WEEK_LINES.length; i++) {
-      const d = addDays('2026-09-16', i)
-      const e = m(d)
+  it('the waiting card: the expected date only (no self-care filler), no medical claim, and her own feel chip', () => {
+    for (let i = 0; i < 7; i++) {
+      const e = m(addDays('2026-09-16', i))
       expect(e.copy).toBe('owner.tww')
-      const line = e.body.replace(/^생리 예정은 .* 무렵이에요\. /, '')
-      expect(WAITING_WEEK_LINES).toContain(line)
-      expect(line).toBe(waitingWeekLine(i + 1))
-      bodies.add(e.body)
+      // The body ends at the date sentence — no rotating self-care line after it.
+      expect(e.body).toMatch(/^생리 예정은 [^.]* 무렵이에요( \(예상\))?\.$/)
+      // Days without evidence carry no medical claim: no symptom reading, no 착상.
+      expect(e.body).not.toMatch(/착상|증상|%/)
     }
-    expect(bodies.size).toBe(WAITING_WEEK_LINES.length)
-    // Days without evidence carry no medical claim: no symptom reading, no numbers, no 착상.
-    expect(WAITING_WEEK_LINES.join(' ')).not.toMatch(/착상|증상|%|\d+일/)
-    expect(waitingWeekLine(WAITING_WEEK_LINES.length)).toBe(WAITING_WEEK_LINES[0])
-    expect(waitingWeekLine(-3)).toBe(WAITING_WEEK_LINES[0])
     // What she logged today sits on the card — hers only (the partner's card never carries it).
     const felt = setFeel(s, OWNER, DAYS.tww, 'tired')
     expect(m(DAYS.tww, felt).todayFeel).toBe('tired')
@@ -817,7 +810,7 @@ describe('partner moments', () => {
     expect(p(share(fresh()), DAYS.tww)).toMatchObject({
       copy: 'partner.tww',
       title: '기다리는 시간이에요',
-      body: '증상은 묻지 말고 평소처럼 보내요.',
+      body: '증상은 묻지 말고 평소처럼 지내요.',
     })
     // (N19) '기다리는' is never said to a partner without her details.
     for (const d of Object.values(DAYS)) expect(words(p(fresh(), d)), d).not.toMatch(/기다리/)
@@ -1710,8 +1703,9 @@ describe('bleeding after a positive test, before the clinic (B3)', () => {
     expect(settledPositive(fresh(), '2026-09-01')).toBeUndefined()
     const m = ttcMoment(s, '2026-09-28', OWNER)!
     expect(m).toMatchObject({ kind: 'period-early', copy: 'owner.period-early', afterPositive: true, title: '이번 주기도 수고했어요' })
-    expect(m.body).toContain('양성 뒤에 시작된 생리')
-    expect(m.note).toContain('병원에 물어봐요')
+    // No reading of how she feels: the card keeps only the clinic line.
+    expect(m.body).toBe('')
+    expect(m.note).toBe('걱정되는 게 있으면 다니는 병원에 물어봐요.')
     expect(m.askTell).toEqual({ start: '2026-09-27' })
     expect(words(m)).not.toMatch(NO_DIAGNOSIS)
     // A later period, with one in between, is an ordinary period again.
@@ -1739,7 +1733,7 @@ describe('bleeding after a positive test, before the clinic (B3)', () => {
     ).not.toMatch(/출혈/)
   })
 
-  it('[조용히 알리기] sends one quiet notice; he then sees 병원에 같이 가 줄 수 있어요 — no 유산, no 🎉', () => {
+  it('[조용히 알리기] sends one quiet notice; he then sees 병원에 같이 가 주세요 — no 유산, no 🎉', () => {
     const told = tellPartnerBleeding(bleeding(), NOW2)
     const n = told.notifications.find((x) => x.key === bleedingToldKey('2026-09-26'))!
     expect(n).toMatchObject({ to: PARTNER, from: OWNER, kind: 'system' })
@@ -1752,7 +1746,7 @@ describe('bleeding after a positive test, before the clinic (B3)', () => {
     expect(told.notifications.some((x) => x.key === positiveToldKey('2026-09-26'))).toBe(false)
     expect(tellPartnerBleeding(told, NOW2)).toBe(told)
     const m = ttcMoment(told, '2026-09-28', PARTNER)!
-    expect(m).toMatchObject({ kind: 'positive-bleeding', copy: 'partner.bleeding-told', title: '병원에 같이 가 줄 수 있어요' })
+    expect(m).toMatchObject({ kind: 'positive-bleeding', copy: 'partner.bleeding-told', title: '병원에 같이 가 주세요' })
     expect(m.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 보기' })
     expect(words(m)).not.toMatch(NO_DIAGNOSIS)
     expect(m.bleeding).toBeUndefined()
@@ -1870,7 +1864,7 @@ describe('the quiet after a pregnancy ended: a loss rest with its last day (B4)'
         expect(p.restUntil).toBeUndefined()
         const text = words(p)
         for (const line of Object.values(AFTER_LOSS_LINES)) expect(text).not.toContain(line)
-        expect(text).not.toMatch(/생리|출혈|몸 안내/)
+        expect(text).not.toMatch(/생리|출혈|회복 안내/)
       }
     }
   })
@@ -1991,7 +1985,7 @@ describe('privacy property: bleeding, 관계일, personal chips and 나만 보�
     ['cycle', withPrivate(fresh())],
   ]
   const days: ISODate[] = ['2026-09-20', '2026-09-27', '2026-09-28', '2026-10-02', '2026-10-10', '2026-10-26', '2026-11-01']
-  const HERS = new RegExp(`출혈|관계일|${PRIVATE_LINE}|${PRIVATE_ENTRY}|${FEEL_LABEL.spotting}|몸 안내`)
+  const HERS = new RegExp(`출혈|관계일|${PRIVATE_LINE}|${PRIVATE_ENTRY}|${FEEL_LABEL.spotting}|회복 안내`)
 
   it('for every state × style × sharing × low-pressure × day: the card, the ring, the inbox and the shared state', () => {
     let checked = 0

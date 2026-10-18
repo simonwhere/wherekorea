@@ -159,10 +159,10 @@ export default function LinkSection() {
 
   return (
     <SettingsSection id="link" title="연결">
-      <Card aria-label={`${other.name}님에게 보낼 링크`}>
+      <Card aria-label={isOwner ? `${other.name}님에게 보낼 링크` : '링크'}>
         <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
           <Icon name="link" className="h-[18px] w-[18px] text-ink-2" />
-          {other.name}님에게 보낼 링크
+          {isOwner ? `${other.name}님에게 보낼 링크` : '링크'}
         </p>
 
         {!isOwner ? (
@@ -196,14 +196,16 @@ export default function LinkSection() {
                     '아직 링크가 없어요'
                   )}
                 </p>
-                <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
+                <p className="mt-0.5 text-xs leading-relaxed text-ink-2 empty:hidden">
                   {shown === 'active'
                     ? sync.publishedAt
-                      ? `마지막 전송 ${timeKo(sync.publishedAt)}${sync.pulledAt ? ` · 마지막 확인 ${timeKo(sync.pulledAt)}` : ''}`
+                      ? `마지막 전송 ${timeKo(sync.publishedAt)}`
                       : '첫 화면을 준비하고 있어요'
-                    : orphan || shown === 'expired'
-                      ? `새 링크를 만들어 ${other.name}님에게 다시 보내 주세요.`
-                      : `${LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.`}
+                    : shown === 'revoked'
+                      ? null
+                      : orphan || shown === 'expired'
+                        ? `새 링크를 만들어 ${other.name}님에게 다시 보내 주세요.`
+                        : `${LINK_DAYS}일 동안 둘셋을 안 열면 링크가 만료돼요.`}
                 </p>
                 {shown === 'active' ? (
                   <p className="mt-0.5 text-xs leading-relaxed text-ink-2" data-link-renew>
@@ -268,7 +270,7 @@ export default function LinkSection() {
             <Toggle
               checked={sendsCover}
               onChange={toggleCover}
-              label="링크에 표지 사진"
+              label="링크에 표지 사진 보내기"
               description={`켜면 ${other.name}님 화면에도 우리 표지 사진이 보여요.`}
             />
           </div>
@@ -291,7 +293,7 @@ export default function LinkSection() {
 
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-line/70 pt-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-ink-3">초대 코드 (시뮬레이션)</p>
+            <p className="text-xs font-medium text-ink-3">초대 코드</p>
             <p className="mt-0.5 font-mono text-lg font-bold tracking-[0.2em] text-ink">{code}</p>
             <p className="mt-0.5 text-[11px] text-ink-3">
               {linked

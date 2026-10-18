@@ -63,7 +63,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
           onClick={() => setEditorOpen(true)}
           className="-mr-1.5 flex min-h-[44px] items-center rounded-xl px-1.5 text-[13px] font-semibold text-ink-2 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >
-          편집<span className="sr-only">: 나의 체크 항목</span>
+          편집<span className="sr-only">: 내 체크 항목</span>
         </button>
       </div>
 
@@ -80,7 +80,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
         ))}
         {empty ? (
           <li className="flex min-h-[62px] items-center gap-3 py-2">
-            <p className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-ink-3">매일 챙길 영양제나 생활습관을 추가해 보세요.</p>
+            <p className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-ink-3">매일 챙길 영양제나 생활 습관을 추가해 보세요.</p>
             <PillButton size="md" variant="soft" onClick={() => setEditorOpen(true)}>
               추가하기
             </PillButton>

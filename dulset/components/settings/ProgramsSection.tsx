@@ -19,7 +19,7 @@ export default function ProgramsSection() {
   const titleOf = (title: string) => (explicit ? title : title.replace('가임력 검사', '임신 전 검사'))
 
   return (
-    <SettingsSection id="programs" title="도움이 되는 정부 지원">
+    <SettingsSection id="programs" title="정부 지원">
       <ul className="grid gap-2">
         {programs.map((p) => (
           <Card as="li" key={p.id} className="py-3">

@@ -60,11 +60,11 @@ export default function AboutSection() {
       <div className="grid gap-2">
         <Card tone="muted">
           <p className="text-sm leading-relaxed text-ink">
-            둘셋은 의료기기가 아니에요. 예측은 추정치이고 진단·치료나 피임에 쓰면 안 돼요. 걱정되면 전문의와 상담하세요.
+            둘셋은 의료기기가 아니에요. 날짜 예상은 참고용이라 진단·치료나 피임에 쓰면 안 돼요. 걱정되면 전문의와 상담하세요.
           </p>
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3 text-xs text-ink-3">
             <span className="font-bold text-ink">둘셋</span>
-            <span className="tabular-nums">버전 {APP_VERSION} (프로토타입)</span>
+            <span className="tabular-nums">버전 {APP_VERSION}</span>
           </div>
         </Card>
 

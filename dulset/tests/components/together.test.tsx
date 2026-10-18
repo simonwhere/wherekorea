@@ -166,7 +166,7 @@ describe('우리 한 줄: 신호 보내기 out of 더 보기, and his reply on h
     renderApp(<TodayTab onNavigate={() => {}} />, { state: s, viewer: OWNER, today: T0 })
     const line = usLine().querySelector('[data-received-reply]') as HTMLElement
     expect(line).toBeTruthy()
-    expect(line.textContent).toContain('민수님이 답했어요')
+    expect(line.textContent).toMatch(/민수님이 .*답했어요/)
     expect(line.textContent).toContain('위로가 필요해요')
     expect(line.textContent).toContain('옆에 있을게요')
     cleanup()
@@ -339,8 +339,8 @@ describe('설정 › 공유 범위: three levels, the owner’s to choose', () =
     openShare()
     const share = document.getElementById('share')!
     const line = (name: RegExp) => within(share).getByRole('radio', { name }).closest('label')?.textContent ?? ''
-    expect(line(/날짜 없음/)).toMatch(/민수님 화면에 날짜와 띠가 없어요/)
-    expect(line(/우리의 주간/)).toMatch(/‘우리의 주간’ 예상 띠/)
+    expect(line(/날짜 없음/)).toMatch(/민수님 화면에 날짜가 보이지 않아요/)
+    expect(line(/우리의 주간/)).toMatch(/‘우리의 주간’ 예상 날짜까지/)
     expect(line(/자세히/)).toMatch(/배테기·임테기 결과까지/)
     expect(share.textContent).toContain('생리일·테스트 결과는 나만 봐요')
     expect(share.textContent).toContain('생리일, 배테기·임테기 결과까지 민수님 화면에 보여요')
@@ -352,7 +352,7 @@ describe('설정 › 공유 범위: three levels, the owner’s to choose', () =
     openShare()
     const share = document.getElementById('share')!
     expect(within(share).queryAllByRole('radio')).toHaveLength(0)
-    expect(share.textContent).toContain('날짜는 보이지 않아요. 지은님이 알려 준 것만 보여요.')
+    expect(share.textContent).toContain('날짜는 보이지 않아요. 주기 소식은 지은님이 알려 준 것만 보여요.')
   })
 })
 

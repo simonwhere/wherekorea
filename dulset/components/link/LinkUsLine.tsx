@@ -34,8 +34,7 @@ function ReplyLine({ reply, name, her, today, className }: { reply: SnapshotRepl
   return (
     <div className={className} data-received-reply>
       <p className="text-xs font-semibold text-ink-3">
-        {name}님이 답했어요{when ? ` · ${when}` : ''}
-        {reply.answered ? <span className="font-normal"> · ‘{reply.answered}’에</span> : null}
+        {name}님이 {reply.answered ? <span className="font-normal">‘{reply.answered}’에 </span> : null}답했어요{when ? ` · ${when}` : ''}
       </p>
       <p
         className={cx(

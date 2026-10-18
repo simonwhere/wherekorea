@@ -96,9 +96,9 @@ export default function DoneStep({
       if (r === 'shared' || r === 'copied') onSent?.()
       setNote(
         r === 'shared'
-          ? `보냈어요. 시작하기를 누르면 ${partner}님 화면이 채워져요.`
+          ? `보냈어요. ‘시작하기’를 누르면 ${partner}님 화면이 채워져요.`
           : r === 'copied'
-            ? `링크를 복사했어요. 카톡에 붙여 넣어 주세요. 시작하기를 누르면 ${partner}님 화면이 채워져요.`
+            ? `링크를 복사했어요. 카톡에 붙여 넣어 주세요. ‘시작하기’를 누르면 ${partner}님 화면이 채워져요.`
             : '보내지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.',
       )
     } finally {
@@ -115,7 +115,6 @@ export default function DoneStep({
         </p>
         {ownerIsMe ? (
           <>
-            <p className="mt-1 text-xs leading-relaxed text-ink-2">{partner}님은 앱을 설치하지 않아도 돼요.</p>
             <button
               type="button"
               onClick={sendLink}

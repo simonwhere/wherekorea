@@ -116,8 +116,7 @@ describe('/link — her answer to his signal (QA Now 3b)', () => {
     await openLink(s)
     await waitFor(() => expect(document.querySelector('#us-line [data-received-reply]')).not.toBeNull())
     const line = document.querySelector('#us-line [data-received-reply]')!.textContent ?? ''
-    expect(line).toContain('지은님이 답했어요 · 오전 11:20')
-    expect(line).toContain('‘오늘 저녁은 내가 할게요’에')
+    expect(line).toContain('지은님이 ‘오늘 저녁은 내가 할게요’에 답했어요 · 오전 11:20')
     expect(line).toContain('고마워요')
   })
 

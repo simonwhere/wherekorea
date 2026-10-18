@@ -60,7 +60,7 @@ export default function TogetherCard({
   const whose: TogetherWhose[] = stage === 'pregnant' ? ['theirs', 'ours'] : ['theirs']
   const rows = togetherItems(state, today, me.id, { whose, limit: TOGETHER_HOME_MAX, ...(exclude?.length ? { exclude } : {}) })
   if (!rows.length) return null
-  const title = stage === 'pregnant' ? '이번 주 같이 챙길 것' : `${cycleOwner.name}님 챙길 것 · 같이`
+  const title = stage === 'pregnant' ? '이번 주 같이 챙길 것' : `${cycleOwner.name}님과 같이 챙길 것`
 
   return (
     <section

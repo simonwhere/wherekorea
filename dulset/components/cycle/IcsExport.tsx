@@ -31,7 +31,7 @@ export default function IcsExport({
   const download = () => {
     if (!enabled) return
     downloadText('dulset-fertile.ics', buildIcs(fertileWindowEvents(windows, { discreet: useDiscreet, peak: withPeak, id: coupleId })))
-    toast.show('캘린더 파일을 저장했어요 · 열어서 추가해 주세요')
+    toast.show('캘린더 파일을 저장했어요. 열어서 추가해 주세요')
   }
 
   // Tucked away: fertile-window alarms on the phone calendar are the owner's

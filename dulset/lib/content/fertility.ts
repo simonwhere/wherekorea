@@ -51,7 +51,6 @@ interface FertilityJson {
   ptestChoices: Array<{ result: PregnancyTestResult; hint: string }>
   ptestEarlyNote: string
   feelChips: Array<{ feel: PersonalFeel; label: string }>
-  waitingWeekLines: string[]
 }
 
 const raw = data as unknown as FertilityJson
@@ -109,12 +108,12 @@ export function doctorGuideMonths(age: number | undefined): 0 | 6 | 12 {
   return m === 0 ? 0 : m === 6 ? 6 : 12
 }
 
-/** Personal line for the doctor section, e.g. "지은님(36세) 기준으로는 6개월 동안 …". */
+/** Personal line for the doctor section, e.g. "지은님은 36세라 6개월 동안 …". */
 export function doctorAgeLine(name: string, age: number): string {
   const months = doctorGuideMonths(age)
-  if (months === 0) return `${name}님(${age}세) 기준으로는 기다리지 말고 지금 상담해 보세요.`
+  if (months === 0) return `${name}님은 ${age}세라 기다리지 말고 지금 상담해 보세요.`
   const span = months === 12 ? '1년' : '6개월'
-  return `${name}님(${age}세) 기준으로는 ${span} 동안 소식이 없으면 상담을 받아 보세요.`
+  return `${name}님은 ${age}세라 ${span} 동안 소식이 없으면 상담을 받아 보세요.`
 }
 
 /** NICE framing shown instead of fertile-day estimates in the hidden view. */
@@ -167,17 +166,3 @@ export function ptestAfterCopy(
 
 /** The six chips of the 오늘 컨디션 panel, in this order. */
 export const FEEL_CHIPS: ReadonlyArray<{ feel: PersonalFeel; label: string }> = raw.feelChips
-
-/**
- * One quiet line a day for the 기다리는 주 card. Nothing here is a medical
- * claim — docs/research has no evidence that ties a day after ovulation to a
- * symptom or an action, so the card rotates self-care only (and says
- * '너무 이르면 음성일 수 있어요', SOURCES.earlyTest, next to the test action).
- */
-export const WAITING_WEEK_LINES: readonly string[] = raw.waitingWeekLines
-
-/** The line for day `n` of the wait (n ≥ 0 — rotates through WAITING_WEEK_LINES). */
-export function waitingWeekLine(n: number): string {
-  const i = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0
-  return WAITING_WEEK_LINES[i % WAITING_WEEK_LINES.length]!
-}

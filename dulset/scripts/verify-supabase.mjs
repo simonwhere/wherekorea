@@ -478,7 +478,7 @@ export function formatTable(result, { url, kind, source, anonKey } = {}) {
   const passed = result.steps.filter((s) => s.result === 'PASS').length
   lines.push('')
   if (result.ok) {
-    lines.push(`결과: ${result.steps.length}단계 모두 통과했어요. 앱을 이 두 값으로 빌드하면 '연결: Supabase'로 동작해요.`)
+    lines.push(`결과: ${result.steps.length}단계 모두 통과했어요. 앱을 이 두 값으로 빌드하면 Supabase로 연결돼요(확인 방법: docs/next-a-setup.md §5).`)
   } else {
     lines.push(`결과: ${result.steps.length}단계 중 ${passed}단계 통과, ${failed.length}단계 막힘${result.steps.some((s) => s.result === 'SKIP') ? '(나머지는 건너뜀)' : ''}.`)
     lines.push('고칠 것:')
