@@ -27,7 +27,6 @@ import {
   type FetchLike,
 } from '@/lib/sync/supabaseTransport'
 import {
-  TRANSPORT_LABEL,
   pageEvents,
   pageReceived,
   pickSupabaseEnv,
@@ -59,8 +58,6 @@ describe('picking the transport', () => {
     expect(pickSupabaseEnv('https://x.supabase.co/', 'key')).toEqual({ url: 'https://x.supabase.co', anonKey: 'key' })
     expect(transportKind(null)).toBe('mock')
     expect(transportKind({ url: 'https://x.supabase.co', anonKey: 'k' })).toBe('supabase')
-    expect(TRANSPORT_LABEL.mock).toContain('모의')
-    expect(TRANSPORT_LABEL.supabase).toBe('연결: Supabase')
   })
 
   it('this build has no Supabase env, so transport() is the mock (and one instance)', async () => {

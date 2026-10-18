@@ -64,7 +64,7 @@ export default function IdeaBrowser({
   return (
     <section id={id} className="mt-6" ref={headingRef}>
       <SectionTitle
-        sub={`${list.length}개 · 지금 계절에 맞는 것부터 보여 드려요`}
+        sub={`${list.length}개`}
         action={
           onFold ? (
             <button
@@ -142,7 +142,6 @@ export default function IdeaBrowser({
           <EmptyState
             icon="search"
             title="조건에 맞는 아이디어가 없어요"
-            body="분류나 예산을 바꿔 보세요."
             action={
               <Button variant="secondary" onClick={reset}>
                 필터 초기화
@@ -176,7 +175,7 @@ export default function IdeaBrowser({
               </a>
             </span>
           ))}
-          . 일반적인 정보이고 의료 상담을 대신하지 않아요. 장소 정보는 지도 앱에서 확인해 주세요.
+          . 일반 정보예요. 의료 상담을 대신하지 않아요.
         </Disclaimer>
       )}
     </section>

@@ -96,9 +96,7 @@ function GrowthForm({ birth, onDone }: { birth: string; onDone: () => void }) {
           {errors.form}
         </p>
       ) : (
-        <p className="text-xs leading-relaxed text-ink-3">
-          재지 않은 칸은 비워 두세요. 병원이나 검진에서 잰 값을 옮겨 적으면 좋아요.
-        </p>
+        <p className="text-xs leading-relaxed text-ink-3">재지 않은 칸은 비워 두세요.</p>
       )}
 
       <Button type="submit" full size="lg">

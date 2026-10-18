@@ -51,9 +51,6 @@ export default function DateTab() {
         <div className="min-w-0 pt-1.5">
           {/* Focused by AppShell on arrival (tabIndex -1): no ring on a heading nobody tabs to. */}
           <h1 className="text-xl font-extrabold leading-tight tracking-tight text-ink outline-none">둘만의 시간 아이디어</h1>
-          <p className="mt-1 text-xs leading-relaxed text-ink-3">
-            가볍게 둘러보고, 마음에 들면 날짜를 골라 제안해요. 언제 할지는 둘이 편한 날로 정해요.
-          </p>
         </div>
       </header>
       <DateBanner />
@@ -71,7 +68,7 @@ export default function DateTab() {
             className="flex min-h-[52px] w-full items-center justify-between gap-3 rounded-xl2 border border-dashed border-line px-4 text-left text-sm font-semibold text-ink hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
           >
             <span>
-              아이디어 더 보기 <span className="font-normal text-ink-3">· {total}개 · 분류와 예산으로 골라요</span>
+              아이디어 더 보기 <span className="font-normal text-ink-3">· {total}개</span>
             </span>
             <Icon name="chev" className="h-5 w-5 shrink-0 text-ink-3" strokeWidth={2} />
           </button>

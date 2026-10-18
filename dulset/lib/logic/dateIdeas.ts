@@ -196,13 +196,12 @@ export interface DateBanner {
   kind: 'our-week' | 'low-pressure' | 'preparing' | 'pregnant' | 'parenting'
   emoji: string
   title: string
-  body: string
   /** Short fertility-friendly reminder (preparing / pregnant only). */
   note?: string
 }
 
-const PREPARING_NOTE = '🍹 술은 잠시 쉬고, ♨️ 뜨거운 탕·사우나 대신 산책으로 골라요.'
-const PREGNANT_NOTE = '🍹 음료는 무알콜로, ♨️ 뜨거운 탕·사우나는 피하고 틈틈이 쉬어 가요.'
+const PREPARING_NOTE = '술은 잠시 쉬고, 뜨거운 탕·사우나 대신 산책을 골라요.'
+const PREGNANT_NOTE = '음료는 무알코올로 고르고, 뜨거운 탕·사우나는 피해요. 틈틈이 쉬어 가요.'
 
 type BannerState = Pick<
   AppState,
@@ -266,7 +265,6 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       kind: 'pregnant',
       emoji: '🤰',
       title: '태교 여행·산책 아이디어',
-      body: '무리하지 않는 일정으로, 쉬어 가며 즐겨요.',
       note: PREGNANT_NOTE,
     }
   }
@@ -275,15 +273,13 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       kind: 'parenting',
       emoji: '🌙',
       title: '아기 재운 뒤 30분, 둘만의 시간',
-      body: '짧아도 괜찮아요. 서로 이야기 들어 주는 시간이면 충분해요.',
     }
   }
   if (lowPressureFor(state.settings, viewer)) {
     return {
       kind: 'low-pressure',
       emoji: '🌿',
-      title: '주기 상관없이, 자주 함께하는 게 제일 좋아요',
-      body: '특별한 날을 정하지 않아도 돼요. 편한 날 가볍게 골라 봐요.',
+      title: '주기와 상관없이 자주 함께하면 좋아요',
       note: PREPARING_NOTE,
     }
   }
@@ -301,8 +297,7 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
       return {
         kind: 'our-week',
         emoji: '💞',
-        title: '이번 주는 우리의 주간 💞',
-        body: '무리하지 말고 같이 있는 시간 자체를 즐겨요.',
+        title: '이번 주는 우리의 주간이에요',
         note: PREPARING_NOTE,
       }
     }
@@ -311,7 +306,6 @@ export function dateBanner(state: BannerState, today: ISODate, viewer: MemberId)
     kind: 'preparing',
     emoji: '💞',
     title: '이번 주 둘만의 시간',
-    body: '거창하지 않아도 좋아요. 같이 웃는 시간이 쌓이면 돼요.',
     note: PREPARING_NOTE,
   }
 }
@@ -343,9 +337,9 @@ export function suggestPlanDate(
 /** Helper line under the date field while the suggested day is still selected. */
 export function planDateHint(suggested: SuggestedDate, today: ISODate): string {
   const day = formatKo(suggested.date, { weekday: false })
-  if (suggested.reason === 'next-saturday') return `이번 토요일엔 일정이 있어서 다음 토요일(${day})로 골라 뒀어요. 편한 날로 바꿔도 좋아요.`
+  if (suggested.reason === 'next-saturday') return `이번 토요일엔 일정이 있어서 다음 토요일(${day})로 골라 뒀어요.`
   // "이번 주 토요일" is ambiguous on a Sunday, so say what we mean.
-  return suggested.date === today ? '오늘, 토요일로 골라 뒀어요.' : `다가오는 토요일(${day})로 골라 뒀어요.`
+  return suggested.date === today ? '오늘(토요일)로 골라 뒀어요.' : `다가오는 토요일(${day})로 골라 뒀어요.`
 }
 
 // ── Plans (pure mutations) ──────────────────────────────────

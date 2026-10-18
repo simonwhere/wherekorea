@@ -175,7 +175,7 @@ function checkBounds(value: string, b: DateBounds, tooEarly: string, tooLate: st
 }
 
 export function validateLmp(value: string, today: ISODate): string | null {
-  return checkBounds(value, lmpBounds(today), '44주보다 이전 날짜예요. 날짜를 확인해 주세요.', '오늘 이후 날짜는 고를 수 없어요.')
+  return checkBounds(value, lmpBounds(today), '44주 넘게 지난 날짜예요. 날짜를 확인해 주세요.', '오늘 이후 날짜는 고를 수 없어요.')
 }
 
 export function validateDueDate(value: string, today: ISODate): string | null {
@@ -241,7 +241,7 @@ export function shareCheckWithPartner(
         from: from.id,
         kind: 'milestone',
         title: `🏥 ${from.name}님이 검사 일정을 공유했어요`,
-        body: `${check.weekLabel} · ${check.title} — 일정 맞춰서 같이 가 볼까요?`,
+        body: `${check.weekLabel} ${check.title}. 같이 가 볼까요?`,
       },
     ],
     nowISO,

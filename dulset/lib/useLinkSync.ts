@@ -314,7 +314,10 @@ export function useLinkSyncStatus(): LinkSyncStatus {
 }
 
 function errorText(e: unknown): string {
-  return e instanceof Error && e.message ? e.message : '연결에 문제가 있어요'
+  if (!(e instanceof Error)) return '연결에 문제가 있어요'
+  if ((e as Error & { code?: unknown }).code === 'network') return '지금은 연결할 수 없어요'
+  // The mock's errors are already Korean; a server's raw message (English, technical) never reaches the screen.
+  return /[가-힣]/.test(e.message) ? e.message : '연결에 문제가 있어요'
 }
 
 // ── The sync hook (mounted once in AppShell) ────────────────

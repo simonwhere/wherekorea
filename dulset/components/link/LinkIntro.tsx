@@ -88,7 +88,6 @@ export default function LinkIntro({
             options={STYLE_OPTIONS}
           />
         </Group>
-        <p className="text-[12px] leading-[1.5] text-ink-3">체크 항목과 이 화면의 말투를 정하는 데만 써요.</p>
         <div className="flex flex-wrap items-center gap-2">
           <Pill tone="primary" onClick={() => (fields ? onSetup(fields) : onLater())}>
             이대로 시작하기

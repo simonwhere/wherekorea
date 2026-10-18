@@ -300,7 +300,7 @@ describe('heroLine', () => {
   const EVENING = 20
 
   it('greets by name when nothing else is going on', () => {
-    expect(heroLine(fresh(), TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(fresh(), TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 오늘도 수고했어요' })
     expect(heroLine(fresh(), TODAY, OWNER, 8).text).toBe('지은님, 좋은 아침이에요')
   })
 
@@ -419,7 +419,7 @@ describe('heroLine', () => {
     s = setCoupleDates(s, { marriedDate: '2024-09-11' })
     s = finishDay(s, OWNER, TODAY, at(TODAY, '13'))
     expect(s.notifications.some((n) => n.key === `complete:${OWNER}:${TODAY}`)).toBe(true)
-    expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 오늘도 수고했어요' })
     s = sendCheer(s, OWNER, PARTNER, at(TODAY, '14'))
     expect(heroLine(s, TODAY, PARTNER, EVENING).kind).toBe('cheer')
     s = sendSignal(s, OWNER, PARTNER, 'comfort', TODAY, at(TODAY, '15'))
@@ -604,7 +604,7 @@ describe('the demo couple’s cover and line', () => {
             const line = heroLine(s, day, viewer, hour)
             expect(line.text, `${stage} ${day} ${viewer}`).not.toMatch(COVER_WORDS)
             expect(line.text).not.toContain('🎉')
-            if (line.kind === 'greeting') expect(line).toEqual({ kind: 'greeting', text: expect.stringMatching(/님, 좋은 /) })
+            if (line.kind === 'greeting') expect(line).toEqual({ kind: 'greeting', text: expect.stringMatching(/님, (좋은 아침이에요|안녕하세요|오늘도 수고했어요)$/) })
             if (line.avatar) expect(line.avatar).toBe(other(viewer))
           }
         }
@@ -799,7 +799,7 @@ describe('기념일 알림 (settings.anniversaryAlerts): off by default while pr
     const s = setCoupleDates(fresh(), { marriedDate: '2024-09-14' })
     expect(s.settings.anniversaryAlerts).toBeUndefined()
     expect(anniversaryAlertsEnabled(s)).toBe(false)
-    expect(heroLine(s, '2026-09-14', PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+    expect(heroLine(s, '2026-09-14', PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 오늘도 수고했어요' })
     expect(anniversaryNotices(s, '2026-09-07')).toEqual([])
     expect(anniversaryNotices(s, '2026-09-14')).toEqual([])
   })
@@ -825,7 +825,7 @@ describe('기념일 알림 (settings.anniversaryAlerts): off by default while pr
     for (const base of [fresh(), pregnantOf(fresh())]) {
       const s = off(setCoupleDates(base, { marriedDate: '2024-09-14' }))
       expect(s.settings.anniversaryAlerts).toBe(false)
-      expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 좋은 저녁이에요' })
+      expect(heroLine(s, TODAY, PARTNER, EVENING)).toEqual({ kind: 'greeting', text: '민수님, 오늘도 수고했어요' })
       expect(heroLine(s, '2026-09-14', PARTNER, EVENING).kind).toBe('greeting')
       expect(anniversaryNotices(s, '2026-09-07')).toEqual([])
       expect(anniversaryNotices(s, '2026-09-14')).toEqual([])

@@ -280,7 +280,6 @@ body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Ne
 h1{margin:12px 0 8px;font-size:30px;line-height:1.3}
 .couple{margin:0;font-size:16px;color:var(--ink2)}
 .range{margin:6px 0 0;font-size:13px;color:var(--ink3)}
-.tip{margin:20px auto 0;max-width:420px;font-size:12px;color:var(--ink3)}
 .stage{padding-top:24px}
 h2{margin:32px 0 4px;font-size:21px;color:var(--brand)}
 h3{margin:24px 0 10px;font-size:14px;font-weight:700;color:var(--ink3)}
@@ -308,7 +307,6 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-al
   html,body{background:#fff}
   .book{max-width:none;padding:0}
   .cover{padding-top:30vh;border-bottom:0;break-after:page;page-break-after:always}
-  .tip{display:none}
   .stage + .stage{break-before:page;page-break-before:always}
   h2,h3{break-after:avoid;page-break-after:avoid}
   .entry{break-inside:avoid;page-break-inside:avoid;border-color:#ddd}
@@ -423,9 +421,6 @@ export function buildDiaryHtml(input: DiaryExportInput): string {
     const span = from === to ? from : `${from} – ${to}`
     body.push(`<p class="range">${escapeHtml(span)} · 기록 ${entries.length}개</p>`)
   }
-  body.push(
-    '<p class="tip">브라우저에서 인쇄(Ctrl+P · ⌘P)를 누르면 PDF로 저장하거나 종이로 뽑을 수 있어요.</p>',
-  )
   body.push('</header>')
 
   if (!entries.length) {
@@ -455,8 +450,8 @@ export function buildDiaryHtml(input: DiaryExportInput): string {
   const album = renderAlbum(entries, input, byId)
   if (album) body.push(album)
 
-  const made = input.generatedOn ? `${formatKo(input.generatedOn, { year: true, weekday: false })}, ` : ''
-  body.push(`<footer>${escapeHtml(made)}둘셋에서 두 사람이 함께 남긴 기록을 모았어요.</footer>`)
+  const made = input.generatedOn ? ` · ${formatKo(input.generatedOn, { year: true, weekday: false })}` : ''
+  body.push(`<footer>둘셋${escapeHtml(made)}</footer>`)
 
   return [
     '<!doctype html>',

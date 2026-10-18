@@ -187,7 +187,6 @@ header{border-bottom:2px solid var(--brand);padding-bottom:10px;margin-bottom:14
 h1{margin:4px 0 2px;font-size:22px;line-height:1.3}
 .headline{margin:0;font-size:13px;font-weight:700;color:var(--ink2)}
 .made{margin:4px 0 0;font-size:12px;color:var(--ink3)}
-.tip{margin:8px 0 0;font-size:12px;color:var(--ink3)}
 section{margin:16px 0 0}
 h2{margin:0 0 6px;font-size:14px;color:var(--brand);border-left:3px solid var(--brand);padding-left:8px}
 table{width:100%;border-collapse:collapse;background:var(--card);font-size:12.5px}
@@ -206,7 +205,6 @@ footer{margin-top:16px;font-size:11px;color:var(--ink3);text-align:center}
 @media print{
   html,body{background:#fff}
   .sheet{max-width:none;padding:0}
-  .tip{display:none}
   section{break-inside:avoid;page-break-inside:avoid}
   tr{break-inside:avoid;page-break-inside:avoid}
   h2{break-after:avoid;page-break-after:avoid}
@@ -255,7 +253,6 @@ export function buildClinicSummaryHtml(s: ClinicSummary): string {
   body.push(`<h1>${escapeHtml(CLINIC_SUMMARY_TITLE)}</h1>`)
   body.push(`<p class="headline">${escapeHtml(CLINIC_SUMMARY_HEADER)}</p>`)
   body.push(`<p class="made">만든 날 ${escapeHtml(formatKo(s.generatedOn, { year: true }))}</p>`)
-  body.push('<p class="tip">인쇄(Ctrl+P · ⌘P)하면 PDF로 저장하거나 종이로 뽑을 수 있어요.</p>')
   body.push('</header>')
 
   body.push('<section><h2>두 사람</h2>')

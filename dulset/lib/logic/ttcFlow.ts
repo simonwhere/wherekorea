@@ -698,7 +698,6 @@ export { partnerHintState } from './dateIdeas'
 export const VEIL_COPY = {
   eyebrow: '오늘의 우리',
   title: '내용을 가려 뒀어요',
-  body: '',
   action: '내용 보기',
 } as const
 
@@ -1050,11 +1049,9 @@ function ownerMoment(c: Ctx): MomentBody {
           body: p.recentSurge
             ? '처음 양성이 나온 날과 그다음 날이 가장 좋은 때예요.'
             : low
-              ? lhOn
-                ? '달력으로만 계산해서 범위가 넓어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.'
-                : '달력으로만 계산해서 범위가 넓어요.'
+              ? '달력으로만 계산해서 범위가 넓어요.'
               : lhOn
-                ? '오늘 LH 결과를 기록하면 예상을 다시 계산해요.'
+                ? ''
                 : '달력 기준 예상이에요.',
           note: '이 기간엔 하루나 이틀에 한 번이면 충분해요.',
           ...(lhOn ? { primary: { type: 'log', kind: 'lh', label: 'LH 기록' } as MomentAction } : {}),
@@ -1221,8 +1218,7 @@ function ownerCalm(c: Ctx): MomentBody {
         tone: 'brand',
         eyebrow: '오늘의 우리',
         title: '알림은 쉬고 있어요',
-        // 'off' only silences her alerts — her calendar still shows the estimates.
-        body: '예상은 달력에서 볼 수 있어요.',
+        body: '',
         secondary: { type: 'nav', to: 'settings', label: '설정에서 바꾸기' },
       }
 }
@@ -1247,7 +1243,7 @@ function partnerNeutral(c: Pick<Ctx, 'state' | 'today'>): MomentBody {
     tone: 'default',
     eyebrow: '오늘의 우리',
     title: '서로의 하루를 챙겨요',
-    body: week ? '이번 주에 내가 맡을 것 하나면 충분해요.' : '오늘 하루 어땠는지 물어봐요.',
+    body: '',
     monthlyTask: true,
     ...(week ? { weekTogether: true } : {}),
   }
@@ -1531,8 +1527,8 @@ export function tellPartnerPeriod(state: AppState, start: ISODate, nowISO: strin
         to: otherOf(owner),
         from: owner,
         kind: 'system',
-        title: `${nameOf(state, owner)}님이 알려 왔어요`,
-        body: `이번 달은 쉬어 가요. ${PERIOD_PARTNER_TIP}`,
+        title: `${nameOf(state, owner)}님이 알려 줬어요`,
+        body: `이번 달은 쉬어 가요. ${sayForTold('period').say}`,
       },
     ],
     nowISO,
@@ -1559,7 +1555,7 @@ export function tellPartnerPositive(state: AppState, nowISO: string): AppState {
         to: otherOf(owner),
         from: owner,
         kind: 'system',
-        title: `${nameOf(state, owner)}님이 소식을 전했어요`,
+        title: `${nameOf(state, owner)}님이 알려 줬어요`,
         body: '임신 테스트에서 양성이 나왔어요. 병원에서 확인할 때까지 같이 기다려요.',
       },
     ],
@@ -1618,7 +1614,7 @@ export function tellPartnerBleeding(state: AppState, nowISO: string): AppState {
         to: otherOf(owner),
         from: owner,
         kind: 'system',
-        title: `${nameOf(state, owner)}님이 알려 왔어요`,
+        title: `${nameOf(state, owner)}님이 알려 줬어요`,
         body: '병원 확인 전에 출혈이 시작됐어요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
       },
     ],

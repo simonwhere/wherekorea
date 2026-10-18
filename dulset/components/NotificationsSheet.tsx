@@ -150,7 +150,7 @@ function Group({
                     </span>
                     {time ? <span className="shrink-0 pt-0.5 text-[11px] text-ink-3">{time}</span> : null}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-ink-3">{n.body}</span>
+                  {n.body ? <span className="mt-0.5 block text-xs leading-relaxed text-ink-3">{n.body}</span> : null}
                 </span>
                 {!n.read ? (
                   <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand" />

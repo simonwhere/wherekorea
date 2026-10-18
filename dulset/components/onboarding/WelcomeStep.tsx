@@ -55,7 +55,7 @@ export default function WelcomeStep({
           <Polaroid
             caption={
               <>
-                <span className="text-[13px] font-semibold text-ink-2">여기에 우리 사진을 걸 수 있어요</span>
+                <span />
                 <Icon name="cam" className="h-4 w-4 text-ink-3" />
               </>
             }

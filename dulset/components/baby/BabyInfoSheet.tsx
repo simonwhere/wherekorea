@@ -37,7 +37,6 @@ function BabyInfoForm({ mode, onDone }: { mode: 'create' | 'edit'; onDone: () =>
   })
   const error = validateBabyInfo(input, today)
   const bounds = birthBounds(today)
-  const birthChanged = mode === 'edit' && saved && saved.birthDate !== input.birthDate
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +44,7 @@ function BabyInfoForm({ mode, onDone }: { mode: 'create' | 'edit'; onDone: () =>
     if (mode === 'create') {
       const baby = toBabyInfo(input)
       update((s) => recordBirth(s, baby))
-      toast.show(`${baby.name}, 반가워요! 🎉`)
+      toast.show(`${baby.name}, 반가워요!`)
     } else {
       update((s) => saveBabyInfo(s, input))
       toast.show('아기 정보를 고쳤어요')
@@ -55,11 +54,6 @@ function BabyInfoForm({ mode, onDone }: { mode: 'create' | 'edit'; onDone: () =>
 
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
-      {mode === 'create' ? (
-        <p className="text-sm leading-relaxed text-ink-2">
-          태어난 날을 알려 주면 기념일, 영유아 건강검진 시기, 성장 기록을 우리 둘이 함께 볼 수 있어요.
-        </p>
-      ) : null}
       <Field label="이름 또는 태명" hint="비워 두면 ‘아기’로 불러요.">
         <input
           className={inputClass}
@@ -73,13 +67,7 @@ function BabyInfoForm({ mode, onDone }: { mode: 'create' | 'edit'; onDone: () =>
       <Field
         label="태어난 날"
         hint={
-          error ? (
-            <span className="text-period">{error}</span>
-          ) : birthChanged ? (
-            '기념일과 검진 날짜가 새 날짜로 다시 계산돼요.'
-          ) : (
-            formatKo(input.birthDate, { year: true })
-          )
+          error ? <span className="text-period">{error}</span> : formatKo(input.birthDate, { year: true })
         }
       >
         <input

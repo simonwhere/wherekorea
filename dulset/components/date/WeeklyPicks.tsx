@@ -20,7 +20,7 @@ export default function WeeklyPicks({ onPlan }: { onPlan: (idea: DateIdea) => vo
 
   return (
     <section className="mt-6">
-      <SectionTitle sub="매주 월요일에 새로 골라 드려요 · 옆으로 넘겨 보세요">이번 주 추천</SectionTitle>
+      <SectionTitle>이번 주 추천</SectionTitle>
       <ul
         aria-label="이번 주 추천 데이트"
         className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

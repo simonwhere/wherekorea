@@ -20,8 +20,8 @@ export default function PartnerCorner({ trimester }: { trimester: Trimester }) {
       <SectionTitle
         sub={
           iAmCarrying
-            ? `${TRIMESTER_LABEL[trimester]}에 파트너에게 이렇게 부탁해도 좋아요`
-            : `${TRIMESTER_LABEL[trimester]}에 이렇게 함께할 수 있어요`
+            ? `${TRIMESTER_LABEL[trimester]}에 이렇게 부탁해 봐요`
+            : `${TRIMESTER_LABEL[trimester]}에 해 볼 것`
         }
       >
         파트너와 함께

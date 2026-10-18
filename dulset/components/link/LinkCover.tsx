@@ -72,7 +72,7 @@ export default function LinkCover({
         </div>
         <div className="mt-1 flex min-h-9 items-center">
           <h1 className="min-w-0 flex-1 text-[20px] font-extrabold leading-[1.3] tracking-[-0.035em] text-ink outline-none">
-            {greetingFor(hour)}, {me.name}님
+            {me.name}님, {greetingFor(hour)}
           </h1>
         </div>
         {line ? (

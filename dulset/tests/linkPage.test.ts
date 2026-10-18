@@ -313,7 +313,7 @@ describe('partner page view model', () => {
   it('the week-over notice never puts it on her: no “쉬고 있어요”, no “앱을 열면” — one line, no explaining the buttons below', () => {
     const c = noticeCopy('stale', '지은')
     expect(`${c.title} ${c.body}`).not.toMatch(/쉬고 있어요|앱을 열면|열어 주세요|부탁/)
-    expect(c.body).toBe('지은님 폰이 열리면 다시 채워져요.')
+    expect(c.body).toBe('지은님 폰에서 둘셋이 열리면 채워져요.')
   })
 })
 
@@ -533,7 +533,7 @@ describe('owner ⇄ partner page over the mock transport', () => {
     // … and answers 응원 on day +4.
     clock = `${addDays(TODAY, 4)}T08:00:00+09:00`
     await page.sendEvent(link.token, { id: 'late-cheer', from: partner, kind: 'cheer' })
-    // After the week the page has nothing for its date (the calm '새 화면은 곧 채워져요').
+    // After the week the page has nothing for its date (the calm '새 화면을 기다리고 있어요').
     expect(snapshotDay(fetched, addDays(TODAY, 7))).toBeNull()
 
     // Her phone opens on day +6: both count, each on the day it arrived.

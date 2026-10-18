@@ -399,7 +399,7 @@ function ourStory(state: AppState, prepStart: ISODate): AppState {
   s = memory(
     d.firstTrip,
     'b',
-    '첫 여행으로 강릉에 갔어요. 비 오는 바다 앞에서 우산 하나로 한참 걸었어요. 이 사람이랑 오래 함께하고 싶다고 생각한 날.',
+    '첫 여행으로 강릉에 갔어요. 비 오는 바닷가를 우산 하나 같이 쓰고 한참 걸었어요. 이 사람이랑 오래 같이 있고 싶다고 생각한 날.',
     20,
     'builtin:sea',
   )
@@ -479,7 +479,7 @@ function preparingHistory(state: AppState, ttcStart: ISODate, full: boolean): Ap
     ttcStart,
     'b',
     'preparing',
-    '오늘부터 우리 둘이 함께 준비하기로 했어요. 엽산부터 시작! 서두르지 말고 재밌게 가 보자고 약속했어요.',
+    '오늘부터 같이 준비하기로 했어요. 일단 엽산부터! 조급해하지 말고 재밌게 하자고 약속했어요.',
     '🥰',
     'builtin:window',
   )
@@ -498,7 +498,7 @@ function preparingHistory(state: AppState, ttcStart: ISODate, full: boolean): Ap
     dateDay,
     'a',
     'preparing',
-    '남산까지 걸어 올라갔다가 다리가 후들후들. 그래도 야경 보면서 한참 이야기했어요. 준비하는 동안 이런 날을 더 자주 만들자고.',
+    '남산까지 걸어 올라갔다가 다리가 후들후들. 그래도 야경 보면서 이야기 많이 했어요. 이런 날 자주 만들자.',
     '😊',
   )
   return s
@@ -595,7 +595,7 @@ function demoPreparing(today: ISODate, now: Date): AppState {
     addDays(today, -1),
     'a',
     'preparing',
-    '이번 주는 둘 다 체크한 날이 벌써 사흘이에요. 작은 거지만 같이 하니까 은근히 재밌어요.',
+    '둘 다 체크한 날이 이번 주만 벌써 사흘. 별거 아닌데 같이 하니까 은근 재밌네요.',
     '😊',
   )
   s = reactLast(s, '👏')
@@ -969,7 +969,7 @@ function demoParenting(today: ISODate, now: Date): AppState {
   s = setMilestone(s, milestoneKey('smile'), addDays(birth, 47))
   s = setMilestone(s, milestoneKey('head'), addDays(birth, 88))
 
-  s = diary(s, birth, 'a', 'parenting', '콩이가 태어났어요. 3.2kg, 50cm. 지은이 정말 고생 많았어요. 우리 셋의 첫날.', '🥰')
+  s = diary(s, birth, 'a', 'parenting', '콩이가 태어났어요. 3.2kg, 50cm. 지은이가 정말 고생 많았어요. 셋이 된 첫날.', '🥰')
   s = diary(s, addDays(birth, 47), 'b', 'parenting', '눈 맞추고 처음으로 방긋 웃었어요! 민수는 출근해서 영상으로만 봤대요.', '😊')
   s = diary(s, addDays(birth, 49), 'a', 'parenting', '50일 사진 찍는 날. 콩이는 내내 잠만 잤어요.', '😌')
   s = diary(s, addDays(today, -2), 'b', 'parenting', '새벽 수유를 민수가 바꿔 줘서 네 시간을 푹 잤어요. 고마워요.', '😴')

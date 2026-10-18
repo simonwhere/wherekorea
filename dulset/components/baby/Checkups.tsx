@@ -25,7 +25,7 @@ export default function Checkups({ baby }: { baby: Baby }) {
 
   const toggle = (r: CheckupRow) => {
     update((s) => toggleCheckup(s, r.id, birth, today))
-    if (r.status !== 'done') toast.show(`${title(r)} 받았어요 ✓`)
+    if (r.status !== 'done') toast.show(`${title(r)} 받았어요`)
   }
 
   return (
@@ -64,8 +64,8 @@ export default function Checkups({ baby }: { baby: Baby }) {
       ) : (
         <Card tone="muted" className="py-3 text-sm text-ink-2">
           {rows.every((r) => r.status === 'done' || r.status === 'past')
-            ? '영유아 건강검진 기간이 모두 지났어요. 그동안 고생 많았어요!'
-            : '지금 열려 있는 검진이 없어요.'}
+            ? '영유아 건강검진 기간이 모두 지났어요.'
+            : '지금 받을 수 있는 검진이 없어요.'}
         </Card>
       )}
 
@@ -98,7 +98,7 @@ export default function Checkups({ baby }: { baby: Baby }) {
                   <p className="text-[11px] tabular-nums text-ink-3">
                     {formatSpan(r.start, r.end, today)}
                     {r.status === 'done' && r.doneAt ? ` · ${shortDate(r.doneAt, today)} 체크` : ''}
-                    {r.status === 'past' ? ' · 기간 지남 (받았다면 체크해 주세요)' : ''}
+                    {r.status === 'past' ? ' · 기간 지남' : ''}
                   </p>
                 </div>
                 {r.status === 'now' ? <Pill tone="ok">지금</Pill> : r.status === 'next' ? <Pill>다음</Pill> : null}

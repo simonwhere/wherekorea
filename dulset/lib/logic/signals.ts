@@ -170,7 +170,7 @@ export function sendSignal(
     from,
     kind: 'cheer',
     title: `${s.emoji} ${name}님: ${s.text}`,
-    body: s.tone === 'reply' ? '답장이 왔어요.' : '버튼 하나로 답장할 수 있어요.',
+    body: '',
     createdAt: nowISO,
     key: `signal:${s.id}:${today}:${from}:${sent}`,
     read: false,
@@ -304,7 +304,7 @@ const SAY_FOR_SIGNAL: Partial<Record<string, Omit<SayLines, 'replies'>>> = {
   [S.notThisMonth.id]: { say: '‘고생했어’ 한마디면 충분해요.', save: '‘다음 달엔 되겠지’ 같은 말은 잠시 아껴 둬요.' },
   [S.comfort.id]: { say: '‘무슨 일이야?’보다 ‘옆에 있을게’가 먼저예요.', save: '해결책이나 조언은 잠시 아껴 둬요.' },
   [S.clinic.id]: { say: '‘같이 갈게’라고 먼저 답해 줘요.', save: '결과를 묻는 말은 잠시 아껴 둬요.' },
-  [S.noBabyTalk.id]: { say: '오늘은 다른 이야기로 하루를 채워요.', save: '임신·검사 이야기는 잠시 아껴 둬요.' },
+  [S.noBabyTalk.id]: { say: '오늘은 다른 이야기를 해요.', save: '임신·검사 이야기는 잠시 아껴 둬요.' },
   [S.rest.id]: { say: '‘그래, 푹 쉬자’ 한마디면 돼요.', save: '내일 계획 이야기는 잠시 아껴 둬요.' },
   [S.tired.id]: { say: '‘고생했어, 쉬어’면 충분해요.', save: '‘왜 피곤해?’ 같은 질문은 잠시 아껴 둬요.' },
 }

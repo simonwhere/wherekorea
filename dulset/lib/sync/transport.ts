@@ -207,15 +207,9 @@ export function pickSupabaseEnv(url: string | undefined, anonKey: string | undef
   return u && k ? { url: u, anonKey: k } : null
 }
 
-/** 'supabase' when both variables exist at build time, else 'mock' (what 설정 › 데이터 shows as 연결). */
+/** 'supabase' when both variables exist at build time, else 'mock'. */
 export function transportKind(env: SupabaseEnv | null = supabaseEnv()): TransportKind {
   return env ? 'supabase' : 'mock'
-}
-
-/** The line 설정 › 데이터 shows for the connection. */
-export const TRANSPORT_LABEL: Record<TransportKind, string> = {
-  mock: '연결: 이 기기 안 (모의)',
-  supabase: '연결: Supabase',
 }
 
 let singleton: Transport | null = null

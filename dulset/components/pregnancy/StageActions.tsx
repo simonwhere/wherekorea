@@ -27,8 +27,7 @@ export default function StageActions() {
   return (
     <section className="mt-6" aria-label="단계 바꾸기">
       <Card tone="brand" className="text-center">
-        <p className="text-sm text-ink-2">아기를 만났다면 육아 기록으로 이어 가요.</p>
-        <Button size="lg" full className="mt-3" onClick={() => setBirthOpen(true)}>
+        <Button size="lg" full onClick={() => setBirthOpen(true)}>
           아기가 태어났어요 <Icon name="baby" className="h-5 w-5" strokeWidth={2} />
         </Button>
       </Card>
@@ -38,7 +37,7 @@ export default function StageActions() {
           onClick={() => setEndOpen(true)}
           className="min-h-[44px] px-3 text-xs text-ink-3 underline underline-offset-2 hover:text-ink-2"
         >
-          임신 기록 종료하고 준비 단계로
+          임신 기록을 끝내고 준비 단계로
         </button>
       </div>
 
@@ -66,17 +65,15 @@ function BirthForm({ onDone }: { onDone: () => void }) {
     if (error) return
     const baby = toBaby({ name, birthDate, sex })
     update((s) => recordBirth(s, baby))
-    toast.show(`${baby.name}, 반가워요! 축하해요 🎉`)
+    toast.show(`${baby.name}, 반가워요!`)
     onDone()
     goToTab('baby')
   }
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <p className="text-sm leading-relaxed text-ink-2">
-        정말 축하해요! 이제 육아 기록으로 이어 가요. 태교일기와 지금까지의 기록은 그대로 남아 있어요.
-      </p>
-      <Field label="이름 또는 태명" hint="나중에 바꿔도 괜찮아요. 비워 두면 ‘아기’로 불러요.">
+      <p className="text-sm leading-relaxed text-ink-2">축하해요!</p>
+      <Field label="이름 또는 태명" hint="비워 두면 ‘아기’로 불러요.">
         <input
           className={inputClass}
           value={name}
@@ -132,16 +129,13 @@ function EndConfirm({ onDone }: { onDone: () => void }) {
   // endPregnancy also starts the 42-day 'loss' quiet (ttc.startLossRest).
   const confirm = () => {
     update((s) => endPregnancy(s, today))
-    toast.show('준비 단계로 돌아왔어요 · 당분간 날짜 예상과 알림은 쉬어요')
+    toast.show('준비 단계로 돌아왔어요. 당분간 날짜 예상과 알림은 쉬어요')
     onDone()
     goToTab('today')
   }
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-relaxed text-ink">어떤 이유든 괜찮아요. 지금까지의 기록은 그대로 남아 있어요.</p>
-      <p className="text-xs leading-relaxed text-ink-3">
-        준비 단계로 돌아가면 오늘 체크와 달력이 다시 보여요. 언제든 다시 임신 기록을 시작할 수 있어요.
-      </p>
+      <p className="text-sm leading-relaxed text-ink">지금까지의 기록은 그대로 남아요.</p>
       <div className="grid gap-2">
         <Button full variant="secondary" onClick={confirm}>
           준비 단계로 돌아가기

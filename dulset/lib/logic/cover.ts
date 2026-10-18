@@ -317,13 +317,6 @@ export function memoryFor(
   return best ? { entryId: best.entryId, date: best.date, years: best.years } : undefined
 }
 
-/**
- * What 'N년 전 오늘' promises, under its switch — 설정 › 첫 화면, or the 기록장
- * while preparing (N27). The same rules as memoryFor, in plain words.
- */
-export const MEMORIES_PROMISE =
-  '1~3년 전 오늘 남긴 이야기를 첫 화면 맨 위에 한 줄로 보여 줘요.'
-
 /** '1년 전 오늘의 이야기 ›' */
 export function memoryLineText(memory: Pick<Memory, 'years'>): string {
   return `${memory.years}년 전 오늘의 이야기 ›`

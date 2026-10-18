@@ -225,9 +225,7 @@ export const SOFT_FERTILE_TITLE = '💞 이번 주는 우리의 주간이에요'
  * the owner isn't promised any. (The 데이트 tab is gone: #date is only linked from that card.)
  */
 export function softFertileBody(isCycleOwner: boolean): string {
-  return isCycleOwner
-    ? '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.'
-    : '둘만의 시간을 챙겨 볼까요? 오늘 화면의 ‘우리의 주간’ 카드에 아이디어를 골라 뒀어요.'
+  return isCycleOwner ? '둘만의 시간을 챙겨 봐요.' : '오늘 화면의 ‘우리의 주간’ 카드에 아이디어가 있어요.'
 }
 
 /**
@@ -237,7 +235,7 @@ export function softFertileBody(isCycleOwner: boolean): string {
  */
 export function peakBody(peakStart: ISODate, peakEnd: ISODate, isCycleOwner: boolean): string {
   const range = `${formatKo(peakStart, { weekday: false })}~${formatKo(peakEnd, { weekday: false })} (예상).`
-  return isCycleOwner ? `${range} 이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.` : `${range} 부담은 내려놓아요.`
+  return isCycleOwner ? `${range} 이 기간엔 하루나 이틀에 한 번이면 충분해요.` : range
 }
 
 /**
@@ -248,10 +246,11 @@ export function peakBody(peakStart: ISODate, peakEnd: ISODate, isCycleOwner: boo
 function explicitFertileBody(w: Pick<CycleWindow, 'fertileStart' | 'fertileEnd' | 'confidence'>, lh: boolean, isCycleOwner: boolean): string {
   if (w.confidence === 'low') {
     // Settings only, one or two cycles, or irregular: a wide calendar range, no peak days.
-    return `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지 무렵이 예상 범위예요 (넓음 · 달력 기준).${lh ? ' LH 배란테스트로 확인해 보면 좋아요.' : ''}`
+    return `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)} 무렵까지가 예상 범위예요 (넓음 · 달력 기준).${lh ? ' LH 배란테스트로 확인해 보면 좋아요.' : ''}`
   }
-  const tail = lh ? '예상치라 LH 배란테스트로 확인하면 더 정확해요.' : isCycleOwner ? '달력 기준 예상이에요.' : '부담은 내려놓아요.'
-  return `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. ${tail}`
+  const range = `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요.`
+  const tail = lh ? '예상치라 LH 배란테스트로 확인하면 더 정확해요.' : isCycleOwner ? '달력 기준 예상이에요.' : ''
+  return tail ? `${range} ${tail}` : range
 }
 
 export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
@@ -365,7 +364,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
           key: pKey,
           to: m.id,
           kind: 'peak',
-          title: '🌟 가능성이 가장 높은 날들이에요',
+          title: '🌟 가능성이 가장 높은 때예요',
           body: peakBody(w.peakStart, w.peakEnd, isOwner),
         })
       }
@@ -402,12 +401,12 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         threshold > 0 && months >= threshold && !checkupsDone(state)
           ? {
               title: '🩺 전문의 상담을 고려해 볼 때예요',
-              body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아보길 권해요. 보건소 '임신 사전건강관리' 지원도 확인해 보세요.`,
+              body: `함께 준비한 지 ${months}개월이 지났어요. ${threshold}개월이 지나면 두 사람 모두 검사를 받아 보길 권해요. 보건소 ‘임신 사전건강관리’ 지원도 확인해 보세요.`,
             }
           : threshold === 0
             ? {
                 title: '🩺 준비 초기에 검사를 받아 보세요',
-                body: '40세 이상이라면 시작하면서 바로 전문의 상담을 받는 게 좋아요. 보건소 임신 사전건강관리 지원도 확인해 보세요.',
+                body: '40세 이상이면 준비를 시작할 때 바로 전문의 상담을 받으면 좋아요. 보건소 ‘임신 사전건강관리’ 지원도 확인해 보세요.',
               }
             : undefined
       // One doctor notice per trying period and person: the key carries only its
@@ -433,7 +432,7 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
         ...toBoth({
           key: `week:${state.pregnancy.lmp}:${ga.weeks}`,
           kind: 'milestone',
-          title: `🤰 임신 ${ga.weeks}주가 되었어요`,
+          title: `🤰 임신 ${ga.weeks}주가 됐어요`,
           body: '이번 주 정보와 체크할 검사를 확인해 보세요.',
         }),
       )
@@ -449,8 +448,8 @@ export function scheduledNotices(state: AppState, today: ISODate): Notice[] {
           ...toBoth({
             key: `kday:${baby.birthDate}:${d.key}:${until}`,
             kind: 'milestone',
-            title: until === 0 ? `🎉 오늘은 ${baby.name}의 ${d.label}!` : `🎈 ${baby.name}의 ${d.label}까지 일주일`,
-            body: until === 0 ? '오늘을 일기로 남겨 보세요.' : `${formatKo(d.date)}이에요. 사진 찍을 준비됐나요?`,
+            title: until === 0 ? `🎉 오늘은 ${baby.name}의 ${d.label}이에요` : `🎈 ${baby.name}의 ${d.label}까지 일주일 남았어요`,
+            body: until === 0 ? '오늘을 일기로 남겨 보세요.' : `${formatKo(d.date, { weekday: false })}이에요.`,
           }),
         )
       }
@@ -561,7 +560,7 @@ export function sendNudge(state: AppState, from: MemberId, to: MemberId, today: 
     from,
     kind: 'nudge',
     title: `👉 ${name}님이 콕 찔렀어요`,
-    body: itemLabel ? `${itemLabel} 챙겼어요? 오늘도 같이 해요!` : '오늘 체크 잊지 않았죠? 같이 해요!',
+    body: itemLabel ? `${itemLabel} 챙겼어요?` : '오늘 체크했어요?',
     createdAt: nowISO,
     // Keyed, so the recipient clearing the inbox leaves a stub and the daily cap still counts it.
     key: `nudge:${from}:${today}:${sent}`,
@@ -578,7 +577,7 @@ export function sendCheer(state: AppState, from: MemberId, to: MemberId, nowISO:
     from,
     kind: 'cheer',
     title: `👏 ${name}님이 응원을 보냈어요`,
-    body: message?.trim() || '오늘도 고마워요. 우리 잘하고 있어요!',
+    body: message?.trim() || '오늘도 고마워요.',
     createdAt: nowISO,
     read: false,
   }

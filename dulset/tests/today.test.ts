@@ -78,9 +78,9 @@ function fresh(over: Partial<AppState> = {}): AppState {
 describe('greeting', () => {
   it('picks morning / afternoon / evening', () => {
     expect(greetingFor(7)).toBe('좋은 아침이에요')
-    expect(greetingFor(13)).toBe('좋은 오후예요')
-    expect(greetingFor(21)).toBe('좋은 저녁이에요')
-    expect(greetingFor(2)).toBe('좋은 저녁이에요')
+    expect(greetingFor(13)).toBe('안녕하세요')
+    expect(greetingFor(21)).toBe('오늘도 수고했어요')
+    expect(greetingFor(2)).toBe('오늘도 수고했어요')
   })
 })
 
@@ -278,7 +278,7 @@ describe('habit timers', () => {
     expect(t).toMatchObject({ state: 'not-started', label: '시작 전', progress: 0, goal: SPERM_GOAL_DAYS })
     expect(t.day).toBeUndefined()
     expect(t.start).toBeUndefined()
-    expect(t.note).toContain('시작 전')
+    expect(t.note).toContain('처음 체크하는 날이 1일째')
   })
 
   it('counts from the first check of any habit item, in 약 3개월 (not "74일 채움")', () => {
@@ -311,7 +311,7 @@ describe('habit timers', () => {
     const stopped = habitTimer(s, 'a', '2026-12-31')
     expect(stopped).toMatchObject({ state: 'not-started', label: '다시 시작 전', lastCheck: '2026-09-07', progress: 0 })
     expect(stopped.day).toBeUndefined()
-    expect(stopped.note).toContain('다시 체크한 날부터')
+    expect(stopped.note).toContain('다시 체크하면 그날이 1일째')
     expect(stopped.note).not.toMatch(/실패|노력|숙제/)
     // The next check starts a new count from that day.
     s = toggleCheck(s, 'a', '2026-12-20', habit.id)

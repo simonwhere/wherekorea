@@ -10,7 +10,7 @@
 // send_event, record_link_open all ask `expires_at > now()`): once its end
 // has passed — she has not opened 둘셋 for 30 days — his page reads nothing,
 // an event is refused and the counter records nothing, so his tab shows
-// '링크가 만료됐어요' on that day, not '지은님 폰이 열리면 다시 채워져요' (QA
+// '링크가 만료됐어요' on that day, not '지은님 폰에서 둘셋이 열리면 채워져요' (QA
 // 2026-10-17: the mock used to read past the end until her phone revoked it).
 // `now()` follows the page's `?today=` pin, so pin both tabs in a demo. The
 // owner's phone also revokes an expired link the first time it sees it

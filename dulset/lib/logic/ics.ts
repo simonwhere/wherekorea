@@ -154,9 +154,7 @@ export function fertileWindowEvents(
       start: w.fertileStart,
       end: w.fertileEnd,
       title: discreet ? '💞 우리의 주간' : '💞 가임기 (예상)',
-      description: discreet
-        ? '둘셋에서 보낸 일정이에요.'
-        : '둘셋 예상치예요. 실제 배란일은 주기마다 달라질 수 있어요. 피임 목적으로 사용하지 마세요.',
+      ...(discreet ? {} : { description: '둘셋 예상치예요. 실제 배란일은 주기마다 달라요. 피임용으로 쓰지 마세요.' }),
       // 9:00 on the day before (all-day events start at 00:00 → 15 h before).
       alarmMinutesBefore: 15 * 60,
     })
@@ -166,7 +164,7 @@ export function fertileWindowEvents(
       uid: `${ns}peak-${i + 1}@dulset`,
       start: w.peakStart,
       end: w.peakEnd,
-      title: discreet ? '🌙 둘만의 저녁' : '🌟 가능성 가장 높은 날 (예상)',
+      title: discreet ? '🌙 둘만의 저녁' : '🌟 가능성이 가장 높은 날 (예상)',
       alarmMinutesBefore: 15 * 60,
     })
   }

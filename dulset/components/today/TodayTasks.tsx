@@ -126,7 +126,7 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
       </ul>
       {prog.complete && weekly.every((r) => r.checked) ? (
         <p className="mt-1.5 px-1 text-xs font-semibold text-ok" role="status">
-          오늘 할 일을 모두 마쳤어요.
+          오늘 할 일을 모두 마쳤어요
         </p>
       ) : null}
       <CheckEditor open={editorOpen} onClose={closeEditor} />

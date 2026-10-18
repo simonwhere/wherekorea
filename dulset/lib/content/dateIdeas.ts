@@ -58,11 +58,11 @@ export const CATEGORY_ORDER: DateCategory[] = ['home', 'walk', 'food', 'culture'
 export const BUDGET_META: Record<Budget, { symbol: string; label: string }> = {
   1: { symbol: '₩', label: '부담 없이' },
   2: { symbol: '₩₩', label: '적당히' },
-  3: { symbol: '₩₩₩', label: '특별하게' },
+  3: { symbol: '₩₩₩', label: '넉넉하게' },
 }
 
 export const FLAG_BADGE: Record<DateFlag, string> = {
-  'no-alcohol': '🍹 무알콜',
+  'no-alcohol': '🍹 무알코올',
   'no-heat': '♨️ 뜨거운 탕 피하기',
   'low-energy': '🛋️ 체력 부담 적음',
   'baby-friendly': '👶 아기와 함께',

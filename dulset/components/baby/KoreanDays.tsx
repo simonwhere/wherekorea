@@ -70,7 +70,7 @@ export default function KoreanDays({ baby }: { baby: Baby }) {
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-1.5">
             <Icon name="bowl" className="h-[18px] w-[18px] text-ink-3" />
-            {KOREAN_DAYS_NOTE.title}, 이렇게 보내요
+            {KOREAN_DAYS_NOTE.title} 풍습
           </span>
           <Icon name="chev" className="h-4 w-4 text-ink-3 transition-transform group-open:rotate-180" strokeWidth={2.2} />
         </summary>

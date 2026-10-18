@@ -484,7 +484,7 @@ interface ToastApi {
 
 const ToastContext = createContext<ToastApi>({ show: () => {} })
 
-/** Short confirmation messages ("콕! 보냈어요"). Mounted once in AppShell. */
+/** Short confirmation messages ("콕을 보냈어요"). Mounted once in AppShell. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [msg, setMsg] = useState<{ id: number; text: string } | null>(null)
   // The hide timer goes with the provider: a toast shown just before unmount

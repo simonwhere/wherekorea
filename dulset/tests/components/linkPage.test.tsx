@@ -102,8 +102,8 @@ describe('/link — the page for its own date, the first 30 seconds, the week', 
   it('after the week it carries, the calm view: no burden on her, signals and 응원 still there', async () => {
     window.localStorage.setItem(LINK_INTRO_KEY, JSON.stringify({ at: 1 }))
     await openLink(mondayState(), MONDAY, addDays(MONDAY, 9))
-    expect(await screen.findByText('새 화면은 곧 채워져요')).toBeTruthy()
-    expect(pageText()).toContain('지은님 폰이 열리면 다시 채워져요')
+    expect(await screen.findByText('새 화면을 기다리고 있어요')).toBeTruthy()
+    expect(pageText()).toContain('지은님 폰에서 둘셋이 열리면 채워져요')
     expect(pageText()).not.toMatch(/쉬고 있어요|앱을 열면/)
     expect(screen.getByRole('button', { name: '지은님에게 응원 보내기' })).toBeTruthy()
     expect(document.querySelectorAll('[data-signal]').length).toBeGreaterThan(0)

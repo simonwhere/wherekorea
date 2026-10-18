@@ -84,14 +84,6 @@ export const APPOINTMENT_KIND_OF: Record<RoadmapKind, AppointmentKind> = {
   habit: 'other',
 }
 
-export const HEADER_LINE: Record<Stage, string> = {
-  preparing: '아기를 만나기까지, 둘이 함께 챙길 병원·검사·신청',
-  pregnant: '아기를 만나기까지, 둘이 함께 챙길 병원·검사·신청',
-  parenting: '아기가 태어난 뒤에도, 둘이 함께 챙길 검진·접종·신청',
-}
-
-export const PLAN_NOTE = '일반적인 안내예요.'
-
 /** Form examples that fit where the couple is (no pregnancy examples while preparing). */
 export const APPT_PLACEHOLDER: Record<Stage, { title: string; note: string }> = {
   preparing: { title: '예: 산부인과 검진', note: '예: 금식 여부 병원에 물어보기' },

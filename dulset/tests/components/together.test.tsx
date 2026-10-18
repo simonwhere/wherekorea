@@ -141,7 +141,8 @@ describe('우리 한 줄: 신호 보내기 out of 더 보기, and his reply on h
     const before = probe.current.state!.notifications.length
     fireEvent.click(chips[1]!)
     expect(probe.current.state!.notifications.length).toBe(before + 1)
-    expect(within(usLine()).getByText(`오늘 ${SIGNALS_PER_DAY - 1}번 더`)).toBeTruthy()
+    // No remaining-count line (2026-10-18 copy sweep): only the limit itself is said.
+    expect(within(usLine()).queryByText(/번 더/)).toBeNull()
     // 더 보기 has no '우리 신호' card any more.
     const more = screen.getByText('더 보기').closest('details')!
     expect(within(more).queryByText('우리 신호')).toBeNull()

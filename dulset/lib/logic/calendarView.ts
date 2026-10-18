@@ -916,7 +916,7 @@ function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: H
       return { title: AFTER_PREGNANCY_HEADLINE.title }
     case 'late':
       if (status.daysLate > LONG_LATE_DAYS) return { title: '최근 생리 기록이 없어요' }
-      return { title: own.title, sub: '묻거나 재촉하지 말고 평소처럼 지내요.' }
+      return { title: own.title, sub: '재촉하지 말고 이야기하고 싶어 할 때 곁에 있어 주세요.' }
     case 'fertile':
       // The dates stay; the owner's "LH 테스트로 확인해 보면" is hers to act on, and the
       // '일주일에 2~3번' line is a frequency line — never his (docs/positioning.md §6).
@@ -931,7 +931,7 @@ function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: H
     case 'after-fertile':
       if (status.dueNow) return { title: own.title }
       // The hidden view keeps its neutral NICE line (no "waiting" framing).
-      return view === 'hidden' ? own : { title: own.title, sub: '증상은 묻지 말고 평소처럼 지내요.' }
+      return view === 'hidden' ? own : { title: own.title, sub: '증상은 묻지 말고 평소처럼 보내요.' }
     default:
       return own
   }

@@ -342,14 +342,13 @@ describe('dateBanner', () => {
     expect(dateBanner(fresh(), '2026-09-06', 'a').kind).toBe('preparing') // 4 days before
     expect(dateBanner(fresh(), '2026-09-20', 'a').kind).toBe('preparing')
     const b = dateBanner(fresh(), '2026-09-11', 'a')
-    expect(b.title).toBe('이번 주는 우리의 주간 💞')
-    expect(b.body).toBe('무리하지 말고 같이 있는 시간 자체를 즐겨요.')
+    expect(b.title).toBe('이번 주는 우리의 주간이에요')
   })
 
   it("respects low-pressure mode and a viewer's 'off' style", () => {
     const low = dateBanner(fresh({}, { lowPressure: true }), '2026-09-11', 'b')
     expect(low.kind).toBe('low-pressure')
-    expect(low.title).toBe('주기 상관없이, 자주 함께하는 게 제일 좋아요')
+    expect(low.title).toBe('주기와 상관없이 자주 함께하면 좋아요')
     const off = fresh({}, { alertStyle: { a: 'off', b: 'explicit' } })
     expect(dateBanner(off, '2026-09-11', 'a').kind).toBe('preparing')
     expect(dateBanner(off, '2026-09-11', 'b').kind).toBe('our-week')
@@ -377,7 +376,7 @@ describe('dateBanner', () => {
     for (const s of states) {
       for (const d of ['2026-09-07', '2026-09-11', '2026-09-20']) {
         const b = dateBanner(s, d, 'a')
-        const text = `${b.title} ${b.body} ${b.note ?? ''}`
+        const text = `${b.title} ${b.note ?? ''}`
         expect(text).not.toMatch(PRESSURE_WORDS)
         expect(text).not.toMatch(/D-\d|가임기|배란/)
       }
@@ -628,9 +627,9 @@ describe('review fixes', () => {
     expect(planDateHint({ date: '2026-10-03', reason: 'saturday' }, '2026-09-27')).toBe(
       '다가오는 토요일(10월 3일)로 골라 뒀어요.',
     )
-    expect(planDateHint({ date: '2026-09-26', reason: 'saturday' }, '2026-09-26')).toBe('오늘, 토요일로 골라 뒀어요.')
+    expect(planDateHint({ date: '2026-09-26', reason: 'saturday' }, '2026-09-26')).toBe('오늘(토요일)로 골라 뒀어요.')
     expect(planDateHint({ date: '2026-10-10', reason: 'next-saturday' }, '2026-09-28')).toBe(
-      '이번 토요일엔 일정이 있어서 다음 토요일(10월 10일)로 골라 뒀어요. 편한 날로 바꿔도 좋아요.',
+      '이번 토요일엔 일정이 있어서 다음 토요일(10월 10일)로 골라 뒀어요.',
     )
     for (const h of [
       planDateHint({ date: '2026-10-10', reason: 'next-saturday' }, '2026-09-28'),

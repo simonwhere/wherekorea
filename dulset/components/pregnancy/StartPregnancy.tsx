@@ -19,7 +19,6 @@ export default function StartPregnancy() {
       <EmptyState
         icon="bump"
         title="임신 주수를 계산해 볼까요?"
-        body="마지막 생리 시작일을 알려 주면 주수와 예정일을 예상해 드려요."
         action={<Button onClick={() => setOpen(true)}>날짜 입력하기</Button>}
       />
       <Sheet open={open} onClose={close} title="임신 정보 입력">
@@ -65,7 +64,7 @@ function StartForm({ onDone }: { onDone: () => void }) {
           required
         />
       </Field>
-      <Field label="병원에서 알려 준 예정일 (선택)" hint={dueError ?? '있으면 이 날짜를 기준으로 주수를 계산해요.'}>
+      <Field label="병원에서 알려 준 예정일 (선택)" hint={dueError}>
         <input
           type="date"
           className={inputClass}

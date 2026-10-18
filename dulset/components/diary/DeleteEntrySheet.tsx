@@ -1,7 +1,6 @@
 'use client'
 
 import { Button, Sheet, useToast } from '@/components/ui'
-import { formatKo } from '@/lib/dates'
 import { removeStoryEntry } from '@/lib/logic/usView'
 import { deletePhoto } from '@/lib/photos'
 import { useApp } from '@/lib/store'
@@ -26,7 +25,7 @@ export default function DeleteEntrySheet({ entry, onClose }: { entry: DiaryEntry
       {entry ? (
         <>
           <p className="text-sm leading-relaxed text-ink-2">
-            {formatKo(entry.date)}에 남긴 기록이에요. 지우면 되돌릴 수 없고, {partner.name}님 화면에서도 사라져요.
+            지우면 되돌릴 수 없어요. {partner.name}님 화면에서도 사라져요.
             {entry.photoId ? ' 함께 올린 사진도 지워져요.' : ''}
           </p>
           {entry.text ? (

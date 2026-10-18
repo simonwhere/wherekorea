@@ -31,22 +31,10 @@ type AuthorFilter = 'all' | 'me' | 'partner'
 
 type OpenSheet = { kind: 'edit' | 'delete'; id: string } | null
 
-const EMPTY: Record<Stage, { icon: IconName; title: string; body: string }> = {
-  preparing: {
-    icon: 'book',
-    title: '우리 둘의 첫 기록을 남겨 볼까요?',
-    body: '오늘 있었던 작은 일 하나면 충분해요. 날짜를 예전으로 바꾸면 연애 시절 이야기도 ‘우리 둘’로 남길 수 있어요.',
-  },
-  pregnant: {
-    icon: 'sprout',
-    title: '아기에게 첫 편지를 써 볼까요?',
-    body: '짧은 한 줄도 좋아요. 두 사람이 번갈아 쓰다 보면 그대로 태교일기가 돼요.',
-  },
-  parenting: {
-    icon: 'baby',
-    title: '아기와의 오늘을 남겨 볼까요?',
-    body: '사진 한 장, 한 줄이면 충분해요. 금방 지나가는 하루들을 둘이 함께 모아 봐요.',
-  },
+const EMPTY: Record<Stage, { icon: IconName; title: string }> = {
+  preparing: { icon: 'book', title: '우리 둘의 첫 기록을 남겨 볼까요?' },
+  pregnant: { icon: 'sprout', title: '아기에게 첫 편지를 써 볼까요?' },
+  parenting: { icon: 'baby', title: '아기와의 오늘을 남겨 볼까요?' },
 }
 
 // Chip is h-8 visually; min-height lifts the tap target to 44px without a class conflict.
@@ -130,7 +118,7 @@ function DiaryView() {
   const onReact = (id: string, next: string | null) => {
     const writer = entries.find((e) => e.id === id)?.author
     update((s) => reactToEntry(s, id, me.id, next, stampOn(today)))
-    if (next && writer) toast.show(`${byId.get(writer)?.name ?? partner.name}님에게 ${next} 마음을 전했어요`)
+    if (next && writer) toast.show(`${byId.get(writer)?.name ?? partner.name}님 기록에 ${next} 반응을 남겼어요`)
   }
 
   const empty = EMPTY[state.stage]
@@ -179,7 +167,7 @@ function DiaryView() {
       ) : null}
 
       {!entries.length ? (
-        <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />
+        <EmptyState icon={empty.icon} title={empty.title} />
       ) : !groups.length ? (
         <EmptyState
           icon="search"

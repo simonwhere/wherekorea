@@ -15,7 +15,7 @@
 // simply moves to the next entry — no fetch needed while the week lasts.
 //
 // When the week the snapshot covers is over (her phone has not opened since),
-// the page says so calmly — '새 화면은 곧 채워져요 · 지은님 폰이 열리면 다시
+// the page says so calmly — '새 화면을 기다리고 있어요 · 지은님 폰에서 둘셋이 열리면
 // 채워져요' — and keeps what still works: 우리 신호 and 응원 (they wait for her
 // phone like any event). An unknown, expired or revoked token shows the calm
 // notice. Offline-first after the first load: the last snapshot this browser
@@ -545,7 +545,7 @@ function LinkScreen() {
 }
 
 /**
- * After the snapshot's last day: the calm '새 화면은 곧 채워져요' and what still
+ * After the snapshot's last day: the calm '새 화면을 기다리고 있어요' and what still
  * works without a page for today — 우리 신호 and 응원 (they wait for her phone
  * like any event and are judged on the day they arrived). Nothing dated: no
  * card, no band, no checks, no task.

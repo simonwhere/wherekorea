@@ -435,7 +435,7 @@ describe('reaction notes live in the 기록장 while preparing, not the 🔔 (N2
     s = sendCheer(s, 'a', 'b', NOW)
     const notes = recordBookNotes(s, 'b')
     expect(notes.map((n) => n.key)).toEqual([reactionNoticeKey('x', 'a')])
-    expect(notes[0]!.title).toContain('내 기록에 마음을 남겼어요')
+    expect(notes[0]!.title).toContain('내 기록에 반응했어요')
     expect(bellInbox(s, 'b').some((n) => n.key?.startsWith('reaction:'))).toBe(false)
     expect(bellInbox(s, 'b').some((n) => n.kind === 'cheer')).toBe(true)
     expect(bellUnread(s, 'b')).toBe(1)

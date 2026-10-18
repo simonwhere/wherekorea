@@ -15,7 +15,7 @@ export default function ClinicSwitch({ className }: { className?: string }) {
   const on = isClinicMode(state)
   const onChange = (next: boolean) => {
     update((s) => setClinicMode(s, next, today))
-    toast.show(next ? '병원과 함께 준비해요. 날짜 예상과 알림은 쉬어요' : '병원 준비를 마쳤어요. 예상과 알림이 돌아와요')
+    toast.show(next ? '병원과 함께 준비해요. 날짜 예상과 알림은 쉬어요' : '병원 준비를 마쳤어요. 날짜 예상과 알림을 다시 켰어요')
   }
   return (
     <Card className={className ?? 'py-2'}>
@@ -23,7 +23,7 @@ export default function ClinicSwitch({ className }: { className?: string }) {
         checked={on}
         onChange={onChange}
         label={CLINIC_LABEL}
-        description={on ? '생리를 기록해도 꺼지지 않아요.' : '병원에서 시기를 정하는 주기라면 켜 두세요.'}
+        description={on ? '생리를 기록해도 그대로예요.' : undefined}
       />
     </Card>
   )

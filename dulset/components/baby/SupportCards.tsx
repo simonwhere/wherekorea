@@ -18,7 +18,7 @@ const OWN_SECTION = new Set(['infant-checkup', 'vaccination'])
  * Either partner can mark it as applied, which hides it on both phones.
  */
 export function ClaimDeadlineCard({ baby }: { baby: Baby }) {
-  const { state, update, today, partner } = useApp()
+  const { state, update, today } = useApp()
   const toast = useToast()
   const birth = baby.birthDate
   const claim = claimDeadline(birth, today)
@@ -26,16 +26,14 @@ export function ClaimDeadlineCard({ baby }: { baby: Baby }) {
 
   const markApplied = () => {
     update((s) => (claimAppliedAt(s, birth) ? s : toggleClaimApplied(s, birth, today)))
-    toast.show(`신청 완료로 표시했어요 · ${partner.name}님도 볼 수 있어요`)
+    toast.show('신청 완료로 표시했어요')
   }
 
   return (
     <Card tone="warn">
       <p className="flex items-start justify-between gap-2">
-        <span className="text-sm font-bold text-ink">
-          <span aria-hidden className="mr-1">
-            ⏰
-          </span>
+        <span className="flex items-start gap-1 text-sm font-bold text-ink">
+          <Icon name="clock" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
           출생 후 60일 안에 신청해야 출생월부터 받아요
         </span>
         <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
@@ -43,8 +41,8 @@ export function ClaimDeadlineCard({ baby }: { baby: Baby }) {
         </span>
       </p>
       <p className="mt-1.5 text-xs leading-relaxed text-ink-2">
-        부모급여·아동수당이 해당돼요. {formatKo(claim.deadline)}까지 {HAPPY_BIRTH.title}로 출생신고와 함께 한 번에
-        신청할 수 있어요. 이미 신청했다면 괜찮아요.
+        부모급여·아동수당이 해당돼요. {formatKo(claim.deadline)}까지 {HAPPY_BIRTH.title}에서 출생신고와 함께 한 번에
+        신청할 수 있어요.
       </p>
       <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
         <ExternalLink href={HAPPY_BIRTH.url} className={primaryLinkClass} ariaLabel="정부24 행복출산에서 신청하기 (새 창)">
@@ -67,7 +65,7 @@ export default function SupportCards({ baby }: { baby: Baby }) {
 
   return (
     <section>
-      <SectionTitle sub={`${checked.year}년 ${checked.month}월 기준 · 금액과 기준은 바뀔 수 있어요`}>지원 제도</SectionTitle>
+      <SectionTitle sub={`${checked.year}년 ${checked.month}월 기준 · 금액과 조건은 바뀔 수 있어요`}>지원 제도</SectionTitle>
 
       <Card tone="muted" className="py-3">
         <p className="text-sm font-bold text-ink">{HAPPY_BIRTH.title}</p>
@@ -76,7 +74,7 @@ export default function SupportCards({ baby }: { baby: Baby }) {
           <ExternalLink href={HAPPY_BIRTH.url}>정부24에서 보기</ExternalLink>
           <div className="-mr-2 flex items-center">
             <span className="text-xs text-ink-2">
-              {appliedAt ? `${formatKo(appliedAt, { weekday: false })} 신청 완료` : '우리 신청했어요'}
+              {appliedAt ? `${formatKo(appliedAt, { weekday: false })} 신청 완료` : '신청했어요'}
             </span>
             <TickButton
               checked={!!appliedAt}
@@ -141,12 +139,8 @@ function DeadlineChip({ text, active, d, done }: { text: string; active: boolean
         active ? 'bg-warn-soft font-semibold text-ink' : done ? 'bg-ok-soft text-ink-2' : 'bg-surface-2 text-ink-3',
       )}
     >
-      <span>
-        {active ? (
-          <span aria-hidden className="mr-1">
-            ⏰
-          </span>
-        ) : null}
+      <span className="inline-flex items-center gap-1">
+        {active ? <Icon name="clock" className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} /> : null}
         {text}
         {!active && !done ? <span className="sr-only"> (기간이 지났어요)</span> : null}
       </span>

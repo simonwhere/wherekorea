@@ -32,7 +32,9 @@ export function formatBabyAge(age: BabyAge): string {
   if (age.days < 0) return '태어나기 전'
   if (age.months < 1) return `생후 ${age.days}일`
   if (age.months < 24) return `생후 ${age.months}개월`
-  return `${Math.floor(age.months / 12)}살 ${age.months % 12}개월`
+  const years = Math.floor(age.months / 12)
+  const months = age.months % 12
+  return months ? `${years}살 ${months}개월` : `${years}살`
 }
 
 export interface KoreanDay {
@@ -40,6 +42,9 @@ export interface KoreanDay {
   label: string
   date: ISODate
 }
+
+/** Native counters for the 돌 labels (두 돌, 세 돌 …); a year past them falls back to the digit. */
+const DOL_COUNT = ['', '첫', '두', '세', '네', '다섯', '여섯']
 
 /** 50일, 100일(백일), 200일, 300일, 첫돌, 두 돌… */
 export function koreanDays(birth: ISODate, years = 3): KoreanDay[] {
@@ -51,7 +56,7 @@ export function koreanDays(birth: ISODate, years = 3): KoreanDay[] {
   ]
   for (let y = 1; y <= years; y++) {
     // addMonths clamps, so Feb 29 babies celebrate on Feb 28 in non-leap years.
-    out.push({ key: `year${y}`, label: y === 1 ? '첫돌' : `${y}번째 생일`, date: addMonths(birth, 12 * y) })
+    out.push({ key: `year${y}`, label: y === 1 ? '첫돌' : `${DOL_COUNT[y] ?? y} 돌`, date: addMonths(birth, 12 * y) })
   }
   return out
 }

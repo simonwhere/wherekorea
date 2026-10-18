@@ -227,7 +227,8 @@ describe('owner moments (explicit)', () => {
     // The eyebrow carries the card's one "(예상)"; the title is plain (review D-1).
     expect(m(DAYS.fertile)).toMatchObject({ title: '가임기예요', tone: 'fert', eyebrow: '가임기 · 9월 15일까지 (예상)' })
     expect(m(DAYS.fertile, uses(s)).primary).toEqual({ type: 'log', kind: 'lh', label: 'LH 기록' })
-    expect(m(DAYS.fertile, uses(s)).body).toBe('오늘 LH 결과를 기록하면 예상을 다시 계산해요.')
+    // The button says what to do; no line explains what it does (2026-10-18 copy sweep).
+    expect(m(DAYS.fertile, uses(s)).body).toBe('')
     // Unanswered, '나중에', '안 써요': no action at all — never 오늘 컨디션 instead (N29).
     for (const st of [s, setUsesLH(s, 'later', OWNER), setUsesLH(s, false, OWNER)]) {
       expect(m(DAYS.fertile, st).primary).toBeUndefined()
@@ -550,7 +551,7 @@ describe('confidence: the calendar alone names no best days (N12)', () => {
     const f = m(DAYS.peak, setUsesLH(one, true, OWNER))
     expect(f).toMatchObject({ copy: 'owner.fertile', confidence: 'low', title: '가임기 범위예요 (넓음)', peak: false })
     expect(f.eyebrow).toBe('달력 기준 · 설정값 · 9월 15일까지 (예상)')
-    expect(f.body).toContain('범위가 좁아져요')
+    expect(f.body).toBe('달력으로만 계산해서 범위가 넓어요.')
     expect(f.primary).toEqual({ type: 'log', kind: 'lh', label: 'LH 기록' })
     expect(words(f)).not.toMatch(/가능성 높|배란 예상/)
     expect(m(DAYS.peak, two).eyebrow).toBe('달력 기준 · 기록 1주기 · 9월 15일까지 (예상)')
@@ -831,7 +832,7 @@ describe('partner moments', () => {
       // The week block right under the card has the header '이번 주 우리 둘': the card never repeats it.
       eyebrow: '오늘의 우리',
       title: '서로의 하루를 챙겨요',
-      body: '이번 주에 내가 맡을 것 하나면 충분해요.',
+      body: '',
       monthlyTask: true,
       weekTogether: true,
     })
@@ -1443,9 +1444,7 @@ describe('"(예상)" at most once per card (review D-1, Next B)', () => {
       title: '가임기 범위예요 (넓음)',
     })
     expect(ttcMoment(one, DAYS.peak, OWNER)!.body).toBe('달력으로만 계산해서 범위가 넓어요.')
-    expect(ttcMoment(setUsesLH(one, true, OWNER), DAYS.peak, OWNER)!.body).toBe(
-      '달력으로만 계산해서 범위가 넓어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.',
-    )
+    expect(ttcMoment(setUsesLH(one, true, OWNER), DAYS.peak, OWNER)!.body).toBe('달력으로만 계산해서 범위가 넓어요.')
     expect(ttcMoment(one, DAYS.beforeLh, OWNER)!.body).toBe('9월 10일 무렵부터예요 (예상 범위, 넓음).')
   })
 

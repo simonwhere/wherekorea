@@ -1,6 +1,6 @@
 'use client'
 
-import { Avatar, Card } from '@/components/ui'
+import { Card } from '@/components/ui'
 import { SEX_EMOJI } from '@/lib/content/baby'
 import { dLabel, formatKo } from '@/lib/dates'
 import { dayOfLife, nextKoreanDay } from '@/lib/logic/baby'
@@ -9,7 +9,7 @@ import { useApp } from '@/lib/store'
 import type { Baby } from '@/lib/types'
 
 export default function BabyHero({ baby, onEdit }: { baby: Baby; onEdit: () => void }) {
-  const { today, me, partner } = useApp()
+  const { today } = useApp()
   const day = dayOfLife(baby.birthDate, today)
   const next = nextKoreanDay(baby.birthDate, today)
   const born = day >= 1
@@ -56,9 +56,7 @@ export default function BabyHero({ baby, onEdit }: { baby: Baby; onEdit: () => v
       {next ? (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-surface/80 px-3 py-2.5">
           {next.date === today ? (
-            <p className="text-sm font-bold text-ink">
-              오늘은 {next.label}이에요 <span aria-hidden>🎉</span>
-            </p>
+            <p className="text-sm font-bold text-ink">오늘은 {next.label}이에요</p>
           ) : (
             <p className="min-w-0 text-sm text-ink-2">
               다음 기념일 <span className="font-bold text-ink">{next.label}</span>
@@ -72,14 +70,6 @@ export default function BabyHero({ baby, onEdit }: { baby: Baby; onEdit: () => v
           ) : null}
         </div>
       ) : null}
-
-      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-ink-3">
-        <Avatar member={me} size="sm" />
-        <Avatar member={partner} size="sm" />
-        <span>
-          {me.name}님과 {partner.name}님이 함께 보는 기록이에요
-        </span>
-      </p>
     </Card>
   )
 }

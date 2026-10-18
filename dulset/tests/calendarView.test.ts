@@ -922,7 +922,7 @@ describe('cycleSummary through the lens', () => {
     expect(all).not.toMatch(/기록해 주세요|LH 테스트를 해 보면|임신 테스트를 해 봐도/)
     expect(all).not.toMatch(PRESSURE_WORDS)
     // After the window: a calm "don't ask" line (review: 배란 뒤 남편 화면).
-    expect(cycleSummary(base(), '2026-09-20', 'soft', { owner: false }).headline.sub).toBe('증상은 묻지 말고 평소처럼 지내요.')
+    expect(cycleSummary(base(), '2026-09-20', 'soft', { owner: false }).headline.sub).toBe('증상은 묻지 말고 평소처럼 보내요.')
     // …but no waiting framing in the hidden view.
     expect(cycleSummary(base(), '2026-09-20', 'hidden', { owner: false }).headline.sub ?? '').not.toMatch(/기다리는|증상/)
     // Late: same title, no nudge to test.

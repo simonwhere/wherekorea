@@ -15,7 +15,7 @@ export default function SupportPrograms() {
 
   return (
     <section className="mt-6">
-      <SectionTitle sub={`${checked.year}년 ${checked.month}월 기준 · 금액과 기준은 바뀔 수 있어요`}>지원 제도</SectionTitle>
+      <SectionTitle sub={`${checked.year}년 ${checked.month}월 기준 · 금액과 조건은 바뀔 수 있어요`}>지원 제도</SectionTitle>
 
       <div className="grid gap-2">
         {[ONE_STOP.pregnancy, ONE_STOP.birth].map((o) => (

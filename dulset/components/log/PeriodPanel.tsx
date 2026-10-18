@@ -23,7 +23,7 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
   const bleeding = periodStartDuringPositive(state, date)
   const start = (d: ISODate) => {
     if (periodStartDuringPositive(state, d)) {
-      save((s) => logPeriodOrBleeding(s, d, viewer, today), { kind: 'period' }, '출혈 시작일로 남겼어요 · 홈에서 안내를 볼 수 있어요')
+      save((s) => logPeriodOrBleeding(s, d, viewer, today), { kind: 'period' }, '출혈 시작일로 남겼어요. 홈에서 안내를 확인해 주세요')
       return
     }
     // The same days the home card says 수고했어요 for a start logged late (ttcFlow.PERIOD_ASK_DAYS).
@@ -32,7 +32,7 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
     save(
       (s) => logPeriodOrBleeding(s, d, viewer, today),
       { kind: 'period' },
-      recent ? `이번 주기도 수고했어요 · ${word} 시작으로 남겼어요` : `${word} 생리 시작으로 남겼어요`,
+      recent ? `이번 주기도 수고했어요. ${word} 시작으로 남겼어요` : `${word} 생리 시작으로 남겼어요`,
     )
   }
 

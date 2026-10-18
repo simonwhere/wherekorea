@@ -81,7 +81,7 @@ function DueDateForm({ pregnancy, onDone }: { pregnancy: Pregnancy; onDone: () =
         </div>
       </dl>
 
-      <Field label="병원에서 알려 준 예정일" hint={dueError ?? '주수도 이 날짜에 맞춰 다시 계산돼요.'}>
+      <Field label="병원에서 알려 준 예정일" hint={dueError}>
         <input
           type="date"
           className={inputClass}
@@ -118,7 +118,7 @@ function DueDateForm({ pregnancy, onDone }: { pregnancy: Pregnancy; onDone: () =
               hint={
                 lmpError ??
                 (pregnancy.dueDateOverride
-                  ? '병원 예정일이 있으면 주수는 병원 예정일을 기준으로 계산해요.'
+                  ? '주수는 병원 예정일 기준이에요.'
                   : `지금: ${formatKo(pregnancy.lmp)}`)
               }
             >

@@ -60,7 +60,7 @@ export function validateBabyInfo(input: BabyInput, today: ISODate): string | nul
   if (!isISODate(input.birthDate)) return '태어난 날을 선택해 주세요.'
   const b = birthBounds(today)
   if (input.birthDate > b.max) return '오늘 이후 날짜는 고를 수 없어요.'
-  if (input.birthDate < b.min) return `${MAX_BABY_AGE_YEARS}년보다 이전 날짜예요. 날짜를 확인해 주세요.`
+  if (input.birthDate < b.min) return `${MAX_BABY_AGE_YEARS}년 넘게 지난 날짜예요. 날짜를 확인해 주세요.`
   return null
 }
 

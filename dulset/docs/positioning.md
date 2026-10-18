@@ -172,7 +172,7 @@
 | 'N년 전 오늘'(설정 › 첫 화면 스위치, 기본 꺼짐, `lib/initial.ts:30`) | `components/settings/HomeSection.tsx:71`, `lib/logic/cover.ts:256` | 이야기 기록에 기대는 표지 한 줄이라 기록장과 함께 움직여요 | 준비 단계에서는 설정 › 첫 화면에서 빼고 우리 기록장 안으로 옮겨요. 이미 켠 부부는 그대로예요 | N27 |
 | 표지 한 줄 기념일(D-7~당일) | `lib/logic/cover.ts` | 70일 중 15일 동안 남편 표지 첫 줄이 '💍 D-N'이었어요 | 당일만 보여요 | N27 |
 | 기념일 알림(기본 켜짐) | `lib/initial.ts:31`, `lib/logic/anniversary.ts` | 70일 동안 남편 알림 약 12건 중 4건이 기념일이었어요 | 준비 단계에서는 기본 꺼짐(설정 › 첫 화면에서 켤 수 있어요). 켜도 당일만 | N27 |
-| 반응 알림 '내 기록에 마음을 남겼어요' | `lib/logic/usView.ts` | 기록장과 함께 움직여요 | 우리 기록장 안 알림으로 | N27 |
+| 반응 알림 '내 기록에 반응했어요' | `lib/logic/usView.ts` | 기록장과 함께 움직여요 | 우리 기록장 안 알림으로 | N27 |
 | 더 보기 '준비 일기'·'둘만의 시간' 줄 | `MoreSection.tsx:76-78` | 기록장과 데이트로 가는 입구예요 | 줄을 빼요. 각각 우리 기록장 안과 `#date` 링크 뒤에 남아요 | N27 |
 | `#date` 둘만의 시간 아이디어 페이지 | `components/tabs/DateTab.tsx`, `components/date/{DateBanner,WeeklyPicks,IdeaBrowser,IdeaCard}.tsx`(일정에 담기·'좋대요'는 유지 표의 데이트 조각) | 폭만 넓혀요 | URL은 남기고 더 보기 줄을 빼요(위 줄). 카드 안 '아이디어 더 보기'는 '일정에 담기 → 좋대요'를 카드 안 1탭으로 옮길지(8장 10번) 정한 뒤에 빼요. 그 전에 빼면 남편이 먼저 제안하는 길이 끊겨요 | N27 |
 | 오늘 컨디션 칩(기다리는 주 13일 동안 홈 주 버튼) | 아내 상황 카드의 '오늘 컨디션' 주 버튼(`ttcFlow.ts:438` `LOG_FEEL`) → 기록 시트의 칩(`components/log/FeelPanel.tsx`, `components/today/FeelChips.tsx`) | 남편 루프에 쓰이지 않는 입력이 주 버튼 자리에 있어요 | '+ 기록 › 메모' 안 '자세히'로 옮겨요. 기록(`personalLog`)과 '지난 주기 컨디션'은 그대로예요 | N29 |

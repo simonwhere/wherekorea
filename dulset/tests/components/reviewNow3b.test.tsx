@@ -97,10 +97,10 @@ describe('🔔 while preparing (N27)', () => {
       (e) => e.author === OWNER && !e.reactions?.[PARTNER] && !base.notifications.some((n) => n.key === reactionNoticeKey(e.id, PARTNER)),
     )!
     const state = reactToEntry(base, mine.id, PARTNER, '👏', `${T0}T09:00:00+09:00`)
-    expect(state.notifications.some((n) => n.to === OWNER && n.title.includes('마음을 남겼어요'))).toBe(true)
+    expect(state.notifications.some((n) => n.to === OWNER && n.title.includes('내 기록에 반응했어요'))).toBe(true)
     renderApp(<NotificationsSheet open onClose={noop} />, { state, viewer: OWNER, today: T0 })
     const dialog = screen.getByRole('dialog', { name: '알림' })
-    expect(dialog.textContent).not.toContain('마음을 남겼어요')
+    expect(dialog.textContent).not.toContain('내 기록에 반응했어요')
   })
 })
 

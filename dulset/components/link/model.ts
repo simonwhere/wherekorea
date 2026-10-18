@@ -344,7 +344,7 @@ export function noticeCopy(kind: NoticeKind, ownerName?: string): { title: strin
     case 'nolink':
       return { title: '링크 주소가 올바르지 않아요', body: '받은 링크를 그대로 열어 주세요.' }
     case 'stale':
-      return { title: '새 화면은 곧 채워져요', body: `${who} 폰이 열리면 다시 채워져요.` }
+      return { title: '새 화면을 기다리고 있어요', body: `${who} 폰에서 둘셋이 열리면 채워져요.` }
     default:
       return { title: '지금은 불러올 수 없어요', body: '인터넷을 확인하고 다시 열어 주세요.' }
   }

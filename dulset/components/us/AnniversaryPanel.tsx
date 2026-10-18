@@ -29,7 +29,7 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
 
   return (
     <div>
-      <SectionTitle sub="100일 단위와 주년은 저절로 생겨요 · 한 주 전과 당일에 둘 다에게 알려 드려요">다가오는 날</SectionTitle>
+      <SectionTitle>다가오는 날</SectionTitle>
       {upcoming.length ? (
         <Card className="py-1">
           <ul>
@@ -52,7 +52,6 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
         <EmptyState
           icon="cal"
           title="챙길 기념일이 아직 없어요"
-          body="처음 만난 날이나 결혼한 날을 넣으면 100일·주년이 저절로 생겨요. 우리만의 날도 더할 수 있어요."
           action={hasStart ? undefined : <Button onClick={onEditDates}>만난 날 넣기</Button>}
         />
       )}
@@ -71,7 +70,6 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
       ) : null}
 
       <SectionTitle
-        sub="첫 여행, 프러포즈한 날처럼 둘만 아는 날"
         action={
           <Button size="md" variant="secondary" onClick={() => setTarget({ kind: 'new' })}>
             + 더하기
@@ -121,7 +119,7 @@ export default function AnniversaryPanel({ onEditDates }: { onEditDates: () => v
         </Card>
       ) : (
         <p className="rounded-xl2 border border-dashed border-line px-4 py-4 text-center text-xs leading-relaxed text-ink-3">
-          아직 없어요. 둘만의 날을 더해 두면 같은 방식으로 챙겨 드려요.
+          아직 없어요
         </p>
       )}
 

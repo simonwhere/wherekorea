@@ -99,7 +99,7 @@ export function MyChecks() {
           </ul>
           {prog.complete ? (
             <p className="mt-3 text-center text-xs font-semibold text-ok" role="status">
-              오늘 체크를 모두 마쳤어요.
+              오늘 체크를 모두 마쳤어요
             </p>
           ) : null}
         </>

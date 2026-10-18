@@ -57,9 +57,7 @@ export default function SetupCard({ className }: { className?: string }) {
         <Icon name="gear" className="mt-0.5 h-5 w-5 shrink-0 text-ink-2" />
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold leading-5 text-ink">설정 마저 하기</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-            {missing.join(' · ')} — 전문의 상담 시기를 계산할 때 써요.
-          </p>
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{missing.join(' · ')}</p>
           <div className="-mb-2 -ml-1.5 mt-0.5 flex flex-wrap items-center gap-x-2">
             <button type="button" className={link} onClick={() => goToSettings()}>
               설정 열기

@@ -116,7 +116,7 @@ export function SignalChips({ className }: { className?: string }) {
     <div className={className}>
       <p className="flex items-center justify-between gap-2 text-xs font-semibold text-ink-3">
         <span id={labelId}>신호 보내기</span>
-        <span className="tabular-nums">{left > 0 ? `오늘 ${left}번 더` : '오늘은 다 보냈어요'}</span>
+        {left > 0 ? null : <span>오늘은 다 보냈어요</span>}
       </p>
       <div
         role="group"
@@ -158,7 +158,7 @@ export default function SignalsCard({ showPending = true, title = true }: { show
 
   return (
     <>
-      {title ? <SectionTitle sub="말로 꺼내기 어려운 건 버튼 하나로">우리 신호</SectionTitle> : null}
+      {title ? <SectionTitle>우리 신호</SectionTitle> : null}
       <Card>
         {showPending ? <PendingSignal className="mb-3 border-b border-line/75 pb-3" /> : null}
         <div className="grid grid-cols-2 gap-2">
@@ -180,11 +180,7 @@ export default function SignalsCard({ showPending = true, title = true }: { show
             </button>
           ))}
         </div>
-        <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
-          {left > 0
-            ? `‘쉬어요’도 똑같이 좋은 신호예요. 오늘 ${left}번 더 보낼 수 있어요.`
-            : '오늘 신호는 다 보냈어요. 내일 또 보내요.'}
-        </p>
+        {left > 0 ? null : <p className="mt-3 text-[11px] leading-relaxed text-ink-3">오늘 신호는 다 보냈어요</p>}
       </Card>
     </>
   )

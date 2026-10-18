@@ -50,8 +50,8 @@ export function stampOn(today: ISODate, now: Date = new Date()): string {
 
 export function greetingFor(hour: number): string {
   if (hour >= 5 && hour < 12) return '좋은 아침이에요'
-  if (hour >= 12 && hour < 18) return '좋은 오후예요'
-  return '좋은 저녁이에요'
+  if (hour >= 12 && hour < 18) return '안녕하세요'
+  return '오늘도 수고했어요'
 }
 
 // ── How fertility info is worded for this viewer ────────────
@@ -217,16 +217,16 @@ interface TimerCopy {
 
 const SPERM_COPY: TimerCopy = {
   goalText: SPERM_GOAL_TEXT,
-  notStarted: '시작 전이에요. 습관을 처음 체크한 날부터 세어 드려요.',
-  stopped: '한동안 체크가 없었어요. 다시 체크한 날부터 새로 세어 드려요.',
-  running: '새 정자가 만들어지는 데 64~74일, 성숙하는 데 1~2주가 더 걸려 모두 약 3개월이에요. 오늘의 습관이 3개월 뒤를 만들어요.',
-  reached: '약 3개월을 이어 왔어요. 지금처럼 이어 가요.',
+  notStarted: '습관을 처음 체크하는 날이 1일째예요.',
+  stopped: '한동안 체크가 없었어요. 다시 체크하면 그날이 1일째예요.',
+  running: '새 정자가 만들어지는 데 64~74일, 성숙하는 데 1~2주가 더 걸려 모두 약 3개월이에요.',
+  reached: '약 3개월을 이어 왔어요. 지금처럼 계속해요.',
 }
 
 const FOLIC_COPY: TimerCopy = {
   goalText: FOLIC_GOAL_TEXT,
-  notStarted: '시작 전이에요. 엽산을 처음 체크한 날부터 세어 드려요.',
-  stopped: '한동안 체크가 없었어요. 다시 체크한 날부터 새로 세어 드려요.',
+  notStarted: '엽산을 처음 체크하는 날이 1일째예요.',
+  stopped: '한동안 체크가 없었어요. 다시 체크하면 그날이 1일째예요.',
   running: '임신 3개월 전부터(최소 1개월 전) 임신 12주까지 하루 400µg을 권해요.',
   reached: '3개월을 챙겼어요. 임신 12주까지 이어 가요.',
 }
@@ -456,7 +456,7 @@ export function confirmPregnancy(
         from,
         kind: 'milestone',
         title: '🎉 기쁜 소식이 기록됐어요',
-        body: `${name}님이 임신 소식을 기록했어요. 이제 둘셋이 임신 주수를 함께 챙길게요.`,
+        body: `${name}님이 임신 소식을 기록했어요.`,
       },
     ],
     nowISO,
@@ -573,7 +573,7 @@ export function groupByDay<T extends { createdAt: string }>(list: T[], today: IS
 // ── Misc copy ───────────────────────────────────────────────
 
 export const DATE_CARD_COPY: Record<Stage, { title: string; body: string }> = {
-  preparing: { title: '둘만의 시간', body: '가볍게 즐길 데이트 아이디어를 모아 뒀어요' },
-  pregnant: { title: '둘만의 시간', body: '태교 여행, 산책 데이트도 챙겨요' },
-  parenting: { title: '둘만의 시간', body: '짧아도 괜찮아요. 우리 둘만의 30분' },
+  preparing: { title: '둘만의 시간', body: '데이트 아이디어' },
+  pregnant: { title: '둘만의 시간', body: '태교 여행·산책 데이트' },
+  parenting: { title: '둘만의 시간', body: '아기 재운 뒤 30분' },
 }

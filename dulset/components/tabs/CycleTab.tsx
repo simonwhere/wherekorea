@@ -134,7 +134,7 @@ export default function CycleTab() {
 
   const toggleClinic = (on: boolean) => {
     update((s) => setClinicMode(s, on, today))
-    toast.show(on ? '병원과 함께 준비해요. 날짜 예상과 알림은 쉬어요' : '병원 준비를 마쳤어요. 예상과 알림이 돌아와요')
+    toast.show(on ? '병원과 함께 준비해요. 날짜 예상과 알림은 쉬어요' : '병원 준비를 마쳤어요. 날짜 예상과 알림을 다시 켰어요')
   }
 
   return (
@@ -169,7 +169,7 @@ export default function CycleTab() {
             checked={clinic}
             onChange={toggleClinic}
             label={CLINIC_LABEL}
-            description={clinic ? '생리를 기록해도 꺼지지 않아요.' : '병원에서 시기를 정하는 주기라면 켜 두세요.'}
+            description={clinic ? '생리를 기록해도 그대로예요.' : undefined}
           />
         </Card>
       ) : null}
@@ -196,7 +196,7 @@ export default function CycleTab() {
             canLog
               ? () => {
                   update((s) => startRestCycle(s, today, 'rest'))
-                  toast.show('이번 주기는 쉬어요 · 다음 생리를 기록하면 다시 켜져요')
+                  toast.show('이번 주기는 쉬어요. 다음 생리를 기록하면 다시 켜져요')
                 }
               : undefined
           }
@@ -205,7 +205,7 @@ export default function CycleTab() {
               ? () => {
                   if (isClinicMode(state)) {
                     update((s) => endClinicMode(s))
-                    toast.show('병원 준비를 마쳤어요. 예상과 알림이 돌아와요')
+                    toast.show('병원 준비를 마쳤어요. 날짜 예상과 알림을 다시 켰어요')
                     return
                   }
                   // Like the home's [다시 켜기]: turning a vaccine rest off is an answer too,

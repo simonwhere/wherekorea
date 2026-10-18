@@ -21,7 +21,7 @@ export function ReactionPicker({
   onChange: (next: string | null) => void
 }) {
   return (
-    <div role="group" aria-label={`${author.name}님의 ${day} 기록에 마음 남기기`} className="flex items-center gap-0.5">
+    <div role="group" aria-label={`${author.name}님의 ${day} 기록에 반응하기`} className="flex items-center gap-0.5">
       {REACTIONS.map((r) => {
         const on = value === r.emoji
         return (
@@ -44,9 +44,6 @@ export function ReactionPicker({
           </button>
         )
       })}
-      <span aria-hidden className="ml-1 text-[11px] text-ink-3">
-        {value ? '마음을 전했어요' : '마음 남기기'}
-      </span>
     </div>
   )
 }
@@ -55,7 +52,7 @@ export function ReactionPicker({
 export function ReceivedReactions({ items }: { items: Array<{ member: Member; emoji: string }> }) {
   if (!items.length) return null
   return (
-    <ul className="flex flex-wrap items-center gap-1" aria-label="받은 마음">
+    <ul className="flex flex-wrap items-center gap-1" aria-label="받은 반응">
       {items.map(({ member, emoji }) => (
         <li
           key={member.id}
@@ -65,7 +62,7 @@ export function ReceivedReactions({ items }: { items: Array<{ member: Member; em
             {emoji}
           </span>
           <span className="max-w-[7rem] truncate">{member.name}</span>
-          <span className="sr-only">님이 ‘{reactionLabel(emoji) ?? emoji}’ 마음을 남겼어요</span>
+          <span className="sr-only">님이 ‘{reactionLabel(emoji) ?? emoji}’ 반응을 남겼어요</span>
         </li>
       ))}
     </ul>

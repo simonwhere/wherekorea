@@ -14,9 +14,9 @@ export default function Vaccination() {
 
   return (
     <section>
-      <SectionTitle sub="전체 일정은 공식 예방접종도우미에서 확인해요">예방접종</SectionTitle>
+      <SectionTitle>예방접종</SectionTitle>
       <Card>
-        <p className="text-xs font-semibold text-ink-2">대표적인 접종 시기 몇 가지</p>
+        <p className="text-xs font-semibold text-ink-2">주요 접종 시기</p>
         <dl className="mt-2 grid gap-1.5">
           {VACCINE_ANCHORS.map((v) => (
             <div key={v.name} className="flex items-baseline justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2">

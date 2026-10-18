@@ -50,7 +50,7 @@ function AnniversaryForm({ editing, onDone }: { editing: CustomAnniversary | nul
       toast.show('고쳤어요')
     } else {
       update((s) => addAnniversary(s, { title: clean, date, yearly, emoji }))
-      toast.show(`${emoji} ${clean}, 함께 챙길게요`)
+      toast.show('기념일을 더했어요')
     }
     onDone()
   }
@@ -113,12 +113,7 @@ function AnniversaryForm({ editing, onDone }: { editing: CustomAnniversary | nul
         ) : null}
       </div>
 
-      <Toggle
-        checked={yearly}
-        onChange={setYearly}
-        label="매년 챙기기"
-        description={yearly ? '해마다 이 날을 N주년으로 알려 드려요' : '이 날 한 번만 챙겨요'}
-      />
+      <Toggle checked={yearly} onChange={setYearly} label="매년 챙기기" />
 
       <div>
         <p className="mb-1.5 text-xs font-semibold text-ink-2">아이콘</p>
@@ -168,7 +163,7 @@ function ConfirmRemove({ title, onKeep, onRemove }: { title: string; onKeep: () 
   return (
     <div>
       <p ref={ref} tabIndex={-1} className="text-sm leading-relaxed text-ink-2 outline-none">
-        ‘{title}’ 기념일을 지울까요? 두 사람 화면에서 모두 사라지고, 이 날 알림도 더는 오지 않아요.
+        ‘{title}’ 기념일을 지울까요? 두 사람 화면에서 모두 사라져요.
       </p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         <Button variant="secondary" onClick={onKeep}>

@@ -17,6 +17,7 @@ export default function HospitalBag({ weeks, since }: { weeks: number; since: st
   const panelId = useId()
   const { done, total } = bagProgress(state, since)
   const pct = total ? Math.round((done / total) * 100) : 0
+  const sub = prominent ? (done === total ? '다 챙겼어요. 현관 가까이 두세요' : null) : `${BAG_PROMINENT_WEEK}주 무렵부터 싸면 돼요`
 
   return (
     <Card className={prominent ? 'mt-3' : 'mt-6'} tone={prominent ? 'default' : 'muted'}>
@@ -32,13 +33,7 @@ export default function HospitalBag({ weeks, since }: { weeks: number; since: st
           <IconTile name="bag" size="sm" />
           <span className="min-w-0 flex-1">
             <span className="block">출산 가방</span>
-            <span className="block text-xs font-normal text-ink-3">
-              {prominent
-                ? done === total
-                  ? '다 챙겼어요. 현관 가까이 두세요!'
-                  : '조금씩 같이 싸 두면 든든해요'
-                : `${BAG_PROMINENT_WEEK}주 무렵부터 싸기 시작하면 여유로워요`}
-            </span>
+            {sub ? <span className="block text-xs font-normal text-ink-3">{sub}</span> : null}
           </span>
           <span className="text-xs font-semibold tabular-nums text-ink-2">
             <span aria-hidden>
@@ -83,9 +78,7 @@ export default function HospitalBag({ weeks, since }: { weeks: number; since: st
             </ul>
           </div>
         ))}
-        <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">
-          병원·조리원마다 챙겨 주는 물품이 달라요. 미리 확인하면 짐이 줄어요.
-        </p>
+        <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">병원·조리원마다 챙겨 주는 물품이 달라요.</p>
       </div>
     </Card>
   )

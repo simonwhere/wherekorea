@@ -175,7 +175,6 @@ export default function LinkMoment({
       >
         <p className="min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em] text-ink-2">{VEIL_COPY.eyebrow}</p>
         <h2 className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">{VEIL_COPY.title}</h2>
-        <p className="mt-1 text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{VEIL_COPY.body}</p>
         <div className="mt-4">
           <Pill tone="outline" className="w-full" onClick={() => setRevealed(true)}>
             {VEIL_COPY.action}
@@ -198,7 +197,7 @@ export default function LinkMoment({
       {eyebrow ? <p className={cx('min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em]', EYEBROW[m.tone])}>{eyebrow}</p> : null}
       <h2 className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">{m.title}</h2>
       <div className="mt-1">
-        <p className="text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{m.body}</p>
+        {m.body ? <p className="text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{m.body}</p> : null}
         {m.note ? <p className="mt-[5px] text-[12.5px] leading-[1.5] text-ink-3">{m.note}</p> : null}
       </div>
 

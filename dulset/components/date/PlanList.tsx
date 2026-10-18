@@ -36,7 +36,6 @@ export default function PlanList({ onAdd }: { onAdd: () => void }) {
   return (
     <section className="mt-6">
       <SectionTitle
-        sub="둘 중 누가 담아도 같이 보여요"
         action={
           <button type="button" onClick={onAdd} className={cx(btn, 'text-brand-ink hover:bg-brand-soft')}>
             <Icon name="plus" className="h-4 w-4" strokeWidth={2.4} />
@@ -48,11 +47,7 @@ export default function PlanList({ onAdd }: { onAdd: () => void }) {
       </SectionTitle>
 
       {upcoming.length === 0 ? (
-        <EmptyState
-          icon="cal"
-          title="아직 정한 데이트가 없어요"
-          body="마음에 드는 아이디어에서 '일정에 담기'를 누르면 서로에게 제안이 가요."
-        />
+        <EmptyState icon="cal" title="아직 정한 데이트가 없어요" />
       ) : (
         <Card className="py-1">
           <ul className="divide-y divide-line/70">
@@ -114,7 +109,7 @@ function PlanRow({ plan }: { plan: DatePlan }) {
 
   const addToCalendar = () => {
     downloadText(`dulset-date-${plan.date}.ics`, buildIcs([planIcsEvent(plan)]))
-    toast.show('캘린더 파일을 받았어요. 열면 일정에 추가돼요')
+    toast.show('캘린더 파일을 받았어요')
   }
 
   const cancelDelete = () => {
@@ -165,10 +160,10 @@ function PlanRow({ plan }: { plan: DatePlan }) {
               ref={deleteRef}
               type="button"
               className="-mr-2 -mt-3 inline-flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-xl px-2 text-[11px] font-medium text-ink-3 hover:bg-surface-2"
-              aria-label={`${plan.title} 일정 삭제`}
+              aria-label={`${plan.title} 일정 지우기`}
               onClick={() => setConfirming(true)}
             >
-              삭제
+              지우기
             </button>
           )}
         </div>
@@ -185,7 +180,7 @@ function PlanRow({ plan }: { plan: DatePlan }) {
         {plan.note ? <p className="mt-0.5 text-xs text-ink-3">“{plan.note}”</p> : null}
 
         {confirming ? (
-          <div key="confirm" className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="일정 삭제 확인">
+          <div key="confirm" className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="일정 지우기 확인">
             <span className="text-xs text-ink-2">이 일정을 지울까요?</span>
             <button
               type="button"

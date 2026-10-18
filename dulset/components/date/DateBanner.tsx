@@ -28,10 +28,7 @@ export default function DateBanner() {
     >
       <div className="flex items-start gap-3">
         {b.kind === 'our-week' ? null : <IconTile name={KIND_ICON[b.kind]} tone="bg-surface/70" />}
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-bold leading-snug text-ink">{b.title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-2">{b.body}</p>
-        </div>
+        <p className="min-w-0 flex-1 self-center text-[15px] font-bold leading-snug text-ink">{b.title}</p>
       </div>
       {b.note ? (
         <p className="mt-3 rounded-lg bg-surface/70 px-3 py-2 text-[11px] leading-relaxed text-ink-2">{b.note}</p>

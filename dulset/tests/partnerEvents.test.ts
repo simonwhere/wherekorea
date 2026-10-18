@@ -274,7 +274,7 @@ describe('콕 and 응원', () => {
       kind: 'cheer',
       from: PARTNER,
       title: '👏 민수님이 응원을 보냈어요',
-      body: '오늘도 고마워요. 우리 잘하고 있어요!',
+      body: '오늘도 고마워요.',
     })
     expect(applyPartnerEvent(next, { id: 'c1', kind: 'cheer' }, TODAY, NOW)).toBe(next)
     for (let i = 0; i < CHEERS_PER_DAY; i++) s = applyPartnerEvent(s, { id: `c${i}`, kind: 'cheer' }, TODAY, stamp(TODAY, 10 + i))

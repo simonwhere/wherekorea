@@ -20,7 +20,7 @@ export default function Milestones({ baby }: { baby: Baby }) {
 
   return (
     <section>
-      <SectionTitle sub="처음 해낸 날을 적어 두면 우리 둘의 추억이 돼요" action={<span className="text-xs text-ink-3">{done}/{rows.length}</span>}>
+      <SectionTitle action={<span className="text-xs text-ink-3">{done}/{rows.length}</span>}>
         발달 이정표
       </SectionTitle>
       <Card className="px-0 py-1">
@@ -50,7 +50,7 @@ export default function Milestones({ baby }: { baby: Baby }) {
                 <span className="min-w-0 flex-1">
                   <span className={cx('block text-sm font-semibold', r.date ? 'text-ink' : 'text-ink-2')}>{r.label}</span>
                   <span className="block text-[11px] text-ink-3">
-                    {r.date ? `${formatKo(r.date, { weekday: false })} · ${r.ageLabel}` : `많은 아기가 ${r.typical}`}
+                    {r.date ? `${formatKo(r.date, { weekday: false })} · ${r.ageLabel}` : `보통 ${r.typical}`}
                   </span>
                 </span>
                 {r.date ? (
@@ -86,7 +86,7 @@ function MilestoneForm({ row, birth, onDone }: { row: MilestoneRow; birth: strin
     e.preventDefault()
     if (error) return
     update((s) => setMilestone(s, row.mkey, date))
-    toast.show(row.date ? '날짜를 바꿨어요' : `${row.label}, 축하해요! 🎉`)
+    toast.show(row.date ? '날짜를 바꿨어요' : `${row.label}, 축하해요!`)
     onDone()
   }
   const clear = () => {
@@ -97,7 +97,6 @@ function MilestoneForm({ row, birth, onDone }: { row: MilestoneRow; birth: strin
 
   return (
     <form onSubmit={save} className="space-y-4" noValidate>
-      <p className="text-xs leading-relaxed text-ink-2">많은 아기가 {row.typical}에 해요. 처음 해낸 날을 우리 둘의 기록으로 남겨요.</p>
       <Field
         label="처음 한 날"
         hint={

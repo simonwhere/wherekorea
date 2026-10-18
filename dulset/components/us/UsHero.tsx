@@ -69,14 +69,11 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
             D+{daysSince(met, today).toLocaleString('ko-KR')}
             <span className="ml-0.5 text-lg font-bold">일</span>
           </p>
-          <p className="mt-1.5 text-xs text-ink-2">{formatKo(met, { year: true, weekday: false })} 처음 만났어요</p>
+          <p className="mt-1.5 text-xs text-ink-2">{formatKo(met, { year: true, weekday: false })}에 처음 만났어요</p>
         </div>
       ) : (
         <div className="mt-3">
           <p className="text-[17px] font-bold text-ink">처음 만난 날을 알려 주세요</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-2">
-            만난 날부터 함께한 날수와 100일·주년을 챙겨 드려요. 결혼한 날도 넣을 수 있어요.
-          </p>
           <Button className="mt-3" onClick={onEditDates}>
             만난 날 넣기
           </Button>
@@ -96,8 +93,7 @@ export default function UsHero({ onEditDates }: { onEditDates: () => void }) {
           className="-mb-1 -ml-1 mt-1 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-brand-ink hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
         >
           <Icon name="ring" className="h-4 w-4 text-ink-3" />
-          결혼한 날도 넣어 두기
-          <span className="font-normal text-ink-3">(있다면)</span>
+          결혼한 날 넣기
         </button>
       ) : null}
 

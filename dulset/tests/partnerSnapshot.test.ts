@@ -836,7 +836,7 @@ describe('the seven days (N20)', () => {
     }
     // His clock behind hers: the first page.
     expect(snapshotDay(snap, '2026-09-19')!.date).toBe('2026-09-20')
-    // After the week: nothing (the page shows '새 화면은 곧 채워져요').
+    // After the week: nothing (the page shows '새 화면을 기다리고 있어요').
     expect(snapshotDay(snap, '2026-09-27')).toBeNull()
     expect(snapshotDay(null, '2026-09-20')).toBeNull()
     expect(snapshotDay({ ...snap, days: [] }, '2026-09-20')).toBeNull()

@@ -103,9 +103,7 @@ export default function LinkSignals({
           </button>
         ))}
       </div>
-      <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
-        {left > 0 ? `오늘 ${left}번 더 보낼 수 있어요` : '오늘 신호는 다 보냈어요'}
-      </p>
+      {left > 0 ? null : <p className="mt-3 text-[11px] leading-relaxed text-ink-3">오늘 신호는 다 보냈어요</p>}
     </Card>
   )
 }

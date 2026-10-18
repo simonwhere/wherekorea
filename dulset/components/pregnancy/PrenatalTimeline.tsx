@@ -52,7 +52,7 @@ export default function PrenatalTimeline({ weeks, since }: { weeks: number; sinc
 
   const toggle = (row: TimelineRow) => {
     update((s) => toggleMilestone(s, row.key, today, since))
-    if (row.status !== 'done') toast.show('완료로 표시했어요 ✓')
+    if (row.status !== 'done') toast.show('체크했어요')
   }
 
   const share = (row: TimelineRow) => {
@@ -77,7 +77,7 @@ export default function PrenatalTimeline({ weeks, since }: { weeks: number; sinc
   return (
     <section className="mt-6">
       <SectionTitle
-        sub="병원마다 달라요 — 담당 의료진 안내를 따르세요"
+        sub="병원마다 달라요. 담당 의료진 안내를 따라 주세요"
         action={
           <span className="text-xs font-semibold tabular-nums text-ink-3">
             <span aria-hidden>

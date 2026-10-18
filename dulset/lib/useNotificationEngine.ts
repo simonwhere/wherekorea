@@ -68,7 +68,7 @@ export function useNotificationEngine(): void {
         // Discreet mode keeps anything health-related off the lock screen.
         const discreet = discreetFor(settings, viewer)
         const title = discreet ? '둘셋' : n.title
-        const body = discreet ? '새 알림이 있어요 💌' : n.body
+        const body = discreet ? '새 알림이 있어요' : n.body
         new Notification(title, { body, tag: n.key ?? n.id, icon: './icon.svg' })
       } catch {
         /* Some mobile browsers only allow notifications via a service worker. */

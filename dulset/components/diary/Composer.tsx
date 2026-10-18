@@ -13,7 +13,7 @@ import {
   type DiaryDraft,
 } from '@/lib/logic/diaryExport'
 import { stampOn } from '@/lib/logic/today'
-import { chapterContext, composerTitle, entryChapter } from '@/lib/logic/usView'
+import { chapterContext, composerTitle } from '@/lib/logic/usView'
 import { uid } from '@/lib/id'
 import { deletePhoto, downscaleImage, getPhotoURL, savePhoto } from '@/lib/photos'
 import { useApp } from '@/lib/store'
@@ -192,15 +192,13 @@ export default function Composer() {
     setText('')
     setMood(undefined)
     setPickedDate(null)
-    toast.show(`기록했어요. ${partner.name}님도 함께 볼 수 있어요`)
+    toast.show('기록했어요')
   }
 
-  const backdated = date !== '' && date < today
   // 우리 둘 기록 / 우리의 기록 / 태교일기 / 육아일기 — follows the picked date's chapter.
   const ctx = chapterContext(state)
   const effectiveDate = clampDiaryDate(date, today)
   const title = composerTitle(stage, effectiveDate, ctx)
-  const coupleChapter = entryChapter({ stage, date: effectiveDate }, ctx) === 'couple'
   const onDateBlur = () => setPickedDate((d) => (d === null ? null : clampDiaryDate(d, today)))
 
   return (
@@ -240,7 +238,7 @@ export default function Composer() {
               // Ctrl/⌘+Enter saves — but not mid-syllable while a Korean IME is composing.
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) save()
             }}
-            placeholder="한 줄이면 충분해요. 떠오르는 대로 적어 보세요."
+            placeholder="떠오르는 대로 적어 보세요"
             aria-describedby={`${promptId} ${countId}`}
             className={cx(textareaClass, 'resize-none text-[15px] leading-relaxed')}
           />
@@ -267,10 +265,7 @@ export default function Composer() {
         </div>
 
         <div className="grid grid-cols-2 items-start gap-2">
-          <Field
-            label="날짜"
-            hint={coupleChapter ? '‘우리 둘’ 이야기로 남겨요' : backdated ? '지난 날의 기록으로 남겨요' : undefined}
-          >
+          <Field label="날짜">
             <input
               type="date"
               className={cx(inputClass, 'px-2.5')}
@@ -331,11 +326,7 @@ export default function Composer() {
           <Button type="submit" full disabled={!canSave}>
             기록 남기기
           </Button>
-          <p className="mt-1.5 text-center text-[11px] text-ink-3">
-            {hasContent || busy || restoring
-              ? `${partner.name}님과 함께 보는 기록이에요`
-              : '글이나 사진, 하나만 있어도 남길 수 있어요'}
-          </p>
+          <p className="mt-1.5 text-center text-[11px] text-ink-3">{partner.name}님과 함께 보는 기록이에요</p>
         </div>
       </form>
     </Card>

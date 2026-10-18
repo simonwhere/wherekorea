@@ -68,7 +68,7 @@ describe('baby info', () => {
     const today = '2026-09-26'
     expect(validateBabyInfo({ name: '', birthDate: '', sex: 'unknown' }, today)).toMatch(/선택/)
     expect(validateBabyInfo({ name: '', birthDate: '2026-09-27', sex: 'unknown' }, today)).toMatch(/오늘 이후/)
-    expect(validateBabyInfo({ name: '', birthDate: '2016-09-25', sex: 'unknown' }, today)).toMatch(/이전 날짜/)
+    expect(validateBabyInfo({ name: '', birthDate: '2016-09-25', sex: 'unknown' }, today)).toMatch(/넘게 지난 날짜/)
     expect(validateBabyInfo({ name: '', birthDate: birthBounds(today).min, sex: 'unknown' }, today)).toBeNull()
     expect(validateBabyInfo({ name: '', birthDate: today, sex: 'boy' }, today)).toBeNull()
   })

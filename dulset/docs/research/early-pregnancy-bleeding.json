@@ -38,7 +38,7 @@
    "id": "contact-clinic",
    "topic": "양이 적어도 병원에 알려요",
    "claim": "ACOG: 'It is best to contact your obstetrician–gynecologist (ob-gyn) or other health care professional if you have any bleeding at any time during pregnancy.' NHS: 'if you have any bleeding at any point in your pregnancy you should contact your GP or your midwife straight away.'",
-   "ui": "양이 적어도 출혈이 있으면 다니는 병원에 알려 두는 게 좋아요. 전화로 먼저 물어봐도 돼요.",
+   "ui": "양이 적어도 출혈이 있으면 다니는 병원에 알려 두면 좋아요. 전화로 먼저 물어봐도 돼요.",
    "sources": [
     "https://www.acog.org/womens-health/faqs/bleeding-during-pregnancy",
     "https://www.nhs.uk/pregnancy/related-conditions/common-symptoms/vaginal-bleeding/",

@@ -73,7 +73,7 @@ export default function AlbumPanel({ onGoStory }: { onGoStory: () => void }) {
   const onReact = (id: string, next: string | null) => {
     const writer = list.find((e) => e.id === id)?.author
     update((s) => reactToEntry(s, id, me.id, next, stampOn(today)))
-    if (next && writer) toast.show(`${byId.get(writer)?.name ?? partner.name}님에게 ${next} 마음을 전했어요`)
+    if (next && writer) toast.show(`${byId.get(writer)?.name ?? partner.name}님 기록에 ${next} 반응을 남겼어요`)
   }
 
   if (!feed.length) {
@@ -82,7 +82,6 @@ export default function AlbumPanel({ onGoStory }: { onGoStory: () => void }) {
         <EmptyState
           icon="img"
           title="아직 사진이 없어요"
-          body="첫 화면에 걸 사진 한 장부터 시작해 볼까요? 이야기에 사진을 붙이면 여기에 날짜순으로 모여요. 연애 시절 사진도 날짜를 예전으로 바꿔 남길 수 있어요."
           action={
             <div className="grid gap-2">
               <Button onClick={openCover}>
@@ -103,9 +102,7 @@ export default function AlbumPanel({ onGoStory }: { onGoStory: () => void }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2 px-1">
-        <p className="text-xs text-ink-3">
-          사진 {feed.length.toLocaleString('ko-KR')}장 · 이야기에 붙인 사진이 날짜순으로 모여요
-        </p>
+        <p className="text-xs text-ink-3">사진 {feed.length.toLocaleString('ko-KR')}장</p>
         <button
           type="button"
           onClick={openCover}

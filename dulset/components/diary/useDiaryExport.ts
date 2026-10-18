@@ -62,7 +62,7 @@ export function useDiaryExport() {
       downloadText(EXPORT_FILENAME, html, 'text/html;charset=utf-8')
       toast.show(missing ? `저장했어요. 사진 ${missing}장은 이 기기에 없어서 뺐어요` : '우리 이야기를 파일로 저장했어요')
     } catch {
-      toast.show('파일을 만들지 못했어요. 잠시 뒤 다시 해 볼까요?')
+      toast.show('파일을 만들지 못했어요. 잠시 뒤 다시 해 주세요')
     } finally {
       setBusy(false)
       setProgress(null)

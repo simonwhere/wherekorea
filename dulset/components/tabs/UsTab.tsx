@@ -12,7 +12,6 @@ import { entryDomId, requestOpenEntry, takeOpenEntry } from '@/components/diary/
 import { Card, Toggle, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
-import { MEMORIES_PROMISE } from '@/lib/logic/cover'
 import { memoriesOn, setCoupleFlag } from '@/lib/logic/settings'
 import { excerpt, markRecordBookNotesRead, recordBookNotes } from '@/lib/logic/usView'
 import { useApp } from '@/lib/store'
@@ -100,11 +99,7 @@ export default function UsTab() {
     <div className="space-y-4">
       <header className="px-1">
         <h1 className="text-xl font-extrabold tracking-tight text-ink">우리</h1>
-        <p className="mt-0.5 text-xs text-ink-3">
-          {/* While preparing the book is the couple's own — no 둘이 셋이 되기까지 promise in its first line (N27). */}
-          {preparing ? '두 사람의 이야기·사진·기념일을 한 권에 모아요' : '둘이 셋이 되기까지, 두 사람의 기록이 한 권으로 이어져요'}
-          {count ? <span className="text-ink-2"> · 함께 남긴 기록 {count.toLocaleString('ko-KR')}개</span> : null}
-        </p>
+        {count ? <p className="mt-0.5 text-xs text-ink-3">함께 남긴 기록 {count.toLocaleString('ko-KR')}개</p> : null}
       </header>
 
       {/* While preparing, '내 기록에 마음을 남겼어요' arrives here, not in the 🔔 (N27). */}
@@ -149,8 +144,8 @@ function ReactionNotes({ onOpen }: { onOpen: (entryId: string) => void }) {
   }, [])
   if (!notes.length) return null
   return (
-    <section aria-label="새로 받은 마음" className="rounded-xl2 border border-line bg-surface px-4 py-3 shadow-card">
-      <h2 className="text-[13px] font-bold text-ink">새로 받은 마음</h2>
+    <section aria-label="새로 받은 반응" className="rounded-xl2 border border-line bg-surface px-4 py-3 shadow-card">
+      <h2 className="text-[13px] font-bold text-ink">새로 받은 반응</h2>
       <ul className="mt-1 divide-y divide-line/60">
         {notes.map((n) => {
           const entryId = n.key?.split(':')[1] ?? ''
@@ -198,7 +193,6 @@ function MemoriesSwitch() {
             ‘N년 전 오늘’ <span className="text-xs font-normal text-ink-3">(두 사람 모두)</span>
           </>
         }
-        description={MEMORIES_PROMISE}
       />
     </Card>
   )

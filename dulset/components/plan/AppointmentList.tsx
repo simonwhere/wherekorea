@@ -197,10 +197,10 @@ function AppointmentRow({
               ref={deleteRef}
               type="button"
               className="-mr-1 -mt-3 inline-flex h-11 min-w-[44px] shrink-0 items-center justify-center rounded-xl px-2 text-[11px] font-medium text-ink-3 hover:bg-surface-2"
-              aria-label={`${appt.title} 일정 삭제`}
+              aria-label={`${appt.title} 일정 지우기`}
               onClick={() => setConfirming(true)}
             >
-              삭제
+              지우기
             </button>
           )}
         </div>
@@ -231,7 +231,7 @@ function AppointmentRow({
         ) : null}
 
         {confirming ? (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="일정 삭제 확인">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="일정 지우기 확인">
             <span className="text-xs text-ink-2">이 일정을 지울까요?</span>
             <button
               type="button"

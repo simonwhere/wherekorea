@@ -39,7 +39,6 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
   return (
     <section>
       <SectionTitle
-        sub="검진이나 병원에서 잰 값을 옮겨 적어요"
         action={
           <Button size="md" variant="secondary" onClick={() => setAddOpen(true)} disabled={!canAdd}>
             + 기록
@@ -53,7 +52,6 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
         <EmptyState
           icon="ruler"
           title="첫 성장 기록을 남겨 볼까요?"
-          body="키·몸무게·머리둘레 중 잰 것만 적어도 돼요. 쌓이면 그래프로 보여 드려요."
           action={
             <Button onClick={() => setAddOpen(true)} disabled={!canAdd}>
               기록 추가
@@ -86,10 +84,9 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
                 field={current}
                 birth={birth}
               />
-              <p className="mt-1 text-[11px] text-ink-3">가로축: 생후 개월 수 · 그래프를 눌러 기록별 값을 볼 수 있어요</p>
             </>
           ) : (
-            <p className="text-xs text-ink-3">태어난 날 이후의 기록이 쌓이면 그래프가 보여요.</p>
+            <p className="text-xs text-ink-3">태어난 날 이후 기록부터 그래프로 보여요.</p>
           )}
 
           <h3 className="mt-4 text-xs font-semibold text-ink-2">
@@ -114,7 +111,6 @@ export default function GrowthSection({ baby }: { baby: Baby }) {
       )}
 
       <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">
-        이 그래프는 기록을 이어 본 것이라 또래 비교(백분위)는 보여 주지 않아요.{' '}
         <ExternalLink href={GROWTH_CHART_LINK.url} className="font-semibold text-brand-ink underline underline-offset-2">
           {GROWTH_CHART_LINK.text}
         </ExternalLink>
@@ -171,7 +167,7 @@ function GrowthRow({ record, birth }: { record: GrowthRecord; birth: string }) {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        aria-label={`${when} 성장 기록 삭제`}
+        aria-label={`${when} 성장 기록 지우기`}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2 hover:text-ink-2"
       >
         <Icon name="trash" className="h-5 w-5" />

@@ -375,6 +375,8 @@ describe('baby', () => {
     expect(formatBabyAge(babyAge('2026-01-31', '2026-02-27'))).toBe('생후 27일')
     expect(babyAge('2026-01-31', '2026-02-28').months).toBe(1)
     expect(formatBabyAge(babyAge('2025-01-15', '2027-03-20'))).toBe('2살 2개월')
+    expect(formatBabyAge(babyAge('2025-01-15', '2027-01-20'))).toBe('2살')
+    expect(koreanDays('2026-01-01').map((d) => d.label)).toEqual(['50일', '백일', '200일', '300일', '첫돌', '두 돌', '세 돌'])
   })
 })
 

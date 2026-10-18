@@ -376,7 +376,7 @@ export function alertPreview(
       title: '💞 가임기가 다가왔어요',
       body: w
         ? `${formatKo(w.fertileStart)}부터 ${formatKo(w.fertileEnd)}까지가 예상 가임기예요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.`
-        : '예상 가임기 날짜를 알려 드려요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.',
+        : '예상 가임기 날짜를 알려요. 예상치라 LH 배란테스트로 확인하면 더 정확해요.',
     },
     note: '예상 가임기 하루 전과 가능성이 가장 높은 날에 와요.',
   }

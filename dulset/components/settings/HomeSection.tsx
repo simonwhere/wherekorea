@@ -13,7 +13,7 @@ import { useCallback, useState } from 'react'
 import CoverSheet from '@/components/cover/CoverSheet'
 import { Card, Toggle, useToast } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
-import { MEMORIES_PROMISE, coverView, setHideCover } from '@/lib/logic/cover'
+import { coverView, setHideCover } from '@/lib/logic/cover'
 import { canLogCycle, canSeeCycleDetails } from '@/lib/logic/prefs'
 import { anniversaryAlertsOn, memoriesOn, setAnniversaryAlerts, setCoupleFlag, showTryCountOn } from '@/lib/logic/settings'
 import { useApp } from '@/lib/store'
@@ -76,7 +76,6 @@ export default function HomeSection() {
                   ‘N년 전 오늘’ <span className="text-xs font-normal text-ink-3">(두 사람 모두)</span>
                 </>
               }
-              description={MEMORIES_PROMISE}
             />
           )}
           <div className={preparing ? undefined : 'mt-1 border-t border-line pt-1'}>
