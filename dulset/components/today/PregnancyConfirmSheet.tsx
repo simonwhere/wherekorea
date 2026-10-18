@@ -31,15 +31,14 @@ export default function PregnancyConfirmSheet({ open, onClose }: { open: boolean
   const confirm = () => {
     if (!valid) return
     update((s) => clearPositivePending(confirmPregnancy(s, lmp, today, me.id, partner.id, stampOn(today))))
-    toast.show(`축하해요! 🎉 ${partner.name}님에게도 알렸어요`)
+    toast.show(`축하해요! ${partner.name}님에게도 알렸어요`)
     onClose()
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="축하해요! 🎉">
+    <Sheet open={open} onClose={onClose} title="축하해요!">
       <p className="text-sm leading-relaxed text-ink-2">
-        마지막 생리 시작일로 임신 주수와 출산 예정일을 계산해요. 기록하면 둘셋이 임신 모드로 바뀌고, {partner.name}님
-        화면에도 함께 보여요.
+        기록하면 임신 모드로 바뀌고 {partner.name}님 화면에도 보여요.
       </p>
       <div className="mt-4">
         <Field label="마지막 생리 시작일" hint="달력에 마지막으로 기록한 날이에요. 다르면 고쳐 주세요.">
@@ -68,8 +67,7 @@ export default function PregnancyConfirmSheet({ open, onClose }: { open: boolean
         </p>
       )}
       <Disclaimer>
-        병원 초음파로 받은 예정일이 있다면 임신 탭에서 바꿀 수 있어요. 아직 확실하지 않다면 병원에서 확인한 뒤 기록해도
-        괜찮아요.
+        병원에서 받은 예정일이 있으면 임신 탭에서 바꿀 수 있어요.
       </Disclaimer>
       <div className="mt-5 flex gap-2">
         <Button variant="secondary" onClick={onClose} className="flex-1">

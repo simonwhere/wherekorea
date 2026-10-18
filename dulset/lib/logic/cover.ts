@@ -322,7 +322,7 @@ export function memoryFor(
  * while preparing (N27). The same rules as memoryFor, in plain words.
  */
 export const MEMORIES_PROMISE =
-  '켜면 1~3년 전 오늘 남긴 이야기를 첫 화면 맨 위에 한 줄로 보여 줘요. 두 사람이 함께 보는 이야기만 — 나만 보기, 임신 중 이야기, 건강·병원 말이 든 글은 빼고, 생리 1~3일째나 임테기 음성인 날, 임신이 끝난 뒤 42일에는 쉬어요.'
+  '1~3년 전 오늘 남긴 이야기를 첫 화면 맨 위에 한 줄로 보여 줘요.'
 
 /** '1년 전 오늘의 이야기 ›' */
 export function memoryLineText(memory: Pick<Memory, 'years'>): string {

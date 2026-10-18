@@ -60,7 +60,7 @@ export function DoctorCard() {
   const program = programById('fertility-check')
   if (!advice) return null
   const lines: string[] = []
-  if (advice.reasons.includes('age')) lines.push('40세 이상이라면 준비를 시작하면서 바로 상담받아 보길 권해요.')
+  if (advice.reasons.includes('age')) lines.push('40세 이상이면 준비를 시작할 때 바로 상담을 받아 보세요.')
   if (advice.reasons.includes('months')) {
     lines.push(
       `함께 준비한 지 ${advice.months}개월이 지났어요. ${advice.threshold === 6 ? '35세 이상은 6개월' : '12개월'}이 지나면 두 사람 모두 검사를 권해요.`,
@@ -69,8 +69,8 @@ export function DoctorCard() {
   if (advice.reasons.includes('irregular')) {
     lines.push(
       advice.irregularBy === 'variation'
-        ? '최근 주기 길이 차이가 큰 편이에요. 주기가 불규칙하면 조금 일찍 상담받는 게 좋아요.'
-        : '주기가 짧거나 긴 편이에요. 이럴 땐 조금 일찍 상담받는 게 좋아요.',
+        ? '최근 주기 길이 차이가 큰 편이에요. 주기가 불규칙하면 조금 일찍 상담받으면 좋아요.'
+        : '주기가 짧거나 긴 편이에요. 이럴 땐 조금 일찍 상담받으면 좋아요.',
     )
   }
   // '아직 안 왔어요' for 15+ days (N12): the one copy table's line, no day count (NICE has none).
@@ -87,7 +87,6 @@ export function DoctorCard() {
           <li key={l}>{l}</li>
         ))}
       </ul>
-      <p className="mt-2 text-sm text-ink-2">누구의 탓도 아니에요. 함께 확인하면 마음이 한결 가벼워져요.</p>
       {program ? (
         <div className="mt-3 rounded-xl bg-surface-2 p-3">
           <p className="text-sm font-semibold text-ink">{program.title}</p>

@@ -44,10 +44,10 @@ describe('the partner’s 주기 tab', () => {
     renderApp(<CycleTab />, { state: none, viewer: PARTNER, today: USUAL })
     const empty = pageText()
     expect(empty).not.toContain('아직 주기 기록이 없어요')
-    expect(empty).toContain('편안한 날들이에요')
+    expect(empty).toContain('평소처럼 지내요')
     cleanup()
     renderApp(<CycleTab />, { state: withLevel(demoState(T0), 'week'), viewer: PARTNER, today: USUAL })
-    expect(pageText()).toContain('편안한 날들이에요')
+    expect(pageText()).toContain('평소처럼 지내요')
   })
 
   it('on 날짜 없음: no frequency section and no estimate note for him; she keeps both', () => {
@@ -74,7 +74,7 @@ describe('the 평소 주 card above the week block', () => {
   it('never prints “이번 주 우리 둘” twice in a row on his home', () => {
     renderApp(<TodayTab onNavigate={() => {}} />, { state: withLevel(demoState(T0), 'week'), viewer: PARTNER, today: USUAL })
     const card = screen.getByRole('region', { name: '오늘의 주기' })
-    expect(within(card).getByText('이번 주도 둘이 함께해요')).toBeTruthy()
+    expect(within(card).getByText('서로의 하루를 챙겨요')).toBeTruthy()
     expect(within(card).queryByText(WEEK_BLOCK_TITLE)).toBeNull()
     expect(within(card).getByText('오늘의 우리')).toBeTruthy()
     expect(screen.getByRole('region', { name: WEEK_BLOCK_TITLE })).toBeTruthy()

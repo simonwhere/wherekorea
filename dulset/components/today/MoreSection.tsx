@@ -90,10 +90,10 @@ function RestSwitch() {
   const onChange = (next: boolean) => {
     if (next) {
       update((s) => startRestCycle(s, today, 'rest'))
-      toast.show('이번 주기는 쉬어요. 날짜 예상과 알림을 잠시 꺼 둘게요')
+      toast.show('날짜 예상과 알림을 잠시 껐어요')
     } else {
       update((s) => endRestFromHome(s, today, stampOn(today)))
-      toast.show(loss ? '다시 켰어요. 생리를 기록한 날부터 다시 예상해요' : '다시 켰어요')
+      toast.show(loss ? '다시 켰어요. 기록한 생리부터 다시 예상해요' : '다시 켰어요')
     }
   }
   return (

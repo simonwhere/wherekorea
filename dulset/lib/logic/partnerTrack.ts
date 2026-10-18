@@ -290,7 +290,7 @@ function rank(i: PlanItem, member: MemberId): number {
   return s + (i.owners.length === 1 && i.owners[0] === member ? 0 : 0.5)
 }
 
-const NOTE = '보건소·병원마다 조금씩 달라요.'
+const NOTE = '보건소·병원마다 달라요.'
 const GUIDE = FERTILITY_CHECK_GUIDE
 const E_HEALTH = { label: GUIDE.urlLabel, url: GUIDE.url }
 
@@ -321,7 +321,7 @@ function chainTask(
     case 'apply': {
       if (!apply) return undefined
       // ASRM 2023: at 35+, see a doctor after 6 months of trying (medical.json).
-      const why35 = age35 ? '35세 이상은 6개월 동안 소식이 없으면 병원 상담을 권해요(ASRM). 검사를 미리 받아 두면 든든해요. ' : ''
+      const why35 = age35 ? '35세 이상은 6개월 동안 소식이 없으면 병원 상담을 권해요(ASRM). ' : ''
       return {
         ...apply,
         // His own step of the couple's row: the per-person tick is his.
@@ -331,7 +331,7 @@ function chainTask(
         title: `${checkName} 지원 신청하기`,
         step: 'apply',
         stage: 'apply',
-        why: `${why35}검사 전에 e보건소나 보건소에서 먼저 신청해야 지원돼요. 먼저 검사하면 지원받을 수 없어요. ${NOTE}`,
+        why: `${why35}검사 전에 e보건소나 보건소에서 먼저 신청해야 지원돼요. ${NOTE}`,
         guide: { where: GUIDE.apply.where, bring: GUIDE.apply.gives, cost },
         link: E_HEALTH,
         top: age35,
@@ -568,9 +568,9 @@ const TIPS_BY_COPY: Partial<Record<MomentCopyKey, readonly string[]>> = {
   // (The moment card's body already says '증상은 묻지 말고 평소처럼 보내요' — not twice on one screen.)
   'partner.tww': [
     '좋아하는 간식을 하나 챙겨 봐요.',
-    '이번 주말에 같이 할 일을 먼저 정해 봐요.',
-    '오늘 저녁 설거지는 먼저 맡아 봐요.',
-    '따뜻한 차 한 잔을 먼저 내려 봐요.',
+    '이번 주말에 같이 할 일을 정해 봐요.',
+    '오늘 저녁 설거지를 맡아 봐요.',
+    '따뜻한 차를 한 잔 내려 봐요.',
     '요즘 재미있었던 일을 하나 이야기해 봐요.',
   ],
   'partner.our-week': [
@@ -581,26 +581,26 @@ const TIPS_BY_COPY: Partial<Record<MomentCopyKey, readonly string[]>> = {
     '좋아하는 음악을 틀어 놓고 저녁을 같이 먹어요.',
   ],
   'partner.our-week-soon': [
-    '이번 주말 계획을 먼저 물어봐요.',
+    '이번 주말 계획을 물어봐요.',
     '같이 가 보고 싶었던 곳을 하나 골라 봐요.',
     '이번 주에 먹고 싶은 걸 물어봐요.',
     '집안일 하나를 미리 끝내 둬요.',
     '평일 저녁 하나를 비워 둘 수 있는지 살펴봐요.',
   ],
   'partner.late-shared': ['먼저 말을 꺼내지 않아요. 이야기하고 싶을 때 들어 주면 돼요.'],
-  'partner.positive-told': ['병원에 같이 갈 수 있는 날을 먼저 비워 둬요.'],
+  'partner.positive-told': ['병원에 같이 갈 수 있는 날을 미리 비워 둬요.'],
   'partner.period-shared': ['가벼운 산책을 제안해 봐요.'],
 }
 
 /** Day-to-day things that fit any day of the cycle (rotated by date, so the card changes). */
 export const NEUTRAL_PARTNER_TIPS: readonly string[] = [
   '오늘 저녁, 서로의 하루를 한 가지씩 물어봐요.',
-  '집안일 하나를 먼저 맡아 봐요.',
-  '같이 걷는 30분을 제안해 봐요.',
+  '집안일 하나를 맡아 봐요.',
+  '30분 같이 걷자고 해 봐요.',
   '좋아하는 간식을 하나 사 가요.',
   '고마운 것 하나를 말로 전해요.',
   '휴대폰을 내려놓고 10분만 이야기해요.',
-  '내일 아침 일정을 먼저 물어봐요.',
+  '내일 아침 일정을 물어봐요.',
 ]
 
 /** The rotation by date: the same index on both phones and the link, whatever the cycle says. */

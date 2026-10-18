@@ -23,11 +23,7 @@ export default function ClinicSwitch({ className }: { className?: string }) {
         checked={on}
         onChange={onChange}
         label={CLINIC_LABEL}
-        description={
-          on
-            ? '날짜 예상과 알림은 쉬고, 홈은 다음 병원 일정부터 보여 줘요. 생리를 기록해도 꺼지지 않아요.'
-            : '병원에서 시기를 정하는 주기라면 켜 두세요. 예상과 알림이 쉬고, 홈은 다음 병원 일정부터 보여 줘요.'
-        }
+        description={on ? '생리를 기록해도 꺼지지 않아요.' : '병원에서 시기를 정하는 주기라면 켜 두세요.'}
       />
     </Card>
   )

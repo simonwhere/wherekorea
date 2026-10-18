@@ -120,7 +120,7 @@ describe('clinic mode on the screens (N13)', () => {
     // The 주기 tab's first card: owner and partner lines, only the average row.
     const own = cycleSummary(s, TODAY, 'explicit', lens)
     expect(own.headline).toMatchObject({ title: CLINIC_LABEL })
-    expect(own.headline.sub).toContain('생리를 기록해도 꺼지지 않아요')
+    expect(own.headline.sub).toContain('날짜 예상은 쉬고 기록만 보여요')
     expect(own.rows.map((r) => r.key)).toEqual(['avg'])
     expect(pauseHeadline('clinic', 'soft', false)).toEqual(CLINIC_PARTNER_HEADLINE)
     expect(sharedHeadline({ kind: 'no-data' }, 'soft', 'clinic')).toEqual(CLINIC_PARTNER_HEADLINE)

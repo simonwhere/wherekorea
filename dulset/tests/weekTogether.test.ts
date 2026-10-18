@@ -305,12 +305,12 @@ describe('partnerWeekSummary: what her home shows of his week', () => {
     s = toggleCheck(s, PARTNER, '2026-09-29', 'nodrink')
     expect(partnerWeekSummary(s, TODAY, PARTNER)).toEqual([
       { kind: 'daily', text: '걷기 3일', count: 3 },
-      { kind: 'checkin', text: '체크인 했어요', count: 1 },
+      { kind: 'checkin', text: '체크인했어요', count: 1 },
     ])
     // Only days up to today count.
     expect(partnerWeekSummary(s, '2026-09-29', PARTNER)).toEqual([
       { kind: 'daily', text: '걷기 1일', count: 1 },
-      { kind: 'checkin', text: '체크인 했어요', count: 1 },
+      { kind: 'checkin', text: '체크인했어요', count: 1 },
     ])
   })
 

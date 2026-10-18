@@ -130,7 +130,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
       if (done) {
         const index = rows.findIndex((r) => r.id === item.id)
         setTicked((t) => [...t.filter((x) => x.id !== item.id), { id: item.id, index }])
-        toast.show('챙겼어요 ✓')
+        toast.show('챙겼어요')
       } else {
         setTicked((t) => t.filter((x) => x.id !== item.id))
       }
@@ -152,7 +152,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
       >
         <Icon name="check" className="h-[18px] w-[18px] shrink-0 text-ok" strokeWidth={2.2} />
         <span className="min-w-0 flex-1 text-xs text-ink-2">
-          <b className="font-semibold text-ink">챙길 것</b> · 급한 건 없어요. 여유 있을 때 둘이 같이 살펴봐요
+          <b className="font-semibold text-ink">챙길 것</b> · 급한 건 없어요
         </span>
         <Icon name="right" className="h-4 w-4 shrink-0 text-ink-3" strokeWidth={2} />
       </button>
@@ -167,11 +167,7 @@ export function PlanFocusCard({ onNavigate }: { onNavigate: Nav }) {
         icon="list"
         title="이번 주 챙길 것"
         sub={
-          allDone
-            ? '이번 주 챙길 것을 모두 챙겼어요. 수고했어요 👏'
-            : overdue
-              ? '기한이 지난 일이 있어요. 지금이라도 할 수 있는지 같이 확인해 봐요.'
-              : '지금 할 수 있는 것과 곧 시작되는 것만 모았어요.'
+          allDone ? '이번 주 챙길 것을 모두 챙겼어요.' : overdue ? '기한이 지난 일이 있어요.' : undefined
         }
         onMore={openPlan}
       />

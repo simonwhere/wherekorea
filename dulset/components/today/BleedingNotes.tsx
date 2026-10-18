@@ -41,7 +41,7 @@ export default function BleedingNotes({ bleeding, className }: { bleeding: NonNu
           )}
         >
           <p className={cx('text-[12.5px] font-bold', urgent ? 'text-warn' : 'text-brand-ink')}>
-            {urgent ? '지금은 응급실이에요' : '지금 병원에 연락해요'}
+            {urgent ? '지금 바로 응급실로 가요' : '지금 병원에 연락해요'}
           </p>
           <ul className="mt-1 space-y-1.5">
             {lines.map((line) => (
@@ -91,7 +91,7 @@ export default function BleedingNotes({ bleeding, className }: { bleeding: NonNu
         ))}
       </div>
       <Disclaimer>
-        병원마다 안내가 달라요. 여기 적힌 건 일반 정보예요 (확인 {BLEEDING_ADVICE_CHECKED_AT}).
+        병원마다 안내가 달라요. 일반 정보예요(확인 {BLEEDING_ADVICE_CHECKED_AT}).
       </Disclaimer>
     </div>
   )

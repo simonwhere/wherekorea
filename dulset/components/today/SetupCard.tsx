@@ -58,7 +58,7 @@ export default function SetupCard({ className }: { className?: string }) {
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-bold leading-5 text-ink">설정 마저 하기</p>
           <p className="mt-0.5 text-xs leading-relaxed text-ink-2">
-            {missing.join(' · ')} — 출생연도와 시작한 날은 전문의 상담 시기를 알려 드릴 때 써요. 지금 아니어도 괜찮아요.
+            {missing.join(' · ')} — 전문의 상담 시기를 계산할 때 써요.
           </p>
           <div className="-mb-2 -ml-1.5 mt-0.5 flex flex-wrap items-center gap-x-2">
             <button type="button" className={link} onClick={() => goToSettings()}>

@@ -697,8 +697,8 @@ export { partnerHintState } from './dateIdeas'
  */
 export const VEIL_COPY = {
   eyebrow: '오늘의 우리',
-  title: '오늘도 둘이 함께해요',
-  body: '내용은 한 번 눌러서 볼 수 있어요.',
+  title: '내용을 가려 뒀어요',
+  body: '',
   action: '내용 보기',
 } as const
 
@@ -729,7 +729,7 @@ function ownerMoment(c: Ctx): MomentBody {
             tone: 'brand',
             eyebrow: '기록 확인',
             title: '최근 생리 기록이 없어요',
-            body: '생리가 다시 시작되면 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
+            body: '생리가 다시 시작되면 기록해 주세요. 그날부터 다시 예상해요.',
             primary: LOG_PERIOD,
           }
         : {
@@ -740,10 +740,10 @@ function ownerMoment(c: Ctx): MomentBody {
             title: '마지막 생리 시작일을 알려 주세요',
             body:
               voice === 'calm'
-                ? '기록해 두면 생리 예정일을 예상해 드려요.'
+                ? '기록하면 다음 생리 예정일을 예상해요.'
                 : voice === 'explicit'
-                  ? '하나만 기록해도 예정일과 가임기를 예상해 드려요.'
-                  : '하나만 기록해도 예정일과 우리의 주간을 예상해 드려요.',
+                  ? '하나만 기록해도 예정일과 가임기를 예상해요.'
+                  : '하나만 기록해도 예정일과 우리의 주간을 예상해요.',
             primary: LOG_PERIOD,
             secondary: { type: 'nav', to: 'cycle', label: '달력에서 고르기' },
           }
@@ -761,14 +761,13 @@ function ownerMoment(c: Ctx): MomentBody {
         role,
         copy: 'owner.after-loss',
         tone: 'muted',
-        eyebrow: '천천히 괜찮아요',
+        eyebrow: '천천히 해도 괜찮아요',
         title: '몸과 마음을 먼저 챙겨요',
         body: until
           ? periodSince
-            ? `생리를 기록해 뒀어요. ${day(until)}까지는 날짜 예상과 알림을 쉬고, 그 뒤에 다시 예상해 드릴게요.`
-            : `생리가 시작되면 기록해 주세요. ${day(until)}까지는 날짜 예상과 알림을 쉬어요.`
-          : '생리가 다시 시작되면 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
-        note: until ? '먼저 켜고 싶으면 더 보기의 쉬어요 스위치로 끌 수 있어요.' : undefined,
+            ? `${day(until)}까지 날짜 예상과 알림을 쉬어요.`
+            : `생리가 시작되면 기록해 주세요. ${day(until)}까지 날짜 예상과 알림을 쉬어요.`
+          : '생리가 다시 시작되면 기록해 주세요. 그날부터 다시 예상해요.',
         secondary: periodSince ? TO_CYCLE : LOG_PERIOD,
         support: true,
         ...(guidance ? { guidance } : {}),
@@ -790,8 +789,8 @@ function ownerMoment(c: Ctx): MomentBody {
         eyebrow: '테스트 양성 · 병원 확인 전',
         title: '병원에서 확인해 봐요',
         body: scanFrom
-          ? `확인 전까지는 조심스럽게 기다려요. 보통 마지막 생리 시작일로부터 5~6주 무렵(${scanFrom}부터) 초음파로 확인해요 — 병원마다 달라요. 엽산은 그대로 이어 가요.`
-          : '확인 전까지는 조심스럽게 기다려요. 보통 마지막 생리 시작일로부터 5~6주 무렵 초음파로 확인해요 — 병원마다 달라요. 엽산은 그대로 이어 가요.',
+          ? `보통 마지막 생리 시작일부터 5~6주 무렵(${scanFrom}부터) 초음파로 확인해요. 병원마다 달라요. 엽산은 계속 챙겨 먹어요.`
+          : '보통 마지막 생리 시작일부터 5~6주 무렵 초음파로 확인해요. 병원마다 달라요. 엽산은 계속 챙겨 먹어요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 넣기' },
         secondary: { type: 'confirm-pregnancy', label: '병원에서 확인했어요' },
         ...(told ? {} : { offerTellPositive: { since } }),
@@ -887,10 +886,9 @@ function ownerMoment(c: Ctx): MomentBody {
         title: copy.lateTitleShort(n),
         body: r
           ? r.due
-            ? '오늘 다시 테스트해 볼 수 있어요.'
+            ? '오늘 다시 테스트해 봐요.'
             : `다시 해 볼 날: ${retestRange(r)}`
           : '테스트해 볼까요? 생리가 시작됐다면 기록해 주세요.',
-        note: r ? '생리가 시작되면 기록해 주세요.' : undefined,
         primary: LOG_TEST,
         secondary: LOG_PERIOD,
         daysLate: n,
@@ -912,7 +910,7 @@ function ownerMoment(c: Ctx): MomentBody {
         title: '이번 주기는 쉬어요',
         body:
           reason === 'vaccine'
-            ? '생백신을 맞은 뒤에는 MMR은 4주, 수두는 접종마다 1개월 동안 임신을 미루도록 안내해요.'
+            ? '생백신을 맞으면 MMR은 4주, 수두는 접종할 때마다 1개월 동안 임신을 미루도록 안내해요.'
             : '날짜 예상과 알림을 잠시 쉬어요. 다음 생리를 기록하면 다시 켜져요.',
         note:
           reason === 'vaccine'
@@ -940,7 +938,7 @@ function ownerMoment(c: Ctx): MomentBody {
         body: afterPositive
           ? '양성 뒤에 시작된 생리라 마음이 복잡할 수 있어요. 오늘은 몸을 따뜻하게 하고 푹 쉬어요.'
           : '오늘은 몸을 따뜻하게 하고 푹 쉬어요.',
-        note: afterPositive ? '궁금하거나 걱정되는 게 있으면 다니는 병원에 물어봐도 돼요.' : undefined,
+        note: afterPositive ? '걱정되는 게 있으면 다니는 병원에 물어봐요.' : undefined,
         ...(periodTellState(c.state, start) === 'ask' ? { askTell: { start } } : {}),
         ...(lastFeels ? { lastFeels } : {}),
         ...(afterPositive ? { afterPositive } : {}),
@@ -961,7 +959,7 @@ function ownerMoment(c: Ctx): MomentBody {
                 ? `다음 가임기는 ${day(p.fertileStart)} 무렵부터예요 (예상)`
                 : `다음 가임기는 ${day(p.fertileStart)}부터예요 (예상)`
               : `다음 우리의 주간은 ${day(p.fertileStart)} 무렵이에요 (예상)`,
-          body: '따뜻하게 쉬어요. 무리하지 않아도 괜찮아요.',
+          body: '따뜻하게 쉬어요.',
           secondary: TO_CYCLE,
         }
       }
@@ -985,7 +983,7 @@ function ownerMoment(c: Ctx): MomentBody {
         tone: 'default',
         eyebrow,
         title: `생리 ${d}일째예요`,
-        body: '따뜻하게 쉬어요. 무리하지 않아도 괜찮아요.',
+        body: '따뜻하게 쉬어요.',
         secondary: TO_CYCLE,
       }
     }
@@ -995,9 +993,8 @@ function ownerMoment(c: Ctx): MomentBody {
       const start = p.fertileStart!
       const n = p.daysUntilFertile ?? diffDays(today, start)
       // N29: no action before the window. 'LH 기록' becomes the action only
-      // inside it and only for '써요' (usesLHNow); a '써요' owner near it gets
-      // one quiet line that the button comes with the window.
-      const near = usesLHNow(c.state) && diffDays(today, addDays(start, -LH_LEAD_DAYS)) <= 0
+      // inside it and only for '써요' (usesLHNow) — the card says nothing about
+      // that ahead of time (copy sweep 2026-10-18).
       if (voice === 'explicit') {
         const low = p.confidence === 'low'
         return {
@@ -1008,9 +1005,8 @@ function ownerMoment(c: Ctx): MomentBody {
           eyebrow: low ? `다가오는 가임기 · ${p.basis}` : '다가오는 가임기 (예상)',
           title: low ? `가임기 무렵까지 D-${n}` : `가임기까지 D-${n}`,
           body: low
-            ? `${day(start)} 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.`
-            : `${day(start)}부터예요. 달력 기준 예상이에요.`,
-          ...(near ? { note: 'LH 결과는 가임기에 들어서면 여기서 바로 남길 수 있어요.' } : {}),
+            ? `${day(start)} 무렵부터예요 (예상 범위, 넓음).`
+            : `달력 기준으로 ${day(start)}부터예요.`,
           secondary: TO_CYCLE,
           todayLH: p.todayLH,
         }
@@ -1055,12 +1051,12 @@ function ownerMoment(c: Ctx): MomentBody {
             ? '처음 양성이 나온 날과 그다음 날이 가장 좋은 때예요.'
             : low
               ? lhOn
-                ? '달력으로만 계산한 범위라 넓게 잡았어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.'
-                : '달력으로만 계산한 범위라 넓게 잡았어요. 달력 기준 예상이에요.'
+                ? '달력으로만 계산해서 범위가 넓어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.'
+                : '달력으로만 계산해서 범위가 넓어요.'
               : lhOn
                 ? '오늘 LH 결과를 기록하면 예상을 다시 계산해요.'
                 : '달력 기준 예상이에요.',
-          note: '이 기간엔 하루나 이틀에 한 번이면 충분해요. 부담은 내려놓아요.',
+          note: '이 기간엔 하루나 이틀에 한 번이면 충분해요.',
           ...(lhOn ? { primary: { type: 'log', kind: 'lh', label: 'LH 기록' } as MomentAction } : {}),
           peak: p.peak,
           todayLH: p.todayLH,
@@ -1072,7 +1068,7 @@ function ownerMoment(c: Ctx): MomentBody {
         tone: 'fert',
         eyebrow: `${day(end)}까지 (예상)`,
         title: '이번 주는 우리의 주간이에요',
-        body: '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
+        body: '둘만의 시간을 즐겨요.',
         ...(lhOn ? { primary: { type: 'log', kind: 'lh', label: '오늘 기록' } as MomentAction } : {}),
         todayLH: p.todayLH,
       }
@@ -1097,7 +1093,7 @@ function ownerMoment(c: Ctx): MomentBody {
           copy: 'owner.retest',
           tone: 'default',
           eyebrow,
-          title: r.due ? '오늘 다시 테스트해 볼 수 있어요' : `다시 해 볼 날: ${retestRange(r)}`,
+          title: r.due ? '오늘 다시 테스트해 봐요' : `다시 해 볼 날: ${retestRange(r)}`,
           body: '너무 이르면 음성일 수 있어요.',
           primary: LOG_TEST,
           early: p.early,
@@ -1182,10 +1178,10 @@ function clinicMoment(c: Ctx, role: 'owner' | 'partner'): MomentBody {
       copy: 'partner.clinic',
       tone: 'brand',
       eyebrow: CLINIC_LABEL,
-      title: '일정에 맞춰 함께해요',
+      title: '병원 일정을 같이 챙겨요',
       body: mine
-        ? `${appointmentWhen(mine, c.today)} ${CLINIC_KIND_WORD[mine.kind] ?? '일정'}${mine.place ? ` · ${mine.place}` : ''} · ${whoOf(mine)}. 결과는 묻지 말고 일정만 함께 챙겨요.`
-        : '결과는 묻지 말고 일정만 함께 챙겨요. 일정이 잡히면 여기서 알려 드려요.',
+        ? `${appointmentWhen(mine, c.today)} ${CLINIC_KIND_WORD[mine.kind] ?? '일정'}${mine.place ? ` · ${mine.place}` : ''} · ${whoOf(mine)}. 결과는 묻지 말고 일정만 챙겨요.`
+        : '결과는 묻지 말고 일정만 챙겨요.',
       primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
     }
   }
@@ -1200,8 +1196,8 @@ function clinicMoment(c: Ctx, role: 'owner' | 'partner'): MomentBody {
     title: next ? `${when} ${next.title}` : '병원 일정에 맞춰 준비해요',
     body: next
       ? `${formatKo(next.date)}${next.time ? ` ${next.time}` : ''}${next.place ? ` · ${next.place}` : ''} · ${who}`
-      : '다음 병원 일정을 넣어 두면 여기서 알려 드려요.',
-    note: '날짜 예상과 알림은 쉬어요. 생리를 기록해도 꺼지지 않아요.',
+      : '다음 병원 일정이 아직 없어요.',
+    note: '날짜 예상과 알림은 쉬어요. 생리를 기록해도 그대로예요.',
     primary: { type: 'nav', to: 'plan', label: next ? '병원 일정 보기' : '일정 넣기' },
     secondary: { type: 'end-rest', label: '병원 준비 마치기' },
     restReason: 'clinic',
@@ -1224,9 +1220,9 @@ function ownerCalm(c: Ctx): MomentBody {
         copy: 'owner.calm',
         tone: 'brand',
         eyebrow: '오늘의 우리',
-        title: '오늘도 둘이 함께해요',
+        title: '알림은 쉬고 있어요',
         // 'off' only silences her alerts — her calendar still shows the estimates.
-        body: '알림은 쉬고 있어요. 달력에서 예상은 볼 수 있어요.',
+        body: '예상은 달력에서 볼 수 있어요.',
         secondary: { type: 'nav', to: 'settings', label: '설정에서 바꾸기' },
       }
 }
@@ -1250,8 +1246,8 @@ function partnerNeutral(c: Pick<Ctx, 'state' | 'today'>): MomentBody {
     copy: 'partner.neutral',
     tone: 'default',
     eyebrow: '오늘의 우리',
-    title: '이번 주도 둘이 함께해요',
-    body: week ? '이번 주에 내가 맡을 것 하나면 충분해요.' : '서로의 하루를 챙겨 주세요.',
+    title: '서로의 하루를 챙겨요',
+    body: week ? '이번 주에 내가 맡을 것 하나면 충분해요.' : '오늘 하루 어땠는지 물어봐요.',
     monthlyTask: true,
     ...(week ? { weekTogether: true } : {}),
   }
@@ -1283,7 +1279,7 @@ function partnerMoment(c: Ctx): MomentBody {
         tone: 'brand',
         eyebrow: `${owner}님이 알려 줬어요`,
         title: '병원에 같이 가 줄 수 있어요',
-        body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요. 결과가 어떻든 한 팀이에요.',
+        body: '출혈이 있어 병원에서 확인하기로 했어요. 결과를 묻기보다 곁에 있어 주세요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
         ...toldSay(c, 'bleeding', bleedingToldKey(since)),
       }
@@ -1295,7 +1291,7 @@ function partnerMoment(c: Ctx): MomentBody {
         tone: 'brand',
         eyebrow: `${owner}님이 알려 줬어요`,
         title: '병원 확인을 기다리고 있어요',
-        body: '결과가 어떻든 한 팀이에요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
+        body: '병원에 같이 갈 수 있는지 이야기해 봐요.',
         primary: { type: 'nav', to: 'plan', label: '병원 일정 보기' },
         ...toldSay(c, 'positive', positiveToldKey(since)),
       }
@@ -1306,7 +1302,7 @@ function partnerMoment(c: Ctx): MomentBody {
       role,
       copy: 'partner.after-loss',
       tone: 'muted',
-      eyebrow: '함께예요',
+      eyebrow: '오늘의 우리',
       title: '서로를 천천히 챙겨요',
       body: '지금은 곁에 있어 주는 것만으로 충분해요.',
       support: true,
@@ -1408,11 +1404,11 @@ function partnerWithDetails(c: Ctx): MomentBody {
         title: '이번 주는 우리의 주간이에요',
         body: peak
           ? voice === 'explicit'
-            ? '특히 오늘은 가능성 높은 날이에요. 부담은 내려놓아요.'
+            ? '특히 오늘은 가능성 높은 날이에요.'
             : lastDay
-              ? '오늘까지예요. 부담은 내려놓아요.'
-              : '특히 오늘·내일이에요. 부담은 내려놓아요.'
-          : '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
+              ? '오늘까지예요.'
+              : '특히 오늘·내일이에요.'
+          : '둘만의 시간을 즐겨요.',
         dateIdeas: true,
         secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
         peak,
@@ -1428,9 +1424,9 @@ function partnerWithDetails(c: Ctx): MomentBody {
         role,
         copy: 'partner.late-shared',
         tone: 'default',
-        eyebrow: '함께예요',
+        eyebrow: '오늘의 우리',
         title: '기다리는 시간이에요',
-        body: `재촉하지 말고, ${owner}님이 이야기하고 싶을 때 곁에 있어 주세요.`,
+        body: `재촉하지 말고 ${owner}님이 이야기하고 싶을 때 곁에 있어 주세요.`,
         monthlyTask: true,
       }
 
@@ -1472,7 +1468,7 @@ function partnerSharedWeek(c: Ctx): MomentBody {
     // The eyebrow carries the one "(예상)". No peak days without her details.
     eyebrow: `${day(shared.fertileEnd)}까지 (예상)`,
     title: '이번 주는 우리의 주간이에요',
-    body: '둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.',
+    body: '둘만의 시간을 즐겨요.',
     dateIdeas: true,
     secondary: { type: 'nav', to: 'date', label: '아이디어 더 보기' },
     peak: false,
@@ -1564,7 +1560,7 @@ export function tellPartnerPositive(state: AppState, nowISO: string): AppState {
         from: owner,
         kind: 'system',
         title: `${nameOf(state, owner)}님이 소식을 전했어요`,
-        body: '임신 테스트에서 양성이 나왔어요. 병원에서 확인할 때까지 차분히 함께 기다려요.',
+        body: '임신 테스트에서 양성이 나왔어요. 병원에서 확인할 때까지 같이 기다려요.',
       },
     ],
     nowISO,
@@ -1623,7 +1619,7 @@ export function tellPartnerBleeding(state: AppState, nowISO: string): AppState {
         from: owner,
         kind: 'system',
         title: `${nameOf(state, owner)}님이 알려 왔어요`,
-        body: '병원 확인 전에 출혈이 시작됐어요. 병원에 같이 갈 수 있는지 이야기해 봐요. 결과가 어떻든 한 팀이에요.',
+        body: '병원 확인 전에 출혈이 시작됐어요. 병원에 같이 갈 수 있는지 이야기해 봐요.',
       },
     ],
     nowISO,

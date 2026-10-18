@@ -85,11 +85,11 @@ export function viewNotice(
   settings: Pick<Settings, 'lowPressure'> & Partial<Pick<Settings, 'shareLevel'>>,
 ): { icon: string; text: string } | null {
   if (view === 'explicit') return null
-  if (view === 'soft') return { icon: '💞', text: '‘우리의 주간’처럼 부드러운 표현으로 보고 있어요.' }
+  if (view === 'soft') return null
   const reason = hiddenReason(settings)
-  if (reason === 'low-pressure') return { icon: '🌿', text: '부담 없이 모드예요 · 날짜 예측 없이 생리 기록만 보여요.' }
-  if (reason === 'share') return { icon: '💞', text: '날짜 없이 함께 준비해요 · 이번 주 우리 둘에 집중해요.' }
-  return { icon: '🔕', text: `알림 방식을 ‘${alertStyleLabel('off')}’로 골라서 날짜 예측을 숨겼어요.` }
+  if (reason === 'low-pressure') return { icon: '🌿', text: '부담 없이 모드라 날짜 예상을 숨겼어요.' }
+  if (reason === 'share') return { icon: '💞', text: '날짜 없이 함께 준비해요.' }
+  return { icon: '🔕', text: `알림 방식이 ‘${alertStyleLabel('off')}’라서 날짜 예상을 숨겼어요.` }
 }
 
 /** Fertile phases are dropped entirely in the hidden view. */
@@ -543,7 +543,7 @@ export function legendItems(
 // ── Summary ─────────────────────────────────────────────────
 
 export function averageSourceLabel(stats: CycleStats): string {
-  if (stats.source === 'settings') return '설정값 — 두 번 이상 기록하면 자동으로 계산해요'
+  if (stats.source === 'settings') return '설정값'
   const spread = stats.min !== undefined && stats.max !== undefined && stats.min !== stats.max ? ` (${stats.min}~${stats.max}일)` : ''
   return `최근 ${stats.count}주기 평균${spread}`
 }
@@ -557,10 +557,7 @@ export interface Headline {
 export const NICE_LINE = '특정 날을 맞추기보다 2~3일에 한 번, 편한 리듬이면 좋아요.'
 
 /** A partner's day with no dates shown (날짜 없음, or his alerts off): the same line every day, no frequency. */
-export const PARTNER_HIDDEN_DAY_LINE = '날짜 예상 없이 지내요. 둘만의 시간은 언제든 좋아요.'
-
-/** The partner's summary line where hers says NICE_LINE (a 자세히 partner who turned his alerts off). */
-export const PARTNER_CALM_SUB = '날짜에 맞추지 않아도 괜찮아요. 서로의 하루를 챙겨 주세요.'
+export const PARTNER_HIDDEN_DAY_LINE = '날짜 예상 없이 지내요.'
 
 /** Shared with the 오늘 hero and the late-period notice (lib/logic/cycle.ts). */
 export { LONG_LATE_DAYS }
@@ -568,7 +565,7 @@ export { LONG_LATE_DAYS }
 /** After a pregnancy ended, before a new period is logged. */
 export const AFTER_PREGNANCY_HEADLINE: Headline = {
   title: '몸과 마음을 먼저 챙겨요',
-  sub: '생리가 다시 시작되면 그날을 눌러 기록해 주세요. 그때부터 다시 예상해 드릴게요.',
+  sub: '생리가 다시 시작되면 기록해 주세요.',
 }
 
 export interface HeadlineContext {
@@ -591,7 +588,7 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
       : { title: `주기 ${ctx.cycleDay ?? 1}일째`, sub: NICE_LINE }
   switch (status.kind) {
     case 'no-data':
-      return { title: '마지막 생리 시작일을 알려 주세요', sub: '한 번만 기록해도 다음 예정일을 계산해요.' }
+      return { title: '마지막 생리 시작일을 알려 주세요' }
     case 'after-pregnancy':
       return AFTER_PREGNANCY_HEADLINE
     case 'late':
@@ -603,7 +600,7 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
       if (status.daysLate > LONG_LATE_DAYS && ctx.lastStart)
         return {
           title: PERIOD_DUE_COPY.missedLog.title,
-          sub: `마지막 기록은 ${formatKo(ctx.lastStart)}이에요. 그 뒤에 시작한 날을 달력에서 눌러 기록하면 예측을 다시 계산해요.`,
+          sub: `마지막 기록은 ${formatKo(ctx.lastStart)}이에요. 그 뒤에 시작한 날을 기록해 주세요.`,
         }
       return {
         title: PERIOD_DUE_COPY.lateTitle(status.daysLate),
@@ -630,18 +627,15 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
               ? `이번 우리의 주간은 ${formatKo(status.fertileEnd)}까지예요 (예상).`
               : `주기가 짧은 편이라 예상 가임기가 생리 기간과 겹쳐요. ${formatKo(status.fertileEnd)}까지예요 (예상).`,
         }
-      return { title: `생리 ${status.cycleDay}일째`, sub: '끝나는 날도 기록해 두면 달력에 정확히 보여요.' }
+      return { title: `생리 ${status.cycleDay}일째` }
     case 'before-fertile':
       if (view === 'hidden') return neutral
       if (view === 'soft')
-        return {
-          title: `다음 우리의 주간: ${formatKo(status.fertileStart)}부터`,
-          sub: '예상이에요. 미리 데이트 계획을 세워 봐도 좋아요.',
-        }
+        return { title: `다음 우리의 주간: ${formatKo(status.fertileStart)}부터 (예상)` }
       if (status.confidence === 'low')
         return {
           title: `가임기 무렵까지 ${status.daysUntil}일 (예상)`,
-          sub: `${formatKo(status.fertileStart)} 무렵부터예요 (넓은 범위 · ${ctx.basis ?? '달력 기준'}). 며칠 전부터 LH 테스트를 해 보면 좋아요.`,
+          sub: `${formatKo(status.fertileStart)} 무렵부터예요 (넓은 범위, ${ctx.basis ?? '달력 기준'}). 며칠 전부터 LH 테스트를 해 보면 좋아요.`,
         }
       return {
         title: `가임기까지 ${status.daysUntil}일 (예상)`,
@@ -650,14 +644,11 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
     case 'fertile':
       if (view === 'hidden') return neutral
       if (view === 'soft')
-        return {
-          title: '지금은 우리의 주간이에요 (예상)',
-          sub: `${formatKo(status.fertileEnd)}까지 · 둘만의 시간을 편하게 챙겨요.`,
-        }
+        return { title: '지금은 우리의 주간이에요 (예상)', sub: `${formatKo(status.fertileEnd)}까지예요.` }
       if (status.confidence === 'low')
         return {
           title: '가임기 예상 범위예요 (넓음)',
-          sub: `${formatKo(status.fertileEnd)}까지 · ${ctx.basis ?? '달력 기준'}이라 LH 테스트로 확인해 보면 좋아요.`,
+          sub: `${formatKo(status.fertileEnd)}까지예요 (${ctx.basis ?? '달력 기준'}). LH 테스트로 확인해 보면 좋아요.`,
         }
       return {
         title: status.isOvulation
@@ -666,7 +657,7 @@ export function statusHeadline(status: FertilityStatus, view: FertilityView, ctx
             ? '가능성이 높은 날이에요 (예상)'
             : '가임기 예상 기간이에요',
         // ASRM 2022: every 1–2 days is best, 2–3 times a week nearly as good.
-        sub: `${formatKo(status.fertileEnd)}까지 · 매일이 아니어도 괜찮아요. 일주일에 2~3번도 거의 비슷해요.`,
+        sub: `${formatKo(status.fertileEnd)}까지예요. 매일이 아니어도 일주일에 2~3번이면 거의 비슷해요.`,
       }
     case 'after-fertile':
       // One "(예상)" per headline: the sub line carries it (periodDue.ts), the title stays plain.
@@ -699,13 +690,13 @@ export interface CycleSummary {
 }
 
 /** The partner's clinic-cycle line: keep to the schedule, ask about nothing. */
-export const CLINIC_PARTNER_HEADLINE: Headline = { title: CLINIC_LABEL, sub: '일정에 맞춰 함께해요. 결과는 묻지 않아도 괜찮아요.' }
+export const CLINIC_PARTNER_HEADLINE: Headline = { title: CLINIC_LABEL, sub: '결과는 묻지 말고 일정만 챙겨요.' }
 
 /** The partner's hidden view (alerts off, 부담 없이, '날짜 없음'): no dates, and no 'every 2–3 days' either (positioning §6). */
-export const SHARED_HIDDEN_HEADLINE: Headline = { title: '우리 리듬대로 지내요', sub: '날짜는 신경 쓰지 않아도 괜찮아요.' }
+export const SHARED_HIDDEN_HEADLINE: Headline = { title: '우리 리듬대로 지내요' }
 
 /** The '평소 주' (N19): the same line every day outside the shared window — with or without her records. */
-export const SHARED_USUAL_HEADLINE: Headline = { title: '편안한 날들이에요', sub: '우리의 주간이 가까워지면 여기에 보여요.' }
+export const SHARED_USUAL_HEADLINE: Headline = { title: '평소처럼 지내요' }
 
 /**
  * What a viewer without details sees (only the shared 우리의 주간, soft
@@ -717,18 +708,16 @@ export function sharedHeadline(status: FertilityStatus, view: FertilityView, pau
   void status
   if (pause === 'clinic') return CLINIC_PARTNER_HEADLINE
   if (view === 'hidden') return SHARED_HIDDEN_HEADLINE
-  if (band?.kind === 'window') return { title: '지금은 우리의 주간이에요 (예상)', sub: `${formatKo(band.to)}까지 · 둘만의 시간을 편하게 챙겨요.` }
-  if (band?.kind === 'soon') return { title: `다음 우리의 주간: ${formatKo(band.from)}부터 (예상)`, sub: '평소처럼 편하게 지내요.' }
+  if (band?.kind === 'window') return { title: '지금은 우리의 주간이에요 (예상)', sub: `${formatKo(band.to)}까지예요.` }
+  if (band?.kind === 'soon') return { title: `다음 우리의 주간: ${formatKo(band.from)}부터 (예상)` }
   return SHARED_USUAL_HEADLINE
 }
 
 /** The owner's calendar headline through the quiet after a pregnancy ended (a 'loss' rest with its last day). */
 export function lossPauseHeadline(until: ISODate | undefined): Headline {
   return {
-    title: '천천히 괜찮아요',
-    sub: until
-      ? `${formatKo(until, { weekday: false })}까지 날짜 예상과 알림을 쉬어요. 생리가 시작되면 기록해 두세요 — 그 뒤에 다시 예상해 드릴게요.`
-      : '날짜 예상과 알림을 쉬어요. 생리가 시작되면 기록해 두세요 — 그 뒤에 다시 예상해 드릴게요.',
+    title: '천천히 해도 괜찮아요',
+    sub: until ? `${formatKo(until, { weekday: false })}까지 날짜 예상과 알림을 쉬어요.` : '날짜 예상과 알림을 쉬어요.',
   }
 }
 
@@ -742,28 +731,27 @@ export function pauseHeadline(pause: CyclePause, view: FertilityView, owner: boo
     return owner
       ? {
           title: '병원에서 확인해 봐요',
-          sub: '임테기 양성으로 기록했어요. 병원에서 확인하기 전까지 날짜 예상은 잠시 멈춰요.',
+          sub: '병원에서 확인하기 전까지 날짜 예상을 멈춰요.',
         }
-      : {
-          title: '병원 확인을 기다리고 있어요',
-          // Test results by name only in explicit wording (like the calendar's showsTests).
-          sub: view === 'explicit' ? '임테기 양성이 기록됐어요. 확인 전이니 차분히 함께 기다려요.' : '확인 전이니 차분히 함께 기다려요.',
-        }
+      : view === 'explicit'
+        ? // Test results by name only in explicit wording (like the calendar's showsTests).
+          { title: '병원 확인을 기다리고 있어요', sub: '임테기 양성이 기록됐어요.' }
+        : { title: '병원 확인을 기다리고 있어요' }
   if (pause === 'clinic') {
     if (!owner) return CLINIC_PARTNER_HEADLINE
     return {
       title: CLINIC_LABEL,
-      sub: '날짜 예상은 쉬고 기록만 보여요. 병원 일정은 챙길 것에서 챙겨요. 생리를 기록해도 꺼지지 않아요.',
+      sub: '날짜 예상은 쉬고 기록만 보여요.',
     }
   }
-  if (!owner) return { title: '이번 주기는 쉬어 가요', sub: '평소처럼 편하게 지내요.' }
+  if (!owner) return { title: '이번 주기는 쉬어 가요' }
   if (rest?.reason === 'loss') return lossPauseHeadline(rest.until)
   return {
     title: '이번 주기는 쉬어요',
     sub:
       view === 'explicit'
-        ? '가임기 표시와 알림을 잠시 껐어요. 다음 생리를 기록하면 다시 켜져요.'
-        : '날짜 표시와 알림을 잠시 껐어요. 다음 생리를 기록하면 다시 켜져요.',
+        ? '가임기 표시와 알림을 껐어요. 다음 생리를 기록하면 다시 켜져요.'
+        : '날짜 표시와 알림을 껐어요. 다음 생리를 기록하면 다시 켜져요.',
   }
 }
 
@@ -883,7 +871,7 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
     } else if (low) {
       // No ovulation day to name: the calendar alone can't — say what it rests on instead.
       rows.push({ key: 'window', label: windowLabel('explicit', 'low'), value: range, wide: true })
-      rows.push({ key: 'basis', label: '예상 기준', value: basis!, sub: 'LH로 확인하면 좁아져요' })
+      rows.push({ key: 'basis', label: '예상 기준', value: basis! })
     } else {
       rows.push({ key: 'window', label: '가임기 (예상)', value: range, wide: true })
       rows.push({
@@ -917,23 +905,22 @@ export function cycleSummary(input: CycleInput, today: ISODate, view: FertilityV
 export function partnerHeadline(status: FertilityStatus, view: FertilityView, own: Headline): Headline {
   const h = partnerHeadlineFor(status, view, own)
   // No frequency line for the partner (docs/positioning.md §6): the NICE sub is hers.
-  return h.sub === NICE_LINE ? { ...h, sub: PARTNER_CALM_SUB } : h
+  return h.sub === NICE_LINE ? { title: h.title } : h
 }
 
 function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: Headline): Headline {
   switch (status.kind) {
     case 'no-data':
-      return { title: '아직 주기 기록이 없어요', sub: '기록이 시작되면 여기에 보여요.' }
+      return { title: '아직 주기 기록이 없어요' }
     case 'after-pregnancy':
-      return { title: AFTER_PREGNANCY_HEADLINE.title, sub: '서두르지 않아도 괜찮아요. 서로의 속도에 맞춰 천천히 가요.' }
+      return { title: AFTER_PREGNANCY_HEADLINE.title }
     case 'late':
-      if (status.daysLate > LONG_LATE_DAYS) return { title: '최근 생리 기록이 없어요', sub: '기록이 채워지면 다시 예상해요.' }
-      return { title: own.title, sub: '주기는 원래 조금씩 달라져요. 묻거나 재촉하지 말고 평소처럼 지내요.' }
+      if (status.daysLate > LONG_LATE_DAYS) return { title: '최근 생리 기록이 없어요' }
+      return { title: own.title, sub: '묻거나 재촉하지 말고 평소처럼 지내요.' }
     case 'fertile':
-      // The owner's "LH 테스트로 확인해 보면" is hers to act on; the dates stay.
-      return status.confidence === 'low' && view === 'explicit'
-        ? { title: own.title, sub: `${formatKo(status.fertileEnd)}까지 · 달력 기준이라 넓게 잡은 범위예요.` }
-        : own
+      // The dates stay; the owner's "LH 테스트로 확인해 보면" is hers to act on, and the
+      // '일주일에 2~3번' line is a frequency line — never his (docs/positioning.md §6).
+      return { title: own.title, sub: `${formatKo(status.fertileEnd)}까지예요.` }
     case 'period':
       // Keep the next-window line; otherwise the owner's "끝나는 날도 기록해 두면…".
       return view !== 'hidden' && (status.nextFertileStart || status.fertileEnd)
@@ -942,20 +929,20 @@ function partnerHeadlineFor(status: FertilityStatus, view: FertilityView, own: H
     case 'before-fertile':
       return view === 'explicit' ? { title: own.title, sub: `${formatKo(status.fertileStart)}${status.confidence === 'low' ? ' 무렵' : ''}부터예요.` } : own
     case 'after-fertile':
-      if (status.dueNow) return { title: own.title, sub: '평소처럼 편하게 지내요.' }
+      if (status.dueNow) return { title: own.title }
       // The hidden view keeps its neutral NICE line (no "waiting" framing).
-      return view === 'hidden' ? own : { title: own.title, sub: '기다리는 시간이에요. 증상은 묻지 말고 평소처럼 보내요.' }
+      return view === 'hidden' ? own : { title: own.title, sub: '증상은 묻지 말고 평소처럼 지내요.' }
     default:
       return own
   }
 }
 
 export function irregularMessage(view: FertilityView): string {
-  if (view === 'hidden') return '주기가 들쭉날쭉하면 생리 예정일 예측이 더 부정확해요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
+  if (view === 'hidden') return '주기가 들쭉날쭉하면 생리 예정일이 잘 맞지 않아요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
   // LH by name only in explicit wording (soft viewers never see LH).
   return view === 'explicit'
-    ? '주기가 들쭉날쭉하면 달력 예측이 더 부정확해요. LH 테스트를 쓰거나 전문의와 상담해 보세요.'
-    : '주기가 들쭉날쭉하면 달력 예측이 더 부정확해요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
+    ? '주기가 들쭉날쭉하면 달력 예상이 잘 맞지 않아요. LH 테스트를 쓰거나 전문의와 상담해 보세요.'
+    : '주기가 들쭉날쭉하면 달력 예상이 잘 맞지 않아요. 이런 주기가 이어지면 전문의와 상담해 보세요.'
 }
 
 // ── Day sheet ───────────────────────────────────────────────
@@ -1040,15 +1027,7 @@ export function dayChanceLabel(info: DayInfo, view: FertilityView): string | nul
 }
 
 /** Shown on explicit-view days outside the estimated range (instead of a 낮음 rating). */
-export const OUTSIDE_RANGE_NOTE = '예상 범위 밖이에요 · 예측은 주기마다 틀릴 수 있어요.'
-
-/** Shown instead of the logging buttons for days after today. */
-export function futureDayNote(view: FertilityView): string {
-  if (view === 'hidden') return '아직 오지 않은 날이라 예정일만 보여줘요. 그날이 되면 생리를 기록할 수 있어요.'
-  return view === 'explicit'
-    ? '아직 오지 않은 날이라 예측만 보여줘요. 그날이 되면 생리나 LH 테스트를 기록할 수 있어요.'
-    : '아직 오지 않은 날이라 예측만 보여줘요. 그날이 되면 생리나 테스트 결과를 기록할 수 있어요.'
-}
+export const OUTSIDE_RANGE_NOTE = '예상 범위 밖이에요. 예상은 주기마다 틀릴 수 있어요.'
 
 /**
  * One or two sentences explaining a tapped day, worded for the view. `canLog`
@@ -1059,41 +1038,28 @@ export function explainDay(info: DayInfo, view: FertilityView, isPast: boolean, 
     case 'period':
       return '기록된 생리 기간이에요.'
     case 'period-predicted':
-      if (!canLog) return isPast ? '생리가 시작될 것으로 예상했던 날이에요.' : '생리가 시작될 것으로 예상되는 무렵이에요.'
-      return isPast
-        ? '생리가 시작될 것으로 예상했던 날이에요. 시작했다면 기록해 주세요.'
-        : '생리가 시작될 것으로 예상되는 무렵이에요. 시작하면 기록해 주세요 — 다음 예측이 더 정확해져요.'
+      if (!canLog || !isPast) return isPast ? '생리 예정이었던 날이에요.' : '생리 예정일 무렵이에요.'
+      return '생리 예정이었던 날이에요. 시작했다면 기록해 주세요.'
     case 'peak':
       return view === 'soft'
-        ? '우리의 주간 중 특히 좋은 때예요 (예상). 부담은 내려놓고 편하게 보내요.'
+        ? '우리의 주간 중 특히 좋은 때예요 (예상).'
         : '배란 예상일과 그 전 이틀이에요. 가임기 중에서도 가능성이 가장 높은 때예요 (예상).'
     case 'fertile':
       return view === 'soft'
-        ? '우리의 주간이에요 (예상). 서로 컨디션을 살피며 편하게 보내요.'
+        ? '우리의 주간이에요 (예상).'
         : info.confidence === 'low'
-          ? '달력 기준으로 넓게 잡은 예상 범위예요. LH 테스트로 확인하면 범위가 좁아져요.'
+          ? '달력으로 넓게 잡은 예상 범위예요.'
           : '배란 예상일로 끝나는 6일, 가임기 예상 기간이에요.'
     case 'possible':
-      return view === 'soft'
-        ? '우리의 주간 앞뒤로 여유를 둔 날이에요. 주기마다 며칠씩 달라질 수 있어서요.'
-        : '예측 오차를 고려한 가능 범위예요. 배란일은 주기마다 며칠씩 달라질 수 있어요.'
+      return view === 'soft' ? '우리의 주간 앞뒤로 여유를 둔 날이에요.' : '예상이 빗나갈 수 있어서 넓게 잡은 범위예요.'
     default:
-      if (info.unpredicted === 'paused')
-        return canLog
-          ? '임신 기록이 끝난 뒤라 이 무렵은 예측하지 않았어요. 생리가 다시 시작되면 그날을 기록해 주세요.'
-          : '임신 기록이 끝난 뒤라 이 무렵은 예측하지 않았어요.'
-      if (info.unpredicted === 'late')
-        return canLog
-          ? '생리 예정일이 지나서 이 무렵은 예측하지 않았어요. 생리가 시작됐다면 그날을 기록해 주세요.'
-          : '생리 예정일이 지나서 이 무렵은 예측하지 않았어요.'
-      if (info.cycleDay === undefined) return '첫 생리 기록 전의 날이라 예측이 없어요.'
-      if (knownCycleDay(info) === undefined)
-        return canLog
-          ? '앞뒤 기록 사이가 길어서 이 무렵은 예측하지 않았어요. 빠진 생리 기록이 있다면 여기서 추가해 주세요.'
-          : '앞뒤 기록 사이가 길어서 이 무렵은 예측하지 않았어요.'
+      if (info.unpredicted === 'paused') return '임신 기록이 끝난 뒤라 이 무렵은 예상하지 않았어요.'
+      if (info.unpredicted === 'late') return '생리 예정일이 지나서 이 무렵은 예상하지 않았어요.'
+      if (info.cycleDay === undefined) return '첫 생리 기록 전이라 예상이 없어요.'
+      if (knownCycleDay(info) === undefined) return '앞뒤 기록 사이가 길어서 이 무렵은 예상하지 않았어요.'
       // The NICE frequency line is hers (canLog = the owner); a partner never gets a frequency line (positioning §6).
       if (view === 'hidden') return canLog ? NICE_LINE : PARTNER_HIDDEN_DAY_LINE
-      return view === 'soft' ? '평범한 하루예요. 둘만의 시간은 언제든 좋아요.' : OUTSIDE_RANGE_NOTE
+      return view === 'soft' ? '' : OUTSIDE_RANGE_NOTE
   }
 }
 
@@ -1105,16 +1071,14 @@ export function explainDayFor(info: DayInfo, lens: Lens, isPast: boolean): strin
     // No frequency line for the partner (docs/positioning.md §6 — '2~3일에 한 번' reads as a quota to
     // him); the owner's NICE line stays on her own screens.
     if (lens.view === 'hidden') return PARTNER_HIDDEN_DAY_LINE
-    return phase === 'fertile'
-      ? '우리의 주간이에요 (예상). 서로 컨디션을 살피며 편하게 보내요.'
-      : '평범한 하루예요. 둘만의 시간은 언제든 좋아요.'
+    return phase === 'fertile' ? '우리의 주간이에요 (예상).' : ''
   }
   if (lens.pause && phase === 'none' && visiblePhase(info.phase, lens.view) !== 'none')
     return lens.pause === 'rest'
-      ? '이번 주기는 쉬는 중이라 날짜 예상을 보여 주지 않아요.'
+      ? '이번 주기는 쉬는 중이라 날짜 예상을 멈췄어요.'
       : lens.pause === 'clinic'
-        ? '병원과 함께 준비하는 동안은 기록만 보여요. 날짜는 병원 일정을 따라요.'
-        : '병원에서 확인하기 전이라 날짜 예상을 잠시 멈췄어요.'
+        ? '병원과 함께 준비하는 동안은 기록만 보여요.'
+        : '병원 확인 전이라 날짜 예상을 멈췄어요.'
   return explainDay({ ...info, phase }, lens.view, isPast, lens.owner)
 }
 
@@ -1334,17 +1298,17 @@ export function icsAvailability(
   pause?: CyclePause,
 ): IcsAvailability {
   if (pause === 'rest')
-    return { enabled: false, reason: '이번 주기는 쉬는 중이라 만들지 않아요. 다음 생리를 기록하면 다시 만들 수 있어요.', windows: [] }
+    return { enabled: false, reason: '이번 주기는 쉬는 중이라 만들 수 없어요.', windows: [] }
   if (pause === 'clinic')
-    return { enabled: false, reason: '병원과 함께 준비하는 동안은 날짜 알림을 만들지 않아요. 병원 일정은 챙길 것에서 챙겨요.', windows: [] }
+    return { enabled: false, reason: '병원과 함께 준비하는 동안은 만들 수 없어요.', windows: [] }
   if (pause === 'positive')
-    return { enabled: false, reason: '병원에서 확인하기 전이라 날짜 알림을 만들지 않아요.', windows: [] }
+    return { enabled: false, reason: '병원 확인 전이라 만들 수 없어요.', windows: [] }
   if (settings.lowPressure)
-    return { enabled: false, reason: '부담 없이 모드에서는 날짜 알림을 만들지 않아요.', windows: [] }
+    return { enabled: false, reason: '부담 없이 모드에서는 만들 수 없어요.', windows: [] }
   if (view === 'hidden')
     return {
       enabled: false,
-      reason: `내 알림 방식이 ‘${alertStyleLabel('off')}’로 되어 있어요. 설정 › 내 알림에서 바꿀 수 있어요.`,
+      reason: `알림 방식이 ‘${alertStyleLabel('off')}’라서 만들 수 없어요.`,
       windows: [],
     }
   if (input.periods.length === 0)
@@ -1352,11 +1316,11 @@ export function icsAvailability(
   // Don't put alarms for guessed dates on both phones while the period is late.
   const kind = fertilityStatus(input, today).kind
   if (kind === 'after-pregnancy')
-    return { enabled: false, reason: '생리가 다시 시작되면 기록해 주세요. 그때부터 만들 수 있어요.', windows: [] }
+    return { enabled: false, reason: '생리가 다시 시작되면 만들 수 있어요.', windows: [] }
   if (kind === 'late')
     return {
       enabled: false,
-      reason: '생리 예정일이 지나서 다음 일정을 아직 알 수 없어요. 새 생리 시작일을 기록하면 만들 수 있어요.',
+      reason: '생리 예정일이 지났어요. 새 생리 시작일을 기록하면 만들 수 있어요.',
       windows: [],
     }
   const windows = upcomingWindows(input, today, ICS_CYCLES)

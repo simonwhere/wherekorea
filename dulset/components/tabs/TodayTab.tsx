@@ -120,7 +120,6 @@ function PreparingHome({ onNavigate }: { onNavigate: Nav }) {
       {/* 기록 지키기: outside 더 보기, so a browser-tab couple sees it (N16). */}
       <BackupBanner className="mt-4" />
       <MoreSection moment={moment} onNavigate={onNavigate} className="mt-[18px]" />
-      <p className="mt-1 text-center text-[11.5px] text-ink-3">사진과 기록은 이 폰에만 저장돼요</p>
       {toast}
     </div>
   )
@@ -247,7 +246,7 @@ function ParentingHome({ onNavigate }: { onNavigate: Nav }) {
         <PlanFocusCard onNavigate={onNavigate} />
       </div>
 
-      <SectionTitle sub="서로의 체크가 두 사람 화면에 함께 보여요">오늘의 체크</SectionTitle>
+      <SectionTitle>오늘의 체크</SectionTitle>
       <div className="space-y-3">
         <MyChecks />
         <PartnerChecks />

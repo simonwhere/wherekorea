@@ -255,7 +255,7 @@ export function buildClinicSummaryHtml(s: ClinicSummary): string {
   body.push(`<h1>${escapeHtml(CLINIC_SUMMARY_TITLE)}</h1>`)
   body.push(`<p class="headline">${escapeHtml(CLINIC_SUMMARY_HEADER)}</p>`)
   body.push(`<p class="made">만든 날 ${escapeHtml(formatKo(s.generatedOn, { year: true }))}</p>`)
-  body.push('<p class="tip">브라우저에서 인쇄(Ctrl+P · ⌘P)를 누르면 PDF로 저장하거나 종이로 뽑을 수 있어요.</p>')
+  body.push('<p class="tip">인쇄(Ctrl+P · ⌘P)하면 PDF로 저장하거나 종이로 뽑을 수 있어요.</p>')
   body.push('</header>')
 
   body.push('<section><h2>두 사람</h2>')
@@ -273,7 +273,7 @@ export function buildClinicSummaryHtml(s: ClinicSummary): string {
   const subs: string[] = []
   if (stats) subs.push(stats)
   if (s.totalCycles > s.cycles.length) subs.push(`기록된 주기 ${s.totalCycles}개 중 최근 ${s.cycles.length}개예요.`)
-  if (s.cycles.length) subs.push('날짜는 모두 기록한 시작일 기준이고, 일째는 시작일을 1일째로 세요.')
+  if (s.cycles.length) subs.push('일째는 생리 시작일을 1일째로 세요.')
   if (subs.length) body.push(`<p class="sub">${subs.map(escapeHtml).join('<br>')}</p>`)
   body.push('</section>')
 

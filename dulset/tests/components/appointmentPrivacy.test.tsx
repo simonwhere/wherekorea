@@ -54,8 +54,10 @@ describe('the appointment sheet: 민수님에게도 보여요', () => {
     const sw = toggle()!
     expect(sw.getAttribute('aria-checked')).toBe('true')
     expect(pageText()).toContain('민수님에게도 보여요')
-    expect(pageText()).toContain('함께 가지 않는 사람에게도 전날 살짝 알려 줘요')
     expect(pageText()).not.toContain('민수님 화면·알림·링크에 나오지 않아요')
+    // No reminder explainer under the form (2026-10-18 copy sweep) — the switch is the one line.
+    expect(pageText()).not.toContain('함께 가지 않는 사람에게도')
+    expect(pageText()).not.toContain('전날과 당일에 알림이')
 
     fireEvent.click(sw)
     expect(toggle()!.getAttribute('aria-checked')).toBe('false')
@@ -173,13 +175,14 @@ describe('her lists show the lock; his show nothing', () => {
     expect(row.querySelector('[data-only-me]')?.textContent).toContain('나만 보기')
     // Shared rows carry no lock.
     expect(document.querySelectorAll('[data-only-me]')).toHaveLength(1)
-    // The subtitle is true above a locked row — and the same words on his side (never a sign one exists).
-    const SUB = '기본은 둘이 같이 봐요 · 내 일정은 나만 보기로 둘 수 있어요'
-    expect(pageText()).toContain(SUB)
+    // No explainer subtitle on either side (2026-10-18 copy sweep) — his page never hints one exists.
+    const SUB = '나만 보기로 둘 수 있어요'
+    expect(pageText()).not.toContain(SUB)
     unmount()
 
     renderApp(<AppointmentList onAdd={noop} onEdit={noop} onDone={noop} />, { state, viewer: HIM, today: T0 })
-    expect(pageText()).toContain(SUB)
+    expect(pageText()).not.toContain(SUB)
+    expect(pageText()).not.toContain('나만 보기')
     expect(pageText()).not.toContain(mine.title)
     expect(pageText()).not.toContain(DEMO_PRIVATE_APPOINTMENT.place)
     expect(document.querySelector('[data-only-me]')).toBeNull()
@@ -286,7 +289,7 @@ describe('the sheet after his heads-up went out: honest about what was already t
       { state, viewer: HER, today: T0 },
     )
     fireEvent.click(toggle()!)
-    expect(pageText()).toContain('앞으로 민수님 화면·알림·링크에 나오지 않아요. 이미 폰에 뜬 알림은 남을 수 있어요')
+    expect(pageText()).toContain('민수님 화면·알림·링크에 나오지 않아요. 이미 뜬 알림은 남을 수 있어요')
     fireEvent.click(screen.getByRole('button', { name: '저장' }))
     const after = probe.current.state!
     expect(after.appointments.find((a) => a.id === appt.id)!.privateTo).toBe(HER)
@@ -298,6 +301,6 @@ describe('the sheet after his heads-up went out: honest about what was already t
     renderApp(<AppointmentSheet initial={draftFromAppointment(appt)} editing={appt} onClose={noop} />, { state, viewer: HER, today: T0 })
     fireEvent.click(toggle()!)
     expect(pageText()).toContain('민수님 화면·알림·링크에 나오지 않아요')
-    expect(pageText()).not.toContain('앞으로 민수님')
+    expect(pageText()).not.toContain('이미 뜬 알림은')
   })
 })

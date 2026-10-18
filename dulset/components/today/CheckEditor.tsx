@@ -22,7 +22,7 @@ import {
 import { isSpermSide } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem, CheckKind } from '@/lib/types'
-import { Badge, ExternalLink, KIND_LABEL, KindIcon } from './bits'
+import { Badge, ExternalLink, KIND_LABEL, KindIcon, objectParticle, topicParticle } from './bits'
 
 const KINDS: CheckKind[] = ['supplement', 'medication', 'habit']
 
@@ -32,7 +32,7 @@ const CADENCES: { value: Cadence; label: string }[] = [
 ]
 
 /** One short line under the cadence choice. */
-const WEEKLY_NOTE = '‘주 1회 체크인’은 금주·사우나 쉬기처럼 참는 습관용이에요. 한 주에 한 번만 남기고, 콕은 가지 않아요.'
+const WEEKLY_NOTE = '금주·사우나 쉬기처럼 참는 습관에 써요. 콕은 가지 않아요.'
 
 const EVIDENCE_TONE: Record<Evidence, 'ok' | 'brand' | 'muted' | 'warn'> = {
   strong: 'ok',
@@ -73,7 +73,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
     // Only habits can be a weekly check-in (a supplement or medicine is daily).
     const every: Cadence = kind === 'habit' ? cadence : 'daily'
     update((s) => addCheckItem(s, me.id, clean, kind, today, note, every))
-    toast.show(`'${clean}'을(를) ${every === 'weekly' ? '주 1회 체크인으로 ' : ''}추가했어요`)
+    toast.show(`‘${clean}’${objectParticle(clean)} ${every === 'weekly' ? '주 1회 체크인으로 ' : ''}추가했어요`)
     setLabel('')
     setNote('')
     // Keep the keyboard up for adding several in a row (the submit button disables itself).
@@ -82,7 +82,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
 
   const addSuggestion = (s: Suggestion) => {
     update((st) => addCheckItem(st, me.id, s.label, s.kind, today, s.note))
-    toast.show(`'${s.label}'을(를) 추가했어요`)
+    toast.show(`‘${s.label}’${objectParticle(s.label)} 추가했어요`)
     listHeadingRef.current?.focus({ preventScroll: true })
   }
 
@@ -99,7 +99,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
           체크하는 항목 {active.length > 0 ? `(${active.length})` : ''}
         </h3>
         {active.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-3 py-3 text-xs text-ink-3">아직 없어요. 아래에서 추가해 보세요.</p>
+          <p className="rounded-xl bg-surface-2 px-3 py-3 text-xs text-ink-3">아직 없어요.</p>
         ) : (
           <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
             {active.map((i) => (
@@ -119,7 +119,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
                       // Starter notes say '주 1회 체크인' — drop that when it becomes daily.
                       const note = next === 'daily' && i.note?.includes(WEEKLY_WORD) ? withoutWeekly(i.note) : undefined
                       update((s) => updateCheckItem(s, i.id, note !== undefined ? { cadence: next, note } : { cadence: next }))
-                      toast.show(next === 'weekly' ? `'${i.label}'은(는) 주 1회 체크인으로 바꿨어요` : `'${i.label}'은(는) 매일 체크로 바꿨어요`)
+                      toast.show(`‘${i.label}’${topicParticle(i.label)} ${next === 'weekly' ? '주 1회 체크인으로' : '매일 체크로'} 바꿨어요`)
                     }}
                     className="min-h-[44px] shrink-0 px-2 text-xs font-semibold text-brand-ink hover:underline"
                     aria-label={`${i.label}: ${isWeekly(i) ? '매일 체크로 바꾸기' : '주 1회 체크인으로 바꾸기'}`}
@@ -131,7 +131,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
                   type="button"
                   onClick={() => {
                     update((s) => archiveCheckItem(s, i.id, today))
-                    toast.show(`'${i.label}'은(는) 보관했어요. 지난 기록은 그대로예요`)
+                    toast.show(`‘${i.label}’${objectParticle(i.label)} 보관했어요. 지난 기록은 그대로예요`)
                     listHeadingRef.current?.focus({ preventScroll: true })
                   }}
                   className="min-h-[44px] shrink-0 px-3 text-xs font-semibold text-ink-3 hover:text-period"
@@ -223,8 +223,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
       {/* Suggestions */}
       {suggestions.length > 0 ? (
         <section className="mt-5">
-          <h3 className="text-xs font-bold text-ink-2">추천 항목</h3>
-          <p className="mb-2 mt-0.5 text-[11px] text-ink-3">ⓘ를 누르면 근거를 볼 수 있어요.</p>
+          <h3 className="mb-2 text-xs font-bold text-ink-2">추천 항목</h3>
           <ul className="space-y-2">
             {suggestions.map((s) => (
               <SuggestionRow key={s.id} s={s} onAdd={() => addSuggestion(s)} />
@@ -257,7 +256,7 @@ export default function CheckEditor({ open, onClose }: { open: boolean; onClose:
                   type="button"
                   onClick={() => {
                     update((s) => restoreCheckItem(s, i.id))
-                    toast.show(`'${i.label}'을(를) 다시 체크해요`)
+                    toast.show(`‘${i.label}’${objectParticle(i.label)} 다시 체크해요`)
                     listHeadingRef.current?.focus({ preventScroll: true })
                   }}
                   className="min-h-[44px] shrink-0 px-3 text-xs font-semibold text-brand-ink"

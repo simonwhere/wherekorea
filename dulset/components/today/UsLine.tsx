@@ -75,7 +75,7 @@ export default function UsLine({
   const nudge = () => {
     if (!canNudge) return
     update((s) => sendNudge(s, me.id, partner.id, today, stampOn(today), target?.label))
-    toast.show(`${partner.name}님에게 콕! 보냈어요`)
+    toast.show(`${partner.name}님에게 콕을 보냈어요`)
   }
   const cheer = () => {
     update((s) => sendCheer(s, me.id, partner.id, stampOn(today)))
@@ -90,7 +90,7 @@ export default function UsLine({
       const next = thankWeek(s, me.id, today)
       return next === s ? s : sendWeekThanks(next, me.id, partner.id, today, at)
     })
-    toast.show(`${partner.name}님에게 고마운 마음을 전했어요`)
+    toast.show(`${partner.name}님에게 고맙다고 전했어요`)
   }
 
   const dot = partner.tracksCycle ? 'bg-her' : 'bg-him'
@@ -156,7 +156,7 @@ export default function UsLine({
               ) : thankedOn ? (
                 <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-ink-3">
                   <Icon name="heart" className="h-3.5 w-3.5 fill-current text-her" strokeWidth={1.5} />
-                  고마워요를 전했어요 ({weekdayKo(thankedOn)})
+                  고맙다고 전했어요 ({weekdayKo(thankedOn)})
                 </span>
               ) : null}
             </div>

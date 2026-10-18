@@ -77,9 +77,6 @@ export default function TogetherCard({
             <Icon name="users" className="h-4 w-4 shrink-0 text-him" />
             {title}
           </h2>
-          <p className="mt-0.5 text-[12.5px] leading-[1.45] text-ink-3">
-            할 수 있는 걸 골라 [같이 할게요]를 누르면 {cycleOwner.name}님 화면에도 보여요.
-          </p>
         </div>
         <LinkButton onClick={() => onNavigate('plan')} arrow className="-mr-1 -mt-2.5 shrink-0">
           전체 보기

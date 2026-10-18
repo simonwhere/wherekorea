@@ -5,7 +5,7 @@ import { Button, Field, Sheet, Toggle, inputClass, textareaClass, useToast } fro
 import { Icon } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
 import { templateById } from '@/lib/content/roadmap'
-import { addDays, formatKo, isISODate } from '@/lib/dates'
+import { addDays, formatKo } from '@/lib/dates'
 import {
   APPOINTMENT_KIND_LABEL,
   addAppointment,
@@ -36,7 +36,7 @@ export const APPT_PAST_DAYS = 365
 const DUPLICATE_AFTER_DAYS = 2
 
 const ERROR_TEXT: Record<DraftError, string> = {
-  date: '지난 1년 안이나 앞으로의 날짜를 골라 주세요.',
+  date: '지난 1년 안이나 앞으로 올 날짜를 골라 주세요.',
   time: '시간을 다시 확인해 주세요.',
   'time-required': '주사·약은 몇 시인지 적어 주세요.',
   title: '무슨 일정인지 한 줄로 적어 주세요.',
@@ -77,7 +77,7 @@ export default function AppointmentSheet({
   const privateTo = mine && !shared ? me.id : undefined
   // Already told (the day-before heads-up went to {partner} while it was
   // shared): the 🔔 one goes with the switch (updateAppointment), but a phone
-  // notification already shown cannot be taken back — so the line says '앞으로'.
+  // notification already shown cannot be taken back — so the line says so.
   const told = !!editing && hasAppointmentNotice(state, editing.id, partner.id)
 
   const set = <K extends keyof AppointmentDraft>(key: K, value: AppointmentDraft[K]) => {
@@ -234,7 +234,7 @@ export default function AppointmentSheet({
                       <Icon name="lock" className="mt-px h-3.5 w-3.5 text-ink-2" strokeWidth={2} />
                       <span>
                         {told
-                          ? `앞으로 ${partner.name}님 화면·알림·링크에 나오지 않아요. 이미 폰에 뜬 알림은 남을 수 있어요`
+                          ? `${partner.name}님 화면·알림·링크에 나오지 않아요. 이미 뜬 알림은 남을 수 있어요`
                           : `${partner.name}님 화면·알림·링크에 나오지 않아요`}
                       </span>
                     </span>
@@ -272,17 +272,6 @@ export default function AppointmentSheet({
             onChange={(e) => set('note', e.target.value)}
           />
         </Field>
-
-        <div className="flex items-start gap-1.5 rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">
-          <Icon name="bell" className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-          <span>
-            {draft.who === 'both' ? '둘 다' : draft.who === me.id ? '나' : `${partner.name}님`}
-            에게 <b className="font-semibold text-ink">{isISODate(draft.date) ? formatKo(draft.date) : '그날'}</b> 전날과 당일에 알림이
-            가요.
-            {/* A '나만 보기' one tells no one else — never promise the heads-up then. */}
-            {draft.who !== 'both' && !privateTo ? ' 함께 가지 않는 사람에게도 전날 살짝 알려 줘요.' : null}
-          </span>
-        </div>
 
         <Button type="submit" full size="lg">
           {editing ? '저장' : '일정 추가'}

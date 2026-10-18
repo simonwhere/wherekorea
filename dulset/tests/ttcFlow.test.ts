@@ -217,8 +217,8 @@ describe('owner moments (explicit)', () => {
       expect(lh.primary).toBeUndefined()
       expect(lh.copy).not.toBe('owner.lh-start')
     }
-    // A '써요' owner near the window: one quiet line that the button comes with the window.
-    expect(m(DAYS.beforeLh, uses(s)).note).toBe('LH 결과는 가임기에 들어서면 여기서 바로 남길 수 있어요.')
+    // No line about the button that comes with the window — not even for a '써요' owner (copy sweep 2026-10-18).
+    expect(m(DAYS.beforeLh, uses(s)).note).toBeUndefined()
     expect(m(DAYS.beforeLh).note).toBeUndefined()
     expect(m(DAYS.beforeFar, uses(s)).note).toBeUndefined()
   })
@@ -294,7 +294,7 @@ describe('owner moments (explicit)', () => {
       '피곤해요',
       '예민해요',
       '가슴이 아파요',
-      '배가 살짝 아파요',
+      '아랫배가 당겨요',
       '살짝 비쳐요',
     ])
     expect(ttcMoment(felt, DAYS.tww, PARTNER)!.todayFeel).toBeUndefined()
@@ -373,7 +373,7 @@ describe('owner moments (explicit)', () => {
     const e = m('2026-09-24', neg)
     expect(e).toMatchObject({ copy: 'owner.retest', retest: { from: '2026-09-26', to: '2026-09-27', due: false } })
     expect(e.title).toBe('다시 해 볼 날: 9월 26일~27일')
-    expect(m('2026-09-26', neg).title).toBe('오늘 다시 테스트해 볼 수 있어요')
+    expect(m('2026-09-26', neg).title).toBe('오늘 다시 테스트해 봐요')
     const near = fresh({ pregnancyTests: [test('2026-09-28', 'negative')] })
     expect(m('2026-09-28', near).retest).toMatchObject({ from: '2026-09-29', to: '2026-09-29' })
     // A test from the previous cycle doesn't count.
@@ -554,7 +554,7 @@ describe('confidence: the calendar alone names no best days (N12)', () => {
     expect(f.primary).toEqual({ type: 'log', kind: 'lh', label: 'LH 기록' })
     expect(words(f)).not.toMatch(/가능성 높|배란 예상/)
     expect(m(DAYS.peak, two).eyebrow).toBe('달력 기준 · 기록 1주기 · 9월 15일까지 (예상)')
-    expect(m(DAYS.peak, one).body).toBe('달력으로만 계산한 범위라 넓게 잡았어요. 달력 기준 예상이에요.')
+    expect(m(DAYS.peak, one).body).toBe('달력으로만 계산해서 범위가 넓어요.')
     expect(m(DAYS.peak, one).primary).toBeUndefined()
     expect(m(DAYS.beforeLh, one)).toMatchObject({ copy: 'owner.before-fertile', eyebrow: '다가오는 가임기 · 달력 기준 · 설정값' })
     expect(m(DAYS.beforeLh, one).body).toContain('무렵부터예요 (예상 범위, 넓음)')
@@ -617,7 +617,7 @@ describe('병원과 함께 준비 중 (clinic mode, N13)', () => {
       title: '내일 08:00 채혈·초음파',
     })
     expect(mo.body).toBe('9월 15일 (화) 08:00 · 서울 난임센터 · 지은')
-    expect(mo.note).toContain('생리를 기록해도 꺼지지 않아요')
+    expect(mo.note).toContain('생리를 기록해도 그대로예요')
     expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 보기' })
     expect(mo.secondary).toEqual({ type: 'end-rest', label: '병원 준비 마치기' })
     expect(words(mo)).not.toMatch(FERTILE_WORDS)
@@ -643,24 +643,24 @@ describe('병원과 함께 준비 중 (clinic mode, N13)', () => {
     expect(mo).toMatchObject({
       copy: 'owner.clinic',
       title: '병원 일정에 맞춰 준비해요',
-      body: '다음 병원 일정을 넣어 두면 여기서 알려 드려요.',
+      body: '다음 병원 일정이 아직 없어요.',
     })
     expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '일정 넣기' })
     expect(mo.secondary).toEqual({ type: 'end-rest', label: '병원 준비 마치기' })
   })
 
-  it('partner: 일정에 맞춰 함께해요 — the schedule, never a window, a date idea or a question', () => {
+  it('partner: 병원 일정을 같이 챙겨요 — the schedule, never a window, a date idea or a question', () => {
     // Hers alone ('채혈·초음파', 지은): his card names neither it nor its title (N32) …
     const hers = appt('2026-09-15', '채혈·초음파', 'b', '08:00')
-    expect(ttcMoment(hers, DAYS.peak, PARTNER)!.body).toBe('결과는 묻지 말고 일정만 함께 챙겨요. 일정이 잡히면 여기서 알려 드려요.')
+    expect(ttcMoment(hers, DAYS.peak, PARTNER)!.body).toBe('결과는 묻지 말고 일정만 챙겨요.')
     // … one they both go to: day · time · place · a kind word — never the title.
     const s = addAppointment(hers, { date: '2026-09-15', time: '09:30', title: '난포 초음파', who: 'both', kind: 'injection', place: '서울 난임센터' }, OWNER)
     for (const st of [s, share(s), withStyle(s, PARTNER, 'explicit'), withStyle(s, PARTNER, 'off')]) {
       const mo = ttcMoment(st, DAYS.peak, PARTNER)!
-      expect(mo).toMatchObject({ kind: 'rest', copy: 'partner.clinic', eyebrow: CLINIC_LABEL, title: '일정에 맞춰 함께해요' })
+      expect(mo).toMatchObject({ kind: 'rest', copy: 'partner.clinic', eyebrow: CLINIC_LABEL, title: '병원 일정을 같이 챙겨요' })
       expect(mo.body).toContain('내일 09:30 병원 일정 · 서울 난임센터 · 둘이 함께')
       expect(JSON.stringify(mo)).not.toMatch(/채혈|초음파|난포|08:00/)
-      expect(mo.body).toContain('결과는 묻지 말고 일정만 함께 챙겨요')
+      expect(mo.body).toContain('결과는 묻지 말고 일정만 챙겨요')
       expect(mo.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 보기' })
       expect(mo.dateIdeas).toBeUndefined()
       expect(words(mo)).not.toMatch(FERTILE_WORDS)
@@ -669,7 +669,7 @@ describe('병원과 함께 준비 중 (clinic mode, N13)', () => {
       if (st.settings.shareLevel === 'details') expect(strip!.days.every((d) => d.tone === 'period' || d.tone === 'none')).toBe(true)
       else expect(strip).toBeNull()
     }
-    expect(ttcMoment(clinic(), DAYS.peak, PARTNER)!.body).toContain('일정이 잡히면 여기서 알려 드려요')
+    expect(ttcMoment(clinic(), DAYS.peak, PARTNER)!.body).toBe('결과는 묻지 말고 일정만 챙겨요.')
     expect(fertileHintsAllowed(s, PARTNER)).toBe(false)
     expect(fertileHintsAllowed(s, OWNER)).toBe(false)
   })
@@ -754,7 +754,7 @@ describe('partner moments', () => {
     expect(p(s, DAYS.periodEarly).copy).toBe('partner.neutral')
     expect(p(s, DAYS.period).copy).toBe('partner.neutral')
     expect(p(s, DAYS.peak).peak).toBe(false)
-    expect(p(s, DAYS.peak).body).toBe('둘만의 시간을 편하게 즐겨요. 부담은 내려놓아요.')
+    expect(p(s, DAYS.peak).body).toBe('둘만의 시간을 즐겨요.')
     // A late period is hers to share: (N19) he keeps the '평소 주' card he had in the waiting weeks.
     expect(p(s, DAYS.late).copy).toBe('partner.neutral')
     // Word for word (only `kind`, the day's internal phase, differs — no screen renders it for him).
@@ -780,8 +780,8 @@ describe('partner moments', () => {
     expect(p(s, DAYS.periodEarly).partnerTip).toBeUndefined()
     expect(p(s, DAYS.periodEarly).say).toBeUndefined()
     expect(p(answered(s), DAYS.period).partnerTip).toBeUndefined()
-    expect(p(s, DAYS.peak)).toMatchObject({ peak: true, body: '특히 오늘·내일이에요. 부담은 내려놓아요.', eyebrow: '9월 15일까지 (예상)' })
-    expect(p(s, '2026-09-15').body).toBe('오늘까지예요. 부담은 내려놓아요.')
+    expect(p(s, DAYS.peak)).toMatchObject({ peak: true, body: '특히 오늘·내일이에요.', eyebrow: '9월 15일까지 (예상)' })
+    expect(p(s, '2026-09-15').body).toBe('오늘까지예요.')
     expect(p(s, DAYS.late).copy).toBe('partner.late-shared')
     expect(words(p(s, DAYS.peak))).not.toMatch(FERTILE_WORDS)
   })
@@ -789,7 +789,7 @@ describe('partner moments', () => {
   it('explicit partner reads 가임기 (예상) only when she shares the details', () => {
     const s = withStyle(fresh(), PARTNER, 'explicit')
     expect(p(share(s), DAYS.fertile).eyebrow).toBe('가임기 · 9월 15일까지 (예상)')
-    expect(p(share(s), DAYS.peak).body).toBe('특히 오늘은 가능성 높은 날이에요. 부담은 내려놓아요.')
+    expect(p(share(s), DAYS.peak).body).toBe('특히 오늘은 가능성 높은 날이에요.')
     expect(p(share(s), DAYS.periodEarly).eyebrow).toBe('지은님 생리 2일째')
     // Without the details: the shared "우리의 주간" wording, like the calendar (cycleLens).
     for (const d of Object.values(DAYS)) {
@@ -830,7 +830,7 @@ describe('partner moments', () => {
       tone: 'default',
       // The week block right under the card has the header '이번 주 우리 둘': the card never repeats it.
       eyebrow: '오늘의 우리',
-      title: '이번 주도 둘이 함께해요',
+      title: '서로의 하루를 챙겨요',
       body: '이번 주에 내가 맡을 것 하나면 충분해요.',
       monthlyTask: true,
       weekTogether: true,
@@ -916,7 +916,7 @@ describe('positive test, before the clinic', () => {
     // Last period 09-01 → 10-06.
     expect(m.body).toContain('5~6주 무렵(10월 6일부터)')
     expect(m.body).toContain('병원마다 달라요')
-    expect(m.body).toContain('엽산은 그대로 이어 가요')
+    expect(m.body).toContain('엽산은 계속 챙겨 먹어요')
     expect(m.primary).toEqual({ type: 'nav', to: 'plan', label: '병원 일정 넣기' })
     // Without a logged period there is no date to count from.
     const noLmp = markPositivePending(fresh({ periods: [] }), '2026-09-26')
@@ -1410,9 +1410,9 @@ describe('"(예상)" at most once per card (review D-1, Next B)', () => {
     expect(m(DAYS.beforeLh)).toMatchObject({
       eyebrow: '다가오는 가임기 (예상)',
       title: '가임기까지 D-2',
-      body: '9월 10일부터예요. 달력 기준 예상이에요.',
+      body: '달력 기준으로 9월 10일부터예요.',
     })
-    expect(m(DAYS.beforeFar)).toMatchObject({ eyebrow: '다가오는 가임기 (예상)', body: '9월 10일부터예요. 달력 기준 예상이에요.' })
+    expect(m(DAYS.beforeFar)).toMatchObject({ eyebrow: '다가오는 가임기 (예상)', body: '달력 기준으로 9월 10일부터예요.' })
     expect(m(DAYS.tww)).toMatchObject({ eyebrow: '배란 뒤 5일째 (예상)' })
     expect(m(DAYS.tww).body).not.toContain('(예상)')
     expect(m('2026-09-30')).toMatchObject({ eyebrow: '생리 예정 9월 29일 (예상)', title: '예정일이 1일 지났어요' })
@@ -1433,7 +1433,7 @@ describe('"(예상)" at most once per card (review D-1, Next B)', () => {
     const noLh = setUsesLH(fresh(), false, OWNER)
     expect(ttcMoment(noLh, DAYS.beforeLh, OWNER)).toMatchObject({
       eyebrow: '다가오는 가임기 (예상)',
-      body: '9월 10일부터예요. 달력 기준 예상이에요.',
+      body: '달력 기준으로 9월 10일부터예요.',
     })
     expect(ttcMoment(noLh, DAYS.fertile, OWNER)!.body).toBe('달력 기준 예상이에요.')
     // Low confidence: the eyebrow names the basis and the window's end with the marker; the title is plain.
@@ -1442,11 +1442,11 @@ describe('"(예상)" at most once per card (review D-1, Next B)', () => {
       eyebrow: '달력 기준 · 설정값 · 9월 15일까지 (예상)',
       title: '가임기 범위예요 (넓음)',
     })
-    expect(ttcMoment(one, DAYS.peak, OWNER)!.body).toBe('달력으로만 계산한 범위라 넓게 잡았어요. 달력 기준 예상이에요.')
+    expect(ttcMoment(one, DAYS.peak, OWNER)!.body).toBe('달력으로만 계산해서 범위가 넓어요.')
     expect(ttcMoment(setUsesLH(one, true, OWNER), DAYS.peak, OWNER)!.body).toBe(
-      '달력으로만 계산한 범위라 넓게 잡았어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.',
+      '달력으로만 계산해서 범위가 넓어요. 오늘 LH 결과를 기록하면 범위가 좁아져요.',
     )
-    expect(ttcMoment(one, DAYS.beforeLh, OWNER)!.body).toBe('9월 10일 무렵부터예요 (예상 범위, 넓음). 달력 기준 예상이에요.')
+    expect(ttcMoment(one, DAYS.beforeLh, OWNER)!.body).toBe('9월 10일 무렵부터예요 (예상 범위, 넓음).')
   })
 
   it('estimateMarks / withoutEstimate count and strip the marker and its range variants', () => {
@@ -1712,7 +1712,7 @@ describe('bleeding after a positive test, before the clinic (B3)', () => {
     const m = ttcMoment(s, '2026-09-28', OWNER)!
     expect(m).toMatchObject({ kind: 'period-early', copy: 'owner.period-early', afterPositive: true, title: '이번 주기도 수고했어요' })
     expect(m.body).toContain('양성 뒤에 시작된 생리')
-    expect(m.note).toContain('병원에 물어봐도')
+    expect(m.note).toContain('병원에 물어봐요')
     expect(m.askTell).toEqual({ start: '2026-09-27' })
     expect(words(m)).not.toMatch(NO_DIAGNOSIS)
     // A later period, with one in between, is an ordinary period again.
@@ -1823,7 +1823,7 @@ describe('the quiet after a pregnancy ended: a loss rest with its last day (B4)'
   it('owner: the support card first, one body-guidance line with its source, the quiet’s last day — through a logged period', () => {
     const day0 = ttcMoment(lost(), ENDED, OWNER)!
     expect(day0).toMatchObject({ kind: 'after-loss', copy: 'owner.after-loss', support: true, restReason: 'loss', restUntil: UNTIL })
-    expect(day0.body).toContain('10월 31일까지는 날짜 예상과 알림을 쉬어요')
+    expect(day0.body).toContain('10월 31일까지 날짜 예상과 알림을 쉬어요')
     expect(day0.secondary).toEqual({ type: 'log', kind: 'period', label: '생리 시작 기록' })
     expect(day0.guidance).toEqual({
       id: 'see-doctor-after-loss',
@@ -1838,7 +1838,7 @@ describe('the quiet after a pregnancy ended: a loss rest with its last day (B4)'
     // Day 36, a period logged: still the quiet card, the heart first, the calendar as the way on.
     const after = ttcMoment(lostThenPeriod(), '2026-10-26', OWNER)!
     expect(after).toMatchObject({ kind: 'after-loss', copy: 'owner.after-loss', support: true, restUntil: UNTIL })
-    expect(after.body).toContain('생리를 기록해 뒀어요')
+    expect(after.body).toBe('10월 31일까지 날짜 예상과 알림을 쉬어요.')
     expect(after.guidance?.id).toBe('emotional-readiness')
     expect(after.secondary).toEqual({ type: 'nav', to: 'cycle', label: '달력 보기' })
     expect(cycleStrip(lostThenPeriod(), '2026-10-26', OWNER)).toBeNull()
@@ -2256,7 +2256,7 @@ describe("N30: '특히 오늘·내일' only for a partner she shares 자세히 w
       }
     }
     // With 자세히: the peak days say so (soft wording).
-    expect(ttcMoment(setShareLevel(fresh(), OWNER, 'details'), DAYS.peak, PARTNER)!.body).toBe('특히 오늘·내일이에요. 부담은 내려놓아요.')
+    expect(ttcMoment(setShareLevel(fresh(), OWNER, 'details'), DAYS.peak, PARTNER)!.body).toBe('특히 오늘·내일이에요.')
   })
 })
 

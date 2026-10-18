@@ -19,7 +19,7 @@ import { dayWord } from './parts'
 const RECENT_MAX = 6
 
 export default function IntimacyPanel({ date }: { date: ISODate }) {
-  const { state, update, today, viewer, partner } = useApp()
+  const { state, update, today, viewer } = useApp()
   const toast = useToast()
   const on = isIntimacyDay(state, viewer, date)
   const days = intimacyDays(state, viewer)
@@ -29,7 +29,7 @@ export default function IntimacyPanel({ date }: { date: ISODate }) {
   const toggle = (d: ISODate) => {
     const was = isIntimacyDay(state, viewer, d)
     update((s) => toggleIntimacyDay(s, viewer, d, today))
-    toast.show(was ? `${dayWord(d, today)} 기록을 지웠어요` : `${dayWord(d, today)} 기록을 남겼어요 · 나만 볼 수 있어요`)
+    toast.show(was ? `${dayWord(d, today)} 기록을 지웠어요` : `${dayWord(d, today)} 기록을 남겼어요`)
   }
 
   return (
@@ -44,17 +44,9 @@ export default function IntimacyPanel({ date }: { date: ISODate }) {
             : 'flex min-h-[64px] w-full items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 text-left transition-colors hover:bg-surface-2 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
         }
       >
-        <span className="min-w-0">
-          <span className="block text-base font-bold text-ink">{on ? `${when} 관계했어요` : `${when} 관계했어요?`}</span>
-          <span className="block text-[11px] leading-snug text-ink-3">{on ? '한 번 더 누르면 지워져요' : '한 번 누르면 이 날에 표시돼요'}</span>
-        </span>
+        <span className="min-w-0 text-base font-bold text-ink">{on ? `${when} 관계했어요` : `${when} 관계했어요?`}</span>
         {on ? <Icon name="check" className="h-6 w-6 shrink-0 text-brand-ink" strokeWidth={2.4} /> : null}
       </button>
-
-      <p className="rounded-xl bg-surface-2 px-3 py-2 text-[11px] leading-relaxed text-ink-2">
-        <span className="font-semibold text-ink">나만 보는 기록이에요.</span> 이 폰에만 남고 {partner.name}님 화면·알림·내보내기 어디에도 나오지
-        않아요. 앱은 이 날짜로 아무것도 예상하거나 권하지 않아요. 설정 › 공유 범위에서 한 번에 지울 수 있어요.
-      </p>
 
       {recent.length ? (
         <div>

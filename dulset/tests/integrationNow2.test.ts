@@ -864,7 +864,7 @@ describe("'안 써요' (settings.usesLH = false): never an LH title, action or p
         expect(m.copy).not.toMatch(/lh-start|no-surge/)
         expect(m.title).not.toMatch(/LH/)
         if (logKind(m.primary) === 'note') feelDays++
-        if (style === 'explicit' && (m.kind === 'before-fertile' || m.kind === 'fertile')) expect(m.body).toMatch(/달력 기준 예상/)
+        if (style === 'explicit' && (m.kind === 'before-fertile' || m.kind === 'fertile')) expect(m.body).toMatch(/달력 기준/)
         expect(defaultLogKind(s, d, d)).not.toBe('lh')
         expect(lhAskDue(s, d, null)).toBe(false)
         for (const n of scheduledNotices(s, d)) expect(n.body).not.toMatch(/LH/)

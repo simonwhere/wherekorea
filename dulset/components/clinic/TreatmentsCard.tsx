@@ -59,7 +59,7 @@ function Counter({ label, count }: { label: string; count: SupportCount }) {
 }
 
 export default function TreatmentsCard() {
-  const { state, today, viewer, cycleOwner } = useApp()
+  const { state, today, viewer } = useApp()
   const [sheet, setSheet] = useState<SheetState>(null)
   const [leaveOpen, setLeaveOpen] = useState(false)
   const closeSheet = useCallback(() => setSheet(null), [])
@@ -98,7 +98,7 @@ export default function TreatmentsCard() {
           <h2 id="treatments-card-title" ref={headingRef} tabIndex={-1} className="text-[15px] font-bold text-ink outline-none">
             {TREATMENTS_CARD_TITLE}
           </h2>
-          <p className="mt-0.5 text-xs text-ink-3">기록한 회차 기준 · 출산당 · 보건소마다 달라요</p>
+          <p className="mt-0.5 text-xs text-ink-3">기록한 회차 기준(출산당)이에요. 보건소마다 달라요.</p>
         </div>
         {canEdit ? (
           <button type="button" onClick={() => setSheet({})} className={`${btnBrand} -mr-2 -mt-2 shrink-0`}>
@@ -139,11 +139,7 @@ export default function TreatmentsCard() {
         <div className="min-w-0 text-xs leading-relaxed">
           <p className="font-semibold text-ink">지원결정통지서</p>
           <p className="text-ink-2">
-            {notice
-              ? noticeLine(notice)
-              : canEdit
-                ? '회차에 만료일을 적어 두면 30일 · 7일 · 1일 전에 둘 다에게 알려 줘요.'
-                : '아직 적힌 만료일이 없어요.'}
+            {notice ? noticeLine(notice) : '아직 적힌 만료일이 없어요.'}
           </p>
         </div>
       </div>
@@ -208,9 +204,7 @@ export default function TreatmentsCard() {
             })}
           </ul>
         ) : (
-          <p className="mt-3 text-xs leading-relaxed text-ink-3">
-            {canEdit ? '회차를 기록하면 지원 횟수와 통지서 만료일을 여기서 세요.' : `${cycleOwner.name}님이 회차를 기록하면 여기에 보여요.`}
-          </p>
+          <p className="mt-3 text-xs leading-relaxed text-ink-3">아직 기록한 회차가 없어요.</p>
         )}
 
         {/* 난임치료휴가 */}
@@ -228,7 +222,9 @@ export default function TreatmentsCard() {
               </li>
             ))}
           </ul>
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-3">사람마다 연 6일 · {paid} · 남성도 쓸 수 있어요 · 회사마다 달라요</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-3">
+            사람마다 연 6일, {paid}이에요. 남성도 쓸 수 있어요. 회사마다 달라요.
+          </p>
         </div>
 
         <div className="mt-2 flex flex-wrap gap-x-4">

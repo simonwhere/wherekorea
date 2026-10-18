@@ -51,7 +51,7 @@ export function MyChecks() {
     const preview = toggleWithCompletion(state, me.id, partner.id, today, id, now)
     update((s) => toggleWithCompletion(s, me.id, partner.id, today, id, now).state)
     if (preview.completed) {
-      toast.show(alreadyTold ? '오늘 체크 완료! 👏' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+      toast.show(alreadyTold ? '오늘 체크를 모두 마쳤어요' : `오늘 체크를 모두 마쳤어요. ${partner.name}님에게 알렸어요`)
     } else if (preview.cleared?.length) {
       const item = items.find((i) => i.id === id)
       if (item) weeklyUndo.offer(item, preview.cleared)
@@ -78,7 +78,6 @@ export function MyChecks() {
       {items.length === 0 ? (
         <div className="mt-2 rounded-xl border border-dashed border-line px-4 py-5 text-center">
           <p className="text-sm font-semibold text-ink">아직 체크할 항목이 없어요</p>
-          <p className="mt-1 text-xs text-ink-3">매일 챙길 영양제나 생활습관을 추가해 보세요.</p>
           <Button size="md" variant="secondary" className="mt-3" onClick={() => setEditorOpen(true)}>
             항목 추가하기
           </Button>
@@ -100,7 +99,7 @@ export function MyChecks() {
           </ul>
           {prog.complete ? (
             <p className="mt-3 text-center text-xs font-semibold text-ok" role="status">
-              오늘 체크를 모두 마쳤어요. 멋져요! 🎉
+              오늘 체크를 모두 마쳤어요.
             </p>
           ) : null}
         </>
@@ -181,11 +180,11 @@ export function PartnerChecks() {
     if (!canNudge) return
     const label = target?.label
     update((s) => sendNudge(s, me.id, partner.id, today, stampOn(today), label))
-    toast.show(`${partner.name}님에게 콕! 보냈어요 (⇄로 ${partner.name}님 화면에서 확인)`)
+    toast.show(`${partner.name}님에게 콕을 보냈어요`)
   }
   const cheer = () => {
     update((s) => sendCheer(s, me.id, partner.id, stampOn(today)))
-    toast.show(`${partner.name}님에게 응원을 보냈어요 👏`)
+    toast.show(`${partner.name}님에게 응원을 보냈어요`)
   }
 
   return (
@@ -244,16 +243,14 @@ export function PartnerChecks() {
           👏 응원
         </Button>
       </div>
-      <p className="mt-1.5 text-center text-[11px] text-ink-3" aria-live="polite">
-        {prog.complete
-          ? `${partner.name}님은 오늘 체크를 모두 마쳤어요. 응원 한마디 어때요?`
-          : items.length === 0
-            ? '응원은 언제든 보낼 수 있어요.'
-            : !accepts
-              ? `${partner.name}님은 콕을 받지 않기로 했어요. 응원은 언제든 보낼 수 있어요.`
-              : left === 0
-                ? `콕은 하루 ${perDay}번까지예요. 내일 다시 보낼 수 있어요.`
-                : `콕은 오늘 ${left}번 더 보낼 수 있어요.`}
+      <p className="mt-1.5 text-center text-[11px] text-ink-3 empty:hidden" aria-live="polite">
+        {prog.complete || items.length === 0
+          ? null
+          : !accepts
+            ? `${partner.name}님은 콕을 받지 않기로 했어요.`
+            : left === 0
+              ? `콕은 하루 ${perDay}번까지예요.`
+              : null}
       </p>
     </Card>
   )

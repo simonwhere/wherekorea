@@ -79,7 +79,7 @@ export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhas
           />
         </div>
 
-        <Field label="언제까지 (선택)" hint="날짜를 정하면 가까워질 때 ‘이번 주 챙길 것’에도 보여요">
+        <Field label="언제까지 (선택)">
           <input
             type="date"
             className={inputClass}
@@ -99,7 +99,7 @@ export default function CustomTaskSheet({ defaultPhase, onClose }: { defaultPhas
               checked={alerts}
               onChange={setAlerts}
               label="기한 알림 받기"
-              description="7일 전 · 1일 전 · 당일에 챙길 사람에게 알려요. 결정통지서 만료 같은 진짜 기한에만 켜요."
+              description="7일 전 · 1일 전 · 당일에 알려요"
             />
           </div>
         ) : null}

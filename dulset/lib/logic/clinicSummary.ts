@@ -42,7 +42,7 @@ import { leaveDaysOf, leaveSummary, supportCounts, treatmentsOf, type SupportCou
 // ── Constants ───────────────────────────────────────────────
 
 /** The first line of the file, the text and the preview — never a diagnosis, never a promise. */
-export const CLINIC_SUMMARY_HEADER = '둘셋 기록 요약 · 병원에 보여 주는 용도 · 예상은 참고용'
+export const CLINIC_SUMMARY_HEADER = '둘셋 기록 요약 · 예상은 참고용'
 
 /**
  * The sheet's title and the 주기 tab's card label (components/clinic
@@ -59,14 +59,14 @@ export const CLINIC_APPOINTMENT_MONTHS = 6
 
 /** The caveat lines every rendering ends with (file, text, preview). */
 export const CLINIC_SUMMARY_NOTES: readonly string[] = [
-  '모든 날짜와 결과는 본인이 둘셋에 직접 기록한 값이에요.',
+  '날짜와 결과는 모두 둘셋에 직접 기록한 값이에요.',
   '평균·범위는 기록으로 계산한 예상이라 참고용이에요. 진료와 판단은 담당 의료진이 해요.',
   '지원 횟수·휴가는 기록한 회차 기준이에요. 실제 기준은 병원·보건소·회사마다 달라요.',
 ]
 
 /** The one-line warning the sheet shows before any button (the file carries health data). */
 export const CLINIC_SUMMARY_PRIVACY_NOTE =
-  '이 파일에는 생리·LH·임신 테스트 같은 건강 기록이 들어 있어요. 보여 줄 사람을 정해서 신중하게 나눠 주세요.'
+  '이 파일에는 생리·LH·임신 테스트 같은 건강 기록이 들어 있어요. 보여 줄 사람에게만 건네 주세요.'
 
 export const PREGNANCY_TEST_LABEL: Record<PregnancyTestResult, string> = {
   negative: '음성',

@@ -48,9 +48,8 @@ export default function IcsExport({
           <p className="text-[13px] leading-relaxed text-ink-2">휴대폰 캘린더에 추가하면 하루 전 오전 9시에 알람이 울려요.</p>
           {enabled ? (
             <p className="mt-1 text-xs text-ink-3">
-              앞으로 {windows.length}번의 {view === 'explicit' ? '예상 가임기' : '우리의 주간 (예상)'}:{' '}
+              다가오는 {view === 'explicit' ? '예상 가임기' : '우리의 주간 (예상)'} {windows.length}번:{' '}
               {windows.map(windowRangeShort).join(', ')}
-              {useDiscreet ? ' · 캘린더에는 건강 용어 없이 표시돼요' : ''}
             </p>
           ) : null}
           <Button full variant="secondary" className="mt-3" disabled={!enabled} onClick={download}>

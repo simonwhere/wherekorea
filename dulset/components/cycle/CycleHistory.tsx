@@ -68,15 +68,7 @@ export default function CycleHistory({
 
   return (
     <>
-      <SectionTitle
-        sub={
-          showTryCount && current !== undefined
-            ? `함께 준비한 뒤 ${estimated ? '약 ' : ''}${current}번째 주기예요${estimated ? ' (기록이 빈 기간은 어림했어요)' : ''}`
-            : onSelect
-              ? '눌러서 고치거나 지울 수 있어요'
-              : undefined
-        }
-      >
+      <SectionTitle sub={showTryCount && current !== undefined ? `함께 준비한 뒤 ${estimated ? '약 ' : ''}${current}번째 주기예요` : undefined}>
         주기 기록
       </SectionTitle>
       <Card className="px-0 py-1">
@@ -111,12 +103,6 @@ export default function CycleHistory({
           </button>
         ) : null}
       </Card>
-      {rows.some((r) => r.hint === 'gap') ? (
-        <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-3">
-          ‘기록 누락?’은 두 기록 사이가 {maxCycle}일을 넘고 평균 주기의 두 배보다 길 때 표시돼요. {maxCycle}일을 넘는 간격은 평균 주기
-          계산에서 빠져요.
-        </p>
-      ) : null}
     </>
   )
 }
@@ -137,7 +123,7 @@ function Row({
   /** The longest plausible cycle for these settings (cycleHistory.maxCycle). */
   maxCycle: number
 }) {
-  const details = [r.bleedDays ? `${r.bleedDays}일간` : '마지막 날 미기록']
+  const details = [r.bleedDays ? `${r.bleedDays}일간` : '끝난 날 기록 없음']
   // The first surge, or 'LH N회 · 양성 없음' for a finished cycle that tested without one (N11).
   const lh = showLH ? lhRowLine(r) : undefined
   if (lh) details.push(lh)

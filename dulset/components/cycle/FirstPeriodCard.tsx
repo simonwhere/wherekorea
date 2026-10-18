@@ -6,7 +6,6 @@ import { QuickDateChips } from '@/components/onboarding/parts'
 import { Button, Card, inputClass, useToast } from '@/components/ui'
 import { IconTile } from '@/components/ui/icons'
 import { formatKo, isISODate } from '@/lib/dates'
-import type { FertilityView } from '@/lib/logic/calendarView'
 import { logPeriodOrBleeding } from '@/lib/logic/ttcFlow'
 import { useApp } from '@/lib/store'
 
@@ -15,7 +14,7 @@ import { useApp } from '@/lib/store'
  * start predicting. The date comes first, with [오늘][어제][1주 전]… chips for
  * "it was around mid-September" (N15).
  */
-export default function FirstPeriodCard({ view }: { view: FertilityView }) {
+export default function FirstPeriodCard() {
   const { state, update, today, viewer } = useApp()
   const toast = useToast()
   const inputId = useId()
@@ -34,10 +33,6 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
     <Card tone="brand">
       <IconTile name="flower" tone="bg-surface" />
       <h2 className="mt-2 text-lg font-bold text-ink">마지막 생리 시작일을 알려 주세요</h2>
-      <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-        한 번만 기록해도 다음 생리 예정일
-        {view === 'hidden' ? '을' : view === 'soft' ? '과 우리의 주간을' : '과 예상 가임기를'} 계산해 달력에 보여줘요.
-      </p>
       <form
         className="mt-4 space-y-3"
         onSubmit={(e) => {
@@ -68,9 +63,9 @@ export default function FirstPeriodCard({ view }: { view: FertilityView }) {
           {valid ? `${formatKo(date, { weekday: false })} 시작으로 기록하기` : '마지막 생리 시작일 기록하기'}
         </Button>
       </form>
-      <p className="mt-3 text-xs leading-relaxed text-ink-3">
-        쓰던 앱의 시작일 몇 개를 더 옮기면 그 주기로 계산해요. 그 전까지는 설정한 주기 {state.cycle.cycleLength}일을 써요.{' '}
-        <SettingsLink>주기 길이 바꾸기</SettingsLink>
+      <p className="mt-3 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-3">
+        <span>주기 {state.cycle.cycleLength}일로 계산해요.</span>
+        <SettingsLink className="-my-3">바꾸기</SettingsLink>
       </p>
     </Card>
   )

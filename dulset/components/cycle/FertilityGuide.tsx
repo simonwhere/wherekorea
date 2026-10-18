@@ -39,9 +39,7 @@ export default function FertilityGuide({
 
   return (
     <>
-      <SectionTitle sub={hidden ? '날짜를 맞추지 않아도 괜찮아요' : '달력 예측을 보완하는 방법이에요'}>
-        {hidden ? '편하게 준비하기' : '정확도 높이기'}
-      </SectionTitle>
+      <SectionTitle>{hidden ? '편하게 준비하기' : '정확도 높이기'}</SectionTitle>
       <Card className="px-0 py-0">
         <ul className="divide-y divide-line">
           {sections.map((s) => (
@@ -129,7 +127,7 @@ export default function FertilityGuide({
                   </li>
                 ))}
                 <li className="pt-1 text-[11px] leading-relaxed text-ink-3">
-                  수치는 논문·가이드라인 요약을 옮긴 거예요. 둘셋은 의료기기가 아니며 진단이나 피임에 쓸 수 없어요. 확인일{' '}
+                  둘셋은 의료기기가 아니라서 진단이나 피임에 쓸 수 없어요. 확인일{' '}
                   {formatKo(GUIDE_CHECKED_AT, { weekday: false, year: true })}.
                 </li>
               </ol>

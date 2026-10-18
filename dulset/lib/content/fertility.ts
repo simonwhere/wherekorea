@@ -51,7 +51,6 @@ interface FertilityJson {
   ptestChoices: Array<{ result: PregnancyTestResult; hint: string }>
   ptestEarlyNote: string
   feelChips: Array<{ feel: PersonalFeel; label: string }>
-  feelPanelNote: string
   waitingWeekLines: string[]
 }
 
@@ -151,21 +150,14 @@ export function ptestAfterCopy(
   explicit: boolean,
   waiting = true,
 ): { title: string; body: string[] } {
-  if (result === 'positive' && !waiting)
-    return { title: '남겨 뒀어요', body: ['그 뒤에 생리 기록이 있어서 날짜 예상은 그대로 둬요.'] }
+  if (result === 'positive' && !waiting) return { title: '남겨 뒀어요', body: [] }
   if (result === 'positive')
     return {
       title: '병원에서 확인해 봐요',
-      body: [
-        '확인하기 전까지는 ‘병원 확인 전’으로 둘게요.',
-        explicit ? '가임기 표시와 알림은 잠시 멈춰요.' : '날짜 표시와 알림은 잠시 멈춰요.',
-      ],
+      body: [explicit ? '병원 확인 전까지 가임기 표시와 알림은 멈춰요.' : '병원 확인 전까지 날짜 표시와 알림은 멈춰요.'],
     }
-  if (result === 'faint') return { title: '희미한 선도 남겨 뒀어요', body: ['헷갈릴 땐 2~3일 뒤 다시 해 보거나 병원에서 확인해 봐요.'] }
-  return {
-    title: '남겨 뒀어요',
-    body: ['생리 예정일 전이었다면 2~3일 뒤 다시 해 봐도 좋아요.', '생리가 시작되면 생리로 기록해 주세요.'],
-  }
+  if (result === 'faint') return { title: '희미한 선으로 남겨 뒀어요', body: ['헷갈리면 2~3일 뒤 다시 해 보거나 병원에서 확인해 봐요.'] }
+  return { title: '남겨 뒀어요', body: ['생리 예정일 전이었다면 2~3일 뒤 다시 해 봐도 좋아요.'] }
 }
 
 // ── 기다리는 주: 오늘 컨디션 (N11) ──────────────────────────
@@ -175,9 +167,6 @@ export function ptestAfterCopy(
 
 /** The six chips of the 오늘 컨디션 panel, in this order. */
 export const FEEL_CHIPS: ReadonlyArray<{ feel: PersonalFeel; label: string }> = raw.feelChips
-
-/** Under the chips: what the record is for, and who sees it. */
-export const FEEL_PANEL_NOTE: string = raw.feelPanelNote
 
 /**
  * One quiet line a day for the 기다리는 주 card. Nothing here is a medical

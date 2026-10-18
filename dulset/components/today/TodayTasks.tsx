@@ -39,9 +39,9 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
     const alreadyTold = state.notifications.some((n) => n.key === `complete:${me.id}:${today}`)
     const preview = toggleWithCompletion(state, me.id, partner.id, today, item.id, now)
     update((s) => toggleWithCompletion(s, me.id, partner.id, today, item.id, now).state)
-    if (preview.completed) toast.show(alreadyTold ? '오늘 체크 완료!' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+    if (preview.completed) toast.show(alreadyTold ? '오늘 체크를 모두 마쳤어요' : `오늘 체크를 모두 마쳤어요. ${partner.name}님에게 알렸어요`)
     else if (preview.cleared?.length) weeklyUndo.offer(item, preview.cleared)
-    else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인 완료!')
+    else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인을 남겼어요')
   }
 
   const empty = items.length === 0 && weekly.length === 0

@@ -168,6 +168,25 @@ export function andParticle(name: string): string {
   return code % 28 === 0 ? '와' : '과'
 }
 
+/** Does the word, read aloud, end in a final consonant? (Digits: 2·4·5·9 end in a vowel; other non-Hangul reads as a consonant.) */
+function endsInConsonant(word: string): boolean {
+  const last = word.trimEnd().slice(-1)
+  if (last >= '0' && last <= '9') return !'2459'.includes(last)
+  const code = last.charCodeAt(0) - 0xac00
+  if (code < 0 || code > 11171) return true
+  return code % 28 !== 0
+}
+
+/** '을' after a final consonant, '를' after a vowel: 엽산을 · 물 마시기를. */
+export function objectParticle(word: string): string {
+  return endsInConsonant(word) ? '을' : '를'
+}
+
+/** '은' after a final consonant, '는' after a vowel: 엽산은 · 걷기는. */
+export function topicParticle(word: string): string {
+  return endsInConsonant(word) ? '은' : '는'
+}
+
 /** External link that opens in a new tab, with a 44px tap target. */
 export function ExternalLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (

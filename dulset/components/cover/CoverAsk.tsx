@@ -16,7 +16,7 @@ import { useApp } from '@/lib/store'
 import { takeCoverAsk } from './coverAskFlag'
 
 export default function CoverAsk() {
-  const { state, today, me, partner } = useApp()
+  const { state, today, me } = useApp()
   const [asking, setAsking] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const closeAsk = useCallback(() => setAsking(false), [])
@@ -47,8 +47,7 @@ export default function CoverAsk() {
           </div>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-ink-2">
-          두 사람의 오늘 화면 맨 위에 걸려요. 사진은 이 폰에만 저장되고 어디에도 올라가지 않아요. {partner.name}님 화면에도
-          같은 사진이 보여요.
+          두 사람의 오늘 화면 맨 위에 걸려요.
         </p>
         <div className="mt-4 grid gap-2">
           <Button size="lg" full onClick={pick}>
@@ -59,7 +58,6 @@ export default function CoverAsk() {
             나중에
           </Button>
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-ink-3">나중에도 오늘 화면의 ‘우리 사진 걸기’나 우리 탭에서 언제든 걸 수 있어요.</p>
       </Sheet>
       <CoverSheet open={pickerOpen} onClose={closePicker} />
     </>

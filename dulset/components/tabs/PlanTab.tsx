@@ -15,8 +15,6 @@ import FocusCard from '@/components/plan/FocusCard'
 import type { ItemActions } from '@/components/plan/ItemRow'
 import PhaseList from '@/components/plan/PhaseList'
 import {
-  HEADER_LINE,
-  PLAN_NOTE,
   currentPhase,
   draftForItem,
   draftFromAppointment,
@@ -107,7 +105,6 @@ export default function PlanTab() {
     <div>
       <header className="mb-4 px-1">
         <h1 className="text-xl font-extrabold tracking-tight text-ink">챙길 것</h1>
-        <p className="mt-1 text-sm text-ink-2">{HEADER_LINE[state.stage]}</p>
       </header>
 
       {/* 난임 시술 · 지원 counter (Next B — B2): while 병원과 함께 준비 중, or once anything was logged. */}
@@ -130,7 +127,7 @@ export default function PlanTab() {
       />
 
       <Disclaimer>
-        {PLAN_NOTE} 병원·회사·보건소마다 다를 수 있어요. (확인일 {ROADMAP_CHECKED_AT})
+        일반적인 안내예요. 병원·회사·보건소마다 달라요. (확인일 {ROADMAP_CHECKED_AT})
       </Disclaimer>
 
       {apptSheet ? (

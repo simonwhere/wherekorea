@@ -30,9 +30,9 @@ import type { AppState, DiaryEntry } from '@/lib/types'
 /** Thumbnails in the album row (newest first). */
 const ALBUM_MAX = 15
 
-const SAVE_FAILED = '이 브라우저에서는 사진을 저장할 수 없어요. 기본 그림으로 보여 드릴게요.'
+const SAVE_FAILED = '이 브라우저에서는 사진을 저장할 수 없어요. 기본 그림이 보여요.'
 /** The same failure when a cover is already hung: nothing changes, so say that. */
-const SAVE_FAILED_KEEP = '이 브라우저에서는 사진을 저장할 수 없어요. 지금 표지는 그대로 둘게요.'
+const SAVE_FAILED_KEEP = '이 브라우저에서는 사진을 저장할 수 없어요. 지금 표지는 그대로예요.'
 
 type Choice =
   /** The cover already hung (move it or change its line in place). */
@@ -71,7 +71,7 @@ function changeCover(update: (fn: (s: AppState) => AppState) => void, change: (s
 }
 
 function CoverSheetBody({ onClose }: { onClose: () => void }) {
-  const { state, update, today, me, partner } = useApp()
+  const { state, update, today, me } = useApp()
   const toast = useToast()
   const cover = state.couple.cover
   const view = coverView(state, me.id, today)
@@ -270,7 +270,7 @@ function CoverSheetBody({ onClose }: { onClose: () => void }) {
   return (
     <div className="-mt-3">
       <p className="text-[13px] leading-relaxed text-ink-2">
-        두 사람의 오늘 화면 맨 위에 걸려요. 위아래로 옮겨 얼굴이 잘 보이게 맞춰요.
+        두 사람의 오늘 화면 맨 위에 걸려요.
       </p>
 
       {/* Preview — the photo as it will sit in the frame (drag or arrow keys to move it). */}
@@ -401,14 +401,8 @@ function CoverSheetBody({ onClose }: { onClose: () => void }) {
           checked={view.hidden || view.autoHidden}
           onChange={(next) => update((s) => setHideCover(s, me.id, next ? true : view.quiet ? false : undefined))}
           label={<span className="font-bold">내 화면에서는 그림만 보기</span>}
-          description={`사진 대신 기본 그림이 보여요. ${partner.name}님 화면은 그대로예요.`}
         />
       </div>
-
-      <p className="mt-3 flex gap-1.5 text-xs leading-relaxed text-ink-2">
-        <Icon name="lock" className="h-[18px] w-[18px]" />
-        <span>사진은 이 폰에만 저장돼요. 어디에도 올리지 않고, 백업 파일에도 들어가지 않아요.</span>
-      </p>
 
       {error ? (
         <p role="alert" className="mt-3 rounded-xl bg-warn-soft px-3 py-2.5 text-[13px] leading-relaxed text-ink">

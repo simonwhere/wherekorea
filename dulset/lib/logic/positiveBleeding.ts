@@ -50,10 +50,10 @@ export const BLEEDING_SIGNS: readonly BleedingSign[] = ['heavy', 'pain', 'should
 /** Chip labels — descriptive, no diagnosis. */
 export const BLEEDING_SIGN_LABEL: Record<BleedingSign, string> = {
   heavy: '패드가 한 시간 안에 젖어요',
-  pain: '참기 어려운 배 통증',
+  pain: '배가 참기 어렵게 아파요',
   shoulder: '어깨 끝이 아파요',
   faint: '어지럽고 쓰러질 것 같아요',
-  fever: '열이 나거나 오한',
+  fever: '열이 나거나 오한이 있어요',
 }
 
 const URGENT_SIGNS: readonly BleedingSign[] = ['heavy', 'pain', 'shoulder', 'faint']

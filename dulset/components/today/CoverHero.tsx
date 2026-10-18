@@ -84,7 +84,7 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
   }
 
   // The caption's right side, first match.
-  let right: React.ReactNode
+  let right: React.ReactNode = null
   if (view.quiet && hasCover && view.mode === 'photo' && !missing) {
     right = (
       <button type="button" className={captionButton} onClick={() => update((s) => setHideCover(s, me.id, true))}>
@@ -122,8 +122,6 @@ export default function CoverHero({ onNavigate }: { onNavigate: (tab: TabKey) =>
         ) : null}
       </>
     )
-  } else {
-    right = <span className="min-w-0 shrink-[2] truncate text-[12.5px] font-medium text-ink-3">사진은 이 폰에만 저장돼요</span>
   }
 
   const names = view.decorate ? (

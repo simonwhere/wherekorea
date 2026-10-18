@@ -178,9 +178,6 @@ export default function MonthCalendar({
         </ul>
       ) : null}
       {marks ? <p className="mt-1.5 px-2 text-[11px] text-ink-3">{marks}</p> : null}
-      <p className="mt-2 px-2 text-[11px] text-ink-3">
-        {lens.owner ? '날짜를 누르면 그날을 기록할 수 있어요.' : '날짜를 누르면 자세히 볼 수 있어요.'}
-      </p>
     </Card>
   )
 }

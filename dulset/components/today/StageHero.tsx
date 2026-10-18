@@ -5,6 +5,7 @@ import { Button, Card, cx } from '@/components/ui'
 import { dLabel, formatKo } from '@/lib/dates'
 import { babyAge, nextKoreanDay } from '@/lib/logic/baby'
 import { ageAt } from '@/lib/logic/babyView'
+import { copula } from '@/lib/logic/cover'
 import { dueDate, formatGA, gestationalAge } from '@/lib/logic/pregnancy'
 import { TRIMESTER_LABEL } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
@@ -129,7 +130,7 @@ function ParentingHero({ onNavigate }: { onNavigate: Nav }) {
             isToday ? 'bg-brand text-white' : 'bg-surface text-ink',
           )}
         >
-          <span className="font-semibold">{isToday ? `오늘은 ${next.label}이에요 🎉` : `${next.label}까지`}</span>
+          <span className="font-semibold">{isToday ? `오늘은 ${next.label}${copula(next.label)}` : `${next.label}까지`}</span>
           {isToday ? null : <span className="font-bold tabular-nums text-brand-ink">{dLabel(next.date, today)}</span>}
         </div>
       ) : null}

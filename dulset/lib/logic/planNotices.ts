@@ -197,7 +197,7 @@ export function noticeExpiryNotices(state: AppState, today: ISODate): Notice[] {
     to,
     kind: 'system',
     title: `${NOTICE_EXPIRY_TITLE} D-${n.daysLeft}`,
-    body: `${formatKo(n.expires)}까지 유효해요. 다음 시술은 그 안에 시작해야 지원이 적용돼요. 자세한 건 보건소마다 달라요.`,
+    body: `${formatKo(n.expires)}까지 유효해요. 다음 시술은 그 안에 시작해야 지원돼요. 보건소마다 달라요.`,
   }))
 }
 

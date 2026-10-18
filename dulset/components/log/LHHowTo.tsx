@@ -62,7 +62,7 @@ const LINES: HowToLine[] = [
     // start-day
     icon: 'cal',
     title: '언제부터',
-    text: '시작일은 제품 설명서의 주기 길이 표를 따라요. 28일 주기면 보통 11일째부터예요. 주기가 들쭉날쭉하면 최근 6개월 중 가장 짧은 주기 기준으로 더 일찍 시작해요. 양성이 나올 때까지 매일 해요.',
+    text: '시작일은 제품 설명서의 주기 길이 표를 따라요. 28일 주기면 보통 11일째부터예요. 주기가 들쭉날쭉하면 최근 6개월 중 가장 짧은 주기에 맞춰 더 일찍 시작해요. 양성이 나올 때까지 매일 해요.',
     sources: ['clearblue', 'clearblueLeaflet', 'mfds', 'manufacturers'],
   },
   {
@@ -96,15 +96,15 @@ const LINES: HowToLine[] = [
   {
     // twice-a-day
     icon: 'moon',
-    title: '연해지기 시작하면 하루 두 번',
-    text: '급상승이 짧게 지나갈 수 있어요. 선이 연하게 보이기 시작하면 아침·저녁 두 번 해 보라고 권하는 제조사도 있어요. 둘셋도 하루 두 번까지 남겨요.',
+    title: '선이 보이기 시작하면 하루 두 번',
+    text: '급상승이 짧게 지나갈 수 있어요. 선이 연하게 보이기 시작하면 아침·저녁 두 번 해 보라고 권하는 제조사도 있어요.',
     sources: ['manufacturers', 'ro'],
   },
   {
     // where-to-buy · price
     icon: 'store',
     title: '어디서, 얼마에',
-    text: '약국, 온라인, 편의점·마트에서 살 수 있어요 (2019년 7월부터 편의점·마트도). 예: 온라인 20개입 약 1만 3천 원 (2026년 10월 검색 기준) · 약국·판매처마다 달라요.',
+    text: '약국·온라인·편의점·마트에서 살 수 있어요(편의점·마트는 2019년 7월부터). 온라인 20개입이 약 1만 3천 원이에요(2026년 10월 검색 기준). 판매처마다 달라요.',
     sources: ['retail', 'coupang'],
   },
 ]
@@ -154,8 +154,8 @@ function useAppStartLine(): string | null {
   const w = cycleAt(state, today)
   if (!w || w.basis === 'lh') return null
   const start = addDays(w.fertileStart, -LH_LEAD_DAYS)
-  const when = start <= today ? '지금이 시작할 때예요' : `${formatKo(start, { weekday: false })}부터예요`
-  return `둘셋 달력 기준으로는 ${when} (예상). 설명서 표와 며칠 다를 수 있어요 — 일찍 시작하면 놓칠 일은 줄고 테스트기는 더 들어요.`
+  const when = start <= today ? '지금부터예요' : `${formatKo(start, { weekday: false })}부터예요`
+  return `둘셋 달력으로는 ${when}(예상). 설명서 표와 며칠 다를 수 있어요.`
 }
 
 function HowToBody() {
@@ -164,7 +164,7 @@ function HowToBody() {
   return (
     <div className="space-y-4 pb-2">
       <p className="text-[13px] leading-relaxed text-ink-2">
-        {soft ? 'LH 테스트기' : '배란테스트기(LH)'}는 소변 속 LH가 급상승하는 때를 보는 검사예요. 결과는 ‘+ 기록’에 남기면 돼요.
+        {soft ? 'LH 테스트기' : '배란테스트기(LH)'}는 소변 속 LH가 급상승하는 때를 보는 검사예요.
       </p>
       <ol className="space-y-2">
         {LINES.map((line, i) => (
@@ -182,7 +182,7 @@ function HowToBody() {
         ))}
       </ol>
       <p className="text-[11px] leading-relaxed text-ink-3">
-        참고용이에요. 피임 목적으로 쓰지 말고, 자세한 건 제품 설명서와 약사·의사에게 물어봐요. 병원·회사·판매처마다 달라요.
+        참고용이에요. 피임 목적으로 쓰지 말고, 자세한 건 제품 설명서를 보거나 약사·의사에게 물어보세요. 제품·판매처마다 달라요.
       </p>
       <details className="group rounded-xl bg-surface-2 px-3">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center text-xs font-semibold text-ink-2 [&::-webkit-details-marker]:hidden">
@@ -205,7 +205,6 @@ function HowToBody() {
             </li>
           ))}
         </ol>
-        <p className="pb-3 text-[11px] leading-relaxed text-ink-3">검색 결과 요약을 바탕으로 정리했고, 원문은 출시 전에 다시 확인해요.</p>
       </details>
     </div>
   )

@@ -59,7 +59,7 @@ export default function PTestPanel({
         ))}
       </div>
       <LoggedList
-        title="이 날의 임테기 기록"
+        title="이날 임테기 기록"
         items={tests.map((t) => ({
           key: t.id,
           text: `${t.time ?? '시각 없음'} · ${PTEST_LABEL[t.result]}`,

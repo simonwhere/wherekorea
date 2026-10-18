@@ -32,17 +32,18 @@ export default function FocusCard({ items, actions }: { items: PlanItem[]; actio
   const rows = focus.length ? focus : calm
   const allDone = rows.length > 0 && rows.every((i) => i.status === 'done')
   const extra = rows.length - SHOWN
+  // One short line, or none while the list speaks for itself.
   const subtitle = allDone
-    ? '여기 있는 건 모두 챙겼어요. 수고했어요 👏'
+    ? '여기 있는 건 모두 챙겼어요.'
     : overdue
       ? '기한이 지난 일이 있어요. 지금이라도 할 수 있는지 확인해 봐요.'
       : focus.length
-        ? '지금 할 수 있는 것과 곧 시작되는 것만 모았어요.'
+        ? undefined
         : rows.length
-          ? '급한 건 없어요. 여유 있을 때 하나씩 살펴봐요.'
+          ? '급한 건 없어요.'
           : resting
-            ? '지금 챙길 건 없어요. 천천히 쉬어 가도 괜찮아요.'
-            : '지금 챙길 건 모두 챙겼어요. 수고했어요 👏'
+            ? '지금 챙길 건 없어요.'
+            : '지금 챙길 건 모두 챙겼어요.'
 
   const cardActions: ItemActions = {
     ...actions,
@@ -61,9 +62,7 @@ export default function FocusCard({ items, actions }: { items: PlanItem[]; actio
     <Card tone={overdue ? 'warn' : 'brand'} className="px-3 pb-2 pt-3.5">
       <div className="px-1">
         <h2 className="text-[15px] font-bold text-ink">이번 주 챙길 것</h2>
-        <p className="mt-0.5 text-xs text-ink-2">
-          {subtitle}
-        </p>
+        {subtitle ? <p className="mt-0.5 text-xs text-ink-2">{subtitle}</p> : null}
       </div>
       {rows.length ? (
         <ul className="mt-1.5 divide-y divide-line/60">

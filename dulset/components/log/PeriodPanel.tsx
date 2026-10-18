@@ -64,7 +64,7 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
         ) : openToday ? (
           <>
             <div className={offerYesterday ? 'grid grid-cols-2 gap-2' : ''}>
-              <BigAction label="오늘 끝났어요" hint="오늘을 마지막 날로 남겨요" onClick={() => end(today)} />
+              <BigAction label="오늘 끝났어요" onClick={() => end(today)} />
               {offerYesterday ? (
                 <BigAction
                   tone="secondary"
@@ -75,11 +75,11 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
               ) : null}
             </div>
             {date !== today && date !== yesterday ? (
-              <BigAction tone="secondary" label={`${day}에 끝났어요`} hint={`${day}을 마지막 날로 남겨요`} onClick={() => end(date)} />
+              <BigAction tone="secondary" label={`${day}에 끝났어요`} onClick={() => end(date)} />
             ) : null}
           </>
         ) : (
-          <BigAction label={date === today ? '오늘 끝났어요' : '끝났어요'} hint={`${day}을 마지막 날로 남겨요`} onClick={() => end(date)} />
+          <BigAction label={date === today ? '오늘 끝났어요' : `${day}에 끝났어요`} onClick={() => end(date)} />
         )}
         {a.isStart ? (
           <button
@@ -105,21 +105,16 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
       save(
         (s) => logPeriodOrBleeding(s, d, viewer, today),
         { kind: 'period' },
-        `${dayWord(d, today)} 시작으로 남겼어요. 이제부터 예상을 보여 드릴게요`,
+        `${dayWord(d, today)} 시작으로 남겼어요`,
       )
     return (
       <div className="space-y-3">
-        <p className="text-[13px] leading-relaxed text-ink-2">
-          첫 기록이에요. 마지막 생리가 시작된 날 하나면 돼요 — 대략적인 날이어도 괜찮아요.
-        </p>
-        <BigAction label={isToday ? '오늘 시작' : `${day} 시작`} hint="마지막 생리 시작일로 남겨요" onClick={() => first(date)} />
+        <p className="text-[13px] leading-relaxed text-ink-2">마지막 생리가 시작된 날을 골라 주세요. 대략이어도 괜찮아요.</p>
+        <BigAction label={isToday ? '오늘 시작' : `${day} 시작`} onClick={() => first(date)} />
         <div>
           <p className="mb-1.5 text-xs font-semibold text-ink-2">또는</p>
           <QuickDateChips today={today} onPick={first} label="마지막 생리 시작일 빠른 선택" skip={[diffDays(date, today)]} />
         </div>
-        <p className="text-[11px] leading-relaxed text-ink-3">
-          다른 날은 위의 날짜에서 고르고, 쓰던 앱의 이전 시작일은 주기 탭에서 더 넣을 수 있어요.
-        </p>
       </div>
     )
   }
@@ -128,15 +123,14 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
     <div className="space-y-3">
       {bleeding ? (
         <p className="rounded-xl bg-surface-2 px-3 py-2 text-xs leading-relaxed text-ink-2">
-          병원 확인 전이라 생리 대신 <b className="font-semibold text-ink">출혈 시작일</b>로 남겨요. 홈에서 안내를 볼 수 있고, 생리로 바꿀
-          수도 있어요.
+          병원 확인 전이라 생리 대신 <b className="font-semibold text-ink">출혈 시작일</b>로 남겨요.
         </p>
       ) : null}
       {nearby ? (
         <p className="rounded-xl bg-warn-soft px-3 py-2 text-xs leading-relaxed text-ink-2">
           {extendable || moveable
             ? `${formatKo(nearby.start)}에 기록한 생리와 가까워요. 같은 생리라면 아래에서 고쳐 주세요.`
-            : `${formatKo(nearby.start)} 기록과 ${Math.abs(diffDays(nearby.start, date))}일 차이예요. 날짜가 맞는지 한 번 확인해 주세요.`}
+            : `${formatKo(nearby.start)} 기록과 ${Math.abs(diffDays(nearby.start, date))}일 차이예요. 날짜가 맞는지 한번 확인해 주세요.`}
         </p>
       ) : null}
       <div className={offerYesterday ? 'grid grid-cols-2 gap-2' : ''}>
@@ -160,7 +154,7 @@ export default function PeriodPanel({ date, save }: { date: ISODate; save: SaveL
       {moveable ? (
         <BigAction
           tone="secondary"
-          label="시작일을 이 날로 옮기기"
+          label="시작일을 이날로 옮기기"
           hint={`${formatKo(moveable.start, { weekday: false })} 기록이 사실 ${day} 시작이었다면`}
           onClick={() => save((s) => movePeriodStart(s, moveable.start, date), { kind: 'period' }, `시작일을 ${day}로 옮겼어요`)}
         />

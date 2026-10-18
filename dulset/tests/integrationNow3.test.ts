@@ -391,7 +391,7 @@ describe('N19: the in-app surfaces leakInference does not read hold still too', 
   })
 
   it('no frequency line ever reaches him — at any sharing level, in any card, notice, day sheet, summary or link day', () => {
-    const FREQUENCY = /2~3일에 한 번|하루나 이틀에 한 번|이틀에 한 번|일에 한 번이면/
+    const FREQUENCY = /2~3일에 한 번|하루나 이틀에 한 번|이틀에 한 번|일에 한 번이면|일주일에 2~3번/
     const lenses: PartnerLens[] = [...NO_DETAIL_LENSES, { share: 'details', style: 'explicit' }, { share: 'details', style: 'soft' }, { share: 'details', style: 'off' }]
     for (const base of BASES) {
       for (const l of lenses) {

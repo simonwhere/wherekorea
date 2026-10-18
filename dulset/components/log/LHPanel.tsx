@@ -9,7 +9,6 @@ import { LH_LABEL, type FertilityView } from '@/lib/logic/calendarView'
 import { cycleAt, isSurge } from '@/lib/logic/cycle'
 import {
   LH_SLOT_LABEL,
-  MAX_LH_PER_DAY,
   addLHTest,
   freeLHSlot,
   isTime,
@@ -79,7 +78,6 @@ export default function LHPanel({
   const when: Pick<LHInput, 'time' | 'slot'> = isToday ? { time: isTime(time) ? time : undefined } : { slot }
   // The test this choice would stand for: today's at the same minute, a past day's in that half.
   const current = isToday ? tests.find((t) => lhKey(t) === (when.time ?? '')) : tests.find((t) => lhSlotOf(t) === slot)
-  const full = tests.length >= MAX_LH_PER_DAY && !current
 
   // "…기록을 바꿀까요?" — the result picked while another test is in its place.
   const [asking, setAsking] = useState<{ result: LHResult; plan: Extract<LHPlan, { action: 'replace' }> } | null>(null)
@@ -108,7 +106,7 @@ export default function LHPanel({
     if (plan.action !== 'replace') return commit(result, false)
     // The same result is already there: nothing to change, nothing to ask.
     if (plan.target.result === result) {
-      toast.show(`${lhWhen(plan.target)} · ${LH_LABEL[result]}, 이미 남겨 두었어요`)
+      toast.show(`${lhWhen(plan.target)} ${LH_LABEL[result]} 기록이 이미 있어요`)
       return
     }
     setAsking({ result, plan })
@@ -158,10 +156,6 @@ export default function LHPanel({
       </div>
       {detail ? (
         <div id={detailId} className="space-y-3 rounded-xl border border-line bg-surface-2/60 p-3">
-          <p className="text-[13px] leading-relaxed text-ink-2">
-            검사선(T)을 대조선(C)과 비교해 골라 주세요.
-            {paused ? '' : view === 'explicit' ? ' 첫 양성이 나오면 배란 예상일을 다시 계산해요.' : ' 첫 양성이 나오면 예상 날짜를 다시 계산해요.'}
-          </p>
           {isToday ? (
             <div className="flex items-center gap-3">
               <label htmlFor={timeId} className="shrink-0 text-xs font-semibold text-ink-2">
@@ -247,13 +241,9 @@ export default function LHPanel({
             </Button>
           </div>
         </div>
-      ) : full ? (
-        <p className="text-xs leading-relaxed text-ink-3">
-          {isToday ? `하루 ${MAX_LH_PER_DAY}번까지 남겨요. 더 고르면 어느 기록을 바꿀지 먼저 물어볼게요.` : '두 번 다 남겼어요. 고르면 바꿀지 먼저 물어볼게요.'}
-        </p>
       ) : null}
       <LoggedList
-        title="이 날의 LH 기록"
+        title="이날 LH 기록"
         items={tests.map((t) => ({
           key: `${lhKey(t)}-${t.result}`,
           text: `${lhWhen(t)} · ${LH_LABEL[t.result]}`,
@@ -309,10 +299,10 @@ function UsesLHAsk({ view, paused }: { view: FertilityView; paused: boolean }) {
     setChanging(false)
     toast.show(
       value === true
-        ? '좋아요. 결과를 여기에 남겨 주세요'
+        ? '좋아요. 결과는 여기에 남겨 주세요'
         : value === false
-          ? 'LH 권유를 쉬어요 · 설정 › 내 알림에서 바꿀 수 있어요'
-          : '다음 주기에 다시 물어볼게요',
+          ? 'LH 안내를 껐어요'
+          : '다음 주기에 다시 물어봐요',
     )
   }
 
@@ -321,7 +311,6 @@ function UsesLHAsk({ view, paused }: { view: FertilityView; paused: boolean }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-bold text-ink">{strips} 써요?</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-ink-3">‘안 써요’면 홈에서 LH 권유가 사라져요. 기록은 언제든 할 수 있어요.</p>
         </div>
         <button
           type="button"

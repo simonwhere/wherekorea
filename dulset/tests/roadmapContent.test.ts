@@ -230,7 +230,7 @@ describe('챙길 것 view model', () => {
     expect(calm.every((i) => i.phase === 'preconception')).toBe(true)
     const [prep, first] = phaseGroups(items, 'all', s)
     expect(prep!.hint).toBeUndefined()
-    expect(first!.hint).toBe('임신을 기록하면 날짜가 자동으로 계산돼요')
+    expect(first!.hint).toBe('임신을 기록하면 날짜가 나와요')
     expect(currentPhase(s, today)).toBe('preconception')
   })
 
@@ -249,7 +249,7 @@ describe('챙길 것 view model', () => {
     // Birth is one of the pregnant stage's phases, so the row says so.
     expect(statusPill(reg, 'pregnant')).toEqual({ label: '날짜 미정', tone: 'muted' })
     const birth = phaseGroups(items, 'stage', s).find((g) => g.phase === 'birth')!
-    expect(birth.hint).toBe('아기가 태어난 날을 기록하면 날짜가 자동으로 계산돼요')
+    expect(birth.hint).toBe('아기가 태어난 날을 기록하면 날짜가 나와요')
     // 배우자 출산휴가 opens 50 days before the due date (2027-04-07).
     const leave = find(items, 'birth-partner-leave')
     expect([leave.start, leave.end]).toEqual([addDays('2027-04-07', -50), addDays('2027-04-07', 120)])

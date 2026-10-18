@@ -366,7 +366,7 @@ export function shortCheckLabel(label: string): string {
  * Up to three things `partnerId` did in the week of `today` (Monday up to
  * today), most meaningful first: this week's pick [했어요] · a step of a 할 일
  * (챙길 것 / 이번 달 할 일) · a reply to her signal · the daily check he kept most
- * ('걷기 3일') · a weekly check-in (without its name: '체크인 했어요') · a signal
+ * ('걷기 3일') · a weekly check-in (without its name: '체크인했어요') · a signal
  * of his own. Every line counts something that happened — nothing is ever 0,
  * and a week with nothing comes back empty (the screen then shows no line and
  * no button). Empty during the quiet and outside the preparing / pregnant
@@ -415,7 +415,7 @@ export function partnerWeekSummary(state: AppState, today: ISODate, partnerId: M
 
   const weeklyIds = new Set(mine.filter(isWeekly).map((i) => i.id))
   const checkins = new Set(days.flatMap((d) => doneOn(d).filter((id) => weeklyIds.has(id)))).size
-  if (checkins > 0) out.push({ kind: 'checkin', text: '체크인 했어요', count: checkins })
+  if (checkins > 0) out.push({ kind: 'checkin', text: '체크인했어요', count: checkins })
 
   if (signals > 0) out.push({ kind: 'signal', text: '신호를 보냈어요', count: signals })
 

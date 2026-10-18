@@ -161,7 +161,7 @@ export default function CycleBlock({
         return
       case 'end-rest':
         update((s) => endRestFromHome(s, today, stampOn(today)))
-        toast.show(m.restReason === 'clinic' ? '병원 준비를 마쳤어요. 예상과 알림이 돌아와요' : '다시 켰어요. 예상과 알림이 돌아와요')
+        toast.show(m.restReason === 'clinic' ? '병원 준비를 마쳤어요. 날짜 예상과 알림을 다시 켰어요' : '날짜 예상과 알림을 다시 켰어요')
         return
       case 'still-waiting':
         // [아직 안 왔어요]: the cycle keeps counting; nothing is logged. The card
@@ -184,16 +184,16 @@ export default function CycleBlock({
 
   const tellPeriod = (start: string) => {
     update((s) => tellPartnerPeriod(s, start, stampOn(today)))
-    toast.show(`${partner.name}님에게 조용히 알렸어요`)
+    toast.show(`${partner.name}님에게 알렸어요`)
   }
   const skipPeriod = (start: string) => update((s) => skipTellPartnerPeriod(s, start, stampOn(today)))
   const tellPositive = () => {
     update((s) => tellPartnerPositive(s, stampOn(today)))
-    toast.show(`${partner.name}님에게 차분히 알렸어요`)
+    toast.show(`${partner.name}님에게 알렸어요`)
   }
   const tellBleeding = () => {
     update((s) => tellPartnerBleeding(s, stampOn(today)))
-    toast.show(`${partner.name}님에게 조용히 알렸어요`)
+    toast.show(`${partner.name}님에게 알렸어요`)
   }
 
   const primary = m.primary
@@ -238,7 +238,7 @@ export default function CycleBlock({
   const footnote = !!m.note && m.note.length > NOTE_BESIDE_MAX
   const text = (
     <>
-      <p className="text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{m.body}</p>
+      {m.body ? <p className="text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{m.body}</p> : null}
       {m.note && !footnote ? <p className="mt-[5px] text-[12.5px] leading-[1.5] text-ink-3">{m.note}</p> : null}
       {/* Today's LH result as a chip — unless the title already says it ("LH 양성이 나왔어요"). */}
       {m.todayLH && m.voice === 'explicit' && !(isSurge(m.todayLH) && m.title.startsWith('LH 양성')) ? (
@@ -264,7 +264,6 @@ export default function CycleBlock({
         >
           <p className="min-h-[22px] text-[12.5px] font-bold tracking-[-0.01em] text-ink-2">{VEIL_COPY.eyebrow}</p>
           <h2 className="mt-1 text-[23px] font-extrabold leading-[1.3] tracking-[-0.04em] text-ink">{VEIL_COPY.title}</h2>
-          <p className="mt-1 text-[14.5px] leading-[1.55] tracking-[-0.01em] text-ink-2">{VEIL_COPY.body}</p>
           <div data-fold="" className="mt-4 [@media(max-height:700px)]:mt-3.5">
             <PillButton variant="outline" full onClick={() => setRevealed(true)}>
               {VEIL_COPY.action}
@@ -353,7 +352,7 @@ export default function CycleBlock({
         {m.askTell ? (
           <div className={inner}>
             <h3 className="text-[14.5px] font-extrabold tracking-[-0.02em] text-ink">{partner.name}님에게 알릴까요?</h3>
-            <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">‘이번 달은 쉬어 가요’라고 조용히 알려 드려요.</p>
+            <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">‘이번 달은 쉬어 가요’라고만 전해요.</p>
             <div data-fold="" className="mt-3 flex gap-2">
               <PillButton size="md" className="min-w-0 flex-1" onClick={() => tellPeriod(m.askTell!.start)}>
                 알리기
@@ -364,7 +363,7 @@ export default function CycleBlock({
                 className="min-w-0 flex-1"
                 onClick={() => skipPeriod(m.askTell!.start)}
               >
-                괜찮아요
+                안 알릴게요
               </PillButton>
             </div>
           </div>
@@ -424,7 +423,7 @@ export default function CycleBlock({
                 <div className="mt-3 flex items-center justify-between gap-2 border-t border-line/75 pt-1">
                   <p className="text-[12.5px] text-ink-2">{partner.name}님에게도 알릴까요?</p>
                   <LinkButton size="md" onClick={tellPositive} className="shrink-0">
-                    차분히 알리기
+                    알리기
                   </LinkButton>
                 </div>
               ) : null}
@@ -475,7 +474,7 @@ export default function CycleBlock({
             <h3 className="text-[14.5px] font-extrabold tracking-[-0.02em] text-ink">
               {formatKo(m.bleeding.since, { weekday: false })}부터 생리로 기록할까요?
             </h3>
-            <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">병원 확인 전 상태는 끝나고, 평소처럼 주기를 이어 가요.</p>
+            <p className="mt-[3px] text-[12.5px] leading-[1.5] text-ink-3">‘병원 확인 전’ 표시가 끝나고 평소처럼 주기를 이어 가요.</p>
             <div className="mt-3 flex gap-2">
               <PillButton size="md" className="min-w-0 flex-1" onClick={settlePeriod}>
                 네, 기록할게요
@@ -491,7 +490,7 @@ export default function CycleBlock({
           <div className="mt-3 flex items-center justify-between gap-2 border-t border-line/75 pt-1">
             <p className="text-[12.5px] text-ink-2">{partner.name}님에게도 알릴까요?</p>
             <LinkButton size="md" onClick={tellBleeding} className="shrink-0">
-              조용히 알리기
+              알리기
             </LinkButton>
           </div>
         ) : null}
@@ -528,7 +527,7 @@ function VaccineRestCard({ hint }: { hint: VaccineRestHint }) {
   const toast = useToast()
   const accept = () => {
     update((s) => acceptVaccineRest(s, hint))
-    toast.show('이번 주기는 쉬어요. 날짜 예상과 알림을 잠시 꺼 둘게요')
+    toast.show('날짜 예상과 알림을 잠시 껐어요')
   }
   const dismiss = () => update((s) => dismissVaccineRest(s, hint, stampOn(today)))
   return (
@@ -538,8 +537,8 @@ function VaccineRestCard({ hint }: { hint: VaccineRestHint }) {
         최근 {hint.label} 항목을 챙겼어요
       </p>
       <p className="mt-1 text-sm leading-relaxed text-ink">
-        접종했다면, 생백신이라 접종 뒤 {hint.wait}({formatKo(hint.until, { weekday: false })} 무렵까지)는 임신을 미루도록 안내해요. 이번
-        주기는 쉬어 갈까요?
+        접종했다면 생백신이라 {hint.wait}({formatKo(hint.until, { weekday: false })} 무렵까지) 동안 임신을 미루도록 안내해요. 이번 주기는
+        쉬어 갈까요?
       </p>
       <div data-fold="" className="mt-3 flex gap-2">
         <PillButton size="md" className="min-w-0 flex-1" onClick={accept}>
@@ -553,7 +552,7 @@ function VaccineRestCard({ hint }: { hint: VaccineRestHint }) {
         <ExternalLink href="https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=1122">질병관리청 예방접종도우미</ExternalLink>
         <ExternalLink href="https://www.cdc.gov/vaccines-pregnancy/hcp/vaccination-guidelines/index.html">CDC 안내</ExternalLink>
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-ink-3">자세한 건 담당의와 확인하세요. 병원·보건소마다 안내가 조금씩 달라요.</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-ink-3">자세한 건 담당의와 확인하세요. 병원·보건소마다 안내가 달라요.</p>
     </Card>
   )
 }

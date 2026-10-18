@@ -33,7 +33,7 @@ import { bookingDraft, completeMonthlyTask, setClaimDocDone, taskStageLabel, typ
 import type { AppointmentDraft } from '@/lib/logic/plan'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
-import { ExternalLink, LinkButton } from './bits'
+import { ExternalLink, LinkButton, objectParticle } from './bits'
 import { useShortViewport } from './useFoldFit'
 
 type Nav = (tab: TabKey) => void
@@ -275,6 +275,9 @@ function GuideRows({ task }: { task: MonthlyTask }) {
   )
 }
 
+/** What to bring to the booked test (the stage guide's, else the referral). */
+const bringOf = (task: MonthlyTask): string => task.guide?.bring ?? '검사의뢰서'
+
 function AppointmentLine({ task, muted = false }: { task: MonthlyTask; muted?: boolean }) {
   const a = task.appointment
   if (!a) return null
@@ -298,7 +301,7 @@ function ClaimDocs({ task }: { task: MonthlyTask }) {
   return (
     <div className="mt-2">
       <p className="text-[12.5px] font-bold text-ink-3">
-        청구 서류 {left === 0 ? '모두 챙겼어요 ✓' : `${task.docs.length - left}/${task.docs.length}`}
+        청구 서류 {left === 0 ? '모두 챙겼어요' : `${task.docs.length - left}/${task.docs.length}`}
       </p>
       <ul className="mt-0.5 grid grid-cols-2 gap-x-2">
         {task.docs.map((d) => (
@@ -324,7 +327,6 @@ function ClaimDocs({ task }: { task: MonthlyTask }) {
           </li>
         ))}
       </ul>
-      <p className="text-[12px] text-ink-3">서류는 사진으로도 남겨 두면 든든해요.</p>
     </div>
   )
 }
@@ -379,7 +381,7 @@ function StageBody({
           <p className="mt-0.5 text-[12.5px] text-ink-3">
             {pastBooked
               ? '예약일이 지났어요. 일정을 고치거나 다녀온 날을 기록해요.'
-              : `${task.guide?.bring ?? '검사의뢰서'} 챙기기 · 검사 준비는 병원 안내를 따라요.`}
+              : `${bringOf(task)}${objectParticle(bringOf(task))} 챙겨요. 검사 준비는 병원 안내를 따라요.`}
           </p>
         </>
       ) : (

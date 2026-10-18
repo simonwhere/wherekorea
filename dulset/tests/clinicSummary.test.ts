@@ -76,7 +76,7 @@ describe('clinicSummary: the demo couple as of 2026-10-02', () => {
   it('header, people, 준비 기간', () => {
     const s = own()
     expect(s.header).toBe(CLINIC_SUMMARY_HEADER)
-    expect(s.header).toBe('둘셋 기록 요약 · 병원에 보여 주는 용도 · 예상은 참고용')
+    expect(s.header).toBe('둘셋 기록 요약 · 예상은 참고용')
     expect(s.generatedOn).toBe(TODAY)
     expect(s.owner).toEqual({ id: 'b', name: '지은', role: '아내', birthYear: 1994, age: 32, cycleOwner: true })
     expect(s.partner).toEqual({ id: 'a', name: '민수', role: '남편', birthYear: 1992, age: 34, cycleOwner: false })

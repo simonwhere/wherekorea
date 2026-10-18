@@ -115,7 +115,7 @@ function LogBody({ request, save, onClose }: { request: LogRequest; save: SaveLo
 }
 
 function RecordBody({ request, save, onClose }: { request: LogRequest; save: SaveLog; onClose: () => void }) {
-  const { state, today, viewer, partner, cycleOwner } = useApp()
+  const { state, today, viewer, partner } = useApp()
   const lens = useMemo(() => cycleLens(state, viewer, today), [state, viewer, today])
   // Only the person whose cycle it is logs periods, LH and tests — and only while preparing.
   const canLog = canLogCycle(state, viewer) && state.stage === 'preparing'
@@ -158,22 +158,11 @@ function RecordBody({ request, save, onClose }: { request: LogRequest; save: Sav
         )}
       </section>
 
-      {canLog ? (
-        kind === 'intimacy' ? null : kind !== 'note' ? (
-          <p className="text-[11px] leading-relaxed text-ink-3">
-            {partnerSees
-              ? `${partner.name}님 화면에도 함께 보여요.`
-              : partnerLens.details || partnerLens.view === 'hidden' || partnerLens.pause
-                ? `${partner.name}님 화면에는 이 기록이 보이지 않아요.`
-                : `${partner.name}님에게는 기록 내용 없이 우리의 주간만 보여요.`}{' '}
-            날짜 예상은 참고용이며 피임 목적으로 쓰면 안 돼요.
-          </p>
-        ) : null
-      ) : canLogCycle(state, viewer) ? null : (
-        <p className="rounded-xl bg-surface-2 px-3 py-2 text-xs leading-relaxed text-ink-2">
-          주기 기록은 {cycleOwner.name}님이 해요.
+      {canLog && kind !== 'intimacy' && kind !== 'note' ? (
+        <p className="text-[11px] leading-relaxed text-ink-3">
+          {partnerSees ? `${partner.name}님 화면에도 보여요. ` : ''}날짜 예상은 참고용이에요. 피임 목적으로 쓰면 안 돼요.
         </p>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -183,12 +172,11 @@ function RecordBody({ request, save, onClose }: { request: LogRequest; save: Sav
 const sectionTitle = 'mb-1.5 text-[13px] font-bold text-ink-2'
 
 function DidBody({ save }: { save: SaveLog }) {
-  const { state, today, me, cycleOwner } = useApp()
+  const { state, today, me } = useApp()
   // The same chain line as his home's week block (TodayTab): not in the quiet after a loss.
   const withChain = partnerTaskVisible(state, today, me.id)
   return (
     <div className="space-y-5" data-did-sheet>
-      <p className="-mt-1 text-[13px] leading-relaxed text-ink-2">한 것을 여기서 바로 남겨요. 누르면 바로 저장돼요.</p>
       <PendingSignal />
       <WeekTogether withChain={withChain} />
       <DidChecks />
@@ -203,7 +191,6 @@ function DidBody({ save }: { save: SaveLog }) {
           <NotePanel date={today} save={save} />
         </div>
       </details>
-      <p className="text-[11px] leading-relaxed text-ink-3">주기 기록은 {cycleOwner.name}님이 해요.</p>
     </div>
   )
 }
@@ -223,9 +210,9 @@ function DidChecks() {
     const alreadyTold = state.notifications.some((n) => n.key === `complete:${me.id}:${today}`)
     const preview = toggleWithCompletion(state, me.id, partner.id, today, item.id, now)
     update((s) => toggleWithCompletion(s, me.id, partner.id, today, item.id, now).state)
-    if (preview.completed) toast.show(alreadyTold ? '오늘 체크 완료!' : `오늘 체크 완료! ${partner.name}님에게 알렸어요`)
+    if (preview.completed) toast.show(alreadyTold ? '오늘 체크를 모두 마쳤어요' : `오늘 체크를 모두 마쳤어요. ${partner.name}님에게 알렸어요`)
     else if (preview.cleared?.length) weeklyUndo.offer(item, preview.cleared)
-    else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인 완료!')
+    else if (isWeekly(item) && !done.includes(item.id)) toast.show('이번 주 체크인을 남겼어요')
   }
 
   const rows = [

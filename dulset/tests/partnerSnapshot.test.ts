@@ -1392,7 +1392,7 @@ describe('the moment card on the link', () => {
     const veiled = day0(setPersonalPref(s, PARTNER, 'homeDiscreet', true), '2026-09-11')
     expect(veiled.moment!.veiled).toBe(true)
     expect({ ...veiled.moment!, veiled: false }).toEqual(snap.moment)
-    expect(VEIL_COPY.title).toBe('오늘도 둘이 함께해요')
+    expect(VEIL_COPY.title).toBe('내용을 가려 뒀어요')
   })
 
   it('says what she told him and nothing before that: period, positive test, bleeding', () => {

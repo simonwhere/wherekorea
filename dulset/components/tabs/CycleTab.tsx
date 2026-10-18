@@ -149,30 +149,17 @@ export default function CycleTab() {
             {/* 병원과 함께 준비 중 (N13): both people see the badge; only the owner has the switch below. */}
             {clinic ? <Badge tone="brand">{CLINIC_LABEL}</Badge> : null}
           </h1>
-          <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-3">
-            {lens.owner ? (
-              <>
-                <span>
-                  {partner.name}님에게는{' '}
-                  {shareLevel === 'details'
-                    ? '기록도 함께 보여요'
-                    : shareLevel === 'week'
-                      ? '우리의 주간만 보여요'
-                      : '날짜가 보이지 않아요'}
-                </span>
-                <SettingsLink className="-my-3" anchor="share">
-                  바꾸기
-                </SettingsLink>
-              </>
-            ) : lens.details ? (
-              `${cycleOwner.name}님이 기록하고 함께 봐요`
-            ) : lens.view === 'hidden' ? (
-              // Fertile-day info is off for this viewer: don't name 우리의 주간 either.
-              `주기 기록은 ${cycleOwner.name}님이 해요`
-            ) : (
-              `${cycleOwner.name}님이 공유한 우리의 주간만 보여요`
-            )}
-          </p>
+          {lens.owner ? (
+            <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-3">
+              <span>
+                {partner.name}님에게는{' '}
+                {shareLevel === 'details' ? '기록도 보여요' : shareLevel === 'week' ? '우리의 주간만 보여요' : '날짜가 보이지 않아요'}
+              </span>
+              <SettingsLink className="-my-3" anchor="share">
+                바꾸기
+              </SettingsLink>
+            </p>
+          ) : null}
         </div>
       </header>
 
@@ -182,11 +169,7 @@ export default function CycleTab() {
             checked={clinic}
             onChange={toggleClinic}
             label={CLINIC_LABEL}
-            description={
-              clinic
-                ? '날짜 예상과 알림은 쉬고, 기록과 병원 일정만 보여요. 생리를 기록해도 꺼지지 않아요.'
-                : '병원에서 시기를 정하는 주기라면 켜 두세요. 예상과 알림이 쉬고, 홈은 다음 병원 일정부터 보여 줘요.'
-            }
+            description={clinic ? '생리를 기록해도 꺼지지 않아요.' : '병원에서 시기를 정하는 주기라면 켜 두세요.'}
           />
         </Card>
       ) : null}
@@ -234,29 +217,16 @@ export default function CycleTab() {
           }
         />
       ) : lens.owner ? (
-        <FirstPeriodCard view={lens.view} />
+        <FirstPeriodCard />
       ) : (
         <Card tone="muted" as="div">
           <p className="text-sm font-bold text-ink">아직 주기 기록이 없어요</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-            {cycleOwner.name}님이 기록을 시작하면 {lens.view === 'hidden' ? '여기에 보여요.' : '우리의 주간 예상이 여기에 보여요.'}
-          </p>
         </Card>
       )}
 
       {lens.details || lens.view !== 'hidden' ? (
         <>
-          <SectionTitle
-            sub={
-              lens.pause === 'clinic'
-                ? '기록한 날만 보여요 · 날짜는 병원 일정을 따라요'
-                : !lens.details
-                  ? '우리의 주간만 보여요'
-                  : lens.view === 'hidden'
-                    ? '생리와 생리 예정일만 보여요'
-                    : '모든 날짜는 참고용 예상이에요'
-            }
-          >
+          <SectionTitle sub={lens.details && lens.pause !== 'clinic' ? '예상 날짜는 참고용이에요' : undefined}>
             달력
           </SectionTitle>
           <MonthCalendar
@@ -290,7 +260,7 @@ export default function CycleTab() {
           <IconTile name="hospital" size="sm" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-ink">{CLINIC_SUMMARY_SHEET_TITLE}</p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-3">주기 표·검사·일정·시술 기록을 한 장으로 모아요. 해석은 없어요.</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-ink-3">주기·검사·일정·시술 기록을 한 장으로 모아요.</p>
           </div>
           <Button variant="secondary" onClick={() => setSummaryOpen(true)} className="shrink-0">
             만들기

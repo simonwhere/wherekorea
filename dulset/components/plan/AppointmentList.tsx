@@ -55,7 +55,6 @@ export default function AppointmentList({
   return (
     <section className="mt-6" aria-labelledby={`${pastId}-title`}>
       <SectionTitle
-        sub="기본은 둘이 같이 봐요 · 내 일정은 나만 보기로 둘 수 있어요"
         action={
           <button type="button" onClick={onAdd} className={cx(btnBrand, 'shrink-0 whitespace-nowrap')}>
             ＋ 일정 추가
@@ -66,11 +65,7 @@ export default function AppointmentList({
       </SectionTitle>
 
       {upcoming.length === 0 ? (
-        <EmptyState
-          icon="cal"
-          title="잡아 둔 병원·검사 일정이 없어요"
-          body="아래 목록의 ‘일정 잡기’나 ‘일정 추가’로 잡아 두면, 전날과 당일에 가는 사람에게 알림이 가요."
-        />
+        <EmptyState icon="cal" title="잡아 둔 병원·검사 일정이 없어요" />
       ) : (
         <Card className="py-1">
           <ul className="divide-y divide-line/70">
@@ -164,7 +159,7 @@ function AppointmentRow({
 
   const addToCalendar = () => {
     downloadText(`dulset-${appt.date}.ics`, buildIcs([appointmentIcsEvent(appt, discreetFor(state.settings, me.id))]))
-    toast.show('캘린더 파일을 받았어요. 열면 일정에 추가돼요')
+    toast.show('캘린더 파일을 받았어요')
   }
 
   return (

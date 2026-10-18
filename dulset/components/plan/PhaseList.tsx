@@ -40,12 +40,9 @@ export default function PhaseList({
   return (
     <section className="mt-6" aria-labelledby="plan-phases-title">
       <div className="mb-2 flex items-end justify-between gap-3 px-1">
-        <div>
-          <h2 id="plan-phases-title" className="text-[15px] font-bold text-ink">
-            {chips ? '단계별로 보기' : '준비하면서 챙길 것'}
-          </h2>
-          <p className="mt-0.5 text-xs text-ink-3">체크하면 둘의 화면에 같이 표시돼요</p>
-        </div>
+        <h2 id="plan-phases-title" className="text-[15px] font-bold text-ink">
+          {chips ? '단계별로 보기' : '준비하면서 챙길 것'}
+        </h2>
         <button type="button" onClick={onAddCustom} className={btnBrand}>
           ＋ 직접 추가
         </button>

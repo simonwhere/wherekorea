@@ -15,7 +15,6 @@ import {
   dayChanceFor,
   dayTitle,
   explainDayFor,
-  futureDayNote,
   knownCycleDay,
   lensPhase,
   phaseLabel,
@@ -55,7 +54,7 @@ export default function DaySheet({ date, onClose, lens }: { date: ISODate | null
 }
 
 function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: () => void }) {
-  const { state, update, today, viewer, cycleOwner } = useApp()
+  const { state, update, today, viewer } = useApp()
   const toast = useToast()
   // 관계한 날 (Next B): the consent holder's own record, never the partner's
   // screen (canSeeIntimacy is false for anyone else). The owner's past days
@@ -75,6 +74,7 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
   const lh = showsLH(lens) ? lhTestsOn(state.lhTests, date) : []
   const tests = showsTests(lens) ? pregnancyTestsOn(state.pregnancyTests, date) : []
   const star = lens.view === 'explicit' && lens.details && !lens.pause && info.isOvulation && cycle
+  const explain = explainDayFor(info, lens, date < today)
 
   return (
     <div className="space-y-5">
@@ -89,12 +89,12 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
               {label || (cycleDay !== undefined ? `주기 ${cycleDay}일째` : lens.details ? '예상 없음' : '평범한 날')}
               {label && cycleDay !== undefined ? <span className="ml-1.5 text-xs font-medium text-ink-3">주기 {cycleDay}일째</span> : null}
             </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{explainDayFor(info, lens, date < today)}</p>
+            {explain ? <p className="mt-1 text-[13px] leading-relaxed text-ink-2">{explain}</p> : null}
             {star ? (
               <p className="mt-2 flex items-center gap-1 text-[13px] font-medium text-fert">
                 <Icon name="star" className="h-3.5 w-3.5 shrink-0 fill-fert" strokeWidth={1.5} />
                 배란 예상일 ·{' '}
-                {cycle.basis !== 'lh' ? '달력으로 계산했어요' : showsLH(lens) ? 'LH 양성 다음 날로 계산했어요' : '기록으로 계산했어요'}
+                {cycle.basis !== 'lh' ? '달력 계산' : showsLH(lens) ? 'LH 양성 다음 날 기준' : '기록 기준'}
               </p>
             ) : null}
             {chance ? (
@@ -115,7 +115,7 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
       </section>
 
       {lh.length > 0 || tests.length > 0 ? (
-        <section aria-label="이 날의 기록" className="space-y-1">
+        <section aria-label="이날의 기록" className="space-y-1">
           {lh.map((t) => (
             // A past day's test carries a slot (아침 · 저녁) instead of a clock time (N17).
             <p key={`lh-${lhKey(t)}`} className="text-[13px] tabular-nums text-ink-2">
@@ -132,27 +132,18 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
         </section>
       ) : null}
 
-      {lens.owner ? (
-        date > today ? (
-          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">{futureDayNote(lens.view)}</p>
-        ) : null
-      ) : (
-        <div className="space-y-2">
-          <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-xs leading-relaxed text-ink-2">주기 기록은 {cycleOwner.name}님이 해요.</p>
-          {date <= today ? (
-            <Button
-              full
-              variant="secondary"
-              onClick={() => {
-                onClose()
-                openLog({ date, kind: 'note' })
-              }}
-            >
-              이 날 메모 남기기
-            </Button>
-          ) : null}
-        </div>
-      )}
+      {!lens.owner && date <= today ? (
+        <Button
+          full
+          variant="secondary"
+          onClick={() => {
+            onClose()
+            openLog({ date, kind: 'note' })
+          }}
+        >
+          이날 메모 남기기
+        </Button>
+      ) : null}
 
       {privateRow ? (
         <section aria-label="나만 보는 기록" className="rounded-xl bg-surface-2 px-3 py-0.5">
@@ -161,23 +152,19 @@ function DayBody({ date, lens, onClose }: { date: ISODate; lens: Lens; onClose: 
             onChange={(next) => {
               if (!canTogglePrivate) return
               update((s) => toggleIntimacyDay(s, viewer, date, today))
-              toast.show(next ? '이 날에 표시했어요 · 나만 볼 수 있어요' : '이 날 표시를 지웠어요')
+              toast.show(next ? '이날에 표시했어요' : '이날 표시를 지웠어요')
             }}
             label={
               <>
                 관계한 날 <span className="text-xs font-normal text-ink-3">(나만 보기)</span>
               </>
             }
-            description={
-              canTogglePrivate
-                ? '이 폰에만 남고, 아무것도 예상하지 않아요.'
-                : '주기 기록을 넘긴 뒤라 바꿀 수 없어요. 설정 › 공유 범위에서 지울 수 있어요.'
-            }
+            description={canTogglePrivate ? undefined : '주기 기록을 넘겨서 바꿀 수 없어요.'}
           />
         </section>
       ) : null}
 
-      <p className="text-[11px] leading-relaxed text-ink-3">모든 날짜는 참고용 예상이며 피임 목적으로 쓰면 안 돼요.</p>
+      <p className="text-[11px] leading-relaxed text-ink-3">날짜 예상은 참고용이에요. 피임 목적으로 쓰면 안 돼요.</p>
     </div>
   )
 }

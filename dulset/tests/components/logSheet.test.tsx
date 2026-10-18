@@ -97,7 +97,7 @@ describe('LogSheet · LH panel', () => {
     const dialog = screen.getByRole('dialog', { name: '기록하기' })
     expect(within(dialog).queryByRole('group', { name: 'LH 테스트 결과' })).toBeNull()
     expect(within(dialog).queryByLabelText('검사 시각')).toBeNull()
-    expect(dialog.textContent).toContain('주기 기록은 지은님이 해요')
+    expect(within(dialog).getByLabelText('한 줄 메모')).toBeTruthy()
   })
 })
 
@@ -123,7 +123,8 @@ describe('LogSheet · the partner’s 했어요 sheet', () => {
     // No cycle tool for him: no kind chips, no LH panel, no period buttons.
     expect(within(dialog).queryByRole('group', { name: 'LH 테스트 결과' })).toBeNull()
     expect(within(dialog).queryByRole('button', { name: /오늘 시작/ })).toBeNull()
-    expect(dialog.textContent).toContain('주기 기록은 지은님이 해요')
+    // No explainer lines (founder 2026-10-18): only the things he can do.
+    expect(dialog.textContent).not.toContain('주기 기록은')
     // The memo waits behind its own fold.
     const memo = dialog.querySelector('details') as HTMLDetailsElement
     expect(memo.open).toBe(false)

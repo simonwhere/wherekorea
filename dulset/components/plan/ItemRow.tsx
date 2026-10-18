@@ -19,7 +19,6 @@ import {
   canSchedule,
   countdown,
   dateText,
-  isShared,
   linkedAppointment,
   ownerText,
   shortDate,
@@ -296,7 +295,6 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
                     <span className="min-w-0">{row.supportNote}</span>
                   </p>
                 ) : null}
-                {isShared(item) ? <p className="mt-1.5 text-[11px] text-ink-3">임신·아기 탭의 같은 항목과 함께 체크돼요.</p> : null}
                 {t?.link ? (
                   <div className="-mb-1">
                     <ExternalLink href={t.link.url}>{t.link.label}에서 보기</ExternalLink>
@@ -306,7 +304,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
                   <div className="mt-1 border-t border-line/70 pt-1.5">
                     <p className="text-[11px] font-semibold text-ink-3">
                       출처
-                      {unverified ? <span className="font-medium"> · 원문 확인 중 — 공식 안내에서 한 번 더 확인해 주세요</span> : null}
+                      {unverified ? <span className="font-medium"> · 공식 안내에서 한 번 더 확인해 주세요</span> : null}
                     </p>
                     <ul className="-mb-1">
                       {t.sources.map((s) => (

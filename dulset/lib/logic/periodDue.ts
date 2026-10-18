@@ -54,7 +54,7 @@ export const PERIOD_DUE_COPY = {
   /** The day after the range (one notice per cycle): no test prompt yet. */
   late: {
     title: '🗓️ 생리 예정일이 지났어요',
-    body: (due: ExpectedPeriod) => `예정 범위(${dueRange(due)})가 지났어요. 시작했다면 기록해 주세요. 주기는 원래 조금씩 달라져요.`,
+    body: (due: ExpectedPeriod) => `예정 범위(${dueRange(due)})가 지났어요. 시작했다면 기록해 주세요.`,
   },
   /** LATE_TEST_DAYS days past the range (one notice per cycle). */
   lateTest: {
@@ -66,8 +66,8 @@ export const PERIOD_DUE_COPY = {
   lateTitle: (daysLate: number) => `생리 예정일이 ${daysLate}일 지났어요`,
   lateTitleShort: (daysLate: number) => `예정일이 ${daysLate}일 지났어요`,
   /** Under the late title, before / from LATE_TEST_DAYS. */
-  lateSub: '시작했다면 기록해 주세요. 주기는 원래 조금씩 달라져요.',
-  lateSubTest: '시작했다면 기록해 주세요. 주기는 원래 조금씩 달라져요. 임신 테스트를 해 봐도 좋아요.',
+  lateSub: '시작했다면 기록해 주세요.',
+  lateSubTest: '시작했다면 기록해 주세요. 임신 테스트를 해 봐도 좋아요.',
   /**
    * 15 days or more past the range, after '아직 안 왔어요': keeps counting. No
    * number of days here — the evidence (NICE, docs/research/medical.json) says
@@ -82,7 +82,7 @@ export const PERIOD_DUE_COPY = {
     // Evidence: docs/research/medical.json (NICE, 'When to seek evaluation') — the path itself never reaches the screen.
     note: '생리가 불규칙하거나 없으면 1년을 기다리지 말고 더 일찍 상담하도록 안내해요 (NICE).',
     /** The DoctorCard line for the 'amenorrhea' reason (lib/logic/today.ts doctorAdvice). */
-    advice: '생리가 많이 늦어지고 있어요. 임신 테스트가 음성이라면, 불규칙하거나 없는 생리는 더 일찍 상담하도록 안내해요 (NICE).',
+    advice: '생리가 많이 늦어지고 있어요. 임신 테스트가 음성이고 생리가 불규칙하거나 없으면 더 일찍 상담하도록 안내해요 (NICE).',
     /** The quiet notice every AMENORRHEA_NOTICE_DAYS days (notifications.ts), to the owner only. */
     notice: {
       title: '🩺 생리가 많이 늦어지고 있어요',

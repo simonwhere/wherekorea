@@ -38,14 +38,6 @@ const ERROR_TEXT: Record<Err, string> = {
   notice: '통지서 만료일을 다시 확인해 주세요.',
 }
 
-/** What each kind means for the counter (no number that isn't in treatments.ts). */
-const KIND_HINT: Record<TreatmentKind, string> = {
-  'ovulation-induction': '약·주사만 쓴 주기예요. 지원 횟수에는 들어가지 않아요.',
-  iui: '인공수정 회차예요. 지원 회차면 인공수정 횟수에 세요.',
-  'ivf-fresh': '신선배아 이식이에요. 동결배아와 함께 체외수정 횟수에 세요.',
-  'ivf-frozen': '동결배아 이식이에요. 신선배아와 함께 체외수정 횟수에 세요.',
-}
-
 export default function TreatmentSheet({ editing, onClose }: { editing?: Treatment; onClose: () => void }) {
   const { state, update, today, viewer, partner } = useApp()
   const toast = useToast()
@@ -130,7 +122,6 @@ export default function TreatmentSheet({ editing, onClose }: { editing?: Treatme
             onChange={setKind}
             options={TREATMENT_KINDS.map((k) => ({ value: k, label: treatmentLabel(k, neutral) }))}
           />
-          <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">{KIND_HINT[kind]}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -164,7 +155,6 @@ export default function TreatmentSheet({ editing, onClose }: { editing?: Treatme
           </Field>
         </div>
         {error === 'start' || error === 'end' ? <FieldError id={`${errorId}-${error}`}>{ERROR_TEXT[error]}</FieldError> : null}
-        <p className="-mt-2 text-[11px] leading-relaxed text-ink-3">시작은 약·채취·이식 중 둘이 정한 날, 끝은 결과를 안 날이에요.</p>
 
         <div>
           <span className="mb-1.5 block text-xs font-semibold text-ink-2">결과</span>
@@ -188,7 +178,7 @@ export default function TreatmentSheet({ editing, onClose }: { editing?: Treatme
               { value: 'unknown', label: '아직 몰라요' },
             ]}
           />
-          <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">지원 회차만 횟수에 세요. 중단한 회차는 세지 않아요 · 보건소마다 달라요.</p>
+          <p className="mt-1.5 text-[11px] leading-relaxed text-ink-3">지원 회차만 세고, 중단한 회차는 세지 않아요. 보건소마다 달라요.</p>
         </div>
 
         <div className="rounded-xl bg-surface-2 p-3">
@@ -218,8 +208,8 @@ export default function TreatmentSheet({ editing, onClose }: { editing?: Treatme
           ) : null}
           <p className="mt-2 text-[11px] leading-relaxed text-ink-3">
             {isISODate(notice) ? `${formatKo(notice, { year: true })}까지예요. ` : ''}
-            만료일을 적어 두면 30일 · 7일 · 1일 전에 둘 다에게 알려 줘요. 발급일만 알면 {NOTICE_VALID_MONTHS_FROM.slice(0, 4)}년부터{' '}
-            {NOTICE_VALID_MONTHS.from}개월(그 전엔 {NOTICE_VALID_MONTHS.before}개월)로 계산해요 — 통지서에 적힌 날짜가 우선이에요.
+            발급일로 계산하면 {NOTICE_VALID_MONTHS_FROM.slice(0, 4)}년 발급분부터 {NOTICE_VALID_MONTHS.from}개월, 그 전은{' '}
+            {NOTICE_VALID_MONTHS.before}개월이에요. 통지서에 적힌 날짜가 우선이에요.
           </p>
         </div>
 

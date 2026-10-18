@@ -96,7 +96,7 @@ describe('우리 한 줄 on her home: 이번 주 민수님 + [고마워요]', ()
     expect(thanks[0]).toMatchObject({ kind: 'cheer', title: '💛 지은님이 고마워했어요', key: weekThanksNoticeKey(T0, OWNER) })
     // Once a week: the button gives way to a quiet line.
     expect(within(block).queryByRole('button', { name: /고마워요/ })).toBeNull()
-    expect(block.textContent).toContain('고마워요를 전했어요')
+    expect(block.textContent).toContain('고맙다고 전했어요')
   })
 
   it('a week he did nothing in shows no line and no button at all (never a 0)', () => {

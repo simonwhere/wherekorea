@@ -22,7 +22,7 @@
       "note": "400µg",
       "audience": "cycle-owner",
       "evidence": "strong",
-      "summary": "임신 최소 1개월 전(한국은 보통 3개월 전)부터 임신 12주까지 하루 400µg. 신경관 결손 예방 효과가 가장 확실한 영양제예요. 이전 임신에서 신경관 결손이 있었다면 용량이 달라요 — 의사와 상의해요.",
+      "summary": "임신 최소 1개월 전(한국은 보통 3개월 전)부터 임신 12주까지 하루 400µg을 먹어요. 신경관 결손 예방 효과가 가장 확실한 영양제예요. 이전 임신에서 신경관 결손이 있었다면 용량이 달라지니 의사와 상의하세요.",
       "source": {
         "name": "USPSTF 2023 (A등급) · CDC · WHO · 질병관리청",
         "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/folic-acid-for-the-prevention-of-neural-tube-defects-preventive-medication"
@@ -47,7 +47,7 @@
       "note": "10µg · 선택",
       "audience": "cycle-owner",
       "evidence": "moderate",
-      "summary": "영국 NHS는 임신 준비·임신 중 하루 10µg을 권해요. 특히 해가 짧은 10~3월에요.",
+      "summary": "영국 NHS는 임신 준비 중과 임신 중, 특히 해가 짧은 10~3월에 하루 10µg을 권해요.",
       "source": {
         "name": "NHS",
         "url": "https://www.nhs.uk/pregnancy/keeping-well/pregnancy-vitamins-and-supplements/"
@@ -150,7 +150,7 @@
       "kind": "habit",
       "audience": "both",
       "evidence": "moderate",
-      "summary": "하루 200mg 미만이면 유산·조산의 주요 요인은 아닌 것으로 보여요 (ACOG). 식약처 기준은 임신부 하루 300mg 이하예요.",
+      "summary": "하루 200mg 미만이면 유산·조산의 주요 원인은 아니라고 봐요 (ACOG). 식약처 기준은 임신부 하루 300mg 이하예요.",
       "source": {
         "name": "ACOG 위원회 의견 462",
         "url": "https://www.acog.org/clinical/clinical-guidance/committee-opinion/articles/2010/08/moderate-caffeine-consumption-during-pregnancy"
@@ -237,7 +237,7 @@
       "kind": "habit",
       "audience": "both",
       "evidence": "limited",
-      "summary": "가벼운 운동은 건강한 체중과 컨디션에 도움이 돼요. 체중(BMI 30 이상)은 임신까지 걸리는 시간에 영향을 줄 수 있어요.",
+      "summary": "가벼운 운동은 건강한 체중과 컨디션에 도움이 돼요. BMI가 30 이상이면 임신까지 걸리는 시간에 영향을 줄 수 있어요.",
       "source": {
         "name": "NICE NG257 (2026)",
         "url": "https://www.nice.org.uk/guidance/NG257/chapter/advice-about-factors-that-can-affect-fertility"
@@ -264,7 +264,7 @@
       "kind": "habit",
       "audience": "both",
       "evidence": "limited",
-      "summary": "성인은 하루 7시간 이상 자는 게 좋다고 해요. 수면과 임신 가능성 사이의 직접 근거는 아직 제한적이에요.",
+      "summary": "성인은 하루 7시간 이상 자는 게 좋아요. 수면과 임신 가능성을 직접 잇는 근거는 아직 적어요.",
       "source": {
         "name": "미국 CDC (수면)",
         "url": "https://www.cdc.gov/sleep/about/index.html"

@@ -90,7 +90,7 @@ export const HEADER_LINE: Record<Stage, string> = {
   parenting: '아기가 태어난 뒤에도, 둘이 함께 챙길 검진·접종·신청',
 }
 
-export const PLAN_NOTE = '일반적인 안내예요. 개인 상황은 담당 의료진·회사·보건소에 확인하세요.'
+export const PLAN_NOTE = '일반적인 안내예요.'
 
 /** Form examples that fit where the couple is (no pregnancy examples while preparing). */
 export const APPT_PLACEHOLDER: Record<Stage, { title: string; note: string }> = {
@@ -396,7 +396,7 @@ export function pendingHint(items: PlanItem[]): string | undefined {
   const waiting = items.filter((i) => i.pending && i.status !== 'done')
   if (!waiting.length) return undefined
   const needsPregnancy = waiting.some((i) => i.template?.window?.anchor !== 'birth')
-  return needsPregnancy ? '임신을 기록하면 날짜가 자동으로 계산돼요' : '아기가 태어난 날을 기록하면 날짜가 자동으로 계산돼요'
+  return needsPregnancy ? '임신을 기록하면 날짜가 나와요' : '아기가 태어난 날을 기록하면 날짜가 나와요'
 }
 
 // ── Wording ─────────────────────────────────────────────────

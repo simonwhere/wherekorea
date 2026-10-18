@@ -44,12 +44,12 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
       // Straight into her own log: no 되돌리기 toast (the line can be cleared right here), the sheet stays open.
       update((s) => setPrivateNote(s, viewer, date, text))
       setText('')
-      toast.show('나만 보는 메모를 남겼어요 · 주기 탭의 주기 기록에서 볼 수 있어요')
+      toast.show('나만 보는 메모를 남겼어요')
       return
     }
     const id = uid()
     const at = stampOn(today)
-    save((s) => addNote(s, { date, author: viewer, text, id }, at), { kind: 'note', id }, '메모를 남겼어요 · 우리 탭에서 볼 수 있어요')
+    save((s) => addNote(s, { date, author: viewer, text, id }, at), { kind: 'note', id }, '메모를 남겼어요')
   }
 
   const clearPrivate = () => {
@@ -90,14 +90,10 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
             checked={privateOnly}
             onChange={setPrivateOnly}
             label="나만 보기"
-            description={
-              privateOnly
-                ? `나에게만 보여요. ${partner.name}님 화면에는 어디에도 나오지 않아요. 주기 탭의 주기 기록에서 다시 볼 수 있어요.`
-                : `우리 탭의 기록에 들어가요. ${partner.name}님도 볼 수 있어요.`
-            }
+            description={privateOnly ? `${partner.name}님에게는 보이지 않아요.` : `${partner.name}님도 볼 수 있어요.`}
           />
         ) : (
-          <p className="text-[11px] leading-relaxed text-ink-3">우리 탭의 기록에 들어가요. {partner.name}님도 볼 수 있어요.</p>
+          <p className="text-[11px] leading-relaxed text-ink-3">{partner.name}님도 볼 수 있어요.</p>
         )}
       </form>
       {privateLine ? (
@@ -128,7 +124,7 @@ export default function NotePanel({ date, save }: { date: ISODate; save: SaveLog
             자세히
             <span className="font-normal text-ink-3">
               {' '}
-              · {date === today ? '오늘' : '이 날'} 컨디션{feel ? ` · ${feelLabel(feel)}` : ''}
+              · {date === today ? '오늘' : '이날'} 컨디션{feel ? ` · ${feelLabel(feel)}` : ''}
             </span>
             <Icon name="chev" className={cx('h-4 w-4 transition-transform', detail && 'rotate-180')} strokeWidth={2.2} />
           </button>
