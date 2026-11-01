@@ -20,7 +20,7 @@ export default function LinkPreview({ snapshot, today, className }: { snapshot: 
   if (!page) return null
   return (
     <div className={cx('bg-bg', className)} inert aria-label={`${viewerOf(page).name}님 화면 미리보기`}>
-      <LinkBody page={page} today={today} marks={NO_MARKS} actions={NO_ACTIONS} />
+      <LinkBody page={page} today={today} marks={NO_MARKS} actions={NO_ACTIONS} preview />
     </div>
   )
 }

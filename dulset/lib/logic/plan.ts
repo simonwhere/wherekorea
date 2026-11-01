@@ -30,12 +30,13 @@ import {
   progressOf,
   setCustomTaskDone,
   setTemplateDone,
+  stagePhase,
   statusFor,
   type RoadmapItem,
   type RoadmapKind,
   type RoadmapTemplate,
 } from '@/lib/logic/roadmap'
-import { PREGNANCY_DAYS, dueDate, gestationalAge } from '@/lib/logic/pregnancy'
+import { PREGNANCY_DAYS, dueDate } from '@/lib/logic/pregnancy'
 import { isLive } from '@/lib/sync/model'
 import type {
   Appointment,
@@ -135,7 +136,7 @@ export function usableAppointments(list: Appointment[]): Appointment[] {
   return list.filter((a) => isISODate(a.date) && isLive(a))
 }
 
-type RoadmapState = Pick<AppState, 'couple' | 'pregnancy' | 'baby' | 'planDone' | 'milestones' | 'customTasks'>
+type RoadmapState = Pick<AppState, 'stage' | 'couple' | 'pregnancy' | 'baby' | 'planDone' | 'milestones' | 'customTasks'>
 
 type KeyGroup = 'pregnancy' | 'baby' | 'plan' | 'other'
 
@@ -177,7 +178,8 @@ const TEMPLATE_PHASE = new Map(ROADMAP.map((t) => [t.id, t.phase]))
 /**
  * The roadmap's own ticks (planDone) for this pregnancy / child. A tick on a
  * pregnancy, birth or postpartum item made before this pregnancy began belongs
- * to an earlier one. 임신 준비 ticks (vaccines, checks) always count.
+ * to an earlier one. 임신 준비 ticks (vaccines, checks) always count, and so do
+ * a seasonal row's ('partner-flu:2026-27' — its season decides, not the pregnancy).
  */
 function currentPlanDone(state: Pick<AppState, 'stage' | 'pregnancy' | 'baby' | 'planDone'>): AppState['planDone'] {
   const out: AppState['planDone'] = {}
@@ -207,6 +209,7 @@ export function roadmapState(state: AppState): RoadmapState {
       : { lmp: addDays(baby.birthDate, -PREGNANCY_DAYS), confirmedAt: baby.birthDate, dueDateOverride: baby.birthDate }
   }
   return {
+    stage: state.stage,
     couple: state.couple,
     pregnancy,
     baby,
@@ -277,7 +280,7 @@ export function tickItem(id: string, done: boolean, today: ISODate, by: MemberId
   return (s: AppState): AppState => {
     const t = templates.find((x) => x.id === id)
     if (t) {
-      const already = !!doneInfo(roadmapState(s), t)
+      const already = !!doneInfo(roadmapState(s), t, today)
       return already === done ? s : setTemplateDone(s, t, done, today, by)
     }
     const c = s.customTasks.find((x) => x.id === id)
@@ -347,12 +350,7 @@ export function calmSuggestions(items: PlanItem[], stage: Stage, limit = 3): Pla
 /** The phase the couple is in today (default for "+ 직접 추가"). */
 export function currentPhase(state: Pick<AppState, 'stage' | 'pregnancy' | 'baby'>, today: ISODate): RoadmapPhase {
   if (state.stage === 'preparing') return 'preconception'
-  if (state.stage === 'pregnant') {
-    const p = usablePregnancy(state.pregnancy)
-    if (!p) return 'pregnancy-1st'
-    const t = gestationalAge(p, today).trimester
-    return t === 1 ? 'pregnancy-1st' : t === 2 ? 'pregnancy-2nd' : 'pregnancy-3rd'
-  }
+  if (state.stage === 'pregnant') return stagePhase('pregnant', usablePregnancy(state.pregnancy), today)
   const baby = usableBaby(state.baby)
   return !baby || diffDays(baby.birthDate, today) < 60 ? 'birth' : 'postpartum'
 }
@@ -425,17 +423,23 @@ export function shortDate(date: ISODate, today: ISODate): string {
   return date.slice(0, 4) === today.slice(0, 4) ? `${p.month}.${p.day}` : `${p.year}.${p.month}.${p.day}`
 }
 
-/** The resolved date range, or the human timing when there are no dates. */
-export function dateText(item: Pick<RoadmapItem, 'start' | 'end' | 'when'>, today: ISODate): string {
+/**
+ * The resolved date range, or the human timing when there are no dates. An end
+ * still waiting for its anchor reads in words: '10.3 ~ 출생 후 120일 안'.
+ */
+export function dateText(item: Pick<RoadmapItem, 'start' | 'end' | 'when' | 'endWhen'>, today: ISODate): string {
   if (!item.start) return item.when
-  if (!item.end) return `${shortDate(item.start, today)}부터`
+  if (!item.end) return item.endWhen ? `${shortDate(item.start, today)} ~ ${item.endWhen}` : `${shortDate(item.start, today)}부터`
   if (item.start === item.end) return shortDate(item.start, today)
   return `${shortDate(item.start, today)} ~ ${shortDate(item.end, today)}`
 }
 
-/** 'D-12' before it opens, '마감 D-3' / '5일 남음' while open. */
+/**
+ * 'D-12' before it opens, '마감 D-3' / '5일 남음' while open. None on a seasonal
+ * row (올해 독감 접종): its end is the season's, not a deadline to count down to.
+ */
 export function countdown(item: PlanItem, today: ISODate): string | undefined {
-  if (item.status === 'done' || item.lapsed) return undefined
+  if (item.status === 'done' || item.lapsed || item.template?.season) return undefined
   // Overdue rows already show their dates and a "기한 지남" pill — no D+N counting up.
   if (item.status === 'overdue') return undefined
   if (item.status === 'now') {

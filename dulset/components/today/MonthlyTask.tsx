@@ -29,7 +29,16 @@ import { Icon, type IconName } from '@/components/ui/icons'
 import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
 import { addDays, dLabel, formatKo, formatShort, isISODate } from '@/lib/dates'
 import { earliestDoneAt, taskLocked } from '@/lib/logic/partnerEvents'
-import { bookingDraft, completeMonthlyTask, setClaimDocDone, taskStageLabel, type MonthlyTask, type TaskStage } from '@/lib/logic/partnerTrack'
+import {
+  TEST_MEDS_LINE,
+  bookingDraft,
+  completeMonthlyTask,
+  setApplyClosed,
+  setClaimDocDone,
+  taskStageLabel,
+  type MonthlyTask,
+  type TaskStage,
+} from '@/lib/logic/partnerTrack'
 import type { AppointmentDraft } from '@/lib/logic/plan'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
@@ -37,6 +46,13 @@ import { ExternalLink, LinkButton, objectParticle } from './bits'
 import { useShortViewport } from './useFoldFit'
 
 type Nav = (tab: TabKey) => void
+
+/**
+ * Completing the month task — or, on the 신청 card, [접수가 끝났대요] (`how:
+ * 'closed'`: the step leaves the slot until the first Monday of January,
+ * partnerTrack.setApplyClosed). useMonthlyTaskDone().done takes both.
+ */
+export type TaskDone = (task: MonthlyTask, how?: 'closed') => void
 
 /** The 챙길 것 tab, with or without a navigate callback (the top card has none — hashes work everywhere). */
 function goPlan(onNavigate?: Nav) {
@@ -148,12 +164,12 @@ function WhenSheet({ task, onConfirm, onClose }: { task: MonthlyTask; onConfirm:
  * moves on to the next step. `toast` renders the toast and the sheet.
  */
 export function useMonthlyTaskDone(): {
-  done: (task: MonthlyTask) => void
+  done: TaskDone
   toast: React.ReactNode
 } {
   const { update, today, me } = useApp()
   const toast = useToast()
-  const [undo, setUndo] = useState<(UndoMessage & { task: MonthlyTask; at: ISODate }) | null>(null)
+  const [undo, setUndo] = useState<(UndoMessage & { task: MonthlyTask; at: ISODate; closed?: boolean }) | null>(null)
   const [asking, setAsking] = useState<MonthlyTask | null>(null)
   const expire = useCallback(() => setUndo(null), [])
   const closeAsk = useCallback(() => setAsking(null), [])
@@ -173,11 +189,15 @@ export function useMonthlyTaskDone(): {
   )
 
   const done = useCallback(
-    (task: MonthlyTask) => {
-      if (task.step) setAsking(task)
+    (task: MonthlyTask, how?: 'closed') => {
+      if (how === 'closed') {
+        // [접수가 끝났대요]: the card gives its place to the next item until January.
+        update((s) => setApplyClosed(s, today, me.id, true))
+        setUndo({ id: Date.now(), text: '1월에 다시 확인해요', task, at: today, closed: true })
+      } else if (task.step) setAsking(task)
       else complete(task, today)
     },
-    [complete, today],
+    [complete, today, update, me.id],
   )
 
   const confirm = useCallback(
@@ -191,8 +211,8 @@ export function useMonthlyTaskDone(): {
 
   const revert = useCallback(() => {
     if (!undo) return
-    const { task, at } = undo
-    update((s) => completeMonthlyTask(s, task, at, me.id, false))
+    const { task, at, closed } = undo
+    update((s) => (closed ? setApplyClosed(s, at, me.id, false) : completeMonthlyTask(s, task, at, me.id, false)))
     setUndo(null)
     toast.show('되돌렸어요')
   }, [undo, update, me.id, toast])
@@ -331,6 +351,25 @@ function ClaimDocs({ task }: { task: MonthlyTask }) {
   )
 }
 
+/** The stage's one line to check before acting (MonthlyTask.ask) — kept on the compact card too. */
+function AskLine({ text }: { text: string }) {
+  return (
+    <p data-task-ask className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-[1.5] text-ink-2">
+      <Icon name="info" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-ink-3" />
+      <span className="min-w-0">{text}</span>
+    </p>
+  )
+}
+
+/** His medicines line on the 검사 card (partnerTrack.TEST_MEDS_LINE) — his own screens only. */
+function MedsLine() {
+  return (
+    <p data-task-meds className="mt-1 text-[12.5px] leading-[1.5] text-ink-3">
+      {TEST_MEDS_LINE}
+    </p>
+  )
+}
+
 /**
  * The stage's content and actions — shared by the compact top card and the
  * body inside the moment card / 우리 한 줄. The booking sheet is its own
@@ -345,7 +384,7 @@ function StageBody({
   fold = false,
 }: {
   task: MonthlyTask
-  onDone: (task: MonthlyTask) => void
+  onDone: TaskDone
   onNavigate?: Nav
   onSurface2: boolean
   compact: boolean
@@ -383,12 +422,15 @@ function StageBody({
               ? '예약일이 지났어요. 일정을 고치거나 다녀온 날을 기록해요.'
               : `${bringOf(task)}${objectParticle(bringOf(task))} 챙겨요. 검사 준비는 병원 안내를 따라요.`}
           </p>
+          {task.meds && !pastBooked ? <MedsLine /> : null}
         </>
       ) : (
         <>
           <GuideRows task={task} />
           {stage === 'claim' ? <ClaimDocs task={task} /> : null}
           {task.why && !compact ? <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-3">{task.why}</p> : null}
+          {task.ask && (stage === 'apply' || stage === 'book') ? <AskLine text={task.ask} /> : null}
+          {task.meds && stage === 'book' ? <MedsLine /> : null}
         </>
       )}
 
@@ -400,9 +442,16 @@ function StageBody({
 
       <div data-fold={fold ? '' : undefined} className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         {stage === 'apply' ? (
-          <Pill onClick={() => onDone(task)} tone={tone} icon="check">
-            신청했어요
-          </Pill>
+          <>
+            <Pill onClick={() => onDone(task)} tone={tone} icon="check">
+              신청했어요
+            </Pill>
+            {task.canSayClosed ? (
+              <LinkButton size="md" onClick={() => onDone(task, 'closed')} className="px-1">
+                접수가 끝났대요
+              </LinkButton>
+            ) : null}
+          </>
         ) : stage === 'book' ? (
           <>
             <Pill onClick={book} tone="primary" icon="plus">
@@ -495,7 +544,7 @@ export function MonthlyTaskBody({
   onSurface2 = false,
 }: {
   task: MonthlyTask
-  onDone: (task: MonthlyTask) => void
+  onDone: TaskDone
   onNavigate: Nav
   className?: string
   /** Sits on a surface-2 box (the moment card): the button takes the surface colour. */
@@ -543,7 +592,7 @@ export function MonthlyTaskCard({
   compactOnShort = false,
 }: {
   task: MonthlyTask
-  onDone: (task: MonthlyTask) => void
+  onDone: TaskDone
   onNavigate?: Nav
   className?: string
   /** Leading the home (above the moment card): its action row is the first-screen fold target. */

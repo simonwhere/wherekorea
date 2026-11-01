@@ -48,6 +48,7 @@ import { isISODate, todayISO } from '@/lib/dates'
 import { uid } from '@/lib/id'
 import { downloadText, weeklyLinkIcs, type WeeklyDay } from '@/lib/logic/ics'
 import { isToken } from '@/lib/logic/partnerLink'
+import { PARTNER_FLU_ID } from '@/lib/logic/partnerDates'
 import { CHEERS_PER_DAY, type PartnerEvent } from '@/lib/logic/partnerEvents'
 import {
   snapshotDay,
@@ -70,6 +71,7 @@ import LinkIntro from './LinkIntro'
 import LinkNotice, { type NoticeKind } from './LinkNotice'
 import LinkSignals from './LinkSignals'
 import {
+  APPLY_CLOSED_TEXT,
   LINK_INSTALL_KEY,
   LINK_INTRO_KEY,
   LINK_OUTSIDE_KEY,
@@ -343,7 +345,7 @@ function LinkScreen() {
       try {
         const t = await transport()
         await t.sendEvent(token, ev)
-        toast.show(done)
+        if (done) toast.show(done)
         for (const ms of AFTER_SEND_MS) timers.current.push(window.setTimeout(() => void fetchNow(token), ms))
       } catch {
         toast.show('지금은 보낼 수 없어요. 잠시 뒤 다시 눌러 주세요')
@@ -413,6 +415,24 @@ function LinkScreen() {
       onSupport: (item: LinkTogetherItem, on: boolean) => {
         setMarks((m) => ({ ...m, supports: { ...(m.supports ?? {}), [item.id]: { on, at: Date.now() } } }))
         void send({ id: uid(), from: p.viewer, kind: 'support', itemId: item.id, on }, supportToast(item.title, on, p.togetherPlan?.ownerName ?? `${owner.name}님`))
+      },
+      onTaskClosed: (t: SnapshotTask) => {
+        setMarks((m) => ({ ...m, closed: { taskId: t.id, at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'apply-closed', date: today, closed: true }, APPLY_CLOSED_TEXT)
+      },
+      onSeason: (done: boolean) => {
+        setMarks((m) => ({ ...m, season: { done, at: Date.now() } }))
+        // The app's own row says the same ('챙겼어요' on a tick, nothing on an untick).
+        void send({ id: uid(), from: p.viewer, kind: 'season-done', itemId: PARTNER_FLU_ID, date: today, done }, done ? '챙겼어요' : '')
+      },
+      onRetire: (keep: boolean) => {
+        setMarks((m) => ({ ...m, retire: { at: Date.now() } }))
+        void send({ id: uid(), from: p.viewer, kind: 'retire-checks', keep }, keep ? '' : '내려놓았어요')
+      },
+      onDadMind: () => {
+        setMarks((m) => ({ ...m, dadMind: { at: Date.now() } }))
+        // Only 'asked' travels; no toast (the card just goes, as in his app).
+        void send({ id: uid(), from: p.viewer, kind: 'dad-mind-asked' }, '')
       },
       onTold: (s: Signal) => {
         setMarks((m) => ({ ...m, told: { signalId: s.id, at: Date.now() }, signals: [...m.signals, Date.now()] }))

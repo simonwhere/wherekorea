@@ -25,7 +25,7 @@ import { canLogCycle } from '@/lib/logic/prefs'
 import { pendingSignal } from '@/lib/logic/signals'
 import { stampOn } from '@/lib/logic/today'
 import { partnerSupportLines } from '@/lib/logic/together'
-import { canThankWeek, partnerWeekSummary, thankWeek, weekOf, weekThanked } from '@/lib/logic/weekTogether'
+import { canThankWeek, nudgeTargetLabel, partnerWeekSummary, thankWeek, weekOf, weekThanked } from '@/lib/logic/weekTogether'
 import { useApp } from '@/lib/store'
 import type { ISODate } from '@/lib/types'
 import { PendingSignal, SignalChips, timeKo } from '@/components/signals/SignalsCard'
@@ -71,6 +71,8 @@ export default function UsLine({
   const canThank = owner && canThankWeek(state, me.id, today)
   // '민수님이 ‘…’ 같이 챙긴대요' — his [같이 할게요] on her items this week (at most two).
   const supports = owner ? partnerSupportLines(state, today, me.id) : []
+  // Her screen never names his smoking, drinking or medicine rows — not even in the 콕 button's name.
+  const targetName = target ? nudgeTargetLabel(target, owner) : ''
 
   const nudge = () => {
     if (!canNudge) return
@@ -136,7 +138,7 @@ export default function UsLine({
             ) : null}
           </div>
           {canNudge ? (
-            <button type="button" onClick={nudge} className={small} aria-label={`${partner.name}님에게 콕 찌르기 (${target!.label})`}>
+            <button type="button" onClick={nudge} className={small} aria-label={`${partner.name}님에게 콕 찌르기 (${targetName})`}>
               <span aria-hidden>👉</span> 콕
             </button>
           ) : null}

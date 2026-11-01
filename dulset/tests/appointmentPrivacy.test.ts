@@ -63,6 +63,7 @@ import { myPrep } from '@/lib/logic/myPrep'
 import { mergeNotices, scheduledNotices } from '@/lib/logic/notifications'
 import { applyPartnerEvent, joinAppointment, joinableAppointment, partnerEventProblem, type PartnerEvent } from '@/lib/logic/partnerEvents'
 import { buildPartnerSnapshot } from '@/lib/logic/partnerSnapshot'
+import { allRuleNotices } from '@/lib/logic/partnerNotices'
 import {
   FERTILITY_CARRIER_TEST_ID,
   FERTILITY_TEST_ID,
@@ -193,7 +194,7 @@ function viewOf(s: AppState, day: ISODate, viewer: MemberId) {
     upcoming,
     past: pastAppointments(list, day),
     // 🔔 — every rule the engine runs (useNotificationEngine), to this viewer.
-    notices: [...scheduledNotices(s, day), ...appointmentReminders(s, day), ...planDeadlineNotices(s, day)].filter((n) => n.to === viewer),
+    notices: allRuleNotices(s, day).filter((n) => n.to === viewer),
     // The whole seven-day link page (null for her).
     snapshot: JSON.stringify(buildPartnerSnapshot(s, day, viewer)),
     week: weekOptions(s, day, viewer),

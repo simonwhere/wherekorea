@@ -22,13 +22,25 @@
 // 챙겼어요 ✓'. Never a 0: before the first one is done the line names the next
 // one, not a count. The habit timer is a preparing thing (sperm formation) and
 // does not show then; his daily checks' N/7 still does.
+//
+// 2026-11-01 (founder, '12개 전부'): two more parts, both inside the bar so his
+// home never grows a second card — `season`, 올해 독감 접종 맞기 while its
+// window is open (lib/logic/partnerDates: 10월–12월 preparing, 10월–4월
+// pregnant; ticked here under this 절기's key, gone after the window, never
+// '지났어요'), and `retire`, asked once per pregnancy: his sauna / laptop rows
+// were for sperm formation — put them down? (checks.heatChecks; [내려놓기]
+// archives them, [그대로 두기] keeps them; decisions 'retire-asked:<lmp>:<member>').
+// 배우자 출산휴가 before the birth reads '출생 후 120일 안' (PrepItem.untilText):
+// its last day counts from the real birth day, so no date is printed for it.
 
 import { diffDays, formatKo, isISODate } from '../dates'
+import { decide, decided } from '../sync/model'
 import type { AppState, ISODate, MemberId } from '../types'
 import { withAppointmentsFor } from './appointments'
-import { weekCount, weekCountLabel } from './checks'
+import { archiveCheckItems, heatChecks, heatChecksQuestion, weekCount, weekCountLabel } from './checks'
+import { PARTNER_FLU_ID, openFluWindow } from './partnerDates'
 import { fertilityChain, testIdFor, type FertilityChain, type TaskStage } from './partnerTrack'
-import { OVERDUE_GRACE_DAYS, planItems, stepAppointment, type PlanItem } from './plan'
+import { OVERDUE_GRACE_DAYS, planItems, stepAppointment, tickItem, usablePregnancy, type PlanItem } from './plan'
 import { canLogCycle } from './prefs'
 import { habitTimer, isSpermSide } from './today'
 import { partnerTaskVisible } from './ttcFlow'
@@ -72,6 +84,39 @@ export interface MyPrep {
    * ahead) or 'later'. The summary line is chainStep.
    */
   items?: PrepItem[]
+  /**
+   * The seasonal row (2026-11-01): 올해 독감 접종 맞기, while its window is open
+   * (10월–12월 preparing, 10월–4월 pregnant — lib/logic/partnerDates). At most
+   * one such line; it never reads 0, '안 했어요' or '지났어요' — after the
+   * window it is simply not there. Ticked with setPrepSeasonDone.
+   */
+  season?: PrepSeason
+  /**
+   * Pregnant stage, once (2026-11-01): his sauna / laptop rows were for
+   * sperm formation — [내려놓기] retireHeatChecks · [그대로 두기] keepHeatChecks.
+   * Lives inside 내 준비, never a card of its own.
+   */
+  retire?: PrepRetire
+}
+
+/** 내 준비's seasonal line (MyPrep.season). */
+export interface PrepSeason {
+  /** The roadmap row: 'partner-flu'. */
+  id: string
+  /** '올해 독감 접종 맞기' (the roadmap title). */
+  label: string
+  /** '독감은 매년 가을에 맞아요. 비용은 병원마다 달라요.' (the roadmap detail). */
+  note: string
+  /** Ticked this 절기 (planDone 'partner-flu:2026-27'). */
+  done: boolean
+}
+
+/** The one-time question about his preparing-only rows (MyPrep.retire). */
+export interface PrepRetire {
+  /** '사우나·노트북 체크는 임신 준비용이었어요. 내려놓을까요?' (checks.heatChecksQuestion). */
+  question: string
+  /** The rows [내려놓기] archives. */
+  itemIds: string[]
 }
 
 export interface PrepItem {
@@ -84,6 +129,8 @@ export interface PrepItem {
   from?: ISODate
   /** The day an open window closes. */
   until?: ISODate
+  /** An open window whose end waits on the birth: '출생 후 120일 안' (배우자 출산휴가 before the birth). */
+  untilText?: string
 }
 
 /**
@@ -104,7 +151,7 @@ const STEP_LABEL: Record<PrepStepId, string> = { apply: '신청', test: '검사'
 
 /** Is there anything to draw (any part set)? */
 export function hasMyPrep(p: MyPrep): boolean {
-  return !!(p.timerLabel || p.weekCount || p.chainStep || p.items?.length)
+  return !!(p.timerLabel || p.weekCount || p.chainStep || p.items?.length || p.season || p.retire)
 }
 
 function timerPart(state: AppState, member: MemberId, today: ISODate): Pick<MyPrep, 'timerLabel' | 'timerProgress'> {
@@ -186,7 +233,16 @@ export function pregnantPrepItems(state: AppState, today: ISODate): PrepItem[] {
     const state: PrepItem['state'] = !ahead ? 'now' : nextGiven ? 'later' : 'next'
     if (state === 'next') nextGiven = true
     const until = !ahead && it.status !== 'undated' && it.end && !it.lapsed && it.end >= today ? it.end : undefined
-    out.push({ id: p.id, label: p.label, state, ...(ahead ? { from: it.start } : {}), ...(until ? { until } : {}) })
+    // 배우자 출산휴가 before the birth: its end counts from the real birth day, so it says so in words.
+    const untilText = !ahead && !it.end && it.endWhen ? it.endWhen : undefined
+    out.push({
+      id: p.id,
+      label: p.label,
+      state,
+      ...(ahead ? { from: it.start } : {}),
+      ...(until ? { until } : {}),
+      ...(untilText ? { untilText } : {}),
+    })
   }
   return out
 }
@@ -201,9 +257,60 @@ export function pregnantPrepLine(items: readonly PrepItem[], today: ISODate): st
     ? ` (${formatKo(next.from, { weekday: false })}부터)`
     : next.until
       ? ` (${formatKo(next.until, { weekday: false })}까지)`
-      : ''
+      : next.untilText
+        ? ` (${next.untilText})`
+        : ''
   const head = done > 0 ? `${done}/${items.length} ✓ · ` : ''
   return `${head}다음은 ${next.label}${when}`
+}
+
+// ── The seasonal line and the one-time question (2026-11-01) ──
+
+/** 올해 독감 접종 맞기 while its window is open in this stage, for the person it belongs to. */
+export function prepSeason(state: AppState, today: ISODate, member: MemberId): PrepSeason | undefined {
+  if (state.stage !== 'preparing' && state.stage !== 'pregnant') return undefined
+  if (!openFluWindow(state.stage, today)) return undefined
+  const it = planItems(state, today).find((i) => i.id === PARTNER_FLU_ID)
+  if (!it || !it.owners.includes(member)) return undefined
+  return { id: PARTNER_FLU_ID, label: it.title, note: it.detail ?? '', done: it.status === 'done' }
+}
+
+/** Tick (or untick) 올해 독감 접종 from 내 준비 — under this 절기's key (plan.tickItem → 'partner-flu:2026-27'). */
+export function setPrepSeasonDone(state: AppState, today: ISODate, member: MemberId, done: boolean): AppState {
+  return tickItem(PARTNER_FLU_ID, done, today, member)(state)
+}
+
+/** decisions key: he answered the sauna / laptop question for this pregnancy (its LMP). */
+export const retireAskedKey = (lmp: ISODate, member: MemberId): string => `retire-asked:${lmp}:${member}`
+
+/**
+ * The question about his sauna / laptop rows: pregnant stage, a usable
+ * pregnancy, the person who is not pregnant, at least one such active row,
+ * and not answered for this pregnancy yet. (myPrep already rests for her
+ * and in the quiet.)
+ */
+export function prepRetire(state: AppState, today: ISODate, member: MemberId): PrepRetire | undefined {
+  if (state.stage !== 'pregnant' || !isISODate(today)) return undefined
+  const p = usablePregnancy(state.pregnancy)
+  if (!p || p.lmp > today || decided(state, retireAskedKey(p.lmp, member))) return undefined
+  const rows = heatChecks(state, member)
+  if (!rows.length) return undefined
+  return { question: heatChecksQuestion(rows), itemIds: rows.map((r) => r.id) }
+}
+
+/** [내려놓기]: archive those rows (history kept) and remember the answer, so it is never asked again this pregnancy. */
+export function retireHeatChecks(state: AppState, today: ISODate, member: MemberId): AppState {
+  const ask = prepRetire(state, today, member)
+  const p = usablePregnancy(state.pregnancy)
+  if (!ask || !p) return state
+  return decide(archiveCheckItems(state, ask.itemIds, today), retireAskedKey(p.lmp, member), today)
+}
+
+/** [그대로 두기]: the rows stay; the question does not come back this pregnancy. */
+export function keepHeatChecks(state: AppState, today: ISODate, member: MemberId): AppState {
+  const p = usablePregnancy(state.pregnancy)
+  if (!p || !prepRetire(state, today, member)) return state
+  return decide(state, retireAskedKey(p.lmp, member), today)
 }
 
 /**
@@ -220,15 +327,19 @@ export function myPrep(state: AppState, today: ISODate, member: MemberId): MyPre
   state = withAppointmentsFor(state, member)
   const n = weekCount(state, member, today)
   const week = n > 0 ? { weekCount: weekCountLabel(n) } : {}
+  const s = prepSeason(state, today, member)
+  const season = s ? { season: s } : {}
   if (state.stage === 'pregnant') {
     const items = pregnantPrepItems(state, today)
     const line = pregnantPrepLine(items, today)
-    return { ...week, ...(line ? { chainStep: line, items } : {}) }
+    const r = prepRetire(state, today, member)
+    return { ...week, ...(line ? { chainStep: line, items } : {}), ...season, ...(r ? { retire: r } : {}) }
   }
   if (state.stage !== 'preparing') return {}
   return {
     ...timerPart(state, member, today),
     ...week,
     ...chainPart(state, member, today),
+    ...season,
   }
 }

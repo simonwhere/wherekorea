@@ -56,6 +56,21 @@
 //    `on: false` is always accepted. The link never sends one of the couple's
 //    own items (their titles are free text), so the id must be a roadmap one.
 //
+// His check points (founder 2026-11-01, '12개 전부') add four, so a husband who
+// uses only the link can answer what his app asks — each applied with the
+// app's own pure function and gate, ids, dates and fixed values only:
+//  • 'apply-closed' {date, closed} — [접수가 끝났대요] on his 신청 card and its
+//    되돌리기 (partnerTrack.setApplyClosed → 'apply-closed:<year>:<member>');
+//    `closed: true` only while his chain's step is 신청 (preparing).
+//  • 'season-done' {itemId, date, done} — 올해 독감 접종 in his 내 준비
+//    (myPrep.setPrepSeasonDone → planDone 'partner-flu:<절기>'), only while the
+//    row is open for him on that day (myPrep.prepSeason).
+//  • 'retire-checks' {keep} — the sauna / laptop question in his pregnant 내
+//    준비 (myPrep.retireHeatChecks / keepHeatChecks), only while it asks.
+//  • 'dad-mind-asked' {} — [괜찮아요] / [이야기할 곳 보기] on 아빠 마음
+//    (dadMind.markDadMindAsked → 'dad-mind-asked:<birth>:<member>' — never an
+//    answer), only while his parenting home asks (dadMind.dadMindDue).
+//
 // N30's 해 줄 말 needs no new kind: an answer on a card she told him about
 // ([알리기]) arrives as 'signal' {signalId}, accepted only while that card
 // offers it and nothing was sent since (toldAnswerOpen).
@@ -72,9 +87,12 @@ import { decide, decided, isLive } from '../sync/model'
 import type { AlertStyle, Appointment, AppState, ISODate, MemberId } from '../types'
 import { appointmentsFor } from './appointments'
 import { isDone, isWeekly, nudgeableItem, weeklyDone } from './checks'
+import { dadMindDue, markDadMindAsked } from './dadMind'
+import { keepHeatChecks, prepRetire, prepSeason, retireHeatChecks, setPrepSeasonDone } from './myPrep'
 import { canNudge, mergeNotices, sendCheer, sendNudge } from './notifications'
 import { PARTNER_SETUP_KEY } from './onboarding'
-import { completeMonthlyTask, monthlyTask, partnerId, type MonthlyTask } from './partnerTrack'
+import { PARTNER_FLU_ID } from './partnerDates'
+import { applyClosed, completeMonthlyTask, fertilityChain, monthlyTask, partnerId, setApplyClosed, type MonthlyTask } from './partnerTrack'
 import { setAlertStyle } from './settings'
 import { SIGNALS_PER_DAY, pendingSignal, repliesFor, sendSignal, signalIdOf, signalsFor, signalsSentToday } from './signals'
 import { stampOn, toggleWithCompletion } from './today'
@@ -97,6 +115,10 @@ export type PartnerEventKind =
   | 'setup'
   | 'join-appointment'
   | 'support'
+  | 'apply-closed'
+  | 'season-done'
+  | 'retire-checks'
+  | 'dad-mind-asked'
 export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'check',
   'reply',
@@ -109,6 +131,10 @@ export const PARTNER_EVENT_KINDS: readonly PartnerEventKind[] = [
   'setup',
   'join-appointment',
   'support',
+  'apply-closed',
+  'season-done',
+  'retire-checks',
+  'dad-mind-asked',
 ] as const
 
 /** The link's drinking answer (N22): 거의 안 마셔요 / 가끔 / 자주. */
@@ -142,6 +168,10 @@ export type PartnerEvent =
   | (EventBase & { kind: 'setup'; habits: SetupHabits; alertStyle?: AlertStyle })
   | (EventBase & { kind: 'join-appointment'; appointmentId: string })
   | (EventBase & { kind: 'support'; itemId: string; on: boolean })
+  | (EventBase & { kind: 'apply-closed'; date: ISODate; closed: boolean })
+  | (EventBase & { kind: 'season-done'; itemId: string; date: ISODate; done: boolean })
+  | (EventBase & { kind: 'retire-checks'; keep: boolean })
+  | (EventBase & { kind: 'dad-mind-asked' })
 
 /** Ids are short tokens (uuid, nanoid, 'signal:…'); anything longer or stranger is not an id. */
 export const EVENT_ID_MAX = 64
@@ -198,6 +228,17 @@ export function cleanPartnerEvent(raw: unknown): PartnerEvent | undefined {
     case 'support':
       if (!isId(raw.itemId) || typeof raw.on !== 'boolean') return undefined
       return { ...base, kind: 'support', itemId: raw.itemId, on: raw.on }
+    case 'apply-closed':
+      if (!isISODate(raw.date) || typeof raw.closed !== 'boolean') return undefined
+      return { ...base, kind: 'apply-closed', date: raw.date, closed: raw.closed }
+    case 'season-done':
+      if (!isId(raw.itemId) || !isISODate(raw.date) || typeof raw.done !== 'boolean') return undefined
+      return { ...base, kind: 'season-done', itemId: raw.itemId, date: raw.date, done: raw.done }
+    case 'retire-checks':
+      if (typeof raw.keep !== 'boolean') return undefined
+      return { ...base, kind: 'retire-checks', keep: raw.keep }
+    case 'dad-mind-asked':
+      return { ...base, kind: 'dad-mind-asked' }
     default:
       return undefined
   }
@@ -269,6 +310,8 @@ export type EventProblem =
   | 'appointment'
   /** [같이 할게요]: not a roadmap item of hers / theirs he may share now (together.canSupportItem). */
   | 'support'
+  /** His check points (2026-11-01): [접수가 끝났대요] off his 신청 step, a closed flu row, a question no longer asked. */
+  | 'checkpoint'
 
 function cheersSentToday(state: Pick<AppState, 'notifications'>, from: MemberId, today: ISODate): number {
   return state.notifications.filter((n) => n.kind === 'cheer' && n.from === from && !n.key && n.createdAt.startsWith(today)).length
@@ -351,6 +394,23 @@ export function partnerEventProblem(state: AppState, ev: PartnerEvent, today: IS
       if (!item || !canSupportItem(state, partner, item, today)) return 'support'
       return null
     }
+    case 'apply-closed': {
+      if (!isISODate(ev.date) || ev.date > today || diffDays(ev.date, today) > CHECK_BACK_DAYS) return 'date'
+      // 되돌리기 is always taken (it only forgets an answer of his own); saying it, only on his 신청 step.
+      if (!ev.closed) return null
+      if (state.stage !== 'preparing' || fertilityChain(state, ev.date, partner).step !== 'apply') return 'checkpoint'
+      return null
+    }
+    case 'season-done': {
+      if (ev.itemId !== PARTNER_FLU_ID) return 'item'
+      if (!isISODate(ev.date) || ev.date > today || diffDays(ev.date, today) > CHECK_BACK_DAYS) return 'date'
+      if (!prepSeason(state, ev.date, partner)) return 'checkpoint'
+      return null
+    }
+    case 'retire-checks':
+      return prepRetire(state, today, partner) ? null : 'checkpoint'
+    case 'dad-mind-asked':
+      return dadMindDue(state, today, partner) ? null : 'checkpoint'
     default:
       return 'kind'
   }
@@ -432,6 +492,21 @@ export function applyPartnerEvent(state: AppState, ev: PartnerEvent, today: ISOD
       // A "set": the same answer twice is one answer.
       if (isSupported(state, ev.itemId, partner) === ev.on) break
       next = ev.on ? supportItem(state, partner, ev.itemId, today) : unsupportItem(state, partner, ev.itemId)
+      break
+    case 'apply-closed':
+      // A "set": the same answer twice is one answer.
+      if (applyClosed(state, ev.date, partner) === ev.closed) break
+      next = setApplyClosed(state, ev.date, partner, ev.closed)
+      break
+    case 'season-done':
+      if (prepSeason(state, ev.date, partner)?.done === ev.done) break
+      next = setPrepSeasonDone(state, ev.date, partner, ev.done)
+      break
+    case 'retire-checks':
+      next = ev.keep ? keepHeatChecks(state, today, partner) : retireHeatChecks(state, today, partner)
+      break
+    case 'dad-mind-asked':
+      next = markDadMindAsked(state, today, partner)
       break
   }
   return rememberEvent(next, ev.id, today)

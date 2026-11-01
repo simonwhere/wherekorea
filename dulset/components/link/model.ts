@@ -27,6 +27,7 @@ import type {
   PartnerSnapshot,
   SnapshotChecks,
   SnapshotClinic,
+  SnapshotMyPrep,
   SnapshotPrep,
   SnapshotPrepItem,
   SnapshotTogetherPlan,
@@ -60,6 +61,14 @@ export interface LocalMarks {
   told?: { signalId: string; at: number }
   /** 같이 챙길 것 (2026-10-09): item id → what he set [같이 할게요] to, and when (a 'support' event). */
   supports?: Record<string, { on: boolean; at: number }>
+  /** [접수가 끝났대요] on his 신청 card (an 'apply-closed' event, 2026-11-01). */
+  closed?: { taskId: string; at: number }
+  /** 올해 독감 접종 in 내 준비: what he set it to (a 'season-done' event). */
+  season?: { done: boolean; at: number }
+  /** His answer to the sauna / laptop question (a 'retire-checks' event). */
+  retire?: { at: number }
+  /** He answered 아빠 마음 (a 'dad-mind-asked' event). */
+  dadMind?: { at: number }
 }
 
 export const NO_MARKS: LocalMarks = { checks: {}, signals: [], cheers: [] }
@@ -107,6 +116,16 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
     const row = snapshot?.togetherPlan?.items.find((i) => i.id === id)
     if (fresh(m.at, now) && row && row.supported !== m.on) supports[id] = m
   }
+  // His check points (2026-11-01): each mark stays until the snapshot agrees (the card or the question is gone, the tick matches).
+  const closed =
+    marks.closed && fresh(marks.closed.at, now) && snapshot?.task?.id === marks.closed.taskId && snapshot.task.canSayClosed
+      ? marks.closed
+      : undefined
+  const prepSeason = snapshot?.myPrep?.season
+  const season =
+    marks.season && fresh(marks.season.at, now) && prepSeason && prepSeason.done !== marks.season.done ? marks.season : undefined
+  const retire = marks.retire && fresh(marks.retire.at, now) && snapshot?.myPrep?.retire ? marks.retire : undefined
+  const dadMind = marks.dadMind && fresh(marks.dadMind.at, now) && snapshot?.dadMind ? marks.dadMind : undefined
   return {
     checks,
     ...(task ? { task } : {}),
@@ -119,6 +138,10 @@ export function pruneMarks(marks: LocalMarks, snapshot: PartnerPage | null, now:
     ...(Object.keys(joins).length ? { joins } : {}),
     ...(told ? { told } : {}),
     ...(Object.keys(supports).length ? { supports } : {}),
+    ...(closed ? { closed } : {}),
+    ...(season ? { season } : {}),
+    ...(retire ? { retire } : {}),
+    ...(dadMind ? { dadMind } : {}),
   }
 }
 
@@ -226,13 +249,40 @@ export function viewCanNudge(snapshot: Pick<PartnerPage, 'owner'>, marks: LocalM
   return snapshot.owner.canNudge && !marks.nudge
 }
 
-/** The month task is shown until he marks it done (the snapshot then carries the next one). */
+/**
+ * The month task is shown until he marks it done (the snapshot then carries
+ * the next one). `closed`: he just said [접수가 끝났대요] on its 신청 card — the
+ * card reads '1월에 다시 확인해요' until her phone moves the slot on.
+ */
 export function viewTask(
   snapshot: Pick<PartnerPage, 'task'>,
   marks: LocalMarks,
-): { task: NonNullable<PartnerPage['task']>; done: boolean } | null {
+): { task: NonNullable<PartnerPage['task']>; done: boolean; closed?: boolean } | null {
   if (!snapshot.task) return null
-  return { task: snapshot.task, done: !!marks.task && marks.task.id === snapshot.task.id }
+  const closed = !!marks.closed && marks.closed.taskId === snapshot.task.id && !!snapshot.task.canSayClosed
+  return { task: snapshot.task, done: !!marks.task && marks.task.id === snapshot.task.id, ...(closed ? { closed } : {}) }
+}
+
+/** What the 신청 card says once he tapped [접수가 끝났대요] (the app's toast says the same). */
+export const APPLY_CLOSED_TEXT = '1월에 다시 확인해요'
+
+/**
+ * 내 준비 with his marks: the flu tick reads as he set it, and the sauna /
+ * laptop question leaves once he answered it (her phone then confirms).
+ */
+export function viewMyPrep(page: Pick<PartnerPage, 'myPrep'>, marks: LocalMarks): SnapshotMyPrep | undefined {
+  const prep = page.myPrep
+  if (!prep) return undefined
+  const season = prep.season && marks.season ? { ...prep.season, done: marks.season.done } : prep.season
+  const retire = marks.retire ? undefined : prep.retire
+  if (season === prep.season && retire === prep.retire) return prep
+  const { season: _s, retire: _r, ...rest } = prep
+  return { ...rest, ...(season ? { season } : {}), ...(retire ? { retire } : {}) }
+}
+
+/** 아빠 마음 is asked until he answers (either button). */
+export function viewDadMind(page: Pick<PartnerPage, 'dadMind'>, marks: LocalMarks): boolean {
+  return !!page.dadMind && !marks.dadMind
 }
 
 /** '이번 주 우리 둘' with his marks: the pick he just made and his [했어요] show at once. Null when the week rests. */
@@ -261,6 +311,8 @@ export function prepItemWhen(i: SnapshotPrepItem): string {
   if (i.state === 'done') return '했어요'
   if (i.from) return `${formatKo(i.from, { weekday: false })}부터`
   if (i.until) return `지금 · ${formatKo(i.until, { weekday: false })}까지`
+  // 배우자 출산휴가 before the birth: its end counts from the real birth day.
+  if (i.untilText) return `지금 · ${i.untilText}`
   return '지금'
 }
 

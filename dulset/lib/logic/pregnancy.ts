@@ -1,7 +1,7 @@
 // Pregnancy dating (pure). Gestational age is counted from the first day of the
 // last menstrual period (LMP); Naegele's rule puts the due date at LMP + 280 days.
 
-import { addDays, diffDays } from '../dates'
+import { addDays, diffDays, isISODate } from '../dates'
 import type { AppState, Baby, ISODate, Pregnancy } from '../types'
 
 export const PREGNANCY_DAYS = 280
@@ -11,6 +11,21 @@ export const MAX_GESTATION_DAYS = 308
 export function dueDate(p: Pregnancy): ISODate {
   return p.dueDateOverride ?? addDays(p.lmp, PREGNANCY_DAYS)
 }
+
+/**
+ * Names the pregnancy in a notice key (partnerNotices: 'tdap:<tag>:…',
+ * 'partner-leave-open:<tag>:…', 'postnatal-open:<tag>:…'): the day it was
+ * recorded (confirmedAt — the stage switch both see), never the LMP or the due
+ * date. A record whose confirmedAt is missing or not after the LMP (a repaired
+ * backup copies the LMP in) gets '0'. Lives here, not in partnerNotices (which
+ * imports this file), so backToPreparing can settle those notices.
+ */
+export function pregnancyTag(p: Pick<Pregnancy, 'lmp' | 'confirmedAt'>): string {
+  return isISODate(p.confirmedAt) && isISODate(p.lmp) && p.confirmedAt > p.lmp ? p.confirmedAt : '0'
+}
+
+/** The check-point notices tied to one pregnancy (by pregnancyTag), settled when it ends. */
+export const PREGNANCY_NOTICE_PREFIXES = ['tdap:', 'partner-leave-open:', 'postnatal-open:'] as const
 
 export interface GestationalAge {
   /** Completed weeks (임신 N주). */
@@ -109,8 +124,9 @@ export function quietEndsOn(endedAt: ISODate): ISODate {
 /**
  * Go back to preparing (e.g. after a loss). Keeps all history, records when the
  * pregnancy ended (the "trying" clock restarts), and settles the notices about
- * that pregnancy for both members — kept as dismissed stubs so they aren't
- * delivered again. The quiet starts on its own (Next B, review P-11): a 'loss'
+ * that pregnancy for both members (its week notices and the check points named
+ * by pregnancyTag) — kept as dismissed stubs so they aren't delivered again.
+ * The quiet starts on its own (Next B, review P-11): a 'loss'
  * rest cycle from today to quietEndsOn(today), so no date estimate, LH prompt
  * or cycle notice comes for QUIET_DAYS_AFTER_END days — a period logged inside
  * it is kept but does not end it (ttc.periodEndsRest) — and the home shows the
@@ -121,7 +137,11 @@ export function backToPreparing(state: AppState, today: ISODate): AppState {
   if (state.stage !== 'pregnant') return state
   const p = state.pregnancy
   if (!p) return { ...state, stage: 'preparing' }
-  const tied = (key: string | undefined) => !!key && (key.startsWith(`pregnant:${p.lmp}:`) || key.startsWith(`week:${p.lmp}:`))
+  // Its week and 임신 notices, and his check points named by this pregnancy (Tdap, 배우자 출산휴가
+  // window, 산후도우미 — to both). Not 'flu-season:': that belongs to the 절기, not the pregnancy.
+  const tag = pregnancyTag(p)
+  const prefixes = [`pregnant:${p.lmp}:`, `week:${p.lmp}:`, ...PREGNANCY_NOTICE_PREFIXES.map((x) => `${x}${tag}:`)]
+  const tied = (key: string | undefined) => !!key && prefixes.some((x) => key.startsWith(x))
   return {
     ...state,
     stage: 'preparing',

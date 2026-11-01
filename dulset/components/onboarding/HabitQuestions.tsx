@@ -7,7 +7,7 @@
 import { cx } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import type { HabitAnswers } from '@/lib/initial'
-import { DRINK_OPTIONS, SMOKE_OPTIONS } from './partnerChoices'
+import { DRINK_OPTIONS, SMOKE_OPTIONS, SMOKE_QUESTION } from './partnerChoices'
 import { ChoiceGroup, Group } from './parts'
 
 /** What the form holds while the user answers (both questions start unanswered). */
@@ -35,9 +35,9 @@ export default function HabitQuestions({ habits, setHabits }: { habits: HabitDra
   const set = (p: Partial<HabitDraft>) => setHabits({ ...habits, ...p })
   return (
     <div className="space-y-4">
-      <Group title="담배를 피우나요?">
+      <Group title={SMOKE_QUESTION}>
         <ChoiceGroup<'no' | 'yes'>
-          label="담배를 피우나요?"
+          label={SMOKE_QUESTION}
           columns={2}
           value={habits.smokes === undefined ? undefined : habits.smokes ? 'yes' : 'no'}
           onChange={(v) => set({ smokes: v === 'yes' })}

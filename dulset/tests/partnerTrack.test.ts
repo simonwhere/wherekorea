@@ -181,7 +181,10 @@ describe('이번 달 할 일 — stages', () => {
     const t = monthlyTask(fresh(), TODAY, 'a')!
     expect(t).toMatchObject({ id: FERTILITY_APPLY_ID, step: 'apply', stage: 'apply', title: '임신 전 검사 지원 신청하기', top: false })
     expect(t.why).toContain('먼저 신청')
-    expect(t.why).toContain('보건소·병원마다')
+    // The hedge is the intake line's (2026-11-01), not said twice on one card.
+    expect(t.ask).toBe('신청하기 전에 우리 보건소가 접수 중인지 먼저 확인해요. 보건소마다 달라요.')
+    expect(t.why).not.toContain('마다 달라요')
+    expect(t.canSayClosed).toBe(true)
     expect(t.guide).toEqual({ where: 'e보건소(온라인) 또는 주소지 보건소', bring: '검사의뢰서 (출력물이나 모바일 화면)', cost: '최대 5만 원 지원 · 차액은 본인 부담' })
     expect(t.link?.url).toBe(FERTILITY_CHECK_GUIDE.url)
     expect(t.owners).toEqual(['a'])

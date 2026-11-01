@@ -245,7 +245,7 @@
   },
   {
    "topic": "Smoking",
-   "claim": "ASRM committee opinions (2018, replaced by a 2024 opinion on tobacco or marijuana use) report that male smokers have dose-dependent reductions in semen parameters, including about 22% lower sperm concentration on average. Values often stay within the normal range, and a direct effect on male fertility is not conclusively shown. For women, a meta-analysis of 10,928 smokers and 19,128 non-smokers found smokers significantly more likely to be infertile, and smokers reach menopause 1-4 years earlier. NICE 2026 tells male smokers that smoking is associated with reduced semen quality.",
+   "claim": "ASRM committee opinions (2018, replaced by a 2024 opinion on tobacco or marijuana use) report that male smokers have dose-dependent reductions in semen parameters, including about 22% lower sperm concentration on average. Values often stay within the normal range, and a direct effect on male fertility is not conclusively shown. For women, a meta-analysis of 10,928 smokers and 19,128 non-smokers found smokers significantly more likely to be infertile, and smokers reach menopause 1-4 years earlier. NICE 2026 tells male smokers that smoking is associated with reduced semen quality. (2026-11-01) The 2024 ASRM opinion also says e-cigarettes (ENDS) may affect male reproduction, but the evidence is still limited — see 'male-e-cigarettes'.",
    "sources": [
     "https://www.asrm.org/practice-guidance/practice-committee-documents/tobacco-or-marijuana-use/",
     "https://www.fertstert.org/article/S0015-0282(18)30492-8/pdf",
@@ -290,6 +290,132 @@
     "https://journals.lww.com/greenjournal/fulltext/10.1097/aog.0000000000002046~committee-opinion-no-700-methods-for-estimating-the-due-date"
    ],
    "confidence": "high"
+  },
+  {
+   "id": "male-semen-test-abstinence",
+   "topic": "정액검사 전 준비 — 보통 2~7일 쉬는 기간 (WHO 6판)",
+   "claim": "WHO 정액검사 매뉴얼 6판(2021-07)은 2~7일 금욕 뒤 채취를 표준으로 해요(5판과 같음). 서울대병원 안내는 3일 뒤 채취해 되도록 1시간 안에 검사하고, 국내 비뇨의학과 의원 안내는 3~5일이 흔해요. Fertility and Sterility 논평은 2~7일이 임신 결과에 근거한 범위가 아니라고 지적해요. 병원이 2일보다 긴 준비를 말하면 이틀 전 알림은 늦어서, 앱은 예약일 7일 전(예약이 그보다 가까우면 예약할 때) 남편에게 '병원에서 알려 준 검사 전 준비를 지금 확인해요. 병원마다 달라요.'를 보내요.",
+   "sources": [
+    "https://www.tandfonline.com/doi/full/10.1080/20905998.2023.2298048",
+    "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8706130/",
+    "https://www.snuh.org/health/nMedInfo/nView.do?category=TEST&medid=BA000109",
+    "https://www.fertstert.org/article/S0015-0282(23)01998-2/fulltext"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(원문 미열람). 화면에 날짜 수(2~7일)를 쓰지 않고, 성행위를 지시하는 표현을 쓰지 않아요(AGENTS.md 금지어). 아내 쪽 PartnerProgress에는 단계만 보여요. lib/logic/partnerDates TEST_PREP_NOTICE_DAYS = 7."
+  },
+  {
+   "id": "male-medicines-testosterone",
+   "topic": "먹는 약·근육 키우는 약·주사는 검사받을 때 의사에게 말하기",
+   "claim": "AUA/ASRM 남성 난임 가이드라인(2020, 2024 개정) Statement 42: 지금이나 나중에 아이를 원하는 남성에게 외부 테스토스테론을 처방하지 말 것 — 외부 테스토스테론은 시상하부-뇌하수체 신호를 눌러 정자 생성을 줄이고 무정자증까지 가는 일이 흔해요. EAU 2025도 같은 권고이고, NICE NG257(2026-03-31)은 진료 때 묻는 약 예시에 단백동화스테로이드·테스토스테론 보충·피나스테리드·GLP-1 계열을 넣어요. 끊은 뒤 회복은 개인차가 커요(후향 연구). FDA 프로페시아 라벨(2014)의 핵심 주의는 임신 가능성이 있는 여성이 부서진 정제를 만지지 않는 것이고, 남성이 임신 준비 때 끊으라는 문구는 없어요. EMA PRAC(2024-01)는 임신 전 3개월 안에 아버지가 발프로산을 쓴 경우 예방 조치를 냈어요(인과 불확실, 끊으면 발작 위험 — 반드시 처방 의사와). 영국 UKTIS·호주 Healthy Male은 남성이 먹는 약 대부분은 영향이 적을 가능성이 높고, 임신 준비를 이유로 마음대로 끊지 말고 의사와 상의하라고 해요. 식약처는 2022-06 근육 강화를 내세운 스테로이드 불법 온라인 판매를 적발했어요(보도) — 처방 없이 쓰는 경우가 있어서 '처방한 의사와 정해요'만으로는 부족하고 '검사받을 때 의사에게 말해요'가 먼저예요.",
+   "sources": [
+    "https://www.asrm.org/practice-guidance/practice-committee-documents/diagnosis-and-treatment-of-infertility-in-men-aua-asrm-guideline-part2/",
+    "https://uroweb.org/guidelines/sexual-and-reproductive-health/chapter/male-infertility",
+    "https://www.nice.org.uk/guidance/ng257/chapter/Advice-about-factors-that-can-affect-fertility",
+    "https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/020788s024lbl.pdf",
+    "https://www.ema.europa.eu/en/news/precautionary-measures-address-potential-risk-neurodevelopmental-disorders-children-born-men-treated-valproate-medicines",
+    "https://www.medicinesinpregnancy.org/leaflets-a-z/paternal-exposure/",
+    "https://healthymale.org.au/health-article/medications-and-male-fertility",
+    "https://www.fnnews.com/news/202206131047387238"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "가이드라인 문장은 high, 회복 기간 숫자는 medium — 모두 검색 요약(nice.org.uk·ema.europa.eu·accessdata.fda.gov·asrm.org 원문은 세션 네트워크에서 열리지 않음). 화면 문장(남편 체인 ② 검사 카드 — 앱·남편 링크, 그리고 남편 본인 챙길 것 '임신 전 검사 (정액·감염병)' 줄의 '자세히' 안 — partnerTrack.partnerDetailNote. 함께 보는 로드맵 detail에는 넣지 않아요): '먹는 약이나 근육 키우는 약·주사가 있으면 검사받을 때 의사에게 말해요. 처방받은 약은 혼자 끊지 말고 처방한 의사와 정해요.' 약 이름·회복 개월 수·'불임이 돼요'는 쓰지 않아요. 체크 행·첫 실행 질문으로 만들지 않고 아무것도 저장하지 않아요. 아내 화면(챙길 것 포함)·아내의 링크 미리보기·'이번 주 민수님'·알림 어디에도 약 이야기가 가지 않아요. 'finasteride is common among Korean men'은 근거가 없어서 쓰지 않아요."
+  },
+  {
+   "id": "male-e-cigarettes",
+   "topic": "전자담배도 담배 질문에 넣기 (근거는 아직 적어요)",
+   "claim": "ASRM 2024(담배·대마와 난임)는 전자담배(ENDS)도 남성 생식 기능에 영향이 있다고 적어요(단편만 확인). 2025 Sci Rep 국내 IVF 코호트(296명)는 일반 담배와만 비교하고 비흡연자 대조가 없어서 '덜 해롭다'의 근거가 되지 못해요. 액상·궐련형만 쓰는 사람이 '안 피워요'로 답해 금연 체크인을 못 받는 일을 막으려고 첫 실행 질문에만 '(전자담배 포함)'을 넣어요. 행 이름('금연'·'담배 안 피우기')과 '흡연은 정액 질을 떨어뜨려요' 문장은 그대로 둬요 — 그 문장이 전자담배까지 말하는 것으로 넓어지지 않게요.",
+   "sources": [
+    "https://www.asrm.org/practice-guidance/practice-committee-documents/tobacco-or-marijuana-use/",
+    "https://www.nature.com/articles/s41598-025-09495-w"
+   ],
+   "confidence": "low",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "전자담배도 남성 생식에 영향을 줄 수 있다는 연구가 있지만 아직 근거가 적어요(ASRM 2024, 검색 요약). 화면에는 질문의 '(전자담배 포함)' 두 낱말만 — components/onboarding/partnerChoices SMOKE_QUESTION. lib/initial SMOKE_CHECK_LABELS는 바꾸지 않아요."
+  },
+  {
+   "id": "secondhand-smoke-home-car",
+   "topic": "임신 중·아기 곁 간접흡연 — 집·차 안과 베란다는 연기 없이",
+   "claim": "CDC: 임신 중 간접흡연은 출생 체중을 조금 낮추고 조산과 연관될 수 있고, 태어난 뒤 간접흡연은 영아돌연사(SIDS)·귀·폐 감염 위험을 높여요. 안전한 노출 수준은 없어요. 메타분석(Leonardi-Bee 2011 Pediatrics, 관찰 연구 19개)에서 간접흡연에 노출된 비흡연 임신부의 사산·선천 이상이 조금 높았어요. 캐나다 CHILD 코호트(2021)에서는 밖에서만 피우는 집 아기의 소변 코티닌이 담배 없는 집의 약 3배였어요(옷·손에 남는 3차 흡연). 질병관리청 국가건강정보포털은 흡연을 영아돌연사 위험 요인으로 들고, 집(베란다 포함)·차에서 피우지 말라고 해요. 그래서 목표는 금연이고, 그 전에도 집·차 안과 베란다는 지금부터 연기 없이 — '밖에서 피우면 괜찮아요'로 읽히지 않게 써요.",
+   "sources": [
+    "https://www.cdc.gov/tobacco/secondhand-smoke/health.html",
+    "https://pubmed.ncbi.nlm.nih.gov/21382949/",
+    "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8770125/",
+    "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do?cntnts_sn=5467",
+    "https://www.ncbi.nlm.nih.gov/books/NBK44317/"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "방향은 high, 배수·오즈비는 화면에 쓰지 않아요(검색 요약). 흡연자의 주간 금연 체크인 줄(임신 단계부터): '끊는 게 목표예요. 집·차 안과 베란다는 지금부터 연기 없이 지내요.' 아내 화면에는 습관 이름이 보이지 않아요('체크인했어요'). 남편 탓·죄책감 톤 금지."
+  },
+  {
+   "id": "quit-smoking-clinic-kr",
+   "topic": "보건소 금연클리닉 찾기 — 금연길라잡이",
+   "claim": "보건소 금연클리닉은 무료로 6개월 동안 상담·금연보조제(12주)·일산화탄소 측정을 해 준다는 안내가 많아요(지역마다 달라요). 가까운 금연클리닉은 금연길라잡이(nosmokeguide.go.kr)의 금연클리닉 찾기에서 봐요. 금연상담전화는 1544-9030(평일 09~22시, 주말·공휴일 09~18시라는 보건소 안내가 있어요).",
+   "sources": [
+    "https://www.nosmokeguide.go.kr/helpness/clinic",
+    "https://www.ydp.go.kr/health/contents.do?key=3615"
+   ],
+   "confidence": "medium",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(원문 미열람). 화면은 링크 한 줄 '보건소 금연클리닉 찾기' → https://www.nosmokeguide.go.kr/helpness/clinic (준비·임신 단계 모두, 흡연자의 금연 체크인 아래). 금연보조제·약 이름 추천 금지, 무료 기간·횟수는 화면에 쓰지 않아요."
+  },
+  {
+   "id": "heat-check-retire-pregnancy",
+   "topic": "임신이 확인되면 사우나·노트북 체크는 내려놓을지 묻기",
+   "claim": "사우나·뜨거운 탕 쉬기와 노트북 무릎 위에 두지 않기는 정자 쪽 이유(고환 온도)의 임신 준비용 체크예요: Garolla 2013(사우나 3개월 → 정자 지표 저하, 끊고 6개월에 회복, 위 'Heat exposure' 항목), Sheynkin 2005(무릎 위 노트북은 음낭 온도만 2.6~2.8°C 올림, 정액은 재지 않음). ASRM 2022(자연 임신 최적화)는 정상 남성에게 고환 열을 줄이려는 행동 변화를 지지하지 않아요(검색 요약). 임신이 확인되면 이 이유는 이번 임신과 관계가 없어져서, 행을 지우지 않고 한 번만 '사우나·노트북 체크는 임신 준비용이었어요. 내려놓을까요?'를 물어요. 금연·술 쉬기는 임신 중에도 이유가 있어서(간접흡연, 같이 쉬기) 묻지 않아요.",
+   "sources": [
+    "https://pubmed.ncbi.nlm.nih.gov/23411620/",
+    "https://www.ovid.com/journals/hurep/fulltext/00004683-200502000-00022~increase-in-scrotal-temperature-in-laptop-computer-users",
+    "https://www.fertstert.org/article/S0015-0282(21)02130-0/fulltext"
+   ],
+   "confidence": "medium",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "새 의학 주장은 없어요(내려놓기 제안만). '이제 사우나 해도 돼요' 같은 의학 허락 표현 금지. 행 이름은 두 가지예요 — '사우나·뜨거운 탕 쉬기'(주간)와 '사우나·뜨거운 탕 피하기'(매일, 예전 목록·예시·추가 행), 그리고 '노트북 무릎 위에 두지 않기'."
+  },
+  {
+   "id": "paternal-perinatal-depression",
+   "topic": "아빠도 출산 전후에 우울해질 수 있어요 — 출생 뒤 한 번 묻기",
+   "claim": "메타분석: 아빠의 출산 전후 우울은 약 10%(Paulson & Bazemore 2010 JAMA, 43개 연구 2만8천 명 — 출산 후 3~6개월이 가장 높음), 8.4%(Cameron 2016 J Affect Disord, 임신부터 출산 후 12개월까지 비슷). 엄마의 우울과 중간 정도로 함께 움직여요(r 0.31). 연구마다 숫자가 8~26%로 갈려요. 그래서 앱은 출생 뒤 90일에 그에게만 '요즘 나는 어때요?'를 한 번 묻고, 답은 저장하지 않아요(물어봤다는 것만).",
+   "sources": [
+    "https://jamanetwork.com/journals/jama/article-abstract/185905",
+    "https://sciencedirect.com/science/article/abs/pii/S0165032716305705"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(원문 미열람). 화면에 %·'10명 중 1명' 단정을 쓰지 않아요. 남성 증상 목록으로 진단하지 않아요. 아내 화면·요약·내보내기·'이번 주 민수님' 어디에도 가지 않아요. 유산 뒤 42일에는 묻지 않아요. lib/logic/partnerDates DAD_MIND_OFFSET = 90, DAD_MIND_LAST_OFFSET = 364(출생 후 12개월까지 — Cameron 2016이 다룬 기간, 그 뒤에는 묻지 않아요)."
+  },
+  {
+   "id": "mental-health-lines-kr",
+   "topic": "이야기할 곳 — 1577-0199 · 109 · 119 · 난임·임산부심리상담센터",
+   "claim": "정신건강위기상담전화 1577-0199는 24시간이고 정신건강전문요원이 받아 가까운 정신건강복지센터로 이어 줘요. 자살예방상담전화 109는 2024-01-01부터 여러 번호를 대신해 하나로 합쳐졌고 24시간이에요(죽고 싶은 생각이 들 때의 번호). 1577-0199는 109로 합쳐지지 않았어요(보건복지상담센터 129 FAQ). 위급하면 119예요. 중앙난임·임산부심리상담센터(02-2276-2276)는 배우자도 상담받을 수 있어요.",
+   "sources": [
+    "https://www.129.go.kr/faq/faq06.do?ssn=15221&searchConsultingKeyword=F01",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148921874",
+    "https://www.jbmhc.or.kr/sub.php?menukey=99",
+    "https://www.mt.co.kr/policy/2026/07/29/2026072820021019991"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(129.go.kr·mmhwc.or.kr 원문 미열람) — 출시 전 번호를 공식 원문으로 다시 확인해요. 화면(아빠 마음 시트): '정신건강위기상담 1577-0199 · 24시간' / '죽고 싶은 생각이 들면 109 · 24시간' / '위급하면 119' / '난임·임산부심리상담센터 · 배우자도 상담받을 수 있어요'. 109를 일반 상담 번호처럼 쓰지 않아요."
   }
  ],
  "implications": [
@@ -302,6 +428,7 @@
   "Use conservative lifestyle trackers: caffeine at 200 mg a day or less (ACOG; MFDS allows 300 mg for pregnant women), zero alcohol once trying (CDC), and no smoking for either partner.",
   "For the switch to pregnancy and the baby diary, calculate the due date as LMP + 280 days and gestational weeks from the LMP. Let the user overwrite it with the ultrasound due date from the first-trimester scan (ACOG CO 700), because the app's cycle data will often be off by several days.",
   "Add age-aware copy for women 35 and over: per-cycle chances are about half those of women aged 19-26 (Dunson 2002), and evaluation should come at 6 months. Keep the tone supportive, not alarming.",
-  "Source caveat: WebFetch was blocked in this session and the search budget ran out, so the numbers come from search-result abstracts and summaries of the cited URLs. Check the original papers and guideline texts (especially NICE NG257, ASRM definitions, and the Korean 보건소 support details) before putting them in the app."
+  "Source caveat: WebFetch was blocked in this session and the search budget ran out, so the numbers come from search-result abstracts and summaries of the cited URLs. Check the original papers and guideline texts (especially NICE NG257, ASRM definitions, and the Korean 보건소 support details) before putting them in the app.",
+  "2026-11-01 (남편 체크 포인트 12개): 정액검사 7일 전 준비 확인(male-semen-test-abstinence), 약·근육 키우는 약은 검사받을 때 의사에게 말하기(male-medicines-testosterone), 담배 질문에 '(전자담배 포함)'(male-e-cigarettes), 임신 중 집·차 연기 없이 + 보건소 금연클리닉 링크(secondhand-smoke-home-car, quit-smoking-clinic-kr), 임신 확인 뒤 사우나·노트북 체크 내려놓기(heat-check-retire-pregnancy), 출생 뒤 90일 아빠 마음 한 번(paternal-perinatal-depression, mental-health-lines-kr). 모두 검색 요약이라 verified:false예요."
  ]
 }

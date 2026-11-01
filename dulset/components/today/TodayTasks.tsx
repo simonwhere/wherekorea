@@ -9,12 +9,12 @@ import type { TabKey } from '@/components/AppShell'
 import { cx, useToast } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { APPOINTMENT_KIND_ICON } from '@/components/ui/kindIcons'
-import { WEEKLY_QUESTION, doneIds, isWeekly, weeklyCheckInName } from '@/lib/logic/checks'
+import { WEEKLY_QUESTION, checkHelp, doneIds, isWeekly, weeklyCheckInName, type CheckHelp } from '@/lib/logic/checks'
 import { APPOINTMENT_KIND_LABEL, privateOwner } from '@/lib/logic/appointments'
 import { stampOn, toggleWithCompletion } from '@/lib/logic/today'
 import { useApp } from '@/lib/store'
 import type { CheckItem } from '@/lib/types'
-import { KIND_ICON, KIND_LABEL, PillButton } from './bits'
+import { ExternalLink, KIND_ICON, KIND_LABEL, PillButton } from './bits'
 import CheckEditor from './CheckEditor'
 import { useWeeklyUndo } from './useWeeklyUndo'
 import { dailyItems, dailyProgress, dayLabel, homeAppointments, soonAppointments, weeklyRows, whoLabel } from './model'
@@ -68,16 +68,24 @@ export default function TodayTasks({ onNavigate, className }: { onNavigate: (tab
       </div>
 
       <ul className="divide-y divide-line/75 rounded-[22px] border border-transparent bg-surface px-3.5 py-0.5 shadow-warm dark:border-line/70 dark:shadow-none forced-colors:border-line">
-        {items.map((item) => (
-          <li key={item.id}>
-            <Row item={item} checked={done.includes(item.id)} onToggle={() => toggle(item)} />
-          </li>
-        ))}
-        {weekly.map(({ item, checked }) => (
-          <li key={item.id}>
-            <Row item={item} checked={checked} weekly onToggle={() => toggle(item)} />
-          </li>
-        ))}
+        {items.map((item) => {
+          const help = checkHelp(item, state.stage, me.tracksCycle)
+          return (
+            <li key={item.id}>
+              <Row item={item} checked={done.includes(item.id)} help={help} onToggle={() => toggle(item)} />
+              <HelpLink help={help} />
+            </li>
+          )
+        })}
+        {weekly.map(({ item, checked }) => {
+          const help = checkHelp(item, state.stage, me.tracksCycle)
+          return (
+            <li key={item.id}>
+              <Row item={item} checked={checked} weekly help={help} onToggle={() => toggle(item)} />
+              <HelpLink help={help} />
+            </li>
+          )
+        })}
         {empty ? (
           <li className="flex min-h-[62px] items-center gap-3 py-2">
             <p className="min-w-0 flex-1 text-[12.5px] leading-[1.5] text-ink-3">매일 챙길 영양제나 생활 습관을 추가해 보세요.</p>
@@ -144,7 +152,29 @@ function bubble(item: CheckItem): { icon: IconName; tone: string } {
   return { icon: KIND_ICON[item.kind], tone: 'bg-brand-soft' }
 }
 
-function Row({ item, checked, weekly = false, onToggle }: { item: CheckItem; checked: boolean; weekly?: boolean; onToggle: () => void }) {
+/** Under the 금연 row: the 보건소 금연클리닉 finder (checks.checkHelp) — outside the row's button. */
+function HelpLink({ help }: { help: CheckHelp | undefined }) {
+  if (!help?.link) return null
+  return (
+    <div className="-mt-2 pb-1 pl-[50px]" data-check-help>
+      <ExternalLink href={help.link.url}>{help.link.label}</ExternalLink>
+    </div>
+  )
+}
+
+function Row({
+  item,
+  checked,
+  weekly = false,
+  help,
+  onToggle,
+}: {
+  item: CheckItem
+  checked: boolean
+  weekly?: boolean
+  help?: CheckHelp
+  onToggle: () => void
+}) {
   const b = bubble(item)
   return (
     <button
@@ -175,9 +205,16 @@ function Row({ item, checked, weekly = false, onToggle }: { item: CheckItem; che
             {item.label}
           </span>
         )}
-        <span className="mt-px block truncate text-[12.5px] text-ink-3">
-          {weekly ? '주 1회 체크인' : item.note ? `${KIND_LABEL[item.kind]} · ${item.note}` : KIND_LABEL[item.kind]}
-        </span>
+        {help?.note ? (
+          // The 금연 row from the pregnant stage on (checks.SMOKE_PREGNANT_NOTE): two short sentences, so it wraps.
+          <span className="mt-px block text-[12.5px] leading-[1.45] text-ink-3" data-check-note>
+            {help.note}
+          </span>
+        ) : (
+          <span className="mt-px block truncate text-[12.5px] text-ink-3">
+            {weekly ? '주 1회 체크인' : item.note ? `${KIND_LABEL[item.kind]} · ${item.note}` : KIND_LABEL[item.kind]}
+          </span>
+        )}
       </span>
       {/* 30px round check on the right: an inset control ring, filled with ok when done. */}
       <span

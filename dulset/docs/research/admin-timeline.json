@@ -372,6 +372,48 @@
     "https://www.ibabynews.com/news/articleView.html?idxno=117886"
    ],
    "confidence": "medium"
+  },
+  {
+   "id": "spouse-birth-leave-120-days",
+   "phase": "birth",
+   "who": "husband",
+   "title": "배우자 출산휴가 20일 — 끝은 실제 출생일부터 120일 (2026-09-18부터)",
+   "when": "출산예정일 50일 전 ~ 출생 후 120일 안",
+   "detail": "2026-09-18부터 출산예정일 50일 전부터 출산 후 120일 안에서 20일(전부 유급)을 3번까지 나눠 써요(고용노동부 보도자료 2026-09, 찾기쉬운 생활법령). 끝은 '출산 후 120일'이라 실제 출생일부터 세고, 예정일보다 일찍 태어나면 끝도 당겨져요(법 문언 기준 — 조산 때 계산을 따로 적은 원문은 찾지 못했어요). 나눠 쓸 때도 각 기간이 120일 안에 들어가야 해요. 마지막 날을 세는 법은 자료가 갈려요: 이 앱의 규칙대로 출생일을 1일째로 세면 출생일 + 119일이고, 첫날을 빼고 세면서 마지막 날이 주말·공휴일이면 미루는 해석(고용노동부 업무편람을 인용했다는 2차 자료 — URL을 확보하지 못했어요)은 + 120일이에요. 앱은 이른 날(+119)을 쓰고, 출생 전에는 날짜 대신 '출생 후 120일 안'만 보여 주고, '정확한 마지막 날은 회사나 고용센터(1350)에 확인해요'를 붙여요. 1350은 고용노동부 고객상담센터로, 배우자 출산휴가 거부·불이익 신고와 문의를 받는다고 안내돼요.",
+   "sources": [
+    "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=19964",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148970585",
+    "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=1380&ccfNo=2&cciNo=1&cnpClsNo=1",
+    "https://news.mtn.co.kr/news-detail/2026091709202845616",
+    "https://www.bokjiro.go.kr/ssis-tbu/cms/pc/news/promotion/1307924_1118.html",
+    "https://studygov.kr/blog/20013-spouse-childbirth-leave-guide/",
+    "https://studygov.kr/blog/20131-spouse-childbirth-leave-days-split-guide/"
+   ],
+   "confidence": "medium",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "20일·전부 유급·3번 분할·예정일 50일 전은 위 '배우자 출산전후휴가 20일 계획'(high)과 같아요. 새로 더한 것(실제 출생일 기준 끝, 마지막 날 세는 법, 1350)은 모두 검색 요약이고, moel.go.kr·bokjiro.go.kr·news.mtn.co.kr 원문은 세션 네트워크에서 열리지 않았어요. 앱(lib/logic/partnerDates PARTNER_LEAVE_LAST_OFFSET 119, roadmap birth-partner-leave window {anchor:'edd', start:-50, endAnchor:'birth', end:119})은 계산한 날짜를 법정 마지막 날로 단정하지 않아요. 알림은 그에게만: 창이 열릴 때(예정일 −50), 출생 뒤 D-30·D-7·D-1. 3월 1일처럼 공휴일에 걸리는 예시는 쓰지 않아요."
+  },
+  {
+   "id": "postnatal-care-spouse-apply",
+   "phase": "pregnancy-3rd",
+   "who": "both",
+   "title": "산모·신생아 건강관리(산후도우미) 신청 — 예정일 40일 전부터, 배우자도 신청할 수 있어요",
+   "when": "출산예정일 40일 전 ~ 출산일부터 60일",
+   "detail": "대부분 보건소가 '출산예정일 40일 전 ~ 출산일부터 60일'을 신청 기간으로 안내해요(제왕절개는 수술일 40일 전부터, 미숙아·선천성 이상아 입원은 퇴원 후 30일 안). 정부24 안내의 신청권자는 산모 본인·친족(배우자 포함)·법정대리인이라 배우자가 신청할 수 있어요. 대리 신청 서류는 지역마다 달라요(세종: 남편이 방문하면 산모·남편 신분증, 강남: 위임장·관계 서류). 복지로 온라인 신청은 산모 본인 인증이 필요할 수 있어요. 기준중위소득 150% 이하가 기본이고 예외지원은 지자체마다 달라요. 출산 직전·직후는 산모가 서류를 챙기기 가장 힘든 때라 배우자가 맡기 좋은 일이에요.",
+   "sources": [
+    "https://www.gov.kr/portal/service/serviceInfo/PTR000050390",
+    "https://www.sejong.go.kr/shealth/sub05_04_01.do",
+    "https://health.gangnam.go.kr/web/business/moja/sub20.do",
+    "https://www.ddm.go.kr/health/contents.do?key=1260",
+    "https://www.goyang.go.kr/health/health02/health02_4/health02_4_2/health02_4_2_tab2.jsp"
+   ],
+   "confidence": "medium",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(정부24·보건소 원문 미열람). 앱: roadmap p3-postnatal-care의 support '신청은 내가 맡기'와 supportNote '배우자도 신청할 수 있고, 필요한 서류는 보건소마다 달라요.', 신청이 열리는 날(예정일 −40) 둘 모두에게 알림 한 번(lib/logic/partnerDates POSTNATAL_CARE_OPEN_OFFSET). '남편이 온라인으로 신청할 수 있어요' 단정 금지(본인 인증), 금액·본인부담금 없이, 제공기관 추천 금지."
   }
  ],
  "notes": [
@@ -384,6 +426,7 @@
   "곧 바뀌는 날짜: 산모신생아 건강관리의 기준중위소득 150% 초과 예외지원 '2026-09-30 신청분까지'는 경기 광주시 등 일부 지자체 안내에서만 확인했습니다. 전국 공통인지와 이후 연장 여부를 확인해야 합니다. 난임치료휴가 유급 4일은 2026-11-27 시행입니다.",
   "2026-09-18 시행 '배우자 지원 3종'은 출산예정일 50일 전부터 쓰는 배우자 출산전후휴가(출산이 늦어져도 법정휴가 인정), 임신 중 남편 육아휴직(개시 7일 전 신청), 배우자 유산·사산휴가 5일(최초 3일 유급, 상한 3일 25만2,630원)입니다. 여러 보도로 교차 확인했습니다.",
   "삭제한 항목은 없습니다. 조리원 예약 시기(8~12주)와 태아보험 22주는 법정 기한이 아니라 관행과 경험담에 근거하므로 medium을 유지했고, 출산 준비물 항목은 low를 유지했습니다.",
-  "앱 설계: 기한은 LMP/EDD/출생일 기준 오프셋으로 계산하면 됩니다. 예를 들어 임신 84일, 임신 218일, EDD-50일, EDD-44일, EDD-40일, 출생+30일, 출생+60일, 출생+90일, 출생+120일, 출생+180일, 출생+2년입니다. 규칙마다 effective_from과 출처 URL을 붙여 버전을 관리하고, 지자체 사업은 거주지 설정에 따라 분리해 보여주기를 권합니다. 태아검진 시간과 임신기 근로시간 단축의 5인 미만 사업장 적용 여부, 출산·배우자휴가 급여의 우선지원대상기업 여부처럼 고용 형태에 따라 달라지는 항목이 있으므로 고용 형태 입력도 필요합니다."
+  "앱 설계: 기한은 LMP/EDD/출생일 기준 오프셋으로 계산하면 됩니다. 예를 들어 임신 84일, 임신 218일, EDD-50일, EDD-44일, EDD-40일, 출생+30일, 출생+60일, 출생+90일, 출생+120일, 출생+180일, 출생+2년입니다. 규칙마다 effective_from과 출처 URL을 붙여 버전을 관리하고, 지자체 사업은 거주지 설정에 따라 분리해 보여주기를 권합니다. 태아검진 시간과 임신기 근로시간 단축의 5인 미만 사업장 적용 여부, 출산·배우자휴가 급여의 우선지원대상기업 여부처럼 고용 형태에 따라 달라지는 항목이 있으므로 고용 형태 입력도 필요합니다.",
+  "2026-11-01 (남편 체크 포인트 12개): 'spouse-birth-leave-120-days'(끝은 실제 출생일부터, 마지막 날 +119와 +120 두 해석, 고용센터 1350)와 'postnatal-care-spouse-apply'(예정일 40일 전부터, 신청권자에 배우자)를 더했어요. 둘 다 검색 요약이라 verified:false예요."
  ]
 }

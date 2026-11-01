@@ -475,13 +475,15 @@ export function mergeNotices(state: AppState, notices: Notice[], nowISO: string)
 /**
  * Records that must outlive the cap:
  * - keys the engine produces again for as long as a condition holds (the doctor
- *   notice repeats every day once N months have passed) — otherwise a read or
+ *   notice repeats every day once N months have passed; his check points fire
+ *   on any open inside their window — partnerNotices) — otherwise a read or
  *   dismissed notice comes back unread;
  * - the cycle owner's answers kept as dismissed records (ttcFlow: "알릴까요?"
  *   told / skipped, the positive-test note, the live-vaccine rest suggestion) —
  *   otherwise an answered question would be asked again. A few per cycle at most.
  */
-const LONG_LIVED_KEY = /^(doctor|period-told|positive-told|bleeding-told|rest-suggest):/
+const LONG_LIVED_KEY =
+  /^(doctor|period-told|positive-told|bleeding-told|rest-suggest|deadline:task-apply|deadline:task-apply-new-year|flu-season|partner-leave-open|partner-leave|tdap|postnatal-open|program|dad-mind):/
 
 function trim(list: AppNotification[]): AppNotification[] {
   if (list.length <= MAX_KEPT) return list
@@ -582,23 +584,35 @@ export function sendCheer(state: AppState, from: MemberId, to: MemberId, nowISO:
 
 /** The 🔔 that goes with [고마워요] (N21): what it says. */
 export const WEEK_THANKS_BODY = '이번 주 고마워요'
+/** …when it thanks the week before (from her weekly 🔔 '지난주 민수님', read on a later day). */
+export const LAST_WEEK_THANKS_BODY = '지난주 고마워요'
 
 /** 'thanks:<monday>:<from>' — one 🔔 per giver per week (weekTogether.thankWeek keeps the decision). */
-export function weekThanksNoticeKey(today: ISODate, from: MemberId): string {
-  return `thanks:${mondayOf(today)}:${from}`
+export function weekThanksNoticeKey(today: ISODate, from: MemberId, week: ISODate = mondayOf(today)): string {
+  return `thanks:${week}:${from}`
 }
 
 /**
  * [고마워요] (once a week, weekTogether.thankWeek): one 🔔 that says so —
  * '💛 지은님이 고마워했어요 · 이번 주 고마워요' — keyed by the week, so a second
  * tap (another tab, a re-render) adds nothing. A cheer for the inbox and the
- * cover (cover.heroLine reads the week's thanks as '고마워했어요').
+ * cover (cover.heroLine reads the week's thanks as '고마워했어요'). `week` (its
+ * Monday) is the week thanked — the week of `today` unless the thanks came
+ * from last week's 🔔 (weekTogether.thankWeekOf), which then reads '지난주 고마워요'.
  */
-export function sendWeekThanks(state: AppState, from: MemberId, to: MemberId, today: ISODate, nowISO: string): AppState {
+export function sendWeekThanks(
+  state: AppState,
+  from: MemberId,
+  to: MemberId,
+  today: ISODate,
+  nowISO: string,
+  week: ISODate = mondayOf(today),
+): AppState {
   const name = memberName(state, from)
+  const body = week === mondayOf(today) ? WEEK_THANKS_BODY : LAST_WEEK_THANKS_BODY
   return mergeNotices(
     state,
-    [{ key: weekThanksNoticeKey(today, from), to, from, kind: 'cheer', title: `💛 ${name}님이 고마워했어요`, body: WEEK_THANKS_BODY }],
+    [{ key: weekThanksNoticeKey(today, from, week), to, from, kind: 'cheer', title: `💛 ${name}님이 고마워했어요`, body }],
     nowISO,
   ).state
 }

@@ -318,7 +318,12 @@ export function preconceptionCheckupTemplates(): RoadmapTemplate[] {
   return ROADMAP.filter((t): t is RoadmapTemplate & { kind: 'test' | 'vaccine' } => t.phase === 'preconception' && (t.kind === 'test' || t.kind === 'vaccine'))
 }
 
-function checkupsOf(state: Pick<AppState, 'planDone' | 'milestones'>, members: readonly MemberId[]): SummaryCheckup[] {
+/**
+ * The 임신 준비 tests and vaccines done. A seasonal row ('올해 독감 접종 맞기')
+ * reads this 절기's tick on `today` (the summary's day) — last season's reads
+ * open, so '올해' stays true.
+ */
+function checkupsOf(state: Pick<AppState, 'planDone' | 'milestones'>, members: readonly MemberId[], today: ISODate): SummaryCheckup[] {
   const out: SummaryCheckup[] = []
   for (const t of preconceptionCheckupTemplates()) {
     const kind = t.kind as 'test' | 'vaccine'
@@ -330,7 +335,7 @@ function checkupsOf(state: Pick<AppState, 'planDone' | 'milestones'>, members: r
       }
       continue
     }
-    const info = doneInfo(state, t)
+    const info = doneInfo(state, t, today)
     if (info && isISODate(info.at)) out.push({ id: t.id, title: t.title, kind, doneAt: info.at, ...(info.by ? { member: info.by } : {}) })
   }
   return out.sort((x, y) => (x.doneAt < y.doneAt ? -1 : x.doneAt > y.doneAt ? 1 : 0))
@@ -417,7 +422,7 @@ export function clinicSummary(state: AppState, viewer: MemberId, today: ISODate,
     ...(stats ? { stats } : {}),
     includesLH: includeLH,
     medications: medicationsOf(state, members),
-    checkups: checkupsOf(state, members),
+    checkups: checkupsOf(state, members, today),
     appointments: appointmentsOf(state, viewer, today),
     treatments: treatments.map(treatmentRow),
     ...(treatments.length ? { support: supportCounts(state) } : {}),

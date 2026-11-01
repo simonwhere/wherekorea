@@ -29,13 +29,26 @@
 // • Handing the cycle over (handOverCycle). What the partner may see of it
 //   (shareCycleDetails) is set in prefs.setShareCycleDetails — only the person
 //   whose cycle it is changes it.
+// • 2026-11-01 (founder, '12개 전부'): the 신청 card says to check whether the
+//   보건소 is still taking applications (APPLY_INTAKE_LINE) and offers
+//   [접수가 끝났대요] — decisions 'apply-closed:<year>:<member>' — after which
+//   the step gives up the month-task slot until the first Monday of the next
+//   January (the next item takes it; that Monday brings it back, with one
+//   '새해 접수' notice). The 검사 card, for the sperm side,
+//   asks to book the test the 검사의뢰서 names (BOOK_TEST_LINE, before booking)
+//   and carries his medicines line (TEST_MEDS_LINE, before booking and while
+//   booked) — his screens only: never her views, her digest, a notice, or the
+//   snapshot's words. Research: kr-programs.json 'fertility-check-intake-2026',
+//   'fertility-check-morphology-claim'; medical.json 'male-medicines-testosterone'.
 
 import { FERTILITY_CHECK_GUIDE, type ClaimDocId } from '../content/programs'
-import { diffDays, formatKo } from '../dates'
+import { diffDays, formatKo, isISODate } from '../dates'
+import { decide, decided, undecide } from '../sync/model'
 import type { Appointment, AppState, ISODate, MemberId } from '../types'
 import { privateOwner, setAppointmentDone, withAppointmentsFor } from './appointments'
 import { isClinicMode } from './clinic'
 import { ageFromBirthYear } from './notifications'
+import { PARTNER_FLU_ID, firstMondayOfJanuary } from './partnerDates'
 import {
   OVERDUE_GRACE_DAYS,
   monthsEnd,
@@ -63,6 +76,56 @@ export const FERTILITY_CLAIM_ID = 'pre-health-check-claim'
 /** 신청 후 3개월 안에 검사, 검사 후 1개월 안에 청구 (e보건소, research kr-programs.json). */
 export const TEST_WITHIN_MONTHS = 3
 export const CLAIM_WITHIN_MONTHS = 1
+
+/**
+ * The 신청 card's line (research kr-programs.json 'fertility-check-intake-2026',
+ * verified:false): offices stop taking applications when the year's budget
+ * runs out. No numbers, no district names, never '못 받아요'.
+ */
+export const APPLY_INTAKE_LINE = '신청하기 전에 우리 보건소가 접수 중인지 먼저 확인해요. 보건소마다 달라요.'
+/**
+ * The 검사 card before booking, sperm side (research kr-programs.json
+ * 'fertility-check-morphology-claim', verified:false): the claim needs the test
+ * the 검사의뢰서 names.
+ */
+export const BOOK_TEST_LINE = '예약할 때 검사의뢰서에 적힌 검사(정자정밀형태검사)로 받는지 병원에 확인해요. 보건소마다 달라요.'
+/**
+ * His medicines line on the 검사 card (research medical.json
+ * 'male-medicines-testosterone', verified:false). No drug names, no months.
+ * Never on her screens, in her digest, in a notice or in the snapshot.
+ */
+export const TEST_MEDS_LINE =
+  '먹는 약이나 근육 키우는 약·주사가 있으면 검사받을 때 의사에게 말해요. 처방받은 약은 혼자 끊지 말고 처방한 의사와 정해요.'
+
+/**
+ * decisions key: `member` heard their 보건소 stopped taking applications this
+ * year ([접수가 끝났대요] → the day). The 신청 step gives up his month-task slot
+ * until the first Monday of the next January (partnerDates.firstMondayOfJanuary
+ * — the day the one '새해 접수' notice goes out); from then it is his card again.
+ */
+export const applyClosedKey = (year: string, member: MemberId): string => `apply-closed:${year}:${member}`
+
+/** Is `member`'s 신청 step resting? [접수가 끝났대요] this year, or last year and the first Monday of January is still ahead. */
+export function applyClosed(state: Pick<AppState, 'decisions' | 'notifications'>, today: ISODate, member: MemberId): boolean {
+  if (!isISODate(today)) return false
+  const year = Number(today.slice(0, 4))
+  if (decided(state, applyClosedKey(String(year), member))) return true
+  return today < firstMondayOfJanuary(year) && decided(state, applyClosedKey(String(year - 1), member))
+}
+
+/**
+ * [접수가 끝났대요] (or its 되돌리기): the 신청 step leaves his month-task slot
+ * until the first Monday of next January. 되돌리기 in the first days of January
+ * also takes back last year's answer that is still resting the step.
+ */
+export function setApplyClosed(state: AppState, today: ISODate, member: MemberId, closed: boolean): AppState {
+  if (!isISODate(today)) return state
+  const year = Number(today.slice(0, 4))
+  const key = applyClosedKey(String(year), member)
+  if (closed) return decide(state, key, today)
+  const back = undecide(state, key)
+  return today < firstMondayOfJanuary(year) ? undecide(back, applyClosedKey(String(year - 1), member)) : back
+}
 
 /** One person's step of the chain: `pre-health-check-support:a`. */
 export const chainKey = (id: string, member: MemberId): string => `${id}:${member}`
@@ -273,10 +336,30 @@ export interface MonthlyTask extends PlanItem {
   minDoneAt?: ISODate
   /** '오늘 해 줄 수 있는 것' — one small thing for the partner today. */
   tip?: string
+  /**
+   * One line to check before acting (founder 2026-11-01, '12개 전부'): on the
+   * 신청 card, whether his 보건소 is still taking applications
+   * (APPLY_INTAKE_LINE); on the 검사 card before booking, the sperm side's
+   * question for the clinic (BOOK_TEST_LINE). Words only, nothing about her.
+   */
+  ask?: string
+  /**
+   * The 검사 card's medicines line (TEST_MEDS_LINE) — before booking and
+   * while booked, for the sperm side. HIS screens only: the link page draws
+   * it from the constant, never from the snapshot, and her preview of his
+   * page leaves it out (components/link LinkBody `preview`).
+   */
+  meds?: boolean
+  /** The 신청 card offers [접수가 끝났대요] (applyClosedKey; the step leaves the slot until the new year). */
+  canSayClosed?: boolean
 }
 
-/** Roadmap rows that aren't a month's to-do (daily habits live in the checks; "when needed" items). */
-const NOT_MONTHLY: ReadonlySet<string> = new Set(['pre-infertility-support', 'pre-folic', 'pre-habits-partner'])
+/**
+ * Roadmap rows that aren't a month's to-do (daily habits live in the checks;
+ * "when needed" items; the seasonal flu row, which is a part of his 내 준비 —
+ * never the home card, 2026-11-01).
+ */
+const NOT_MONTHLY: ReadonlySet<string> = new Set(['pre-infertility-support', 'pre-folic', 'pre-habits-partner', PARTNER_FLU_ID])
 
 /** The cycle owner's age this year (for the 35+ rule), if a birth year is known. */
 export function ownerAge(state: Pick<AppState, 'couple'>, today: ISODate): number | undefined {
@@ -331,7 +414,10 @@ function chainTask(
         title: `${checkName} 지원 신청하기`,
         step: 'apply',
         stage: 'apply',
-        why: `${why35}검사 전에 e보건소나 보건소에서 먼저 신청해야 지원돼요. ${NOTE}`,
+        // The hedge is the ask line's own ('보건소마다 달라요'), not said twice.
+        why: `${why35}검사 전에 e보건소나 보건소에서 먼저 신청해야 지원돼요.`,
+        ask: APPLY_INTAKE_LINE,
+        canSayClosed: true,
         guide: { where: GUIDE.apply.where, bring: GUIDE.apply.gives, cost },
         link: E_HEALTH,
         top: age35,
@@ -343,6 +429,8 @@ function chainTask(
       if (!base || !chain.testBy) return undefined
       const appointment = stepAppointment(state.appointments, testIdFor(state, member), today)
       const stage: TaskStage = !appointment ? 'book' : appointment.date > today ? 'booked' : 'visited'
+      // The sperm side's two lines: what to ask when booking, and his medicines (book · booked).
+      const sperm = !!me && isSpermSide(me) && !chain.lapsed
       return {
         ...base,
         title: `${testName} 받기`,
@@ -358,6 +446,8 @@ function chainTask(
           : `검사 마감 ${formatKo(chain.testBy)} · 신청 후 3개월 안`,
         why: `신청 후 3개월 안에 참여 의료기관에서 검사해요. 검사 준비는 병원 안내를 따라요. ${NOTE}`,
         appointment,
+        ...(sperm && stage === 'book' ? { ask: BOOK_TEST_LINE } : {}),
+        ...(sperm && (stage === 'book' || stage === 'booked') ? { meds: true } : {}),
         guide: { what: testName, where: GUIDE.where, bring: GUIDE.bring, cost },
         link: E_HEALTH,
         top: true,
@@ -446,7 +536,9 @@ export function monthlyTask(state: AppState, today: ISODate, member: MemberId): 
   const age = ownerAge(state, today)
   const age35 = age !== undefined && age >= 35
   const chain = fertilityChain(state, today, member)
-  const task = chainStale(chain, today) ? undefined : chainTask(state, items, chain, member, age35, today)
+  // [접수가 끝났대요]: the 신청 step gives up the slot until the first Monday of January — the next item takes it.
+  const resting = chainStale(chain, today) || (chain.step === 'apply' && applyClosed(state, today, member))
+  const task = resting ? undefined : chainTask(state, items, chain, member, age35, today)
   const tip = partnerTip(state, today, member)
   if (task) return { ...task, tip }
 
@@ -492,6 +584,43 @@ export function completeMonthlyTask(
   }
   if (task.step === 'claim') return setFertilityClaimed(state, done, at, by, member)
   return tickItem(task.id, done, at, by)(state)
+}
+
+// ── His dated rows in 챙길 것 (2026-11-01) ───────────────────
+
+/** 배우자 출산휴가 20일 (roadmap, who: partner). */
+export const PARTNER_LEAVE_ID = 'birth-partner-leave'
+/** Tdap 접종 (roadmap, who: partner). */
+export const PARTNER_TDAP_ID = 'p3-partner-tdap'
+/**
+ * What ticking 배우자 출산휴가 means: every remaining day has a date. It can be
+ * split into three parts, so 'took the first part' must not stop the rest.
+ */
+export const LEAVE_TICK_LABEL = '남은 날까지 날짜를 다 정했어요'
+/** Under his Tdap row once 예정일 2주 전 has passed and it is still open (no '기한 지남': it is a recommendation). */
+export const TDAP_LATE_NOTE = '아직이면 병원에 물어봐요.'
+
+/** The words a row's tick stands for (its checkbox's name): '배우자 출산휴가 20일' → LEAVE_TICK_LABEL; others '<title> 챙김'. */
+export function tickLabel(item: Pick<PlanItem, 'id' | 'title' | 'custom'>): string {
+  return !item.custom && item.id === PARTNER_LEAVE_ID ? LEAVE_TICK_LABEL : `${item.title} 챙김`
+}
+
+/** A line under one of his own rows on `today`: Tdap after its window, still open → TDAP_LATE_NOTE. */
+export function partnerRowNote(item: Pick<PlanItem, 'id' | 'custom' | 'status' | 'end'>, today: ISODate): string | undefined {
+  if (item.custom || item.status === 'done') return undefined
+  if (item.id === PARTNER_TDAP_ID && !!item.end && isISODate(today) && today > item.end) return TDAP_LATE_NOTE
+  return undefined
+}
+
+/**
+ * A line inside the '자세히' box of one of his own rows: his 정액검사 row
+ * (FERTILITY_TEST_ID) carries his medicines line (TEST_MEDS_LINE). Not in the
+ * row's shared detail (lib/content roadmap), which her 챙길 것, the export and
+ * the summary read too — components/plan/ItemRow draws this only on the
+ * viewer's own row, never on hers.
+ */
+export function partnerDetailNote(item: Pick<PlanItem, 'id' | 'custom'>): string | undefined {
+  return !item.custom && item.id === FERTILITY_TEST_ID ? TEST_MEDS_LINE : undefined
 }
 
 // ── [다녀왔어요] on an appointment (챙길 것 › 다가오는 일정) ─────────

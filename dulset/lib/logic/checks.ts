@@ -114,6 +114,82 @@ export function isDueThisWeek(
  */
 export const DRINK_LABELS: readonly string[] = ['금주', '술 쉬기', '술 안 마시기']
 
+/**
+ * Labels that are the 'keep not smoking' row (lib/initial.ts SMOKE_CHECK_LABELS
+ * — the starter's weekly 금연 and the original daily one; tests keep the two
+ * in step). The first-run question says '(전자담배 포함)'; the rows keep their labels.
+ */
+export const SMOKE_LABELS: readonly string[] = ['금연', '담배 안 피우기']
+
+/** Is this the 'keep not smoking' row? */
+export function isSmokeCheck(item: Pick<CheckItem, 'label'>): boolean {
+  return SMOKE_LABELS.includes(item.label.trim())
+}
+
+/**
+ * The 금연 row's line from the pregnant stage on, for the partner (research
+ * medical.json 'secondhand-smoke-home-car', verified:false): no odds, no
+ * blame, and no '그 전에도' that reads as leave to smoke elsewhere.
+ */
+export const SMOKE_PREGNANT_NOTE = '끊는 게 목표예요. 집·차 안과 베란다는 지금부터 연기 없이 지내요.'
+
+/** Under the 금연 row while preparing and pregnant: the 보건소 금연클리닉 finder (research medical.json 'quit-smoking-clinic-kr'). */
+export const QUIT_SMOKING_CLINIC = { label: '보건소 금연클리닉 찾기', url: 'https://www.nosmokeguide.go.kr/helpness/clinic' } as const
+
+export interface CheckHelp {
+  /** Replaces the row's small line ('주 1회 체크인' / the note). */
+  note?: string
+  link?: { label: string; url: string }
+}
+
+/**
+ * Extra words for one of `member`'s own rows (founder 2026-11-01, '12개 전부'):
+ * the 금연 row carries the 금연클리닉 link while preparing and pregnant (the
+ * approved line: 'Link line in preparing and pregnant'), and — for the person
+ * who is not pregnant, from the pregnant stage on — SMOKE_PREGNANT_NOTE.
+ * Undefined for every other row and when there is nothing to add. Only ever
+ * drawn on the row's owner's own screens: the other person's view of a row
+ * never names it (weekTogether '매일 체크', CheckCards PartnerChecks).
+ */
+export function checkHelp(item: Pick<CheckItem, 'label'>, stage: AppState['stage'], carrier: boolean): CheckHelp | undefined {
+  if (!isSmokeCheck(item)) return undefined
+  const note = !carrier && stage !== 'preparing' ? SMOKE_PREGNANT_NOTE : undefined
+  const link = stage === 'preparing' || stage === 'pregnant' ? { ...QUIT_SMOKING_CLINIC } : undefined
+  if (!note && !link) return undefined
+  return { ...(note ? { note } : {}), ...(link ? { link } : {}) }
+}
+
+// ── Preparing-only rows, asked once in the pregnant stage (2026-11-01) ──
+
+/**
+ * The 'keep the testes cool' rows: the weekly '사우나·뜨거운 탕 쉬기' (the habit
+ * questions' starter), the daily '사우나·뜨거운 탕 피하기' (the older list, the
+ * demo, the addable row) and '노트북 무릎 위에 두지 않기'. Their only reason is
+ * sperm formation (research medical.json 'heat-check-retire-pregnancy'), so
+ * once a pregnancy starts he is asked once whether to put them down. Never
+ * 금연 or 금주: those still fit.
+ */
+export const SAUNA_CHECK_LABELS: readonly string[] = ['사우나·뜨거운 탕 쉬기', '사우나·뜨거운 탕 피하기']
+export const LAPTOP_CHECK_LABEL = '노트북 무릎 위에 두지 않기'
+
+/** `member`'s active sauna / laptop rows. */
+export function heatChecks(state: Pick<AppState, 'checkItems'>, member: MemberId): CheckItem[] {
+  return activeItems(state, member).filter((i) => SAUNA_CHECK_LABELS.includes(i.label.trim()) || i.label.trim() === LAPTOP_CHECK_LABEL)
+}
+
+/** The question for those rows: '사우나·노트북 체크는 임신 준비용이었어요. 내려놓을까요?' — naming only the ones he has. */
+export function heatChecksQuestion(items: readonly Pick<CheckItem, 'label'>[]): string {
+  const sauna = items.some((i) => SAUNA_CHECK_LABELS.includes(i.label.trim()))
+  const laptop = items.some((i) => i.label.trim() === LAPTOP_CHECK_LABEL)
+  const what = sauna && laptop ? '사우나·노트북' : sauna ? '사우나' : '노트북'
+  return `${what} 체크는 임신 준비용이었어요. 내려놓을까요?`
+}
+
+/** Archive several rows at once (history kept). */
+export function archiveCheckItems(state: AppState, ids: readonly string[], today: ISODate): AppState {
+  return ids.reduce((s, id) => archiveCheckItem(s, id, today), state)
+}
+
 /** The question every weekly row asks. */
 export const WEEKLY_QUESTION = '이번 주 지켰어요?'
 

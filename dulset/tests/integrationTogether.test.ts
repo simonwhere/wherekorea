@@ -42,7 +42,7 @@ import { TOGETHER_TASK_LINE, TOGETHER_VISIT_LINE, appointmentReminders, planDead
 import { discreetFor, setPersonalPref, setShareLevel } from '@/lib/logic/prefs'
 import { gestationalAge, recordBirth, startPregnancy } from '@/lib/logic/pregnancy'
 import { STAGE_PHASES, addCustomTask } from '@/lib/logic/roadmap'
-import { setAlertStyle } from '@/lib/logic/settings'
+import { lockScreenText, setAlertStyle } from '@/lib/logic/settings'
 import { signalsFor } from '@/lib/logic/signals'
 import { endPregnancy, noticeTarget } from '@/lib/logic/today'
 import {
@@ -642,11 +642,14 @@ describe('4. his heads-up the day before her appointment — alert style, stage,
   it('the engine masks every notice on the lock screen when 잠금화면 숨김 is on (source check)', () => {
     const src = readFileSync(join(ROOT, 'lib/useNotificationEngine.ts'), 'utf8')
     expect(src).toMatch(/const discreet = discreetFor\(settings, viewer\)/)
-    expect(src).toMatch(/const title = discreet \? '둘셋' : n\.title/)
-    expect(src).toMatch(/const body = discreet \? '[^']+' : n\.body/)
-    // Both sources of his heads-up go through the engine.
-    expect(src).toMatch(/appointmentReminders\(s, today\)/)
-    expect(src).toMatch(/planDeadlineNotices\(s, today\)/)
+    // One masking for every notice: settings.lockScreenText (tests/husbandNotices.test.ts runs it on each rule's notices).
+    expect(src).toMatch(/const \{ title, body \} = lockScreenText\(n, discreet\)/)
+    expect(lockScreenText({ title: '🏥 내일 지은님 정기 검진이에요', body: '…' }, true)).toEqual({ title: '둘셋', body: '새 알림이 있어요' })
+    // Both sources of his heads-up go through the engine (partnerNotices.allRuleNotices runs every rule).
+    expect(src).toMatch(/allRuleNotices\(s, today\)/)
+    const all = readFileSync(join(ROOT, 'lib/logic/partnerNotices.ts'), 'utf8')
+    expect(all).toMatch(/appointmentReminders\(state, today\)/)
+    expect(all).toMatch(/planDeadlineNotices\(state, today\)/)
   })
 
   it('her own dated item tomorrow: one line for him while pregnant only — never for her, never for a shared / his / done / deleted item, never in the quiet', () => {

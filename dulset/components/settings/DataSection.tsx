@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import RestoreFullBackup from '@/components/system/RestoreFullBackup'
 import { Button, Card, Sheet, useToast } from '@/components/ui'
 import { IconTile } from '@/components/ui/icons'
+import { withoutDadMind } from '@/lib/logic/dadMind'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
 import { stampOn } from '@/lib/logic/today'
@@ -41,7 +42,7 @@ export default function DataSection() {
     try {
       const photos = await exportPhotos(photoIdsInState(state))
       packed = photos.length
-      const bytes = buildFullBackup(state, photos, new Date())
+      const bytes = buildFullBackup(withoutDadMind(state), photos, new Date())
       blob = new Blob([bytes as BlobPart], { type: 'application/zip' })
     } catch {
       setPacking(false)
@@ -67,7 +68,7 @@ export default function DataSection() {
   const exportJson = async () => {
     let blob: Blob
     try {
-      blob = new Blob([JSON.stringify(state)], { type: 'application/json' })
+      blob = new Blob([JSON.stringify(withoutDadMind(state))], { type: 'application/json' })
     } catch {
       toast.show('백업 파일을 만들지 못했어요. 잠시 뒤 다시 해 주세요')
       return
@@ -81,7 +82,7 @@ export default function DataSection() {
     } else {
       // Last resort: the plain download link.
       try {
-        downloadText(BACKUP_FILENAME, JSON.stringify(state), 'application/json')
+        downloadText(BACKUP_FILENAME, JSON.stringify(withoutDadMind(state)), 'application/json')
         markBackedUp(stampOn(today))
         toast.show('기록 파일을 저장했어요')
       } catch {

@@ -4,6 +4,7 @@ import { ROADMAP } from '@/lib/content/roadmap'
 import { dLabel, diffDays, isISODate } from '@/lib/dates'
 import { daysSince, onThisDay, type AnniversaryEvent } from '@/lib/logic/anniversary'
 import { appointmentsFor, sharedAppointments, upcomingAppointments } from '@/lib/logic/appointments'
+import { PARTNER_FLU_ID } from '@/lib/logic/partnerDates'
 import {
   activeDailyItems,
   activeWeeklyItems,
@@ -112,9 +113,13 @@ export function withTicked<T extends { id: string; status: string }>(
  * 2026-10-09): the other person's open item whose deadline passed or whose
  * window lapsed is not on my card — it reads as nothing there
  * (lib/logic/together.togetherRow), never '기한 지남' about them.
+ *
+ * The seasonal 올해 독감 접종 row is never on it (2026-11-01): for her it is
+ * his, for him it is a part of 내 준비 already. It stays in the 챙길 것 list.
  */
 export function focusItemsFor(state: AppState, today: ISODate, viewer: MemberId, items: readonly PlanItem[]): PlanItem[] {
   return items.filter((i) => {
+    if (!i.custom && i.id === PARTNER_FLU_ID) return false
     if (i.status === 'done') return true
     const row = togetherRow(state, today, viewer, i)
     return !(row.whose === 'theirs' && row.label === null)

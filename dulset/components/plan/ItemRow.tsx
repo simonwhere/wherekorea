@@ -7,7 +7,15 @@ import { ROADMAP_KIND_ICON } from '@/components/ui/kindIcons'
 import { ROADMAP_AUDIT } from '@/lib/content/roadmap'
 import { formatShort, isISODate } from '@/lib/dates'
 import { appointmentsFor, privateOwner } from '@/lib/logic/appointments'
-import { FERTILITY_APPLY_ID, appliedInfo } from '@/lib/logic/partnerTrack'
+import {
+  FERTILITY_APPLY_ID,
+  LEAVE_TICK_LABEL,
+  PARTNER_LEAVE_ID,
+  appliedInfo,
+  partnerDetailNote,
+  partnerRowNote,
+  tickLabel,
+} from '@/lib/logic/partnerTrack'
 import { useApp } from '@/lib/store'
 import type { Appointment, MemberId } from '@/lib/types'
 import { OnlyMeMark } from './AppointmentList'
@@ -135,7 +143,8 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
       data-plan-row={item.id}
     >
       <div className="pt-0.5">
-        <CheckBox checked={done} onToggle={() => actions.onToggle(item)} label={`${item.title} 챙김`} />
+        {/* 배우자 출산휴가: the tick means every remaining day has a date (partnerTrack.tickLabel), not 'took it'. */}
+        <CheckBox checked={done} onToggle={() => actions.onToggle(item)} label={tickLabel(item)} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -167,6 +176,12 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
           <Icon name={ROADMAP_KIND_ICON[item.kind]} className="mt-0.5 h-4 w-4 shrink-0 text-ink-2" />
           <span className="min-w-0">{item.title}</span>
         </p>
+        {/* His Tdap after 예정일 2주 전, still open: '아직이면 병원에 물어봐요.' (no 기한 지남 — it is a recommendation). */}
+        {!neutral && partnerRowNote(item, today) ? (
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-2" data-row-note>
+            {partnerRowNote(item, today)}
+          </p>
+        ) : null}
         {/* What the 함께하는 사람 can do to share it, and [같이 할게요] (together.ts). */}
         {/* Not on one whose time went by (a lapsed window; her passed deadline reads as nothing on his screen). */}
         {/* Once said, '같이 하기로 했어요' + [취소] takes its own line under the support text (lib/content/supportCopy). */}
@@ -202,7 +217,7 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
           ) : done && isISODate(item.doneAt) ? (
             <span className="text-[11px] font-medium text-ok">
               ✓ {formatShort(item.doneAt)}
-              {doneByName ? ` ${doneByName}` : ''} 챙김
+              {doneByName ? ` ${doneByName}` : ''} {!item.custom && item.id === PARTNER_LEAVE_ID ? `· ${LEAVE_TICK_LABEL}` : '챙김'}
             </span>
           ) : null}
           {t?.deadline && !done && !neutral ? (
@@ -289,6 +304,12 @@ export default function ItemRow({ item, compact, actions }: { item: PlanItem; co
               <div id={detailId} hidden={!open} className="mt-2 rounded-xl bg-surface-2 px-3 py-2.5">
                 {item.start && t ? <p className="mb-1 text-[11px] font-medium text-ink-3">{t.when}</p> : null}
                 <p className="text-xs leading-relaxed text-ink-2">{item.detail}</p>
+                {/* His medicines line: on his own row only, never on hers (partnerTrack.partnerDetailNote). */}
+                {!neutral && partnerDetailNote(item) ? (
+                  <p className="mt-1.5 text-xs leading-relaxed text-ink-2" data-detail-meds>
+                    {partnerDetailNote(item)}
+                  </p>
+                ) : null}
                 {row.supportNote && !quiet && !done ? (
                   <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-ink-2">
                     <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />

@@ -72,6 +72,15 @@ export default function LinkClinic({
         <p>
           {clinic.leave.text} {clinic.leave.note}
         </p>
+        {clinic.leave.support ? (
+          <p className="mt-1 flex items-start gap-1.5 text-ink-2" data-clinic-leave-support>
+            <Icon name="users" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-him" />
+            <span className="min-w-0">
+              <span className="sr-only">내가 할 수 있는 것: </span>
+              {clinic.leave.support}
+            </span>
+          </p>
+        ) : null}
         <ExternalLink href={clinic.leave.source.url} className="-mb-2 text-[12px]">
           출처 {clinic.leave.source.label}
         </ExternalLink>

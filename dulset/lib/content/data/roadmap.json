@@ -18,7 +18,9 @@
       "monthDeadline": "법이 '개월'로 세는 기한 (lib/logic/plan이 정확한 마지막 날을 계산해요)",
       "notOneAppointment": "'일정 잡기' 없이 알아 두거나 계속 하는 항목",
       "support": "함께하는 사람이 같이 할 수 있는 한 가지 (40자 이하, '~하기' 꼴, 의학적 주장 없이 실제로 하는 일). who가 carrier인 항목은 꼭 있어야 해요",
-      "supportNote": "support에 덧붙이는 한 줄 (80자 이하, 해요체) — 'both' 항목에서 누가 어느 쪽을 맡는지"
+      "supportNote": "support에 덧붙이는 한 줄 (80자 이하, 해요체) — 'both' 항목에서 누가 어느 쪽을 맡는지",
+      "window": "날짜 창 {anchor: 'lmp'|'edd'|'birth', start, end?, endAnchor?}. endAnchor 'birth'면 end를 실제 출생일부터 세요(배우자 출산휴가: 예정일 50일 전 ~ 출생일 + 119). 출생 전에는 끝이 '출생 후 120일 안'으로 보여요",
+      "season": "창 대신 계절 항목: 'flu'(lib/logic/partnerDates — 준비 10월~12월, 임신 중 10월~4월). window와 같이 쓰지 않고, 완료는 절기마다 planDone '<id>:2026-27'"
     }
   },
   "checkedAt": "2026-09-26",
@@ -470,6 +472,42 @@
     "ibabyPassport": {
       "name": "베이비뉴스 (아기 여권)",
       "url": "https://www.ibabynews.com/news/articleView.html?idxno=117886"
+    },
+    "kdcaFluAdvisory2026": {
+      "name": "질병관리청 (2026-27절기 인플루엔자 유행주의보·접종 안내)",
+      "url": "https://www.kdca.go.kr/bbs/kdca/41/312593/artclView.do"
+    },
+    "nhisFluPriority": {
+      "name": "국민건강보험공단 건강소식 (인플루엔자 우선접종 권장대상)",
+      "url": "https://www.nhis.or.kr/static/alim/paper/oldpaper/202309/sub/section2_2.html"
+    },
+    "cdcFluCocoon": {
+      "name": "CDC (Influenza: 아기 곁 가족의 접종)",
+      "url": "https://www.cdc.gov/breastfeeding-special-circumstances/hcp/illnesses-conditions/flu.html"
+    },
+    "moelSpouse2026": {
+      "name": "고용노동부 보도자료 (배우자 지원 3종, 2026-09)",
+      "url": "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=19964"
+    },
+    "mtnSpouse2026": {
+      "name": "머니투데이방송 (출산 전에도 배우자 20일 유급휴가, 2026-09-17)",
+      "url": "https://news.mtn.co.kr/news-detail/2026091709202845616"
+    },
+    "bokjiroSpouseLeave": {
+      "name": "복지로 (2025년부터 달라지는 배우자 출산휴가)",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/cms/pc/news/promotion/1307924_1118.html"
+    },
+    "gov24PostnatalApplicant": {
+      "name": "정부24 (산모·신생아 건강관리 지원 — 신청권자)",
+      "url": "https://www.gov.kr/portal/service/serviceInfo/PTR000050390"
+    },
+    "sejongPostnatal": {
+      "name": "세종시 보건소 (산모·신생아 건강관리 — 배우자 방문 신청 서류)",
+      "url": "https://www.sejong.go.kr/shealth/sub05_04_01.do"
+    },
+    "moelInfertilityLeave2026": {
+      "name": "고용노동부 보도자료 (난임치료휴가 유급 4일, 2026-08)",
+      "url": "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=19813"
     }
   },
   "links": {
@@ -556,7 +594,7 @@
       "effectiveFrom": "2025-01-01",
       "checkedAt": "2026-09-26",
       "verified": false,
-      "checkNote": "docs/research/medical-checklist.json '남편 임신 전 검사' confidence medium — 출시 전 원문 확인 · 청구 서류 4종은 kr-programs.json '신청과 환급 절차' medium"
+      "checkNote": "docs/research/medical-checklist.json '남편 임신 전 검사' confidence medium — 출시 전 원문 확인 · 청구 서류 4종은 kr-programs.json '신청과 환급 절차' medium · 약 문장(2026-11-01, medical.json 'male-medicines-testosterone')은 함께 보는 detail에 넣지 않아요 — 아내 챙길 것에도 보여서. 남편 본인 줄의 '자세히' 안에만 따로 그려요(lib/logic/partnerTrack partnerDetailNote)."
     },
     {
       "id": "pre-habits-partner",
@@ -670,9 +708,9 @@
       "phase": "preconception",
       "who": "partner",
       "kind": "vaccine",
-      "title": "예방접종 점검 (MMR·수두·A·B형간염·독감)",
+      "title": "예방접종 점검 (MMR·수두·A·B형간염)",
       "when": "임신 계획 단계",
-      "detail": "가족이 감염돼 임신부에게 옮기지 않도록 접종 기록과 항체를 확인하고, 빠진 접종은 맞아 둬요. 독감은 매년 가을에 맞고, 아기를 위한 Tdap은 출산 전에 따로 챙겨요.",
+      "detail": "가족이 감염돼 임신부에게 옮기지 않도록 접종 기록과 항체를 확인하고, 빠진 접종은 맞아 둬요. 아기를 위한 Tdap은 출산 전에 따로 챙겨요.",
       "sources": [
         "yaleobgy",
         "acogTdap"
@@ -680,7 +718,28 @@
       "effectiveFrom": "2026-09-26",
       "checkedAt": "2026-09-26",
       "verified": false,
-      "checkNote": "docs/research/medical-checklist.json '남편 예방접종 점검' confidence medium — 출시 전 원문 확인"
+      "checkNote": "docs/research/medical-checklist.json '남편 예방접종 점검' confidence medium — 출시 전 원문 확인 · 독감은 2026-11-01부터 계절 항목 'partner-flu'로 나눴어요."
+    },
+    {
+      "id": "partner-flu",
+      "phase": "preconception",
+      "who": "partner",
+      "kind": "vaccine",
+      "title": "올해 독감 접종 맞기",
+      "when": "매년 10월~12월 (임신 중이면 4월까지)",
+      "season": "flu",
+      "link": "nip",
+      "detail": "독감은 매년 가을에 맞아요. 비용은 병원마다 달라요.",
+      "sources": [
+        "kdcaFluAdvisory2026",
+        "nhisFluPriority",
+        "cdcFluCocoon",
+        "nipFlu"
+      ],
+      "effectiveFrom": "2026-11-01",
+      "checkedAt": "2026-11-01",
+      "verified": false,
+      "checkNote": "docs/research/medical-checklist.json 'partner-flu-season-2026-27' — 질병관리청 2026-27절기 안내·'임신부와 함께 사는 사람' 우선접종 권장은 검색 요약(원문 미열람). 함께하는 사람이 국가 무료 대상이 아니라는 것도 요약 기준이라 화면에 '무료'·가격을 쓰지 않아요. 보이는 기간(준비 10월~12월, 임신 중 10월~4월)은 lib/logic/partnerDates FLU_WINDOWS."
     },
     {
       "id": "pre-infertility-support",
@@ -696,12 +755,14 @@
         "gworkingmomInfertility",
         "nateInfertility",
         "mohwInfertility",
-        "gov24Infertility"
+        "gov24Infertility",
+        "moelInfertilityLeave2026"
       ],
       "effectiveFrom": "2025-02-23",
       "checkedAt": "2026-10-02",
       "verified": false,
-      "checkNote": "유급 4일(2026-11-27)·출산당 25회는 kr-programs.json에서 원문 미열람(verified:false) — 고용노동부·보건복지부 원문으로 확인. 연 6일은 admin-timeline.json high."
+      "checkNote": "유급 4일(2026-11-27)·출산당 25회는 kr-programs.json에서 원문 미열람(verified:false) — 고용노동부·보건복지부 원문으로 확인. 연 6일은 admin-timeline.json high.",
+      "support": "회사에 신청 방법 물어보기"
     },
     {
       "id": "pre-work-rules",
@@ -1461,16 +1522,19 @@
       },
       "link": "bokjiro",
       "detail": "기준중위소득 150% 이하 출산 가정이 대상이고, 보건소나 복지로에서 신청해요. 150% 초과 가정의 예외지원을 ‘2026-09-30 신청분까지’로 안내한 지자체도 있으니 관할 보건소에 확인해요. 서비스 기간은 5~40일이고, 바우처는 출산일부터 90일 안에 써요.",
-      "support": "도우미 신청 서류 같이 챙기기",
+      "support": "신청은 내가 맡기",
       "sources": [
         "gov24Postnatal",
         "gwanakPostnatal",
-        "gjcityPostnatal"
+        "gjcityPostnatal",
+        "gov24PostnatalApplicant",
+        "sejongPostnatal"
       ],
       "effectiveFrom": "2026-09-26",
       "checkedAt": "2026-09-26",
       "verified": false,
-      "checkNote": "docs/research/admin-timeline.json '산모·신생아 건강관리(산후도우미 바우처) 신청' confidence medium — 출시 전 원문 확인 · 예외지원 기한(2026-09-30)은 지자체 안내 하나"
+      "checkNote": "docs/research/admin-timeline.json '산모·신생아 건강관리(산후도우미 바우처) 신청' confidence medium — 출시 전 원문 확인 · 예외지원 기한(2026-09-30)은 지자체 안내 하나 · 배우자 신청(정부24 신청권자 '친족')은 admin-timeline.json 'postnatal-care-spouse-apply' 검색 요약(2026-11-01) — 온라인은 산모 본인 인증이 필요할 수 있어요.",
+      "supportNote": "배우자도 신청할 수 있고, 필요한 서류는 보건소마다 달라요."
     },
     {
       "id": "birth-partner-leave",
@@ -1482,18 +1546,23 @@
       "window": {
         "anchor": "edd",
         "start": -50,
-        "end": 120
+        "endAnchor": "birth",
+        "end": 119
       },
       "link": "moel",
-      "detail": "20일 모두 유급이고 3번까지 나눠 쓸 수 있어요(2025-02-23부터). 2026-09-18부터는 예정일 50일 전부터 쓸 수 있고, 출산이 늦어져도 법정휴가로 인정돼요. 출생 후 120일이 지나면 쓸 수 없으니 둘이 일정을 미리 맞춰 봐요.",
+      "detail": "20일 모두 유급이고 3번까지 나눠 쓸 수 있어요(2025-02-23부터). 2026-09-18부터는 예정일 50일 전부터 쓸 수 있고, 출산이 늦어져도 법정휴가로 인정돼요. 출생 후 120일이 지나면 쓸 수 없으니 둘이 일정을 미리 맞춰 보고, 정확한 마지막 날은 회사나 고용센터(1350)에 확인해요.",
       "sources": [
         "easylawSpouseLeave",
         "insidepeopleSpouse",
-        "seoulShinmunSpouse"
+        "seoulShinmunSpouse",
+        "moelSpouse2026",
+        "mtnSpouse2026",
+        "bokjiroSpouseLeave"
       ],
       "effectiveFrom": "2026-09-18",
-      "checkedAt": "2026-09-26",
-      "verified": true
+      "checkedAt": "2026-11-01",
+      "verified": false,
+      "checkNote": "20일·유급·3번 분할·예정일 50일 전은 admin-timeline.json high(2026-09-26 확인). 끝은 실제 출생일부터 세요(admin-timeline.json 'spouse-birth-leave-120-days', 검색 요약): 출생일을 1일째로 세면 출생일 + 119, 첫날을 빼고 세면 + 120이라 앱은 이른 날(+119)을 쓰고 회사·고용센터(1350) 확인을 붙여요. 1350과 세는 법은 원문 미열람 — 고용노동부 news_seq=19964로 다시 확인."
     },
     {
       "id": "birth-hepb",

@@ -213,8 +213,14 @@ export function noticeExpiryNotices(state: AppState, today: ISODate): Notice[] {
 // start with 'deadline:task-', so the notice opens his month task card on 오늘
 // while preparing (today.noticeTarget).
 
-/** Every key monthlyTaskNotices writes: the step, his deadline or booking id, and him — nothing else (tests read it). */
-export const MONTHLY_TASK_KEY_SAFE = /^deadline:task-(?:visit:[\w-]+|(?:test|claim):\d{4}-\d{2}-\d{2}:\d):[ab]$/
+/**
+ * Every 'deadline:task-' key: the step, his deadline or booking id, and him —
+ * nothing else (tests read it). monthlyTaskNotices writes visit / test / claim;
+ * partnerNotices writes his 신청 reminder ('apply', 'apply-new-year:<year>')
+ * and the 검사 준비 one ('prep:<booking id>').
+ */
+export const MONTHLY_TASK_KEY_SAFE =
+  /^deadline:task-(?:visit:[\w-]+|prep:[\w-]+|apply|apply-new-year:\d{4}|(?:test|claim):\d{4}-\d{2}-\d{2}:\d):[ab]$/
 
 /** 'deadline:task-visit:<appointment id>:<member>' — once per booking. */
 export function taskVisitKey(appointmentId: string, to: MemberId): string {

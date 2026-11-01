@@ -73,6 +73,14 @@
 //   • while pregnant, '이번 주 우리 둘' runs from its own catalogue
 //     (weekTogether) and 내 준비 lists his own pregnancy-stage items
 //     (myPrep `items`: 배우자 지원 제도 … 배우자 출산휴가 20일).
+//   • 2026-11-01 ('12개 전부'): his month task's `ask` line (the 보건소's
+//     intake, the test to book) and a `meds` FLAG — the medicines words are
+//     drawn on his page from partnerTrack.TEST_MEDS_LINE and left out of her
+//     preview (LinkBody `preview`); 내 준비's `season` (올해 독감 접종, read-only
+//     here). The 금연 row's line and link are worked out on his page from the
+//     row's label (checks.checkHelp), never carried. [접수가 끝났대요], the
+//     sauna / laptop question and 아빠 마음 stay in the app: the link has no
+//     event for them (partnerEvents).
 // What it never holds, by construction (tests/partnerSnapshot.test.ts walks
 // every lens × moment × day): period dates, LH results, pregnancy tests,
 // personalLog, '나만 보기' entries, 관계일, treatment notes or counts,
@@ -98,6 +106,7 @@ import { templateById } from '../content/roadmap'
 import { CLINIC_KIND_WORD, appointmentsFor, compareAppointments, withAppointmentsFor } from './appointments'
 import { activeItems, isDone, isWeekly, mondayOf, nudgeableItem, weekCount, weeklyDone } from './checks'
 import { coverView, heroLine, type HeroLine } from './cover'
+import { dadMindDue } from './dadMind'
 import { describeStrip } from './cycleRing'
 import { fertileHintsAllowed, mapLinks, partnerHintState, pickIdeas, recentlyPlannedIdeaIds } from './dateIdeas'
 import { myPrep, type PrepItem } from './myPrep'
@@ -228,6 +237,16 @@ export interface SnapshotTask {
   top: boolean
   defaultDoneAt: ISODate
   minDoneAt?: ISODate
+  /** One line to check before acting (partnerTrack MonthlyTask.ask: the 보건소's intake, the test to book). */
+  ask?: string
+  /**
+   * The 검사 card carries his medicines line (partnerTrack.TEST_MEDS_LINE).
+   * A flag only — the words are drawn on his page from the constant and left
+   * out of her preview of it (components/link LinkBody `preview`).
+   */
+  meds?: true
+  /** The 신청 card offers [접수가 끝났대요] (partnerTrack MonthlyTask.canSayClosed — an 'apply-closed' event). */
+  canSayClosed?: true
 }
 
 export interface SnapshotCheck {
@@ -330,6 +349,18 @@ export interface SnapshotMyPrep {
    * of hers; absent while preparing.
    */
   items?: SnapshotPrepItem[]
+  /**
+   * 올해 독감 접종 맞기 while its window is open (myPrep `season`, 2026-11-01):
+   * the roadmap title and note and whether he ticked it this 절기. The page
+   * ticks it with a 'season-done' event (itemId 'partner-flu').
+   */
+  season?: { label: string; note: string; done: boolean }
+  /**
+   * The once-a-pregnancy question about his sauna / laptop rows (myPrep
+   * `retire`): the question only — [내려놓기] / [그대로 두기] send
+   * 'retire-checks'. His own rows; left out of her preview.
+   */
+  retire?: { question: string }
 }
 
 /** One of his own pregnancy-stage items in 내 준비 (lib/logic/myPrep PrepItem). */
@@ -356,9 +387,11 @@ export interface SnapshotAppointment {
 /** A line with where it comes from (no number without a source — AGENTS.md). */
 export interface SnapshotSourcedLine {
   text: string
-  /** '회사마다 달라요'. */
+  /** '신청 방법은 회사마다 달라요.' */
   note: string
   source: { label: string; url: string }
+  /** What he can do about it, as a support line ('회사에 신청 방법 물어보기'). */
+  support?: string
 }
 
 /** '병원과 함께' on his side (N32): while the couple's clinic mode is on. */
@@ -478,6 +511,13 @@ export interface PartnerDay {
   togetherPlan?: SnapshotTogetherPlan
   /** The pregnant stage's card (임신 N주 · 예정일 D-N · his next shared checkup). Only while pregnant. */
   stageCard?: SnapshotStageCard
+  /**
+   * 아빠 마음 (2026-11-01): his parenting page asks '요즘 나는 어때요?' once,
+   * from 출생일 + 90 (dadMind.dadMindDue). A flag only — the words and numbers
+   * are drawn on his page from dadMind's constants; either button sends
+   * 'dad-mind-asked'. Left out of her preview.
+   */
+  dadMind?: true
 }
 
 export interface PartnerSnapshot {
@@ -562,6 +602,9 @@ function snapshotTask(t: MonthlyTask, top: boolean): SnapshotTask {
     defaultDoneAt: t.defaultDoneAt,
     // Never before the booked day (partnerEvents.earliestDoneAt — the 'task-done' gate reads the same).
     ...(minDoneAt ? { minDoneAt } : {}),
+    ...(t.ask ? { ask: t.ask } : {}),
+    ...(t.meds ? { meds: true as const } : {}),
+    ...(t.canSayClosed ? { canSayClosed: true as const } : {}),
   }
 }
 
@@ -640,8 +683,10 @@ export function linkMyPrep(state: AppState, day: ISODate, partner: MemberId): Sn
     ...(p.weekCount ? { weekCount: p.weekCount } : {}),
     ...(p.chainStep ? { chainStep: p.chainStep } : {}),
     ...(p.items?.length ? { items: p.items.map((i) => ({ ...i })) } : {}),
+    ...(p.season ? { season: { label: p.season.label, note: p.season.note, done: p.season.done } } : {}),
+    ...(p.retire ? { retire: { question: p.retire.question } } : {}),
   }
-  return out.timerLabel || out.weekCount || out.chainStep || out.items ? out : undefined
+  return out.timerLabel || out.weekCount || out.chainStep || out.items || out.season || out.retire ? out : undefined
 }
 
 // ── 같이 챙길 것 (2026-10-09) ───────────────────────────────
@@ -717,11 +762,20 @@ export function linkCheckup(state: AppState, day: ISODate, partner: MemberId): S
     date: next.date,
     ...(both && next.time ? { time: next.time } : {}),
     ...(both && next.place ? { place: next.place } : {}),
-    label: template ? shortTitle(template.title) : (CLINIC_KIND_WORD[next.kind] ?? '병원 일정'),
+    label: template ? calmTitle(template.title) : (CLINIC_KIND_WORD[next.kind] ?? '병원 일정'),
     with: both ? 'both' : 'hers',
     role: template?.support ?? (both ? CHECKUP_ROLE.both : CHECKUP_ROLE.hers),
     ...(template?.support ? { itemId: template.id } : {}),
   }
+}
+
+/**
+ * A catalogue title as his stage card names a visit: shortTitle without a
+ * closing '마감' ('산후도우미 바우처 신청 마감' → '산후도우미 바우처 신청') — about
+ * her item the card never presses (together.ts: no 기한 words about her).
+ */
+export function calmTitle(title: string): string {
+  return shortTitle(title).replace(/\s*마감$/, '') || shortTitle(title)
 }
 
 /**
@@ -773,19 +827,26 @@ export const CLINIC_LEAVE_SOURCE = {
 } as const
 
 /**
- * '난임치료휴가는 남성 근로자도 쓸 수 있어요. 2026년 11월 27일부터 연 6일 중 4일이
- * 유급이에요.' — from that day on, '연 6일 중 4일이 유급이에요.' The note is the
- * hedge (AGENTS: 회사마다 달라요).
+ * '난임치료휴가는 남성 근로자도 쓸 수 있어요. 2026년 11월 27일부터 연 6일 중 처음
+ * 4일이 유급이에요.' — from that day on, '연 6일 중 처음 4일이 유급이에요.' (days
+ * already used that year count toward the first four: research kr-programs.json
+ * 'infertility-leave-paid-4-days-2026-11-27'). The days are the law's; only the
+ * procedure differs by company — so the hedge says that (critique 2026-11-01),
+ * and his support line is '회사에 신청 방법 물어보기' (as on pre-infertility-support).
  */
 export function clinicLeaveLine(day: ISODate): SnapshotSourcedLine {
-  const paid = `연 ${LEAVE_DAYS_PER_YEAR}일 중 ${PAID_LEAVE_DAYS.from}일이 유급이에요.`
+  const paid = `연 ${LEAVE_DAYS_PER_YEAR}일 중 처음 ${PAID_LEAVE_DAYS.from}일이 유급이에요.`
   const from = day < PAID_LEAVE_CHANGE ? `${formatKo(PAID_LEAVE_CHANGE, { year: true, weekday: false })}부터 ` : ''
   return {
     text: `난임치료휴가는 남성 근로자도 쓸 수 있어요. ${from}${paid}`,
-    note: '회사마다 달라요.',
+    note: '신청 방법은 회사마다 달라요.',
     source: { label: CLINIC_LEAVE_SOURCE.label, url: CLINIC_LEAVE_SOURCE.url },
+    support: CLINIC_LEAVE_SUPPORT,
   }
 }
+
+/** His line under the 난임치료휴가 sentence (the roadmap's pre-infertility-support row says the same). */
+export const CLINIC_LEAVE_SUPPORT = '회사에 신청 방법 물어보기'
 
 /** Is the couple's clinic mode on for `day` (the home's own test: ttcFlow's clinic card)? */
 export function clinicOn(state: AppState, day: ISODate): boolean {
@@ -950,6 +1011,7 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
   const elsewhere = [...(task ? [task.id] : []), ...(prep?.items ?? []).map((i) => i.id)]
   const togetherPlan = linkTogetherPlan(state, date, partner, elsewhere)
   const stageCard = linkStageCard(state, date, partner)
+  const dadMind = dadMindDue(state, date, partner)
 
   const day: PartnerDay = {
     date,
@@ -970,6 +1032,7 @@ function dayOf(state: AppState, date: ISODate, partner: MemberId, owner: MemberI
     ...(clinic ? { clinic } : {}),
     ...(togetherPlan ? { togetherPlan } : {}),
     ...(stageCard ? { stageCard } : {}),
+    ...(dadMind ? { dadMind: true as const } : {}),
   }
   return { day, kind: m?.kind }
 }

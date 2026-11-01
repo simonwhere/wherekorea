@@ -10,6 +10,7 @@ import { Component, useState } from 'react'
 import RestoreFullBackup from '@/components/system/RestoreFullBackup'
 import { Button } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
+import { rawWithoutDadMind } from '@/lib/logic/dadMind'
 import { downloadText } from '@/lib/logic/ics'
 import { BACKUP_FILENAME } from '@/lib/logic/settings'
 import { useStore } from '@/lib/store'
@@ -64,7 +65,7 @@ function RecoveryScreen({ onRetry }: { onRetry: () => void }) {
       <p className="mt-2 text-center text-sm leading-relaxed text-ink-2">저장된 기록 중 일부를 읽지 못했어요.</p>
       <div className="mt-6 grid gap-2">
         {raw ? (
-          <Button full variant="secondary" onClick={() => downloadText(BACKUP_FILENAME, raw, 'application/json')}>
+          <Button full variant="secondary" onClick={() => downloadText(BACKUP_FILENAME, rawWithoutDadMind(raw), 'application/json')}>
             지금 기록을 파일로 받기
           </Button>
         ) : null}

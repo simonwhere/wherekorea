@@ -820,6 +820,18 @@ function randomRawEvent(r: Rng, s: AppState, day: ISODate): Record<string, unkno
       ev.itemId = pick(r, ['p1-first-visit', 'pre-folic', 'pre-checkup-partner', 'pre-dental', 'nope', 'has space', 9, undefined])
       ev.on = pick(r, [true, true, false, 'yes', undefined])
       break
+    case 'apply-closed':
+      ev.date = date
+      ev.closed = pick(r, [true, true, false, 'yes', undefined])
+      break
+    case 'season-done':
+      ev.itemId = pick(r, ['partner-flu', 'partner-flu', 'pre-folic', 'nope', 9])
+      ev.date = date
+      ev.done = pick(r, [true, true, false, 1])
+      break
+    case 'retire-checks':
+      ev.keep = pick(r, [true, false, 'no', undefined])
+      break
     case 'period':
     case 'lh':
     case 'test':
@@ -848,6 +860,10 @@ const ALLOWED_KEYS: Record<PartnerEvent['kind'], string[]> = {
   setup: ['id', 'from', 'kind', 'habits', 'alertStyle'],
   'join-appointment': ['id', 'from', 'kind', 'appointmentId'],
   support: ['id', 'from', 'kind', 'itemId', 'on'],
+  'apply-closed': ['id', 'from', 'kind', 'date', 'closed'],
+  'season-done': ['id', 'from', 'kind', 'itemId', 'date', 'done'],
+  'retire-checks': ['id', 'from', 'kind', 'keep'],
+  'dad-mind-asked': ['id', 'from', 'kind'],
 }
 
 describe('partner events: everything outside the allowed kinds is rejected, everything else applies once and never touches her data', () => {
@@ -909,8 +925,20 @@ describe('partner events: everything outside the allowed kinds is rejected, ever
           const joinKey = ev.kind === 'join-appointment' ? appointmentJoinKey(ev.appointmentId, PARTNER) : undefined
           // [같이 할게요] (together.supportItem): his answer to that one roadmap item.
           const supportK = ev.kind === 'support' && ev.on ? supportKey(ev.itemId, PARTNER) : undefined
+          // His check points (2026-11-01): [접수가 끝났대요], the sauna / laptop answer, 아빠 마음 asked — his own keys only.
+          const checkpointK = (k: string): boolean =>
+            (ev.kind === 'apply-closed' && k === `apply-closed:${(ev.date as string).slice(0, 4)}:${PARTNER}`) ||
+            (ev.kind === 'retire-checks' && k.startsWith('retire-asked:') && k.endsWith(`:${PARTNER}`)) ||
+            (ev.kind === 'dad-mind-asked' && k.startsWith('dad-mind-asked:') && k.endsWith(`:${PARTNER}`))
           expect(
-            newKeys.filter((k) => !weekKeys.includes(k) && !(ev.kind === 'setup' && k === 'partner-setup') && k !== joinKey && k !== supportK),
+            newKeys.filter(
+              (k) =>
+                !weekKeys.includes(k) &&
+                !(ev.kind === 'setup' && k === 'partner-setup') &&
+                k !== joinKey &&
+                k !== supportK &&
+                !checkpointK(k),
+            ),
             tag,
           ).toEqual([appliedEventKey(ev.id)])
           if (joinKey) {
@@ -1717,8 +1745,8 @@ describe('content JSON loaders keep their shapes and the validator passes', () =
   }
   const unique = (ids: string[], where: string) => expect(new Set(ids).size, where).toBe(ids.length)
 
-  it('roadmap: 60 items with ids, titles, phases, sources; side tables rebuilt; audit per id', () => {
-    expect(ROADMAP).toHaveLength(60)
+  it('roadmap: 61 items with ids, titles, phases, sources; side tables rebuilt; audit per id', () => {
+    expect(ROADMAP).toHaveLength(61)
     unique(
       ROADMAP.map((t) => t.id),
       'roadmap',
@@ -1832,7 +1860,7 @@ describe('content JSON loaders keep their shapes and the validator passes', () =
     const script = fileURLToPath(new URL('../scripts/validate-content.mjs', import.meta.url))
     const out = execFileSync(process.execPath, [script, '--summary'], { encoding: 'utf8', timeout: 30_000 })
     expect(out).toMatch(/validate-content: \d+ files ok/)
-    expect(out).toMatch(/roadmap\.json: 60 items/)
+    expect(out).toMatch(/roadmap\.json: 61 items/)
   })
 })
 

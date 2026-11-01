@@ -12,15 +12,18 @@ import {
   weekCount,
   weekCountLabel,
   WEEKLY_QUESTION,
+  checkHelp,
   weeklyCheckInName,
   weeklyDone,
+  type CheckHelp,
 } from '@/lib/logic/checks'
 import { nudgesPerDay, nudgesSentToday, sendCheer, sendNudge } from '@/lib/logic/notifications'
 import { acceptNudgesFor } from '@/lib/logic/settings'
 import { rowProgress, stampOn, toggleWithCompletion } from '@/lib/logic/today'
+import { ownerViewOfCheck } from '@/lib/logic/weekTogether'
 import { useApp } from '@/lib/store'
 import type { AppState, CheckItem, ISODate, MemberId } from '@/lib/types'
-import { Badge, KIND_LABEL, KindIcon, ProgressBar } from './bits'
+import { Badge, ExternalLink, KIND_LABEL, KindIcon, ProgressBar } from './bits'
 import CheckEditor from './CheckEditor'
 import { useWeeklyUndo } from './useWeeklyUndo'
 
@@ -91,11 +94,25 @@ export function MyChecks() {
             </span>
           </div>
           <ul className="mt-3 space-y-2">
-            {items.map((item) => (
-              <li key={item.id}>
-                <CheckRow item={item} checked={checkedNow(state, me.id, item, today, done)} onToggle={() => onToggle(item.id)} />
-              </li>
-            ))}
+            {items.map((item) => {
+              // The 금연 row's line and 금연클리닉 link (checks.checkHelp) — my own rows only, never on PartnerChecks.
+              const help = checkHelp(item, state.stage, me.tracksCycle)
+              return (
+                <li key={item.id}>
+                  <CheckRow
+                    item={item}
+                    checked={checkedNow(state, me.id, item, today, done)}
+                    help={help}
+                    onToggle={() => onToggle(item.id)}
+                  />
+                  {help?.link ? (
+                    <div className="pl-3" data-check-help>
+                      <ExternalLink href={help.link.url}>{help.link.label}</ExternalLink>
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
           {prog.complete ? (
             <p className="mt-3 text-center text-xs font-semibold text-ok" role="status">
@@ -110,7 +127,7 @@ export function MyChecks() {
   )
 }
 
-function CheckRow({ item, checked, onToggle }: { item: CheckItem; checked: boolean; onToggle: () => void }) {
+function CheckRow({ item, checked, help, onToggle }: { item: CheckItem; checked: boolean; help?: CheckHelp; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -137,8 +154,10 @@ function CheckRow({ item, checked, onToggle }: { item: CheckItem; checked: boole
         <span className={cx('block truncate text-[15px] font-semibold', checked ? 'text-ink-2' : 'text-ink')}>
           {isWeekly(item) ? weeklyCheckInName(item) : item.label}
         </span>
-        <span className="block truncate text-xs text-ink-3">
-          {isWeekly(item) ? (
+        <span className={cx('block text-xs text-ink-3', help?.note ? 'leading-[1.45]' : 'truncate')}>
+          {help?.note ? (
+            <span data-check-note>{help.note}</span>
+          ) : isWeekly(item) ? (
             <>
               <span className="sr-only">{KIND_LABEL[item.kind]} · </span>
               {WEEKLY_QUESTION} · 주 1회
@@ -175,6 +194,8 @@ export function PartnerChecks() {
   const accepts = acceptNudgesFor(state.settings, partner.id)
   const canNudge = !!target && left > 0 && accepts
   const tone = partner.tracksCycle ? 'her' : 'him'
+  // Her view of his rows never names his smoking, drinking or medicines (2026-11-01, weekTogether.ownerViewOfCheck).
+  const shown = (item: CheckItem): CheckItem => (me.tracksCycle ? ownerViewOfCheck(item, isWeekly(item)) : item)
 
   const nudge = () => {
     if (!canNudge) return
@@ -214,6 +235,7 @@ export function PartnerChecks() {
           <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label={`${partner.name}님의 항목`}>
             {items.map((item) => {
               const isDone = checkedNow(state, partner.id, item, today, done)
+              const view = shown(item)
               return (
                 <li
                   key={item.id}
@@ -222,8 +244,8 @@ export function PartnerChecks() {
                     isDone ? 'border-ok/30 bg-ok-soft font-semibold text-ok' : 'border-line bg-surface text-ink-3',
                   )}
                 >
-                  {isDone ? <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> : <KindIcon kind={item.kind} className="h-3.5 w-3.5" />}
-                  {isWeekly(item) ? weeklyCheckInName(item) : item.label}
+                  {isDone ? <Icon name="check" className="h-3.5 w-3.5" strokeWidth={2.6} /> : <KindIcon kind={view.kind} className="h-3.5 w-3.5" />}
+                  {isWeekly(item) ? weeklyCheckInName(view) : view.label}
                   {isWeekly(item) ? <span className="text-[11px] font-normal text-ink-3">· 주 1회</span> : null}
                   <span className="sr-only">{isDone ? ' 완료' : ' 아직'}</span>
                 </li>

@@ -7,11 +7,22 @@ import type { HabitAnswers } from '@/lib/initial'
 import type { AlertStyle } from '@/lib/types'
 import type { Option } from './parts'
 
-/** 담배를 피우나요? */
+/**
+ * The smoking question. '전자담배 포함' (2026-11-01, research medical.json
+ * 'male-e-cigarettes'): someone who only vapes answers 피워요 and gets the
+ * weekly 금연 check-in. Only the question says it — the row labels stay
+ * '금연' / '담배 안 피우기' (lib/initial SMOKE_CHECK_LABELS must keep matching).
+ */
+export const SMOKE_QUESTION = '담배를 피우나요? (전자담배 포함)'
+
+/** 담배를 피우나요? (전자담배 포함) */
 export const SMOKE_OPTIONS: Option<'no' | 'yes'>[] = [
   { value: 'no', label: '안 피워요' },
   { value: 'yes', label: '피워요' },
 ]
+
+/** The drinking question. */
+export const DRINK_QUESTION = '술은 얼마나 마시나요?'
 
 /** 술은 얼마나 마시나요? */
 export const DRINK_OPTIONS: Option<HabitAnswers['drinks']>[] = [

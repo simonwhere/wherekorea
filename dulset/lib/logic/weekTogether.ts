@@ -38,10 +38,12 @@
 // lib/logic/partnerEvents.ts) carrying an id and a date only.
 
 import { addDays, isISODate } from '../dates'
+import { DRINK_CHECK_LABELS, SMOKE_CHECK_LABELS } from '../initial'
 import { decide, isLive, undecide } from '../sync/model'
-import type { AppState, AppointmentKind, ISODate, MemberId } from '../types'
+import type { AppState, AppointmentKind, CheckItem, CheckKind, ISODate, MemberId } from '../types'
 import { withAppointmentsFor } from './appointments'
 import { isWeekly, mondayOf } from './checks'
+import { isFluDoneKey } from './partnerDates'
 import { gestationalAge, recentlyEnded } from './pregnancy'
 import { isSignal, signalById, signalIdOf } from './signals'
 import { activeRest } from './ttc'
@@ -340,7 +342,98 @@ export function unmarkWeekDone(state: AppState, member: MemberId, today: ISODate
 
 // ── What he did this week (her home) ────────────────────────
 
-export type WeekDeedKind = 'week-done' | 'task' | 'reply' | 'daily' | 'checkin' | 'signal'
+export type WeekDeedKind = 'week-done' | NamedTaskKind | 'task' | 'reply' | 'daily' | 'checkin' | 'signal'
+
+/**
+ * His dated tasks that her side may name (founder 2026-11-01): nothing about
+ * his body or habits — a 신청, a shot, a leave date. Every other tick stays
+ * '할 일 하나를 마쳤어요'.
+ */
+export type NamedTaskKind = 'apply' | 'flu' | 'tdap' | 'leave'
+
+/** The named lines, in the order they show. */
+export const NAMED_TASK_TEXT: Readonly<Record<NamedTaskKind, string>> = {
+  apply: '검사 지원을 신청했어요',
+  flu: '독감 접종을 했어요',
+  tdap: 'Tdap 접종을 했어요',
+  leave: '출산휴가 날짜를 정했어요',
+}
+
+/** 임신 사전건강관리 검사 지원 신청 (partnerTrack FERTILITY_APPLY_ID — read here without importing partnerTrack). */
+const APPLY_ROW = 'pre-health-check-support'
+
+/**
+ * Which named line a planDone tick by `member` is, if any: his own 신청 step
+ * ('pre-health-check-support:<member>', or the couple's row he ticked), the flu
+ * row of any season, Tdap, 배우자 출산휴가.
+ */
+export function namedTaskKind(key: string, member: MemberId): NamedTaskKind | undefined {
+  if (key === `${APPLY_ROW}:${member}` || key === APPLY_ROW) return 'apply'
+  if (isFluDoneKey(key)) return 'flu'
+  if (key === 'p3-partner-tdap') return 'tdap'
+  if (key === 'birth-partner-leave') return 'leave'
+  return undefined
+}
+
+/**
+ * A check row her side never names (founder 2026-11-01: smoking, drinking and
+ * medicines never reach her screens): the 금연 / 금주 rows and anything that
+ * reads like them (a row he added himself: '혈압약', '맥주 안 마시기', '니코틴
+ * 패치', '테스토스테론 주사', 'Finasteride'). A word list always misses
+ * something, so it leans wide — a row it hides by mistake only reads '매일
+ * 체크'. (Hiding every row he added himself, or a 'private' flag, is the
+ * sturdier rule and waits for the founder — docs/STATUS.md.)
+ */
+const SENSITIVE_CHECK = new RegExp(
+  [
+    // smoking
+    '담배|금연|흡연|니코틴|전담|전자담배|베이프|아이코스|궐련|시가렛',
+    // drinking
+    '술|금주|음주|맥주|소주|와인|막걸리|알코올|하이볼|칵테일|양주|위스키|보드카|고량주|사케',
+    // medicines, injections, hormones
+    '약|주사|스테로이드|테스토스테론|호르몬|피나스테리드|프로페시아|두타스테리드|아보다트|미녹시딜',
+    // the same in English
+    'smok|cigar|vap(?:e|ing)|nicotine|iqos|alcohol|beer|wine|soju|liquor|whisk|vodka|pill|tablet|medic|drug|steroid|testosterone|hormone|inject|finasteride|propecia|dutasteride|avodart|minoxidil',
+  ].join('|'),
+  'i',
+)
+export function isSensitiveCheckLabel(label: string): boolean {
+  const l = label.trim()
+  return SMOKE_CHECK_LABELS.includes(l) || DRINK_CHECK_LABELS.includes(l) || SENSITIVE_CHECK.test(l)
+}
+
+/** A check row her side may not name: a 금연 / 금주 / medicine label, or any row of the medicine kind. */
+export function isSensitiveCheck(item: Pick<CheckItem, 'label' | 'kind'>): boolean {
+  return item.kind === 'medication' || isSensitiveCheckLabel(item.label)
+}
+
+/** The daily line for a row her side may not name: '매일 체크 3일'. */
+export const UNNAMED_DAILY_TEXT = '매일 체크'
+/** A weekly row her side may not name, as a chip: '체크인 · 주 1회'. */
+export const UNNAMED_WEEKLY_TEXT = '체크인'
+
+/**
+ * One of his check rows as HER side draws it (founder 2026-11-01: his
+ * smoking, drinking and medicines never reach her screens — her parenting
+ * home's 'N님의 체크' and her preview of his link): a row she may not name
+ * reads '매일 체크' (weekly: '체크인'), with the plain habit icon and no note.
+ * Every other row is returned as it is.
+ */
+export function ownerViewOfCheck<T extends { label: string; kind: CheckKind; note?: string }>(item: T, weekly: boolean): T {
+  if (!isSensitiveCheck(item)) return item
+  const { note: _note, ...rest } = item
+  return { ...rest, label: weekly ? UNNAMED_WEEKLY_TEXT : UNNAMED_DAILY_TEXT, kind: 'habit' } as T
+}
+
+/**
+ * The name of his 콕 target as the viewer's screen may say it (the 콕 button's
+ * accessible name on 우리 한 줄): on the cycle owner's screen a row she may not
+ * name reads '매일 체크' (ownerViewOfCheck). The 콕 notice itself still names
+ * the row — it goes to him, about his own row.
+ */
+export function nudgeTargetLabel(item: Pick<CheckItem, 'label' | 'kind'>, ownerView: boolean): string {
+  return ownerView ? ownerViewOfCheck(item, false).label : item.label
+}
 
 export interface WeekDeed {
   kind: WeekDeedKind
@@ -386,8 +479,19 @@ export function partnerWeekSummary(state: AppState, today: ISODate, partnerId: M
   if (pick && inWeek(weekDone(state, week, partnerId))) out.push({ kind: 'week-done', text: pick.doneText })
 
   // A step of a 할 일 he marked done this week: roadmap / chain ticks (not the
-  // claim checklist's sub-items) and his own 직접 추가 items.
-  const ticks = Object.entries(state.planDone ?? {}).filter(([key, d]) => !key.includes(':doc:') && d?.by === partnerId && inWeek(d.at)).length
+  // claim checklist's sub-items) and his own 직접 추가 items. A few dated
+  // tasks are named (NAMED_TASK_TEXT); the rest are counted.
+  const named = new Set<NamedTaskKind>()
+  let ticks = 0
+  for (const [key, d] of Object.entries(state.planDone ?? {})) {
+    if (key.includes(':doc:') || d?.by !== partnerId || !inWeek(d.at)) continue
+    const kind = namedTaskKind(key, partnerId)
+    if (kind) named.add(kind)
+    else ticks++
+  }
+  for (const kind of Object.keys(NAMED_TASK_TEXT) as NamedTaskKind[]) {
+    if (named.has(kind)) out.push({ kind, text: NAMED_TASK_TEXT[kind], count: 1 })
+  }
   const customs = state.customTasks.filter((c) => isLive(c) && c.doneBy === partnerId && inWeek(c.doneAt)).length
   const tasks = ticks + customs
   if (tasks > 0) out.push({ kind: 'task', text: tasks === 1 ? '할 일 하나를 마쳤어요' : `할 일 ${tasks}개를 마쳤어요`, count: tasks })
@@ -403,15 +507,21 @@ export function partnerWeekSummary(state: AppState, today: ISODate, partnerId: M
   if (replies > 0) out.push({ kind: 'reply', text: '신호에 답했어요', count: replies })
 
   // The daily check he kept most (archived mid-week still counts its days).
+  // A row her side may not name (금연 · 술 · 약) gives way to one it may; when
+  // only such rows were kept, the line has no name ('매일 체크 3일').
   const mine = state.checkItems.filter((i) => i.owner === partnerId)
   const doneOn = (d: ISODate): readonly string[] => state.checkLog[d]?.[partnerId] ?? []
   let top: { label: string; n: number } | undefined
+  let unnamed = 0
   for (const item of mine) {
     if (isWeekly(item)) continue
     const n = days.filter((d) => doneOn(d).includes(item.id)).length
-    if (n > 0 && (!top || n > top.n)) top = { label: item.label, n }
+    if (n === 0) continue
+    if (isSensitiveCheck(item)) unnamed = Math.max(unnamed, n)
+    else if (!top || n > top.n) top = { label: item.label, n }
   }
   if (top) out.push({ kind: 'daily', text: `${shortCheckLabel(top.label)} ${top.n}일`, count: top.n })
+  else if (unnamed > 0) out.push({ kind: 'daily', text: `${UNNAMED_DAILY_TEXT} ${unnamed}일`, count: unnamed })
 
   const weeklyIds = new Set(mine.filter(isWeekly).map((i) => i.id))
   const checkins = new Set(days.flatMap((d) => doneOn(d).filter((id) => weeklyIds.has(id)))).size
@@ -429,17 +539,34 @@ export function weekThanked(state: Pick<AppState, 'decisions'>, by: MemberId, we
   return state.decisions?.[weekThanksKey(week, by)]
 }
 
+/**
+ * May `by` say [고마워요] for `week` on `today`? The week of `today`, or the
+ * week before it (her weekly 🔔 '지난주 민수님' is read on a later day —
+ * partnerNotices.weekDigestNotices). Once a week, only when the other did
+ * something that week (their summary has a line), never in the quiet.
+ */
+export function canThankWeekOf(state: AppState, by: MemberId, week: WeekKey, today: ISODate): boolean {
+  if (!weekTogetherOn(state, today) || !isISODate(week)) return false
+  const current = weekOf(today)
+  if (week !== current && week !== addDays(current, -7)) return false
+  if (weekThanked(state, by, week) !== undefined) return false
+  return partnerWeekSummary(state, week === current ? today : addDays(week, 6), other(by)).length > 0
+}
+
 /** May `by` say [고마워요] this week? Once a week, only when the other did something (their summary has a line), never in the quiet. */
 export function canThankWeek(state: AppState, by: MemberId, today: ISODate): boolean {
-  if (!weekTogetherOn(state, today)) return false
-  if (weekThanked(state, by, weekOf(today)) !== undefined) return false
-  return partnerWeekSummary(state, today, other(by)).length > 0
+  return canThankWeekOf(state, by, weekOf(today), today)
+}
+
+/** [고마워요] for `week` (this one or the last): remembered once, on the day it was said. Otherwise the same state. */
+export function thankWeekOf(state: AppState, by: MemberId, week: WeekKey, today: ISODate): AppState {
+  if (!canThankWeekOf(state, by, week, today)) return state
+  return decide(state, weekThanksKey(week, by), today)
 }
 
 /** [고마워요]: remembered once for the week of `today` (the first day stands). Otherwise the same state. */
 export function thankWeek(state: AppState, by: MemberId, today: ISODate): AppState {
-  if (!canThankWeek(state, by, today)) return state
-  return decide(state, weekThanksKey(weekOf(today), by), today)
+  return thankWeekOf(state, by, weekOf(today), today)
 }
 
 /**

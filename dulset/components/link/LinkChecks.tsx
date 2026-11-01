@@ -5,14 +5,16 @@
 // as done right away (components/link/model local marks). Editing the items
 // stays in the app.
 
-import { Badge, KIND_LABEL, KindIcon, ProgressBar } from '@/components/today/bits'
+import { Badge, ExternalLink, KIND_LABEL, KindIcon, ProgressBar } from '@/components/today/bits'
 import { Card, cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
-import { WEEKLY_QUESTION, weekCountLabel, weeklyCheckInName } from '@/lib/logic/checks'
+import { WEEKLY_QUESTION, checkHelp, weekCountLabel, weeklyCheckInName, type CheckHelp } from '@/lib/logic/checks'
 import type { SnapshotCheck, SnapshotChecks, SnapshotMember } from '@/lib/logic/partnerSnapshot'
+import type { Stage } from '@/lib/types'
+import { ownerViewOfCheck } from '@/lib/logic/weekTogether'
 import { Bubble } from './bits'
 
-function Row({ item, onToggle }: { item: SnapshotCheck; onToggle: () => void }) {
+function Row({ item, help, onToggle }: { item: SnapshotCheck; help?: CheckHelp; onToggle: () => void }) {
   const checked = item.done
   return (
     <button
@@ -42,8 +44,10 @@ function Row({ item, onToggle }: { item: SnapshotCheck; onToggle: () => void }) 
           {/* Weekly rows read like the app's (N24): '술 쉬기' + '이번 주 지켰어요? · 주 1회'. */}
           {item.weekly ? weeklyCheckInName(item) : item.label}
         </span>
-        <span className="block truncate text-xs text-ink-3">
-          {item.weekly ? (
+        <span className={cx('block text-xs text-ink-3', help?.note ? 'leading-[1.45]' : 'truncate')}>
+          {help?.note ? (
+            <span data-check-note>{help.note}</span>
+          ) : item.weekly ? (
             <>
               <span className="sr-only">{KIND_LABEL[item.kind]} · </span>
               {WEEKLY_QUESTION} · 주 1회
@@ -67,12 +71,22 @@ export default function LinkChecks({
   her,
   checks,
   onToggle,
+  stage,
+  preview = false,
 }: {
   me: SnapshotMember
   /** The viewer is the cycle owner's partner, so normally false (the bar takes his colour). */
   her: boolean
   checks: SnapshotChecks
   onToggle: (item: SnapshotCheck) => void
+  /**
+   * The couple's stage: the 금연 row's line and 금연클리닉 link (checks.checkHelp,
+   * as in his app) — worked out on his page from the row's label, never carried
+   * in the snapshot, and left out of her preview.
+   */
+  stage?: Stage
+  /** Her preview (설정 › 연결): his 금연 / 술 / medicine rows read '매일 체크' / '체크인'. */
+  preview?: boolean
 }) {
   const prog = checks
   return (
@@ -99,11 +113,21 @@ export default function LinkChecks({
             </span>
           </div>
           <ul className="mt-3 space-y-2">
-            {checks.items.map((item) => (
-              <li key={item.id}>
-                <Row item={item} onToggle={() => onToggle(item)} />
-              </li>
-            ))}
+            {checks.items.map((item) => {
+              const help = stage && !preview && !her ? checkHelp(item, stage, false) : undefined
+              // Her preview never names his smoking, drinking or medicines (weekTogether.ownerViewOfCheck).
+              const shown = preview && !her ? ownerViewOfCheck(item, item.weekly) : item
+              return (
+                <li key={item.id}>
+                  <Row item={shown} help={help} onToggle={() => onToggle(item)} />
+                  {help?.link ? (
+                    <div className="pl-3" data-check-help>
+                      <ExternalLink href={help.link.url}>{help.link.label}</ExternalLink>
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
           </ul>
           {prog.complete ? (
             <p className="mt-3 text-center text-xs font-semibold text-ok" role="status">

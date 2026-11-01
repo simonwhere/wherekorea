@@ -12,7 +12,7 @@
 // it (components/link/model LINK_INTRO_KEY) and the card does not come back.
 
 import { useState } from 'react'
-import { DRINK_OPTIONS, SMOKE_OPTIONS, STYLE_OPTIONS } from '@/components/onboarding/partnerChoices'
+import { DRINK_OPTIONS, SMOKE_OPTIONS, SMOKE_QUESTION, STYLE_OPTIONS } from '@/components/onboarding/partnerChoices'
 import { ChoiceGroup, Group, type Option } from '@/components/onboarding/parts'
 import { cx } from '@/components/ui'
 import type { SetupDrinks } from '@/lib/logic/partnerEvents'
@@ -61,9 +61,9 @@ export default function LinkIntro({
 
       <div className="mt-4 space-y-4 border-t border-line/75 pt-4">
         <p className="text-[13px] font-bold text-ink">내 화면은 내가 정해요</p>
-        <Group title="담배를 피우나요?">
+        <Group title={SMOKE_QUESTION}>
           <ChoiceGroup<'no' | 'yes'>
-            label="담배를 피우나요?"
+            label={SMOKE_QUESTION}
             columns={2}
             value={draft.smokes === undefined ? undefined : draft.smokes ? 'yes' : 'no'}
             onChange={(v) => setDraft({ ...draft, smokes: v === 'yes' })}

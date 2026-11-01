@@ -54,9 +54,12 @@ function habitDays(s: AppState, from: ISODate, n: number): AppState {
 
 describe('myPrep — his own progress, nothing of hers', () => {
   it('is empty before anything happened: no 0, no 시작 전, no chain before the first step', () => {
-    const p = myPrep(couple(), TODAY, PARTNER)
+    // Outside the flu season (2026-11-01: 내 준비 carries 올해 독감 접종 from 10월 1일).
+    const p = myPrep(couple(), '2026-09-27', PARTNER)
     expect(p).toEqual({})
     expect(hasMyPrep(p)).toBe(false)
+    // Inside it, that line is the only part.
+    expect(Object.keys(myPrep(couple(), TODAY, PARTNER))).toEqual(['season'])
   })
 
   it('counts the habit timer from his first habit check, with its bar (약 3개월)', () => {

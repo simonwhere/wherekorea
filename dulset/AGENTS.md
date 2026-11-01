@@ -51,7 +51,7 @@ lib/types.ts            도메인 타입 (AppState가 앱 전체 상태)
 lib/store.tsx           StoreProvider · useApp() → { state, update, today, me, partner, cycleOwner, viewer, setViewer, replace }
 lib/storage.ts          localStorage 저장, normalize(새 필드 기본값), parseState → sanitizeBackup
 lib/logic/*.ts          순수 함수 로직 (cycle, checks, notifications, plan, roadmap, appointments, anniversary, …)
-lib/content/*.ts        콘텐츠 데이터 (roadmap 60개 항목, programs 정부 지원, supplements, dateIdeas, pregnancy, baby, fertility)
+lib/content/*.ts        콘텐츠 데이터 (roadmap 61개 항목, programs 정부 지원, supplements, dateIdeas, pregnancy, baby, fertility)
 lib/useNotificationEngine.ts  알림 규칙을 실행해 앱 안 알림함에 쌓아요
 tests/*.test.ts         vitest
 docs/                   research.md (시장·근거), research/*.json (조사 원자료), next-steps.md (서버·출시 계획), STATUS.md
@@ -59,7 +59,7 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 
 - **단계(stage)**: `preparing | pregnant | parenting`. 단계마다 하단 탭이 달라요(`AppShell.tsx`의 `TAB_SETS`).
 - **두 사람**: 멤버 id는 `'a' | 'b'`이고, `tracksCycle`인 사람이 주기를 기록해요. 폰마다 보는 사람(`viewer`)은 탭별 sessionStorage에 있어요. 프로토타입에서는 ⇄ 버튼이나 브라우저 탭 두 개로 두 사람을 흉내 내요.
-- **알림**: `lib/logic/notifications.ts`의 `scheduledNotices`와 `lib/logic/planNotices.ts`(병원 일정·법정 기한)를 `useNotificationEngine`이 합쳐서 `key`로 중복을 걸러요. 알림을 눌렀을 때 이동할 곳은 `lib/logic/today.ts`의 `noticeTarget`이 key 접두사(`anniv:` `appt:` `deadline:` `reaction:`)로 정해요.
+- **알림**: `useNotificationEngine`은 `lib/logic/partnerNotices.ts`의 `allRuleNotices` 하나를 돌려요. 그 안에서 `notifications.ts`의 `scheduledNotices`, `planNotices.ts`(병원 일정·법정 기한), 남편 체크포인트와 아내의 '이번 주 민수님'을 합치고, 엔진이 `key`로 중복을 걸러요. 잠금화면 문구는 `settings.lockScreenText` 한 곳에서 가려요. 알림을 눌렀을 때 이동할 곳은 `lib/logic/today.ts`의 `noticeTarget`이 key 접두사로 정해요(`anniv:` `appt:` `deadline:` `reaction:`, 2026-11-01부터 `flu-season:` `dad-mind:` `week-digest:` → 오늘, `tdap:` `partner-leave…` `postnatal-open:` `program:` → 챙길 것, `deadline:task-apply…`·`deadline:task-prep:` → 준비 단계 오늘).
 
 ## 코드 규칙
 
@@ -97,7 +97,10 @@ docs/                   research.md (시장·근거), research/*.json (조사 �
 - **쉬는 주기·병원 확인 전**(`restCycle`, `positivePending`)에는 가임기 표시·알림·데이트 제안이 멈춰요. 판단은 `lib/logic/ttc.ts`의 `activeRest` / `activePositivePending`으로 해요.
 - 주기 기록은 `lib/logic/logs.ts`(기록자·되돌리기·쉬는 주기 해제가 함께 처리돼요)나 `openLog()`로만 바꿔요.
 - **잠금화면 숨김**(`discreet`)이 켜져 있으면 브라우저 알림과 .ics에 건강 용어를 넣지 않아요.
-- **유산·임신 종료 배려**: 끝난 뒤 42일(`QUIET_DAYS_AFTER_END`) 동안은 축하·상담 알림이 나가지 않아요.
+- **유산·임신 종료 배려**: 끝난 뒤 42일(`QUIET_DAYS_AFTER_END`) 동안은 축하·상담 알림이 나가지 않아요. 남편 체크포인트 알림과 '이번 주 민수님'도 쉬어요. 끝난 임신에 이미 간 알림(주수, Tdap·배우자 출산휴가 창·산후도우미 — `pregnancyTag`로 이름 붙은 것)은 `backToPreparing`이 두 사람 모두 읽음·숨김으로 정리해요(독감은 절기 것이라 그대로).
+- **남편 알림 부담 규칙**(2026-11-01): 규칙이 만드는 남편 알림은 한 주(월~일)에 2개까지예요(`partnerNotices.PARTNER_WEEKLY_CAP`, 두 폰에서 간 것을 받는 사람 기준으로 합쳐 세요). `from`이 없는 남편 알림은 모두 세요(`countsTowardCap` — 체크포인트·이번 달 할 일·로드맵 기한·'기한' 항목·임신 주수·우리의 주간·내 일정 전날·🩺·기념일·아기 날). 체크포인트가 아닌 것은 막지 않고 자리만 차지해서, 체크포인트가 다음 주로 밀려요. 막지 않는 체크포인트: 법정 마지막 날(배우자 출산휴가 D-1·당일), 예약일이 다음 월요일 전인 검사 준비(미루면 못 나가요). 넘친 것은 다음 주 첫 열기에 나가요. 사람이 보낸 것(신호·응원·[고마워요]·[같이 갈게요]·[알리기])과 아내 일정 전날 알림(`appt:…:fyi:`·`deadline:together:`)은 세지 않아요. 매일 체크 행을 새로 더하지 않아요. 남편 기한 알림은 남편에게만 가요.
+- **늦게 열어도 한 번**(2026-11-01): 서버 푸시가 없어서 규칙은 앱이 열릴 때만 돌아요. 새 날짜 알림은 그날 이후 첫 열기에 한 번, 실제 남은 날로 나가고(`partnerDates.catchUpStep`), '창이 열렸어요' 알림은 창 안 첫 열기에 나가요(중간에 들어와도 받아요). 예전 D-7·D-1·당일 알림(이번 달 할 일·로드맵 기한)은 아직 그날만 봐요.
+- **남편 쪽에만 있는 것**(2026-11-01): 남편의 약·담배·술은 아내 화면(홈·우리 한 줄 — 콕 버튼 이름 포함·'이번 주 민수님'·알림·설정 › 연결 미리보기) 어디에도 이름으로 나오지 않아요. 그런 행은 '매일 체크'·'체크인'으로만 보여요(`weekTogether.isSensitiveCheck` · `ownerViewOfCheck` · `nudgeTargetLabel`, 단어 목록이라 넓게 잡아요). 예외 하나: 병원 요약(의사용, 아내가 만들고 내보내는 것)은 두 사람의 영양제·약 종류 행을 이름으로 담아요 — 창업자 결정 대기(`docs/STATUS.md`). 검사 카드의 약 문장(`partnerTrack.TEST_MEDS_LINE`)은 스냅숏에 플래그로만 실리고 미리보기·알림·주간 줄에 없고, 함께 보는 로드맵 detail에도 넣지 않아요(남편 본인 챙길 것 줄의 '자세히' 안에만 — `partnerTrack.partnerDetailNote`). 아빠 마음은 'asked'만 남기고(`dad-mind-asked:<출생일>:<사람>`) 백업 파일에서도 빠져요(`dadMind.withoutDadMind`, 복구 화면의 원본 받기는 `rawWithoutDadMind`).
 - 부부 둘 다 쓸 수 있게 써요. 콘텐츠의 대상은 성별이 아니라 `carrier / partner / both`(`lib/logic/roadmap.ts:39` `RoadmapWho`, 주기를 기록하는 사람 기준)로 정해요. 사람 역할(`lib/types.ts:32` `wife | husband | partner`)은 각자 고르는 호칭이에요(설정 › 우리 둘에 보이고, 이름이 비었을 때 부르는 말). 기능은 호칭이 아니라 `tracksCycle`(주기를 기록하는 사람)로 나눠요. 예비부부·사실혼 커플도 사용자예요.
 - **의학·정부 지원·법 관련 숫자**는 `docs/research/*.json` 또는 `docs/research.md`에 근거가 있어야 해요. 콘텐츠에는 출처 URL과 시행일을 붙이고, "병원·회사·보건소마다 달라요"를 덧붙여요. 근거가 없으면 쓰지 않아요.
 - 특정 영양제·보험·조리원 상품을 추천하지 않아요. 일반 정보만 줘요.

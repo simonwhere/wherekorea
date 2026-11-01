@@ -15,7 +15,9 @@
 // moment card's place. Then '이번 주 우리 둘' (N21 — the pregnant stage too),
 // 같이 챙길 것 (2026-10-09: her items and the shared ones with what he can do
 // and [같이 할게요], LinkTogether), his '내 준비' bar (N30), his checks, 우리 한
-// 줄, 우리 신호, and '매주 이 시간에 알림 받기' (N31).
+// 줄, 우리 신호, and '매주 이 시간에 알림 받기' (N31). In the parenting stage
+// 아빠 마음 (2026-11-01, LinkDadMind) asks once from 출생일 + 90 — never in her
+// preview, like the medicines line and the sauna / laptop question.
 
 import { useMemo } from 'react'
 import { CHEERS_PER_DAY } from '@/lib/logic/partnerEvents'
@@ -29,6 +31,7 @@ import { Heading } from './bits'
 import LinkChecks from './LinkChecks'
 import LinkClinic from './LinkClinic'
 import LinkCover from './LinkCover'
+import LinkDadMind from './LinkDadMind'
 import LinkMoment from './LinkMoment'
 import LinkPrep from './LinkPrep'
 import LinkSignals from './LinkSignals'
@@ -43,7 +46,9 @@ import {
   viewCanNudge,
   viewChecks,
   viewClinic,
+  viewDadMind,
   viewerOf,
+  viewMyPrep,
   viewSignal,
   viewSignalsLeft,
   viewTask,
@@ -71,6 +76,14 @@ export interface LinkActions {
   onTold: (signal: Signal) => void
   /** [같이 할게요] on one of her items or a shared one (on), or taking it back (off) — a 'support' event. */
   onSupport: (item: LinkTogetherItem, on: boolean) => void
+  /** [접수가 끝났대요] on his 신청 card — an 'apply-closed' event (2026-11-01). */
+  onTaskClosed: (task: SnapshotTask) => void
+  /** 올해 독감 접종 in 내 준비 — a 'season-done' event. */
+  onSeason: (done: boolean) => void
+  /** The sauna / laptop question: [내려놓기] (keep false) or [그대로 두기] (keep true) — a 'retire-checks' event. */
+  onRetire: (keep: boolean) => void
+  /** Either button on 아빠 마음 — a 'dad-mind-asked' event. */
+  onDadMind: () => void
 }
 
 export const NO_ACTIONS: LinkActions = {
@@ -86,6 +99,10 @@ export const NO_ACTIONS: LinkActions = {
   onWeekly: () => {},
   onTold: () => {},
   onSupport: () => {},
+  onTaskClosed: () => {},
+  onSeason: () => {},
+  onRetire: () => {},
+  onDadMind: () => {},
 }
 
 export default function LinkBody({
@@ -96,11 +113,17 @@ export default function LinkBody({
   top,
   bottom,
   footer,
+  preview = false,
 }: {
   page: PartnerPage
   today: ISODate
   marks: LocalMarks
   actions: LinkActions
+  /**
+   * Her preview of his page (설정 › 연결, LinkPreview): what is his alone —
+   * the medicines line on his 검사 card, the 금연 row's words — stays out.
+   */
+  preview?: boolean
   /** Above the cover (the first-run card, the in-app browser hint). */
   top?: React.ReactNode
   /** After 우리 신호 (the home-screen card). */
@@ -119,6 +142,10 @@ export default function LinkBody({
   const clinic = viewClinic(page, marks)
   const told = viewTold(page, marks)
   const fullPlan = viewTogetherPlan(page, marks)
+  const myPrep = viewMyPrep(page, marks)
+  const dadMind = !preview && viewDadMind(page, marks)
+  // Her preview has nothing to send: no [접수가 끝났대요] there.
+  const onClosed = preview ? undefined : actions.onTaskClosed
   // The item the stage card's next visit is booked for: its [같이 할게요] goes on the card, its row leaves the list.
   const stageItemId = page.stageCard?.checkup?.itemId
   const stageItem = stageItemId ? fullPlan?.items.find((i) => i.id === stageItemId && i.status !== 'done') : undefined
@@ -149,12 +176,23 @@ export default function LinkBody({
       <LinkCover snapshot={page} today={today} onLine={pending ? goToUsLine : undefined} />
 
       <div className="mt-4 space-y-3">
-        {where === 'top' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} /> : null}
+        {where === 'top' && task ? (
+          <LinkTaskCard
+            task={task.task}
+            done={task.done}
+            onDone={actions.onTaskDone}
+            closed={task.closed}
+            onClosed={onClosed}
+            today={today}
+            preview={preview}
+          />
+        ) : null}
         {page.moment ? (
           <LinkMoment
             snapshot={page}
             task={where === 'card' && task ? task : undefined}
             onTaskDone={actions.onTaskDone}
+            onTaskClosed={onClosed}
             clinic={clinic}
             today={today}
             onJoin={actions.onJoin}
@@ -163,6 +201,7 @@ export default function LinkBody({
             ownerName={owner.name}
             signalsLeft={signalsLeft}
             onTold={actions.onTold}
+            preview={preview}
           />
         ) : page.stageCard ? (
           <LinkStage card={page.stageCard} ownerName={owner.name} today={today} item={stageItem} onSupport={actions.onSupport} />
@@ -174,19 +213,56 @@ export default function LinkBody({
             <LinkClinic clinic={clinic} today={today} onJoin={actions.onJoin} />
           </section>
         ) : null}
-        {where === 'after' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} /> : null}
+        {where === 'after' && task ? (
+          <LinkTaskCard
+            task={task.task}
+            done={task.done}
+            onDone={actions.onTaskDone}
+            closed={task.closed}
+            onClosed={onClosed}
+            today={today}
+            preview={preview}
+          />
+        ) : null}
+        {/* Kept mounted on his page so the sheet stays open after the snapshot drops the flag. */}
+        {!preview ? <LinkDadMind due={dadMind} onAsked={actions.onDadMind} /> : null}
         {week ? (
           <LinkWeek week={week} ownerName={owner.name} onPick={actions.onWeekPick} onDone={actions.onWeekDone} showPrep={!page.myPrep} />
         ) : null}
         {plan ? <LinkTogether plan={plan} onSupport={actions.onSupport} /> : null}
-        {page.myPrep ? <LinkPrep prep={page.myPrep} /> : null}
+        {myPrep ? (
+          <LinkPrep
+            prep={myPrep}
+            onSeason={preview ? undefined : actions.onSeason}
+            onRetire={preview ? undefined : actions.onRetire}
+            preview={preview}
+          />
+        ) : null}
       </div>
 
       <Heading>오늘 할 일</Heading>
-      <LinkChecks me={me} her={me.id === page.cycleOwner} checks={checks} onToggle={actions.onToggle} />
+      <LinkChecks
+        me={me}
+        her={me.id === page.cycleOwner}
+        checks={checks}
+        onToggle={actions.onToggle}
+        stage={page.stage}
+        preview={preview}
+      />
 
       <Heading>우리 한 줄</Heading>
-      {where === 'us' && task ? <LinkTaskCard task={task.task} done={task.done} onDone={actions.onTaskDone} today={today} className="mb-3" /> : null}
+      {where === 'us' && task ? (
+        <LinkTaskCard
+          task={task.task}
+          done={task.done}
+          onDone={actions.onTaskDone}
+          closed={task.closed}
+          onClosed={onClosed}
+          today={today}
+          preview={preview}
+          className="mb-3"
+        />
+      ) : null}
       <LinkUsLine
         snapshot={page}
         signal={pending}

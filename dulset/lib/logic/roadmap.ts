@@ -7,8 +7,9 @@
 
 import { addDays, diffDays } from '../dates'
 import { uid } from '../id'
-import type { AppState, CustomTask, ISODate, MemberId, RoadmapPhase, Stage } from '../types'
-import { dueDate } from './pregnancy'
+import type { AppState, CustomTask, ISODate, MemberId, Pregnancy, RoadmapPhase, Stage } from '../types'
+import { openSeasonWindow, seasonDoneKey, seasonOf, type SeasonKind } from './partnerDates'
+import { dueDate, gestationalAge } from './pregnancy'
 
 export const PHASES: readonly RoadmapPhase[] = [
   'preconception',
@@ -46,6 +47,14 @@ export interface RoadmapWindow {
   start: number
   /** Offset where it closes (inclusive). Omit for "from start onward". */
   end?: number
+  /**
+   * The anchor `end` counts from, when it is not `anchor`. 배우자 출산휴가 opens
+   * 50 days before the due date and closes 120 days after the real birth
+   * ({ anchor: 'edd', start: -50, endAnchor: 'birth', end: 119 }): an early
+   * birth moves the last day earlier. Until that anchor exists the window has
+   * no end, and the item says when it will ('출생 후 120일 안', RoadmapItem.endWhen).
+   */
+  endAnchor?: 'birth'
 }
 
 export interface RoadmapTemplate {
@@ -59,6 +68,13 @@ export interface RoadmapTemplate {
   /** 1–3 sentences: what and why. */
   detail: string
   window?: RoadmapWindow
+  /**
+   * A seasonal row instead of a window (lib/logic/partnerDates): 'flu' shows
+   * 10월–12월 while preparing and 10월–4월 while pregnant, takes the couple's
+   * current phase, is done once per 절기 (planDone 'partner-flu:2026-27') and
+   * is not there at all outside its window — it never reads '지났어요'.
+   */
+  season?: SeasonKind
   /** A legal/administrative deadline (missing it costs money or rights). */
   deadline?: boolean
   /** Completion lives in state.milestones under this key (shared with 임신/아기 tabs). */
@@ -92,6 +108,8 @@ export interface RoadmapItem {
   who: RoadmapWho
   start?: ISODate
   end?: ISODate
+  /** The end in words while its anchor isn't known yet ('출생 후 120일 안'). */
+  endWhen?: string
   deadline: boolean
   status: ItemStatus
   doneAt?: ISODate
@@ -121,7 +139,31 @@ export function resolveWindow(w: RoadmapWindow | undefined, anchors: Anchors): {
   if (!w) return {}
   const base = anchors[w.anchor]
   if (!base) return {}
-  return { start: addDays(base, w.start), end: w.end === undefined ? undefined : addDays(base, w.end) }
+  const endBase = w.endAnchor ? anchors[w.endAnchor] : base
+  return { start: addDays(base, w.start), end: w.end === undefined || !endBase ? undefined : addDays(endBase, w.end) }
+}
+
+const END_ANCHOR_WORD: Record<NonNullable<RoadmapWindow['endAnchor']>, string> = { birth: '출생 후' }
+
+/**
+ * The end in words when it counts from an anchor that isn't known yet: '출생 후
+ * 120일 안' for { endAnchor: 'birth', end: 119 } (the birth day is day 1).
+ * Undefined once the end resolves, or for a window without an end anchor.
+ */
+export function pendingEndText(w: RoadmapWindow | undefined, anchors: Anchors): string | undefined {
+  if (!w?.endAnchor || w.end === undefined || anchors[w.endAnchor]) return undefined
+  return `${END_ANCHOR_WORD[w.endAnchor]} ${w.end + 1}일 안`
+}
+
+/** The phase a seasonal row sits in: the one the couple is in now. */
+export function stagePhase(stage: Stage, pregnancy: Pregnancy | undefined, today: ISODate): RoadmapPhase {
+  if (stage === 'preparing') return 'preconception'
+  if (stage === 'pregnant') {
+    if (!pregnancy) return 'pregnancy-1st'
+    const t = gestationalAge(pregnancy, today).trimester
+    return t === 1 ? 'pregnancy-1st' : t === 2 ? 'pregnancy-2nd' : 'pregnancy-3rd'
+  }
+  return 'birth'
 }
 
 export function ownersOf(state: Pick<AppState, 'couple'>, who: RoadmapWho): MemberId[] {
@@ -142,31 +184,67 @@ export function statusFor(
   return 'later'
 }
 
-/** Completion read from the right place (shared milestone key or planDone). */
+/**
+ * The planDone key a template's tick lives under: its id, or for a seasonal
+ * row the id + the season `day` falls in ('partner-flu:2026-27') — undefined
+ * for a seasonal row without a day.
+ */
+export function planDoneKey(t: Pick<RoadmapTemplate, 'id' | 'season'>, day?: ISODate): string | undefined {
+  if (!t.season) return t.id
+  const season = day ? seasonOf(t.season, day) : ''
+  return season ? seasonDoneKey(t.id, season) : undefined
+}
+
+/**
+ * Completion read from the right place (shared milestone key or planDone). A
+ * seasonal row reads this season's tick, so it needs `today` (none → open).
+ */
 export function doneInfo(
   state: Pick<AppState, 'planDone' | 'milestones'>,
-  t: Pick<RoadmapTemplate, 'id' | 'milestoneKey'>,
+  t: Pick<RoadmapTemplate, 'id' | 'milestoneKey' | 'season'>,
+  today?: ISODate,
 ): { at: ISODate; by?: MemberId } | undefined {
   if (t.milestoneKey) {
     const m = state.milestones.find((x) => x.key === t.milestoneKey)
     return m ? { at: m.date } : undefined
   }
-  return state.planDone[t.id]
+  const key = planDoneKey(t, today)
+  return key ? state.planDone[key] : undefined
 }
 
+/**
+ * The couple's items. `stage` places the seasonal rows: without it (or outside
+ * their window) they are left out — there is no date to show them on.
+ */
 export function buildItems(
-  state: Pick<AppState, 'couple' | 'pregnancy' | 'baby' | 'planDone' | 'milestones' | 'customTasks'>,
+  state: Pick<AppState, 'couple' | 'pregnancy' | 'baby' | 'planDone' | 'milestones' | 'customTasks'> & { stage?: Stage },
   templates: RoadmapTemplate[],
   today: ISODate,
 ): RoadmapItem[] {
   const anchors = anchorsOf(state)
-  const items: RoadmapItem[] = templates.map((t) => {
-    const { start, end } = resolveWindow(t.window, anchors)
-    const d = doneInfo(state, t)
-    return {
+  const items: RoadmapItem[] = []
+  for (const t of templates) {
+    let phase = t.phase
+    let start: ISODate | undefined
+    let end: ISODate | undefined
+    let endWhen: string | undefined
+    if (t.season) {
+      const w = state.stage ? openSeasonWindow(t.season, state.stage, today) : undefined
+      if (!w) continue
+      phase = stagePhase(state.stage!, state.pregnancy, today)
+      start = w.start
+      end = w.end
+    } else {
+      const r = resolveWindow(t.window, anchors)
+      start = r.start
+      end = r.end
+      endWhen = start ? pendingEndText(t.window, anchors) : undefined
+    }
+    const d = doneInfo(state, t, today)
+    items.push({
       id: t.id,
       custom: false,
-      phase: t.phase,
+      phase,
       title: t.title,
       when: t.when,
       detail: t.detail,
@@ -175,13 +253,14 @@ export function buildItems(
       owners: ownersOf(state, t.who),
       start,
       end,
+      ...(endWhen ? { endWhen } : {}),
       deadline: !!t.deadline,
       status: statusFor({ done: !!d, start, end, deadline: !!t.deadline }, today),
       doneAt: d?.at,
       doneBy: d?.by,
       template: t,
-    }
-  })
+    })
+  }
   for (const c of state.customTasks) {
     items.push({
       id: c.id,
@@ -235,9 +314,10 @@ export function progressOf(items: RoadmapItem[]): { done: number; total: number 
 
 // ── Mutations ───────────────────────────────────────────────
 
+/** A seasonal row's tick goes under the season `today` falls in ('partner-flu:2026-27'). */
 export function setTemplateDone(
   state: AppState,
-  t: Pick<RoadmapTemplate, 'id' | 'milestoneKey'>,
+  t: Pick<RoadmapTemplate, 'id' | 'milestoneKey' | 'season'>,
   done: boolean,
   today: ISODate,
   by: MemberId,
@@ -248,9 +328,11 @@ export function setTemplateDone(
     if (done) milestones.push({ key, date: today })
     return { ...state, milestones }
   }
+  const key = planDoneKey(t, today)
+  if (!key) return state
   const planDone = { ...state.planDone }
-  if (done) planDone[t.id] = { at: today, by }
-  else delete planDone[t.id]
+  if (done) planDone[key] = { at: today, by }
+  else delete planDone[key]
   return { ...state, planDone }
 }
 

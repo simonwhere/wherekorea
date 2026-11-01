@@ -538,6 +538,13 @@ export function noticeTarget(kind: NotificationKind, stage: Stage, key?: string)
   if (key?.startsWith('deadline:task-') && stage === 'preparing') return 'today'
   // 지원결정통지서 만료 D-N (planNotices.noticeExpiryNotices): the counter card sits first on 챙길 것.
   if (key?.startsWith('appt:') || key?.startsWith('deadline:') || key?.startsWith('notice-expiry:')) return 'plan'
+  // His check points (partnerNotices, 2026-11-01). The flu row is a part of his 내 준비 and
+  // 아빠 마음 a card on his parenting home; her week line about him sits in 우리 한 줄 —
+  // all on 오늘. Tdap, 배우자 출산휴가, 산후도우미 and 난임치료휴가 are rows in 챙길 것.
+  if (key?.startsWith('flu-season:') || key?.startsWith('dad-mind:') || key?.startsWith('week-digest:')) return 'today'
+  if (key?.startsWith('tdap:') || key?.startsWith('partner-leave') || key?.startsWith('postnatal-open:') || key?.startsWith('program:')) {
+    return 'plan'
+  }
   // What the cycle owner chose to tell (ttcFlow.tellPartnerPeriod / tellPartnerPositive):
   // the partner's card on 오늘 says what to do with it.
   if (key?.startsWith('period-told:') || key?.startsWith('positive-told:') || key?.startsWith('bleeding-told:')) return 'today'

@@ -429,6 +429,49 @@
     "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=735&ccfNo=3&cciNo=5&cnpClsNo=2"
    ],
    "confidence": "medium"
+  },
+  {
+   "id": "partner-flu-season-2026-27",
+   "phase": "anytime",
+   "who": "husband",
+   "title": "함께하는 사람 독감 접종 (2026-27절기, 절기마다 1번)",
+   "when": "매년 가을 — 앱에서는 준비 중 10월 1일~12월 31일, 임신 중 10월 1일~4월 30일에 보여요",
+   "detail": "2026-27절기 국가 무료 대상은 생후 6개월~14세, 임신부(2026-09-21~2027-04-30), 65세 이상이고, 15~64세 남편은 위탁의료기관·병원에서 유료로 맞아요(가격은 병원마다 달라요). 국민건강보험공단 자료와 질병관리청 예전 지침은 '임신부와 함께 사는 사람'과 '6개월 미만 아기를 돌보는 사람'을 우선접종 권장대상으로 꼽아요. 6개월 미만 아기는 독감 백신을 맞을 수 없어서 곁에 사는 가족이 매년 맞는 것이 보호 수단이에요(CDC·Immunize.org 코쿠닝). 2026-27절기 유행주의보는 2026-09-11에 나왔어요(작년보다 약 한 달 일러요). 임신 중 표시 기간을 4월 30일까지로 둔 것은 임신부 무료 접종 기간과 맞춘 거예요 — 1~3월에 임신을 알게 된 부부도 이번 절기 안에 볼 수 있게요. 매년 다시 맞는 접종이라 앱의 완료는 절기마다 새로 시작해요(planDone 'partner-flu:2026-27').",
+   "sources": [
+    "https://www.kdca.go.kr/bbs/kdca/41/312593/artclView.do",
+    "https://nip.kdca.go.kr/irhp/infm/goVcntInfo.do?menuLv=1&menuCd=134",
+    "https://www.sejong.go.kr/health/sub03_05_05_02.do",
+    "https://www.nhis.or.kr/static/alim/paper/oldpaper/202309/sub/section2_2.html",
+    "https://www.cdc.gov/mmwr/volumes/74/wr/mm7432a2.htm",
+    "https://www.cdc.gov/breastfeeding-special-circumstances/hcp/illnesses-conditions/flu.html",
+    "https://www.immunize.org/wp-content/uploads/va/va37_cocooning.pdf"
+   ],
+   "confidence": "medium",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약만 봤어요(원문 미열람). 화면에 '무료'·가격·'아기를 지켜요'·'독감을 막아요'를 쓰지 않아요 — 줄은 '독감은 매년 가을에 맞아요. 비용은 병원마다 달라요.' 표시 기간(lib/logic/partnerDates FLU_WINDOWS)은 앱의 정리이고 법정 기한이 아니라서 '지났어요'가 없어요. 독감은 '남편 예방접종 점검' 항목에서 떼어 냈어요(roadmap pre-partner-vaccines 제목에서 빠짐)."
+  },
+  {
+   "id": "partner-tdap-once",
+   "phase": "pregnancy-3rd",
+   "who": "husband",
+   "title": "함께하는 사람 Tdap — 맞은 적이 없으면 1번, 아기 만나기 2주 전까지",
+   "when": "예정일 60일 전 ~ 예정일 2주 전 (앱 알림은 예정일 60일 전과 21일 전)",
+   "detail": "질병관리청은 2024-11 국내 첫 백일해 영아 사망 뒤 임신부와 동거 가족·돌보미의 접종을 당부했고, Q&A에서 1세 미만 아기를 돌보는 가족이 Tdap을 맞은 적이 없으면 맞으라고 해요(Td와 간격을 둘 필요는 없어요). ACIP(2011)는 아기와 가까이 지낼 성인에게 Tdap 1회, ACOG는 아기를 만나기 최소 2주 전을 말해요. 다만 ACIP는 가족 접종만으로는 부족하고 임신부 접종이 핵심이라고 해요. Tdap은 국가 무료 접종이 아니고, 배우자 무료 접종을 하는 지자체(청주·진천·관악구·울산 등, 2026)는 지역·기간·조건(예: 최근 10년 안에 맞은 적 없음)이 달라요. 아기가 일찍 태어날 수 있어서 앱의 알림은 창이 열릴 때(예정일 −60)와 예정일 −21에 보내고, D-1·'기한 지남'은 없어요.",
+   "sources": [
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148936203",
+    "https://www.korea.kr/news/policyNewsView.do?newsId=148923417",
+    "https://www.cdc.gov/mmwr/preview/mmwrhtml/mm6041a4.htm",
+    "https://www.acog.org/clinical-information/physician-faqs/tetanus-diphtheria-and-pertussis",
+    "https://www.naewoeilbo.com/news/articleView.html?idxno=2279989",
+    "https://www.gwanak.go.kr/site/enews/news/news_view.do?newsid=1601&aid=12361"
+   ],
+   "confidence": "high",
+   "checked": "2026-11-01",
+   "verified": false,
+   "inUI": true,
+   "notes": "검색 요약(원문 미열람). 위 '남편·조부모·돌봄자 Tdap(코쿠닝)'(high)과 같은 방향이에요. 화면 줄은 '맞은 적이 없다면 예정일 2주 전까지 1번 맞아요' — '아기를 백일해로부터 지켜요'·'무료예요' 단정 금지, 아내 Tdap(27~36주)을 대신한다는 뉘앙스 금지. 지역 무료 사업은 이름 없이 '지역마다 달라요'로만."
   }
  ],
  "notes": [
@@ -443,6 +486,7 @@
   "빠진 항목은 없습니다. 틀려서 뺄 만한 항목은 찾지 못했습니다.",
   "확인하지 못한 항목: 임신부·남편 Tdap이 국가 무료접종인지, 아브리스보의 국가접종 포함 여부와 가격, 2026-27절기 코로나19 접종에서 임신부가 무료 대상인지(이전 조사 스니펫상 대상 아님)를 확인하지 못했습니다. 앱에는 비용을 표시하지 말고 '보건소·병원에 확인'으로 안내하길 권합니다. 아브리스보의 효능 수치(82.4%, 70.0%)는 국내 보도 기준이며, NEJM 1차 분석값은 81.8%·69.4%입니다.",
   "보건소 사업(철분제·엽산 지급 조건, 산전검사 무료, 청각 확진비 등)은 지자체마다 다릅니다. 앱에서는 사용자 주소지 보건소 링크를 함께 보여주는 방식이 안전합니다.",
-  "위 내용은 일반적인 공공·학회 정보를 정리한 것이며 의료 조언이 아닙니다. 앱 안에 '개인 상황은 담당 산부인과 전문의와 상의'라는 문구를 반드시 표시하길 권합니다."
+  "위 내용은 일반적인 공공·학회 정보를 정리한 것이며 의료 조언이 아닙니다. 앱 안에 '개인 상황은 담당 산부인과 전문의와 상의'라는 문구를 반드시 표시하길 권합니다.",
+  "2026-11-01 (남편 체크 포인트 12개): 'partner-flu-season-2026-27'(절기마다 1번, 준비 10~12월·임신 중 10~4월 표시)과 'partner-tdap-once'(맞은 적이 없으면 1번, 예정일 −60·−21 알림)를 더했어요. 둘 다 검색 요약이라 verified:false예요."
  ]
 }

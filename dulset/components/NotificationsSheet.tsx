@@ -1,9 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button, EmptyState, Sheet, cx } from '@/components/ui'
+import { Icon } from '@/components/ui/icons'
+import { weekdayKo } from '@/lib/dates'
 import { markRead } from '@/lib/logic/notifications'
-import { groupByDay, noticeTarget, nowOn, relativeTimeKo, splitTitleIcon, type NoticeTab } from '@/lib/logic/today'
+import { canThankFromDigest, digestWeek, thankFromDigest, thankedForDigest } from '@/lib/logic/partnerNotices'
+import { groupByDay, noticeTarget, nowOn, relativeTimeKo, splitTitleIcon, stampOn, type NoticeTab } from '@/lib/logic/today'
 import { bellInbox, clearBell } from '@/lib/logic/usView'
 import { useApp } from '@/lib/store'
 import type { AppNotification, Stage } from '@/lib/types'
@@ -19,7 +22,7 @@ function openTab(tab: NoticeTab) {
 
 /** In-app inbox for the current viewer (the prototype's stand-in for push). */
 export default function NotificationsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { state, update, today, me } = useApp()
+  const { state, update, today, me, partner } = useApp()
 
   // AppShell passes a new arrow every render; the Sheet re-runs its open effect
   // (and moves focus to the panel) whenever onClose changes. Keep one stable callback.
@@ -47,6 +50,30 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
   const list = bellInbox(state, me.id)
   const groups = groupByDay(list, today)
   const unread = list.filter((n) => !n.read).length
+
+  // Her week line about him ('이번 주 민수님', partnerNotices.weekDigestNotices) carries the
+  // same once-a-week [고마워요] as 우리 한 줄 — the decision and the 💛 to him are one.
+  const thank = (n: AppNotification) => {
+    update((s) => thankFromDigest(s, me.id, partner.id, n.key, today, stampOn(today)))
+    statusRef.current?.focus({ preventScroll: true })
+  }
+  const action = (n: AppNotification): ReactNode => {
+    if (!digestWeek(n.key)) return null
+    if (canThankFromDigest(state, me.id, n.key, today)) {
+      return (
+        <button type="button" onClick={() => thank(n)} className={THANK_BUTTON} aria-label={`${partner.name}님에게 고마워요`}>
+          <Icon name="heart" className="h-4 w-4 text-her" strokeWidth={2.2} /> 고마워요
+        </button>
+      )
+    }
+    const on = thankedForDigest(state, me.id, n.key)
+    return on ? (
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-ink-3">
+        <Icon name="heart" className="h-3.5 w-3.5 fill-current text-her" strokeWidth={1.5} />
+        고맙다고 전했어요 ({weekdayKo(on)})
+      </span>
+    ) : null
+  }
 
   const tapOne = (n: AppNotification) => {
     if (!n.read) update((s) => markRead(s, me.id, n.id))
@@ -89,10 +116,10 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
       ) : (
         <div className="space-y-4">
           {groups.today.length > 0 ? (
-            <Group title="오늘" items={groups.today} nowMs={nowMs} stage={state.stage} onTap={tapOne} />
+            <Group title="오늘" items={groups.today} nowMs={nowMs} stage={state.stage} onTap={tapOne} action={action} />
           ) : null}
           {groups.earlier.length > 0 ? (
-            <Group title="이전" items={groups.earlier} nowMs={nowMs} stage={state.stage} onTap={tapOne} />
+            <Group title="이전" items={groups.earlier} nowMs={nowMs} stage={state.stage} onTap={tapOne} action={action} />
           ) : null}
         </div>
       )}
@@ -101,18 +128,24 @@ export default function NotificationsSheet({ open, onClose }: { open: boolean; o
   )
 }
 
+const THANK_BUTTON =
+  "relative inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface-2 px-3 text-[13px] font-bold text-ink-2 transition-colors before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:bg-line/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+
 function Group({
   title,
   items,
   nowMs,
   stage,
   onTap,
+  action,
 }: {
   title: string
   items: AppNotification[]
   nowMs: number
   stage: Stage
   onTap: (n: AppNotification) => void
+  /** A button under one notice (her week line's [고마워요]); null for the rest. */
+  action: (n: AppNotification) => ReactNode
 }) {
   return (
     <section>
@@ -122,6 +155,7 @@ function Group({
           const { icon, text } = splitTitleIcon(n.title, n.kind)
           const time = relativeTimeKo(n.createdAt, nowMs)
           const opens = noticeTarget(n.kind, stage, n.key) !== null
+          const extra = action(n)
           return (
             <li key={n.id} className={cx(i > 0 && 'border-t border-line')}>
               <button
@@ -160,6 +194,9 @@ function Group({
                   </span>
                 ) : null}
               </button>
+              {extra ? (
+                <div className={cx('flex min-h-11 items-center pb-2.5 pl-[60px] pr-3', !n.read && 'bg-brand-soft/40')}>{extra}</div>
+              ) : null}
             </li>
           )
         })}

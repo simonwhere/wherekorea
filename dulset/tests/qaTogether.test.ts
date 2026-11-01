@@ -95,7 +95,8 @@ describe('[같이 갈게요] never answers a visit of a pregnancy that ended', (
   function bookedThenEnded(endedAgo: number): { s: AppState; id: string; pregnant: AppState } {
     let s = demo()
     s = startPregnancy(s, addDays(T0, -100), addDays(T0, -70))
-    const ptask = planItems(s, T0).find((i) => i.phase === 'pregnancy-2nd' && !i.custom)!
+    // A pregnancy item (not the seasonal flu row, which only sits in the phase the couple is in).
+    const ptask = planItems(s, T0).find((i) => i.phase === 'pregnancy-2nd' && !i.custom && !i.template?.season)!
     s = addAppointment(s, { date: addDays(T0, 2), title: '정밀 초음파', who: 'both', kind: 'hospital', taskId: ptask.id }, HER)
     const id = s.appointments.at(-1)!.id
     return { s: endPregnancy(s, addDays(T0, -endedAgo)), id, pregnant: s }

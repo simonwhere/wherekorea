@@ -32,9 +32,9 @@ import type { AppState } from '@/lib/types'
 // ── Content ─────────────────────────────────────────────────
 
 describe('ROADMAP content', () => {
-  it('has 45–60 templates with unique kebab-case ids across all six phases', () => {
+  it('has 45–61 templates with unique kebab-case ids across all six phases', () => {
     expect(ROADMAP.length).toBeGreaterThanOrEqual(45)
-    expect(ROADMAP.length).toBeLessThanOrEqual(60)
+    expect(ROADMAP.length).toBeLessThanOrEqual(61)
     const ids = ROADMAP.map((t) => t.id)
     expect(new Set(ids).size).toBe(ids.length)
     for (const id of ids) expect(id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/)
@@ -108,7 +108,8 @@ describe('ROADMAP content', () => {
     expect(w('p3-work-hours')?.start).toBe(217) // 임신 218일째
     expect(w('p3-maternity-leave')?.start).toBe(-44)
     expect(w('p3-postnatal-care')?.start).toBe(-40)
-    expect(w('birth-partner-leave')).toEqual({ anchor: 'edd', start: -50, end: 120 })
+    // Opens from the due date, closes 출생 후 120일 from the real birth (birth day = day 1).
+    expect(w('birth-partner-leave')).toEqual({ anchor: 'edd', start: -50, endAnchor: 'birth', end: 119 })
     // Shortest "1개월" (Feb 1 → Feb 28 in a common year); the view computes the exact day.
     expect(w('birth-registration')).toEqual({ anchor: 'birth', start: 0, end: 27 })
     expect(w('birth-happy-birth')).toEqual({ anchor: 'birth', start: 0, end: 59 }) // 출생일 포함 60일
@@ -250,9 +251,10 @@ describe('챙길 것 view model', () => {
     expect(statusPill(reg, 'pregnant')).toEqual({ label: '날짜 미정', tone: 'muted' })
     const birth = phaseGroups(items, 'stage', s).find((g) => g.phase === 'birth')!
     expect(birth.hint).toBe('아기가 태어난 날을 기록하면 날짜가 나와요')
-    // 배우자 출산휴가 opens 50 days before the due date (2027-04-07).
+    // 배우자 출산휴가 opens 50 days before the due date (2027-04-07); its end waits for the birth.
     const leave = find(items, 'birth-partner-leave')
-    expect([leave.start, leave.end]).toEqual([addDays('2027-04-07', -50), addDays('2027-04-07', 120)])
+    expect([leave.start, leave.end]).toEqual([addDays('2027-04-07', -50), undefined])
+    expect(leave.endWhen).toBe('출생 후 120일 안')
     expect(currentPhase(s, today)).toBe('pregnancy-1st')
   })
 
@@ -285,8 +287,9 @@ describe('챙길 것 view model', () => {
     s = recordBirth(s, { name: '콩이', birthDate: '2027-03-25', sex: 'girl' })
     const today = '2027-04-25' // day 31
     const items = planItems(s, today)
-    // 배우자 출산휴가 counts from the real birth day, not the due date.
-    expect(find(items, 'birth-partner-leave').end).toBe(addDays('2027-03-25', 120))
+    // 배우자 출산휴가 counts from the real birth day, not the due date (birth day = day 1).
+    expect(find(items, 'birth-partner-leave').end).toBe(addDays('2027-03-25', 119))
+    expect(find(items, 'birth-partner-leave').endWhen).toBeUndefined()
     const reg = find(items, 'birth-registration')
     expect(reg.status).toBe('overdue')
     expect(statusPill(reg, 'parenting')).toEqual({ label: '기한 지남', tone: 'warn' })

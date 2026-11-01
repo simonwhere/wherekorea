@@ -375,6 +375,10 @@ describe('what the partner can never do', () => {
       'setup',
       'join-appointment',
       'support',
+      'apply-closed',
+      'season-done',
+      'retire-checks',
+      'dad-mind-asked',
     ])
     const forged = [
       { id: 'f1', kind: 'period', date: '2026-09-10' },

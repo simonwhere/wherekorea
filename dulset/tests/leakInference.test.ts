@@ -192,8 +192,12 @@ function partnerView(s: AppState, d: ISODate) {
  */
 function stable(v: ReturnType<typeof homeView> & { cells?: unknown[][] }) {
   const { tip: _tip, prompt: _prompt, cells, cover, ...rest } = v
+  // 내 준비's 올해 독감 접종 line (2026-11-01) comes on 10월 1일 and leaves after its season — fixed calendar
+  // days, the same for every couple, read from the stage and his own tick only (tests/husbandScreens.test.ts
+  // checks that no record of hers moves it).
+  const { season: _season, ...prep } = rest.prep
   // A memory line points at that day's entry (a year ago today): the kind and words must hold, not the entry.
-  return { ...rest, cover: { kind: cover.kind, text: cover.text }, cells: (cells ?? []).map((c) => c.slice(0, 4)) }
+  return { ...rest, prep, cover: { kind: cover.kind, text: cover.text }, cells: (cells ?? []).map((c) => c.slice(0, 4)) }
 }
 
 function herStatus(s: AppState, d: ISODate) {

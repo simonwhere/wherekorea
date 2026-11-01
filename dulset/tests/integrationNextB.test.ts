@@ -35,7 +35,8 @@ import { giveIntimacyConsent, intimacyDays, toggleIntimacyDay } from '@/lib/logi
 import { addLHTest, addPregnancyTest, defaultLogKind, lhAskDue, logPeriodStart, logUndo, undoLog } from '@/lib/logic/logs'
 import { inbox, mergeNotices, scheduledNotices } from '@/lib/logic/notifications'
 import { FEEL_LABEL, setEntryPrivacy, setFeel, setPrivateNote, stateForViewer } from '@/lib/logic/personalLog'
-import { NOTICE_EXPIRY_REMINDER_DAYS, appointmentReminders, noticeExpiryNotices, planDeadlineNotices } from '@/lib/logic/planNotices'
+import { allRuleNotices } from '@/lib/logic/partnerNotices'
+import { NOTICE_EXPIRY_REMINDER_DAYS, noticeExpiryNotices, planDeadlineNotices } from '@/lib/logic/planNotices'
 import { isBleedingDuringPositive, markBleeding } from '@/lib/logic/positiveBleeding'
 import { QUIET_DAYS_AFTER_END, backToPreparing, quietEndsOn, startPregnancy } from '@/lib/logic/pregnancy'
 import { setPersonalPref, setShareCycleDetails, shareLevelOf } from '@/lib/logic/prefs'
@@ -194,7 +195,8 @@ function randomState(seed: number): { state: AppState; day: ISODate; bleeding: b
 }
 
 function viewerNotices(s: AppState, day: ISODate): AppState {
-  const rules = [...scheduledNotices(s, day), ...appointmentReminders(s, day), ...planDeadlineNotices(s, day)]
+  // Every rule the engine runs (useNotificationEngine → partnerNotices.allRuleNotices).
+  const rules = allRuleNotices(s, day)
   return mergeNotices(s, rules, stamp(day)).state
 }
 

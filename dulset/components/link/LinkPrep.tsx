@@ -11,11 +11,17 @@
 // (myPrep `items`: 배우자 지원 제도 · 육아휴직 계획 · 카시트 · Tdap · 배우자 출산휴가
 // 20일), each with '했어요' / '지금' / 'N월 N일부터' — the list says what the
 // summary line would, so the line gives way to it.
+//
+// His check points (2026-11-01) make two parts answerable here, as in his app:
+// 올해 독감 접종 (a tick → 'season-done') and, once a pregnancy, the sauna /
+// laptop question ([내려놓기] / [그대로 두기] → 'retire-checks'). Her preview
+// draws the flu row read-only and leaves the question out.
 
 import { ProgressBar } from '@/components/today/bits'
 import { cx } from '@/components/ui'
 import { Icon } from '@/components/ui/icons'
 import type { SnapshotMyPrep, SnapshotPrepItem } from '@/lib/logic/partnerSnapshot'
+import { Pill } from './bits'
 import { prepItemWhen } from './model'
 
 function PrepItems({ items }: { items: SnapshotPrepItem[] }) {
@@ -38,11 +44,89 @@ function PrepItems({ items }: { items: SnapshotPrepItem[] }) {
   )
 }
 
-export default function LinkPrep({ prep, className }: { prep: SnapshotMyPrep; className?: string }) {
+/** 올해 독감 접종 맞기 while its season is open: a 44px tick row on his page, read-only in her preview. */
+function SeasonLine({ season, onToggle }: { season: NonNullable<SnapshotMyPrep['season']>; onToggle?: () => void }) {
+  const words = (
+    <span className="min-w-0 flex-1">
+      <span className={cx('block', season.done ? 'text-ink-3' : 'font-semibold text-ink')}>{season.label}</span>
+      {season.note && !season.done ? <span className="block text-[12px] text-ink-3">{season.note}</span> : null}
+    </span>
+  )
+  if (onToggle) {
+    return (
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={season.done}
+        onClick={onToggle}
+        data-prep-season
+        data-done={season.done}
+        className="-mx-1 flex min-h-[44px] w-[calc(100%+0.5rem)] items-start gap-2.5 rounded-xl px-1 py-1.5 text-left text-[13px] leading-[1.45] hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+      >
+        <span
+          aria-hidden
+          className={cx(
+            'mt-px flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-colors',
+            season.done ? 'border-ok bg-ok text-white' : 'border-control bg-surface text-transparent',
+          )}
+        >
+          <Icon name="check" className="h-3.5 w-3.5" strokeWidth={3} />
+        </span>
+        {words}
+      </button>
+    )
+  }
+  return (
+    <div className="flex items-start gap-2 text-[13px] leading-[1.45]" data-prep-season data-done={season.done}>
+      {season.done ? (
+        <Icon name="check" className="mt-px h-4 w-4 shrink-0 text-ok" strokeWidth={2.6} />
+      ) : (
+        <span aria-hidden className="mx-[5px] mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-him" />
+      )}
+      {words}
+      <span className="shrink-0 text-[12px] text-ink-3">{season.done ? '했어요' : '지금'}</span>
+    </div>
+  )
+}
+
+/** The once-a-pregnancy question about his sauna / laptop rows (his app's RetireAsk). */
+function RetireAsk({ question, onAnswer }: { question: string; onAnswer: (keep: boolean) => void }) {
+  return (
+    <div className="mt-2.5 rounded-xl bg-surface-2 px-3 py-2.5" data-prep-retire>
+      <p className="text-[13px] font-semibold leading-[1.5] text-ink">{question}</p>
+      <div className="mt-2 flex gap-2">
+        <Pill tone="primary" className="flex-1" onClick={() => onAnswer(false)}>
+          내려놓기
+        </Pill>
+        <Pill tone="outline" className="flex-1" onClick={() => onAnswer(true)}>
+          그대로 두기
+        </Pill>
+      </div>
+    </div>
+  )
+}
+
+export default function LinkPrep({
+  prep,
+  onSeason,
+  onRetire,
+  preview = false,
+  className,
+}: {
+  prep: SnapshotMyPrep
+  /** The flu tick (a 'season-done' event); absent in her preview. */
+  onSeason?: (done: boolean) => void
+  /** [내려놓기] (keep false) / [그대로 두기] (keep true) — a 'retire-checks' event. */
+  onRetire?: (keep: boolean) => void
+  /** Her preview of his page: the question about his own rows stays out. */
+  preview?: boolean
+  className?: string
+}) {
   const items = prep.items?.length ? prep.items : undefined
   // With the list drawn, its summary line would only repeat it.
   const line = [prep.weekCount, items ? undefined : prep.chainStep].filter(Boolean)
-  if (!prep.timerLabel && !line.length && !items) return null
+  const retire = prep.retire && onRetire && !preview ? prep.retire : undefined
+  if (!prep.timerLabel && !line.length && !items && !prep.season && !retire) return null
   const done = items?.filter((i) => i.state === 'done').length ?? 0
   return (
     <section
@@ -69,6 +153,12 @@ export default function LinkPrep({ prep, className }: { prep: SnapshotMyPrep; cl
         </div>
       ) : null}
       {items ? <PrepItems items={items} /> : null}
+      {prep.season ? (
+        <div className={cx(prep.timerLabel || line.length || items ? 'mt-1.5 border-t border-line/70 pt-1.5' : 'mt-1.5')}>
+          <SeasonLine season={prep.season} onToggle={onSeason && !preview ? () => onSeason(!prep.season!.done) : undefined} />
+        </div>
+      ) : null}
+      {retire && onRetire ? <RetireAsk question={retire.question} onAnswer={onRetire} /> : null}
     </section>
   )
 }

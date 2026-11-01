@@ -125,6 +125,7 @@ export default function LinkMoment({
   snapshot,
   task,
   onTaskDone,
+  onTaskClosed,
   clinic,
   today,
   onJoin,
@@ -133,12 +134,17 @@ export default function LinkMoment({
   ownerName = '',
   signalsLeft = 0,
   onTold,
+  preview = false,
   className,
 }: {
   snapshot: PartnerPage
+  /** Her preview of his page (설정 › 연결): his own-only lines stay out (LinkTaskBody `preview`). */
+  preview?: boolean
   /** The month task when the card features it (moment.monthlyTask), with his local mark. */
-  task?: { task: SnapshotTask; done: boolean }
+  task?: { task: SnapshotTask; done: boolean; closed?: boolean }
   onTaskDone: (task: SnapshotTask) => void
+  /** [접수가 끝났대요] on the featured 신청 card (absent in her preview). */
+  onTaskClosed?: (task: SnapshotTask) => void
   /** His clinic week (N32) with his marks applied (model.viewClinic), while clinic mode is on. */
   clinic?: SnapshotClinic | null
   today?: ISODate
@@ -203,7 +209,19 @@ export default function LinkMoment({
 
       {snapshot.strip ? <LinkWeekRow strip={snapshot.strip} estimate={estimate} /> : null}
 
-      {task ? <LinkTaskBody task={task.task} done={task.done} onDone={onTaskDone} onSurface2={!muted} today={today ?? snapshot.date} className={inner} /> : null}
+      {task ? (
+        <LinkTaskBody
+          task={task.task}
+          done={task.done}
+          onDone={onTaskDone}
+          closed={task.closed}
+          onClosed={onTaskClosed}
+          onSurface2={!muted}
+          today={today ?? snapshot.date}
+          preview={preview}
+          className={inner}
+        />
+      ) : null}
 
       {clinic ? <LinkClinic clinic={clinic} today={today ?? snapshot.date} onJoin={onJoin ?? (() => {})} className={inner} /> : null}
 

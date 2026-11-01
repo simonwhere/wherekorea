@@ -8,16 +8,20 @@
 // date happen in the app. While the
 // booked day is still ahead ('예약됨'), there is no [받았어요] — the card says
 // '예약일 10월 15일' (partnerEvents.taskLocked: nothing is recorded before it).
+// The 신청 card also offers [접수가 끝났대요] (2026-11-01), sent as an
+// 'apply-closed' event; the card then reads '1월에 다시 확인해요' until her
+// phone moves the slot on to the next item.
 
-import { ExternalLink, objectParticle } from '@/components/today/bits'
+import { ExternalLink, LinkButton, objectParticle } from '@/components/today/bits'
 import { cx } from '@/components/ui'
 import { Icon, type IconName } from '@/components/ui/icons'
 import { formatKo } from '@/lib/dates'
 import { taskLocked } from '@/lib/logic/partnerEvents'
 import type { SnapshotTask } from '@/lib/logic/partnerSnapshot'
-import { taskStageLabel, type TaskStage } from '@/lib/logic/partnerTrack'
+import { TEST_MEDS_LINE, taskStageLabel, type TaskStage } from '@/lib/logic/partnerTrack'
 import type { ISODate } from '@/lib/types'
 import { Pill } from './bits'
+import { APPLY_CLOSED_TEXT } from './model'
 
 
 const DONE_LABEL: Record<TaskStage | 'plain', string> = {
@@ -113,22 +117,50 @@ function ClaimDocs({ task }: { task: SnapshotTask }) {
   )
 }
 
+/** The stage's one line to check before acting (the app's MonthlyTask AskLine). */
+function AskLine({ text }: { text: string }) {
+  return (
+    <p data-task-ask className="mt-1.5 flex items-start gap-1.5 text-[12.5px] leading-[1.5] text-ink-2">
+      <Icon name="info" className="mt-[3px] h-3.5 w-3.5 shrink-0 text-ink-3" />
+      <span className="min-w-0">{text}</span>
+    </p>
+  )
+}
+
+/** His medicines line (partnerTrack.TEST_MEDS_LINE): drawn from the constant on his page, never in her preview. */
+function MedsLine() {
+  return (
+    <p data-task-meds className="mt-1 text-[12.5px] leading-[1.5] text-ink-3">
+      {TEST_MEDS_LINE}
+    </p>
+  )
+}
+
 /** Title, deadline, the stage's rows and its one action. `done`: he just marked it (the snapshot confirms soon). */
 export function LinkTaskBody({
   task,
   done,
   onDone,
+  closed = false,
+  onClosed,
   onSurface2 = false,
   today,
+  preview = false,
   className,
 }: {
   task: SnapshotTask
   done: boolean
   onDone: (task: SnapshotTask) => void
+  /** He just said [접수가 끝났대요] (the snapshot confirms soon). */
+  closed?: boolean
+  /** [접수가 끝났대요] on the 신청 card — absent in her preview (nothing to send). */
+  onClosed?: (task: SnapshotTask) => void
   /** Inside a surface-2 box (the moment card): the pill takes the surface colour. */
   onSurface2?: boolean
   /** The page's day (the booked day itself reads '오늘 예약일'). */
   today?: ISODate
+  /** Her preview of his page (설정 › 연결): the medicines line is his alone and stays out. */
+  preview?: boolean
   className?: string
 }) {
   const overdue = task.status === 'overdue'
@@ -162,12 +194,15 @@ export function LinkTaskBody({
         <>
           <AppointmentLine task={task} muted={pastBooked} />
           <p className="mt-0.5 text-[12.5px] text-ink-3">{`${bring}${objectParticle(bring)} 챙겨요. 검사 준비는 병원 안내를 따라요.`}</p>
+          {task.meds && !pastBooked && !preview ? <MedsLine /> : null}
         </>
       ) : (
         <>
           <GuideRows task={task} />
           {stage === 'claim' ? <ClaimDocs task={task} /> : null}
           {task.why ? <p className="mt-1.5 text-[12.5px] leading-[1.5] text-ink-3">{task.why}</p> : null}
+          {task.ask && (stage === 'apply' || stage === 'book') ? <AskLine text={task.ask} /> : null}
+          {task.meds && stage === 'book' && !preview ? <MedsLine /> : null}
         </>
       )}
 
@@ -182,6 +217,11 @@ export function LinkTaskBody({
           <p role="status" className="flex items-center gap-1.5 text-[13.5px] font-bold text-ok">
             <Icon name="check" className="h-4 w-4" strokeWidth={2.6} />
             {formatKo(task.defaultDoneAt, { weekday: false })}로 기록했어요
+          </p>
+        ) : closed ? (
+          <p role="status" data-task-closed className="flex items-center gap-1.5 py-1 text-[13.5px] font-bold text-ink-2">
+            <Icon name="clock" className="h-4 w-4 shrink-0 text-ink-3" />
+            {APPLY_CLOSED_TEXT}
           </p>
         ) : lockedOn ? (
           // The booked day and time are the line above (as in the app's MonthlyTask): the lock says what waits for it.
@@ -201,7 +241,13 @@ export function LinkTaskBody({
             <Pill onClick={() => onDone(task)} tone={stage === 'visited' ? 'primary' : onSurface2 ? 'outline' : 'soft'} icon="check">
               {DONE_LABEL[stage ?? 'plain']}
             </Pill>
-            <span className="text-[12px] text-ink-3">{formatKo(task.defaultDoneAt, { weekday: false })}로 기록돼요</span>
+            {task.canSayClosed && stage === 'apply' && onClosed && !preview ? (
+              <LinkButton size="md" onClick={() => onClosed(task)} className="px-1">
+                접수가 끝났대요
+              </LinkButton>
+            ) : (
+              <span className="text-[12px] text-ink-3">{formatKo(task.defaultDoneAt, { weekday: false })}로 기록돼요</span>
+            )}
           </>
         )}
       </div>
@@ -220,13 +266,20 @@ export default function LinkTaskCard({
   task,
   done,
   onDone,
+  closed = false,
+  onClosed,
   today,
+  preview = false,
   className,
 }: {
   task: SnapshotTask
   done: boolean
   onDone: (task: SnapshotTask) => void
+  closed?: boolean
+  onClosed?: (task: SnapshotTask) => void
   today?: ISODate
+  /** Her preview of his page: his own-only lines stay out. */
+  preview?: boolean
   className?: string
 }) {
   const overdue = task.status === 'overdue'
@@ -242,7 +295,17 @@ export default function LinkTaskCard({
       <span aria-hidden className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-brand-soft text-brand-ink">
         <Icon name={taskIcon(task)} className="h-6 w-6" />
       </span>
-      <LinkTaskBody task={task} done={done} onDone={onDone} onSurface2={overdue} today={today} className="min-w-0 flex-1" />
+      <LinkTaskBody
+        task={task}
+        done={done}
+        onDone={onDone}
+        closed={closed}
+        onClosed={onClosed}
+        onSurface2={overdue}
+        today={today}
+        preview={preview}
+        className="min-w-0 flex-1"
+      />
     </section>
   )
 }

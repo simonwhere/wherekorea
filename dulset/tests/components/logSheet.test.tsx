@@ -130,14 +130,15 @@ describe('LogSheet · the partner’s 했어요 sheet', () => {
     expect(memo.open).toBe(false)
     expect(memo.textContent).toContain('메모 남기기')
 
-    // A check is one tap and lands in his own record.
-    const checks = within(dialog).getAllByRole('checkbox')
+    // A check is one tap and lands in his own record. (내 준비's 올해 독감 접종 tick is a roadmap row, not a check.)
+    const rows = () => within(dialog).getAllByRole('checkbox').filter((c) => !c.hasAttribute('data-prep-season'))
+    const checks = rows()
     expect(checks.length).toBeGreaterThan(0)
     const doneCount = () => (probe.current.state!.checkLog[T0]?.[PARTNER] ?? []).length
     const before = doneCount()
     const was = checks[0]!.getAttribute('aria-checked')
     fireEvent.click(checks[0]!)
-    expect(within(dialog).getAllByRole('checkbox')[0]!.getAttribute('aria-checked')).not.toBe(was)
+    expect(rows()[0]!.getAttribute('aria-checked')).not.toBe(was)
     expect(doneCount()).toBe(was === 'false' ? before + 1 : before - 1)
   })
 

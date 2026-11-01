@@ -23,6 +23,12 @@
 // stay practical and relational — no medical claim (MEDICAL_CLAIM words), no
 // timing / pressure / recommending word (SUPPORT_NEVER).
 //
+// roadmap.json timing (checkTiming): a `window` has a known anchor and whole-day
+// offsets with start ≤ end; `endAnchor` (only 'birth') needs an `end` and a
+// window that opens from another anchor (배우자 출산휴가: 예정일 −50 → 출생일 +
+// 119). A seasonal item (`season`, lib/logic/partnerDates SEASON_KINDS) has no
+// window, and a preconception item never has one (it may have a season).
+//
 //   node scripts/validate-content.mjs            # exit 1 on the first file with problems
 //   node scripts/validate-content.mjs --summary  # also print the unverified ('미확인') count per file
 
@@ -88,6 +94,39 @@ const MEDICAL_CLAIM = [
  * hospital, a product or an insurer (positioning §6, 의료법 제27조③·제56조).
  */
 const SUPPORT_NEVER = ['가임', '배란', 'LH', '배테기', '임테기', '기한 지남', '안 했어요', '놓쳤', '추천', '좋은 병원', '병원 찾', '상품', '업체']
+
+/** lib/logic/partnerDates SEASON_KINDS (tests/partnerDates.test.ts keeps the two equal). */
+const SEASON_KINDS = ['flu']
+const ANCHORS = ['lmp', 'edd', 'birth']
+
+/** The roadmap's timing fields (see the header). */
+function checkTiming(json, bad) {
+  const items = Array.isArray(json.items) ? json.items : []
+  items.forEach((it, i) => {
+    if (!it || typeof it !== 'object') return
+    const here = `items[${i}]${it.id ? ` (${it.id})` : ''}`
+    const w = it.window
+    if (it.season !== undefined) {
+      if (!SEASON_KINDS.includes(it.season)) bad(`${here}.season`, `unknown season '${it.season}' (known: ${SEASON_KINDS.join(', ')})`)
+      if (w !== undefined) bad(here, 'a seasonal item has no window — its dates come from the season')
+    }
+    if (w === undefined) return
+    if (it.phase === 'preconception')
+      bad(`${here}.window`, 'a preconception item has no window (nothing to count from) — use a season instead')
+    if (!w || typeof w !== 'object') return bad(`${here}.window`, 'must be an object')
+    if (!ANCHORS.includes(w.anchor)) bad(`${here}.window.anchor`, `'${w.anchor}' — one of ${ANCHORS.join(', ')}`)
+    if (!Number.isInteger(w.start)) bad(`${here}.window.start`, 'must be a whole number of days')
+    if (w.end !== undefined && !Number.isInteger(w.end)) bad(`${here}.window.end`, 'must be a whole number of days')
+    if (w.endAnchor === undefined) {
+      if (Number.isInteger(w.start) && Number.isInteger(w.end) && w.start > w.end)
+        bad(`${here}.window`, `start ${w.start} is after end ${w.end}`)
+      return
+    }
+    if (w.endAnchor !== 'birth') bad(`${here}.window.endAnchor`, `'${w.endAnchor}' — only 'birth'`)
+    if (w.end === undefined) bad(`${here}.window.endAnchor`, 'needs an `end` (days from that anchor)')
+    if (w.anchor === w.endAnchor) bad(`${here}.window.endAnchor`, 'is the same as `anchor` — leave it out')
+  })
+}
 
 /** The roadmap's support fields (see the header). */
 function checkSupport(json, bad) {
@@ -225,7 +264,10 @@ function validateFile(name, json) {
     if (/(^|\.)checkNote$/.test(path)) continue
     for (const w of BANNED) if (s.includes(w)) bad(path, `banned word '${w}'`)
   }
-  if (name === 'roadmap') checkSupport(json, bad)
+  if (name === 'roadmap') {
+    checkSupport(json, bad)
+    checkTiming(json, bad)
+  }
   return { problems, unverified, items }
 }
 

@@ -59,6 +59,7 @@ import UsLine from '@/components/today/UsLine'
 import WeekTogether from '@/components/today/WeekTogether'
 import { useFoldFit } from '@/components/today/useFoldFit'
 import SignalsCard from '@/components/signals/SignalsCard'
+import DadMindCard from '@/components/baby/DadMindCard'
 
 type Nav = (tab: TabKey) => void
 
@@ -242,6 +243,8 @@ function ParentingHome({ onNavigate }: { onNavigate: Nav }) {
       <div className="mt-[18px] space-y-3">
         <AnniversaryBanner onNavigate={onNavigate} />
         <StageHero onNavigate={onNavigate} />
+        {/* 아빠 마음 (2026-11-01): his home only, once, from 출생일 + 90 (lib/logic/dadMind). */}
+        <DadMindCard />
         <UpcomingCard onNavigate={onNavigate} />
         <PlanFocusCard onNavigate={onNavigate} />
       </div>

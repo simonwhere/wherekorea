@@ -327,9 +327,10 @@ describe('partnerWeekSummary: what her home shows of his week', () => {
     s = toggleCheck(s, PARTNER, '2026-10-02', 'nodrink')
     const all = partnerWeekSummary(s, TODAY, PARTNER)
     expect(all).toHaveLength(WEEK_SUMMARY_MAX)
+    // His 신청 step is a named line (2026-11-01): '검사 지원을 신청했어요'.
     expect(all).toEqual([
       { kind: 'week-done', text: pick.doneText },
-      { kind: 'task', text: '할 일 하나를 마쳤어요', count: 1 },
+      { kind: 'apply', text: '검사 지원을 신청했어요', count: 1 },
       { kind: 'reply', text: '신호에 답했어요', count: 1 },
     ])
     // Without the meaningful ones the light ones show (still three at most).
@@ -346,7 +347,8 @@ describe('partnerWeekSummary: what her home shows of his week', () => {
     s = setFertilityApplied(s, OWNER, true, '2026-09-30', OWNER)
     expect(partnerWeekSummary(s, TODAY, PARTNER)).toEqual([])
     s = setFertilityApplied(s, PARTNER, true, '2026-09-30', PARTNER)
-    expect(partnerWeekSummary(s, TODAY, PARTNER).map((d) => d.kind)).toEqual(['task'])
+    // His own key and the couple's row (both applied) are one named line.
+    expect(partnerWeekSummary(s, TODAY, PARTNER)).toEqual([{ kind: 'apply', text: '검사 지원을 신청했어요', count: 1 }])
     // A 할 일 dated last week is not this week's.
     const old = setFertilityApplied(fresh(), PARTNER, true, '2026-09-20', PARTNER)
     expect(partnerWeekSummary(old, TODAY, PARTNER)).toEqual([])

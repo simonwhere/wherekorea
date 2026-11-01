@@ -18,12 +18,18 @@
 //           here, so rights counted "출산일부터" line up (see lib/logic/plan).
 //   birth — birth day (day 0). "N일 안" deadlines use the earliest reading
 //           (birth day counted as day 1), like the 60-day claim in lib/logic/babyView.
-// Preconception items have no window: there is no date to count from.
+// A window may close from another anchor (`endAnchor`): 배우자 출산휴가 opens 50
+// days before the due date and closes 120 days after the real birth; until the
+// birth is recorded its end reads '출생 후 120일 안'.
+// Preconception items have no window: there is no date to count from. A
+// seasonal item (`season: 'flu'`, lib/logic/partnerDates) has no window either:
+// its dates come from the calendar season and the couple's stage.
 // A window without an end stays open until it's ticked (or the birth, for
 // pregnancy items): things that are still needed later — a car seat, the
 // hospital bag, applications that stay open — never read as "지났어요".
 
 import { CLAIM_KEY, checkupKey } from '../logic/babyView'
+import { SEASON_KINDS } from '../logic/partnerDates'
 import { bagKey, prenatalKey } from '../logic/pregnancyView'
 import type { RoadmapTemplate } from '../logic/roadmap'
 import type { RoadmapPhase } from '../types'
@@ -49,6 +55,8 @@ interface RoadmapItemJson extends ContentAudit {
   when: string
   detail: string
   window?: RoadmapTemplate['window']
+  /** A seasonal row (lib/logic/partnerDates SEASON_KINDS) instead of a window. */
+  season?: RoadmapTemplate['season']
   deadline?: boolean
   /** "1개월 안" in calendar months (MONTH_DEADLINES). */
   monthDeadline?: number
@@ -82,6 +90,7 @@ export const SUPPORT_NOTE_MAX = 80
 const raw = data as unknown as RoadmapJson
 checkAudited(raw.items, 'roadmap.items')
 checkSupport(raw.items)
+checkTiming(raw.items)
 
 /**
  * The cheap shape check of the support lines outside production (the full
@@ -98,6 +107,25 @@ function checkSupport(items: RoadmapItemJson[]): void {
     if (t.support !== undefined && (t.support.length > SUPPORT_MAX || !t.support.trim())) contentError(where, `support must be 1–${SUPPORT_MAX} characters`)
     if (t.supportNote !== undefined && (t.support === undefined || t.supportNote.length > SUPPORT_NOTE_MAX))
       contentError(where, `supportNote needs support and at most ${SUPPORT_NOTE_MAX} characters`)
+  }
+}
+
+/**
+ * The cheap shape check of the timing fields outside production (the validator
+ * says the same): a seasonal row has a known season and no window; an end
+ * anchor is the birth, after an `end`, on a window that opens from another anchor.
+ */
+function checkTiming(items: RoadmapItemJson[]): void {
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'production') return
+  for (const t of items) {
+    const where = `roadmap.items '${t.id}'`
+    if (t.season !== undefined) {
+      if (!SEASON_KINDS.includes(t.season)) contentError(where, `unknown season '${String(t.season)}'`)
+      if (t.window) contentError(where, 'a seasonal item has no window')
+    }
+    const w = t.window
+    if (w?.endAnchor !== undefined && (w.endAnchor !== 'birth' || w.anchor === 'birth' || w.end === undefined))
+      contentError(where, "endAnchor is 'birth', needs an end, and the window opens from another anchor")
   }
 }
 
@@ -159,6 +187,7 @@ export const ROADMAP: RoadmapTemplate[] = raw.items.map((t) => {
     title: t.title,
     when: t.when,
     ...(t.window ? { window: t.window } : {}),
+    ...(t.season ? { season: t.season } : {}),
     ...(t.deadline ? { deadline: true } : {}),
     ...(t.milestone ? { milestoneKey: milestoneKeyOf(t.milestone, where) } : {}),
     detail: t.detail,
