@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation'
 import type { Destination } from '@/data/types'
 import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
 import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
+import PhotoCredit from '@/components/shared/PhotoCredit'
+import PreviewCommunityLink from '@/components/community/PreviewCommunityLink'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
-import { isPeakNow } from '@/lib/crowd'
+import { isPeakNow, crowdIndex, MONTH_SHORT } from '@/lib/crowd'
 import { usdApprox } from '@/lib/currency'
+import { browseHref, currentKoreaMonth, withBrowseContext, type BrowseState } from '@/lib/browse-state'
+import { rankDestinations } from '@/lib/recommendation'
+import { BUDGET_ASSUMPTIONS, TRAVEL_SCOPE, CROWD_SAMPLE_NOTE, metricEvidence } from '@/lib/trust'
 
-const ACCENT = '#FF6A3D'
+const ACCENT = '#ff936b'
 
 function crowdDot(level: string): string {
   if (level === 'Low') return '#4ade80'
@@ -33,8 +38,8 @@ function PreviewMetric({ value, label, sub }: MetricProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
       <span style={{
-        fontSize: 20, fontWeight: 800,
-        color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05,
+        fontSize: 17, fontWeight: 700,
+        color: '#f5f4ef', letterSpacing: '-0.02em', lineHeight: 1.3,
       }}>{value}</span>
       <span style={{
         fontSize: 10, fontWeight: 600,
@@ -48,9 +53,12 @@ function PreviewMetric({ value, label, sub }: MetricProps) {
 interface Props {
   destination: Destination
   onClose: () => void
+  // planning month (1–12) from the homepage picker; defaults to now
+  month?: number
+  browse?: BrowseState
 }
 
-export default function DestinationPreviewPanel({ destination: d, onClose }: Props) {
+export default function DestinationPreviewPanel({ destination: d, onClose, month: monthProp, browse }: Props) {
   const router = useRouter()
   const { compareList, toggleCompare } = useCompare()
   const inCompare = compareList.includes(d.slug)
@@ -60,13 +68,17 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
   const region = REGIONS[d.slug]
   const perDay = DAILY_AVG[d.slug] ?? d.card_budget_level
   // fixed once per mount — hydration-safe
-  const [month] = useState(() => new Date().getMonth() + 1)
+  const [nowMonth] = useState(currentKoreaMonth)
+  const month = browse?.month ?? monthProp ?? nowMonth
+  const showLive = browse?.mode === 'now' && month === nowMonth
+  const matchesConditions = !browse || rankDestinations([d], browse).length > 0
   const peakNow = isPeakNow(d, month)
-  const weatherRange = d.live_weather_snapshot.split('·')[1]?.trim() ?? '—'
-  // Live current temp + condition emoji when available; else weekly range
-  const nowVal = d.live_weather_current
+  const visitorIdx = crowdIndex(d.slug, month)
+  const monthLabel = MONTH_SHORT[month - 1]
+  const hasLiveWeather = d.live_weather_is_live === true
+  const nowVal = hasLiveWeather && d.live_weather_current !== undefined
     ? `${d.live_weather_icon ? d.live_weather_icon + ' ' : ''}${d.live_weather_current}°`
-    : weatherRange.replace('°C', '°')
+    : '—'
   const fromSeoul = d.travel_time.from_seoul.replace(/^~/, '')
 
   function handleCompareToggle() {
@@ -79,8 +91,8 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
   }
 
   function handleOpenFull() {
-    track('detail_page_viewed', { slug: d.slug })
-    router.push(`/destination/${d.slug}`)
+    const path = browse ? browseHref(browse, `/destination/${d.slug}`) : `/destination/${d.slug}`
+    router.push(withBrowseContext(path, window.location.search))
   }
 
   return (
@@ -91,7 +103,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
           onClick={onClose}
           aria-label="Close"
           style={{
-            width: 32, height: 32, borderRadius: '50%',
+            width: 44, height: 44, borderRadius: '50%',
             background: 'rgba(0,0,0,0.55)',
             backdropFilter: 'blur(8px)',
             border: '1px solid rgba(255,255,255,0.15)',
@@ -107,24 +119,29 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
         {/* Photo */}
         <div style={{
           position: 'relative',
-          aspectRatio: '16/10',
+          aspectRatio: '2/1',
           background: '#1c1d24',
           overflow: 'hidden',
         }}>
+          {/* The preview has a wider crop than the full-bleed card. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={d.image.src}
             alt={d.image.alt}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', objectPosition: d.slug === 'jeonju' ? '50% 80%' : undefined }}
           />
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to top, rgba(22,24,31,0.72) 0%, rgba(22,24,31,0) 45%)',
           }} />
-          {/* Single image for now — restore dots/counter when photos[] lands (G2) */}
+          <PhotoCredit image={d.image} className="wk-preview-credit" />
         </div>
 
         {/* Content */}
         <div style={{ padding: '20px 22px 28px' }}>
+          <p style={{ fontSize: 12, color: ACCENT, marginBottom: 12 }}>
+            {showLive ? 'Current conditions' : `${monthLabel} · seasonal guide`}
+          </p>
 
           {/* Header: title + map */}
           <div style={{
@@ -178,32 +195,43 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
           {/* Metric strip */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
             gap: 10,
             padding: '14px 0',
             borderTop: '1px solid rgba(255,255,255,0.08)',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             marginBottom: 18,
           }}>
-            <PreviewMetric value={d.recommended_stay} label="Stay" />
-            <PreviewMetric value={nowVal} label="Now" />
+            <PreviewMetric value={d.recommended_stay} label="Recommended stay" />
+            <PreviewMetric value={showLive ? nowVal : d.no_car_friendliness} label={showLive ? (hasLiveWeather ? 'Now' : 'Weather unavailable') : 'Without a car'} />
             <PreviewMetric
               value={usdApprox(perDay) ?? perDay}
-              label="Per day"
+              label="Est. per person/day"
               sub={usdApprox(perDay) ? perDay : undefined}
             />
             {d.slug === 'seoul' ? (
               <PreviewMetric
                 value={d.travel_time.from_incheon_airport.replace(/^~/, '')}
-                label="From Incheon"
+                label="Main route · Incheon"
               />
             ) : (
-              <PreviewMetric value={fromSeoul || '—'} label="From Seoul" />
+              <PreviewMetric value={fromSeoul || '—'} label="Main route · Seoul" />
             )}
           </div>
+          <details style={{ fontSize: 12, lineHeight: 1.6, color: 'rgba(255,255,255,.7)', marginBottom: 18 }}>
+            <summary style={{ cursor: 'pointer' }}>About the costs &amp; travel times</summary>
+            <p style={{ marginTop: 8 }}>{BUDGET_ASSUMPTIONS}</p>
+            <p>{metricEvidence(d.trust?.budget)}</p>
+            <p style={{ marginTop: 8 }}>{TRAVEL_SCOPE}</p>
+          </details>
+          {!matchesConditions && (
+            <div style={{ padding: 14, borderRadius: 10, background: '#1d2530', border: '1px solid rgba(255,147,107,.25)', marginBottom: 18 }}>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: '#fde68a' }}>Outside the selected filters.</p>
+            </div>
+          )}
 
           {/* Happening now — live festival signal (info only, never ranked) */}
-          {d.live_festivals && d.live_festivals.length > 0 && (
+          {showLive && d.live_festivals && d.live_festivals.length > 0 && (
             <div style={{ marginBottom: 18 }}>
               {d.live_festivals.map((f) => (
                 <div key={f.name} style={{
@@ -233,48 +261,34 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
               color: ACCENT,
               textTransform: 'uppercase', letterSpacing: '0.09em',
               marginBottom: 8,
-            }}>Why go</div>
+            }}>About {d.name}</div>
             <p style={{ fontSize: 14.5, color: 'rgba(255,255,255,0.92)', lineHeight: 1.65, fontWeight: 400 }}>
               {d.why}
             </p>
           </div>
 
-          {/* Best for / Skip if */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
-            marginBottom: 18,
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 10, padding: '12px 12px 13px',
-            }}>
+          {/* Don't miss — neighborhood chips (names only; notes live on the full page) */}
+          {d.hotspots && d.hotspots.length > 0 && (
+            <div style={{ marginBottom: 18 }}>
               <div style={{
                 fontSize: 10, fontWeight: 600,
-                color: '#4ade80',
+                color: 'rgba(255,255,255,0.45)',
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: 6,
-              }}>Best for</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', lineHeight: 1.55 }}>
-                {d.best_for}
+                marginBottom: 8,
+              }}>Places to see</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {d.hotspots.map((h) => (
+                  <span key={h.name} style={{
+                    fontSize: 12, fontWeight: 500,
+                    padding: '4px 10px', borderRadius: 6,
+                    background: 'rgba(255,106,61,0.08)',
+                    border: '1px solid rgba(255,106,61,0.22)',
+                    color: 'rgba(255,255,255,0.88)',
+                  }}>{h.name}</span>
+                ))}
               </div>
             </div>
-            <div style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: 10, padding: '12px 12px 13px',
-            }}>
-              <div style={{
-                fontSize: 10, fontWeight: 600,
-                color: '#f87171',
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: 6,
-              }}>Skip if</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', lineHeight: 1.55 }}>
-                {d.skip_if}
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Access */}
           <div style={{ marginBottom: 18 }}>
@@ -283,7 +297,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
               color: 'rgba(255,255,255,0.45)',
               textTransform: 'uppercase', letterSpacing: '0.08em',
               marginBottom: 8,
-            }}>Access</div>
+            }}>Getting around</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
               <span style={{
                 display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -320,28 +334,49 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
                   width: 6, height: 6, borderRadius: '50%',
                   background: crowdDot(d.crowd_friction),
                 }} />
-                {d.crowd_friction} crowds{peakNow ? ' · peak season now' : ''}
+                {d.crowd_friction === 'Low' ? 'Usually quieter' : d.crowd_friction === 'Medium' ? 'Moderate crowds' : 'Often busy'}{peakNow ? ` · busier in ${monthLabel}` : ''}
               </span>
             </div>
+            {visitorIdx !== null && <details style={{ fontSize: 12, lineHeight: 1.55, color: 'rgba(255,255,255,.7)', marginBottom: 10 }}>
+              <summary style={{ cursor: 'pointer', padding: '8px 0' }}>Visitor numbers by month</summary>
+              <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.80)', lineHeight: 1.55, marginBottom: 8 }}>
+                <span style={{ fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                  {visitorIdx.toFixed(1)}×
+                </span>
+                {' '}visitors in {monthLabel} compared with this place&apos;s sampled average
+                <span style={{ color: 'rgba(255,255,255,0.50)' }}>
+                  {' '}— not a live count
+                </span>
+              </p>
+              <p>{CROWD_SAMPLE_NOTE}</p>
+            </details>}
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 1.6 }}>
               {d.local_movement}
             </p>
+            {d.trust?.travel_time && (
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.50)', lineHeight: 1.5, marginTop: 6 }}>
+                {metricEvidence(d.trust.travel_time)}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
+      <div style={{ padding: '0 18px', flexShrink: 0 }}><PreviewCommunityLink slug={d.slug} name={d.name} /></div>
       {/* Sticky CTA footer */}
       <div style={{
         flexShrink: 0,
         padding: '12px 18px',
-        background: 'rgba(22,24,31,0.96)',
+        background: 'rgba(19,23,30,0.96)',
         backdropFilter: 'blur(10px)',
         borderTop: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', gap: 8, alignItems: 'center',
+        display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap',
       }}>
         <button
           onClick={handleCompareToggle}
           disabled={compareDisabled && !inCompare}
+          aria-pressed={inCompare}
+          title={compareDisabled ? 'Compare holds up to 3 places. Remove one to add another.' : undefined}
           style={{
             flex: 1,
             padding: '11px 14px',
@@ -373,6 +408,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose }: Pro
         >
           Open full page →
         </button>
+        {compareDisabled && <p style={{ flexBasis: '100%', fontSize: 12, color: 'rgba(255,255,255,.7)' }}>Compare holds up to 3 places. Remove one to add another.</p>}
       </div>
     </div>
   )

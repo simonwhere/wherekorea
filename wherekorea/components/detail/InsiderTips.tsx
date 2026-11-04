@@ -9,7 +9,7 @@ export default function InsiderTips({ destination: d }: Props) {
   if (!d.insider_tips || d.insider_tips.length === 0) return null
   return (
     <div className="py-6 border-b border-white/10">
-      <SectionTitle className="mb-4">Insider tips</SectionTitle>
+      <SectionTitle className="mb-4">Local tips</SectionTitle>
       <ul className="space-y-2">
         {d.insider_tips.map((tip, i) => (
           <li

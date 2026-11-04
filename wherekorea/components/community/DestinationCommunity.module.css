@@ -1,0 +1,13 @@
+.section { margin: 28px 0; padding: 22px 0; border-top: 1px solid #42505f; border-bottom: 1px solid #42505f; color: #f5f4ef; }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+.heading h2 { font-size: 20px; font-weight: 700; line-height: 1.4; }
+.eyebrow { color: #ffb595; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 5px; }
+.description, .note { color: #bdc8d5; font-size: 13px; line-height: 1.7; margin-top: 10px; }
+.link { color: #ffb595; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; display: inline-flex; align-items: center; min-height: 44px; }
+.posts { list-style: none; padding: 0; margin: 14px 0; }
+.posts li { border-bottom: 1px solid #344151; padding: 14px 0; }
+.posts span { color: #bdc8d5; font-size: 11px; }
+.postTitle { display: block; font-size: 15px; font-weight: 600; padding: 8px 0; line-height: 1.5; min-height: 44px; }
+.action { display: inline-flex; align-items: center; margin-top: 14px; padding: 11px 15px; min-height: 44px; color: #2b1e18; background: #ffb595; border-radius: 8px; font-size: 13px; font-weight: 650; line-height: 1.5; }
+.section a:focus-visible { outline: 2px solid #ffb595; outline-offset: 4px; }
+.section a:hover { text-decoration: underline; text-underline-offset: 4px; }

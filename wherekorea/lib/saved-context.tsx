@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { destinations } from '@/data/destinations'
 
 // Saved shortlist ("hearts") — localStorage only, no accounts, no cap.
 // Distinct from compare (max-3 working set): saved is the longer wishlist
@@ -14,6 +15,7 @@ interface SavedContextValue {
 const SavedContext = createContext<SavedContextValue | null>(null)
 
 const STORAGE_KEY = 'wk_saved'
+const VALID_SLUGS = destinations.map((destination) => destination.slug)
 
 export function SavedProvider({ children }: { children: React.ReactNode }) {
   const [savedList, setSavedList] = useState<string[]>([])
@@ -25,7 +27,7 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed)) setSavedList(parsed)
+        if (Array.isArray(parsed)) setSavedList([...new Set(parsed.filter((slug): slug is string => typeof slug === 'string' && VALID_SLUGS.includes(slug)))])
       }
     } catch {
       // ignore malformed storage
@@ -35,10 +37,15 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isHydrated) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedList))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedList))
+    } catch {
+      // Keep the in-memory shortlist usable when browser storage is blocked.
+    }
   }, [savedList, isHydrated])
 
   const toggleSaved = useCallback((slug: string) => {
+    if (!VALID_SLUGS.includes(slug)) return
     setSavedList((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     )

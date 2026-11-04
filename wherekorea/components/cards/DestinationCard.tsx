@@ -3,310 +3,111 @@
 import { useState } from 'react'
 import type { Destination } from '@/data/types'
 import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
-import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
+import { type BrowseState, currentKoreaMonth } from '@/lib/browse-state'
+import { recommendationReasons } from '@/lib/recommendation'
+import { seasonFit } from '@/lib/best-now'
+import { MONTH_SHORT, isPeakNow } from '@/lib/crowd'
+import { usdApprox } from '@/lib/currency'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
 import { useSaved } from '@/lib/saved-context'
-import { isPeakNow } from '@/lib/crowd'
-import { usdApprox } from '@/lib/currency'
+import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
+import PhotoCredit from '@/components/shared/PhotoCredit'
 
-const ACCENT = '#FF6A3D'
-
-function crowdColor(level: string): string {
-  if (level === 'Low') return '#4ade80'
-  if (level === 'Medium') return '#facc15'
-  return '#f87171'
+// Art direction, not a data claim. Keep the landmark in view as the card grows.
+const PHOTO_POSITION: Record<string, string> = {
+  seoul: '50% 50%', busan: '64% 45%', jeju: '70% 50%', gyeongju: '54% 50%',
+  jeonju: '50% 50%', gangneung: '60% 50%', sokcho: '50% 45%',
+  tongyeong: '40% 60%', namhae: '38% 50%', jirisan: '50% 50%',
+  yeosu: '50% 50%', andong: '48% 50%', suwon: '28% 50%',
+  chuncheon: '50% 50%', 'damyang-boseong': '45% 50%',
 }
 
 interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
-  // "why it ranks here" one-liner — only passed in the Best now category
   bestNowReason?: string
+  month?: number
+  browse?: BrowseState
 }
 
-export default function DestinationCard({ destination: d, onSelect, isSelected, bestNowReason }: Props) {
+export default function DestinationCard({ destination: d, onSelect, isSelected, month = currentKoreaMonth(), browse, bestNowReason }: Props) {
   const { compareList, toggleCompare } = useCompare()
   const { savedList, toggleSaved } = useSaved()
-  const isSaved = savedList.includes(d.slug)
+  const [imgError, setImgError] = useState(false)
   const inCompare = compareList.includes(d.slug)
-  const compareDisabled = compareList.length >= 3 && !inCompare
-  const [imgErr, setImgErr] = useState(false)
-  const [hov, setHov] = useState(false)
-  const [hovCompare, setHovCompare] = useState(false)
-  // fixed once per mount — hydration-safe (same pattern as best-now month)
-  const [month] = useState(() => new Date().getMonth() + 1)
-  const peakNow = isPeakNow(d, month)
+  const isSaved = savedList.includes(d.slug)
+  const limitReached = compareList.length >= 3 && !inCompare
+  const selectedMonth = browse?.month ?? month
+  const isNow = browse?.mode === 'now'
+  const season = seasonFit(d, selectedMonth)
+  const seasonLabel = season === 35 ? 'Good season' : season === 18 ? 'Shoulder season' : 'Off-season'
+  const cost = DAILY_AVG[d.slug] ?? d.card_budget_level
+  const dollars = usdApprox(cost)
+  const mobility = d.no_car_friendliness === 'Easy' ? 'Easy without a car'
+    : d.no_car_friendliness === 'Okay' ? 'Some transit planning' : 'Car helpful'
+  const rationale = browse ? recommendationReasons(d, browse).reasons : []
 
-  // "Now" = live current temp + condition emoji when available;
-  // falls back to the weekly range parsed from snapshot ("This week · 13–21°C · …")
-  const weatherRange = d.live_weather_snapshot.split('·')[1]?.trim() ?? '—'
-  const nowVal = d.live_weather_current
-    ? `${d.live_weather_icon ? d.live_weather_icon + ' ' : ''}${d.live_weather_current}°`
-    : weatherRange.replace('°C', '°')
-  const perDayKrw = DAILY_AVG[d.slug] ?? d.card_budget_level
-  // USD leads for a global audience; ₩ stays visible as the label detail
-  const perDay = usdApprox(perDayKrw) ?? perDayKrw
-  const perDayLabel = perDay.startsWith('$') ? `Per day · ${perDayKrw}` : 'Per day'
-  const koreanName = KOREAN_NAMES[d.slug]
-  const region = REGIONS[d.slug]
-
-  function handleCompareToggle(e: React.MouseEvent) {
-    e.stopPropagation()
-    if (inCompare) {
-      toggleCompare(d.slug)
-    } else if (!compareDisabled) {
-      track('compare_added', { slug: d.slug, compare_count: compareList.length + 1 })
-      toggleCompare(d.slug)
-    }
+  function preview() {
+    track('card_clicked', { slug: d.slug })
+    onSelect()
   }
 
   return (
-    <article
-      onClick={() => {
-        track('card_clicked', { slug: d.slug })
-        onSelect()
-      }}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        position: 'relative',
-        borderRadius: 12,
-        overflow: 'hidden',
-        aspectRatio: '3/4',
-        background: '#1c1d24',
-        cursor: 'pointer',
-        transition: 'transform 200ms, box-shadow 200ms, outline-color 200ms',
-        transform: (hov || isSelected) ? 'translateY(-2px)' : 'none',
-        outline: isSelected ? '2px solid #fff' : '2px solid transparent',
-        outlineOffset: 2,
-        boxShadow: isSelected
-          ? '0 10px 36px rgba(0,0,0,0.65)'
-          : hov
-            ? '0 8px 32px rgba(0,0,0,0.55)'
-            : '0 2px 8px rgba(0,0,0,0.30)',
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          track('card_clicked', { slug: d.slug })
-          onSelect()
-        }
-      }}
-      aria-label={`Preview ${d.name}`}
-      aria-pressed={isSelected}
-    >
-      {/* Background image */}
-      {!imgErr ? (
-        <img
-          src={d.image.src}
-          alt={d.image.alt}
-          onError={() => setImgErr(true)}
-          style={{
-            position: 'absolute', inset: 0,
-            width: '100%', height: '100%',
-            objectFit: 'cover',
-            transform: hov ? 'scale(1.04)' : 'scale(1)',
-            transition: 'transform 500ms ease',
+    <article className={`wk-destination-card${isSelected ? ' is-selected' : ''}${imgError ? ' has-no-photo' : ''}`} data-destination={d.slug}>
+      <div className="wk-card-image">
+        {!imgError ? (
+          // Existing destination-specific editorial photography; no generated travel imagery.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={d.image.src} alt={d.image.alt} style={{
+            objectPosition: PHOTO_POSITION[d.slug] ?? '50% 50%',
+            // Keep the hanok rooftops above the text, not the modern skyline.
+            ...(d.slug === 'jeonju' ? { transform: 'scale(1.6)', transformOrigin: '50% 100%' } : {}),
           }}
-        />
-      ) : (
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(135deg, #1e2030, #0f1017)',
-        }} />
-      )}
-
-      {/* Gradient overlay */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.20) 100%)',
-      }} />
-
-      {/* Top-left: primary tag */}
-      {d.tags[0] && (
-        <div style={{
-          position: 'absolute', top: 10, left: 10,
-          fontSize: 10, fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          padding: '3.5px 8px',
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(6px)',
-          color: '#fff',
-          borderRadius: 5,
-          border: '1px solid rgba(255,255,255,0.22)',
-        }}>
-          {d.tags[0]}
-        </div>
-      )}
-
-      {/* Top-right: Korea mini-map */}
-      <div style={{
-        position: 'absolute', top: 10, right: 10,
-        padding: 5,
-        background: 'rgba(0,0,0,0.42)',
-        backdropFilter: 'blur(8px)',
-        borderRadius: 9,
-        border: '1px solid rgba(255,255,255,0.16)',
-        lineHeight: 0,
-      }}>
-        <KoreaMiniMap slug={d.slug} size={30} />
+            onError={() => setImgError(true)} loading="lazy" decoding="async" />
+        ) : <span className="wk-photo-unavailable">{d.name} · photo unavailable</span>}
       </div>
-
-      {/* Bottom content */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        padding: '0 12px 12px',
-      }}>
-        {/* Korean name + region eyebrow */}
-        <div style={{
-          fontSize: 11, fontWeight: 600,
-          marginBottom: 5,
-          letterSpacing: '0.01em',
-          textShadow: '0 1px 4px rgba(0,0,0,0.85)',
-        }}>
-          <span style={{ color: 'rgba(255,255,255,0.95)' }}>{koreanName}</span>
-          <span style={{ color: 'rgba(255,255,255,0.70)' }}> · {region}</span>
+      <div className="wk-card-topline" aria-hidden="true">
+        <span className="wk-card-region">{REGIONS[d.slug]}</span>
+        <span className="wk-card-map"><KoreaMiniMap slug={d.slug} size={31} /></span>
+      </div>
+      <button type="button" className="wk-card-hitarea" onClick={preview}
+        aria-label={`Preview ${d.name}`} aria-pressed={isSelected} />
+      {!imgError && <PhotoCredit image={d.image} className="wk-card-credit" compact />}
+      <div className="wk-card-body">
+        <div className="wk-card-title"><h2>{d.name}</h2><span lang="ko">{KOREAN_NAMES[d.slug]}</span></div>
+        <p className="wk-card-vibe">{d.card_vibe}</p>
+        <div className="wk-card-signals">
+          <span className={`wk-signal ${season === 35 ? 'is-good' : ''}`}>{MONTH_SHORT[selectedMonth - 1]} · {seasonLabel}</span>
+          <span className="wk-mobility">{mobility}</span>
         </div>
-
-        {/* Destination name */}
-        <h2 style={{
-          fontSize: 26, fontWeight: 700,
-          color: '#fff', lineHeight: 1.02,
-          letterSpacing: '-0.03em',
-          marginBottom: 4,
-          textShadow: '0 1px 6px rgba(0,0,0,0.5)',
-        }}>
-          {d.name}
-        </h2>
-
-        {/* Short vibe */}
-        <p style={{
-          fontSize: 12.5, color: 'rgba(255,255,255,0.95)',
-          lineHeight: 1.3, marginBottom: 11,
-          letterSpacing: '0.005em', fontWeight: 500,
-          textShadow: '0 1px 4px rgba(0,0,0,0.80)',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {d.card_vibe}
-        </p>
-
-        {/* Best-now reason — why this ranks here right now */}
-        {bestNowReason && (
-          <div style={{
-            display: 'inline-block',
-            fontSize: 10, fontWeight: 600,
-            color: 'rgba(255,255,255,0.92)',
-            padding: '3px 8px', marginBottom: 10,
-            background: 'rgba(255,106,61,0.16)',
-            border: '1px solid rgba(255,106,61,0.35)',
-            borderRadius: 5,
-            letterSpacing: '0.02em',
-            textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-          }}>
-            {bestNowReason}
-          </div>
-        )}
-
-        {/* Divider */}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', marginBottom: 11 }} />
-
-        {/* Metric row: Stay / Now / Per day */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 6,
-          marginBottom: 12,
-        }}>
-          {[
-            { v: d.recommended_stay, l: 'Stay' },
-            { v: nowVal,             l: 'Now' },
-            { v: perDay,             l: perDayLabel },
-          ].map((m) => (
-            <div key={m.l} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-              <span style={{
-                fontSize: 13.5, fontWeight: 700, color: '#fff',
-                letterSpacing: '-0.03em', lineHeight: 1.05,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                textShadow: '0 1px 3px rgba(0,0,0,0.75)',
-              }}>{m.v}</span>
-              <span style={{
-                fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.78)',
-                textTransform: 'uppercase', letterSpacing: '0.07em',
-                textShadow: '0 1px 3px rgba(0,0,0,0.85)',
-              }}>{m.l}</span>
-            </div>
-          ))}
+        <div className="wk-card-metrics">
+          <div><strong>{d.recommended_stay}</strong><span>Recommended stay</span></div>
+          <div><strong>{cost}<small> / day</small></strong><span>{dollars ? `≈ ${dollars} · per person, est.` : 'Per person, estimate'}</span></div>
         </div>
-
-        {/* Bottom row: crowd + compare */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 6,
-        }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: crowdColor(d.crowd_friction), flexShrink: 0,
-            }} />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.92)', fontWeight: 500, textShadow: '0 1px 3px rgba(0,0,0,0.80)' }}>
-              {d.crowd_friction} crowd{peakNow ? ' · peak now' : ''}
-            </span>
-          </span>
-
-          <button
-            onClick={(e) => {
+        {isNow && <p className="wk-card-weather">{d.live_weather_is_live
+          ? `${d.live_weather_icon ?? ''} ${d.live_weather_current ?? '—'}° now · ${bestNowReason ?? 'Current conditions only'}`
+          : 'Current weather unavailable · seasonal guidance shown'}</p>}
+        {!!browse?.filters.length && rationale.length > 1 && <p className="wk-card-reason">{rationale[1]}</p>}
+        {isPeakNow(d, selectedMonth) && <p className="wk-card-caution">Usually a busier month here</p>}
+        <div className="wk-card-actions">
+          <span className="wk-card-detail-hint">Explore <span aria-hidden>↗</span></span>
+          <button type="button" className="wk-save-button" aria-label={isSaved ? `Remove ${d.name} from saved` : `Save ${d.name}`}
+            aria-pressed={isSaved} onClick={(e) => {
               e.stopPropagation()
               if (!isSaved) track('destination_saved', { slug: d.slug })
               toggleSaved(d.slug)
-            }}
-            aria-label={isSaved ? `Remove ${d.name} from saved` : `Save ${d.name}`}
-            aria-pressed={isSaved}
-            style={{
-              flexShrink: 0, marginLeft: 'auto',
-              width: 27, height: 27, borderRadius: 7,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, lineHeight: 1,
-              border: isSaved ? `1px solid ${ACCENT}` : '1px solid rgba(255,255,255,0.22)',
-              background: 'rgba(0,0,0,0.30)',
-              color: isSaved ? ACCENT : 'rgba(255,255,255,0.85)',
-              cursor: 'pointer', backdropFilter: 'blur(4px)',
-              transition: 'all 120ms',
-            }}
-          >
-            {isSaved ? '♥' : '♡'}
-          </button>
-
-          <button
-            onClick={handleCompareToggle}
-            onMouseEnter={() => setHovCompare(true)}
-            onMouseLeave={() => setHovCompare(false)}
-            disabled={compareDisabled && !inCompare}
-            style={{
-              flexShrink: 0,
-              fontSize: 11, fontWeight: 600,
-              padding: '5px 11px',
-              borderRadius: 7,
-              border: inCompare
-                ? `1px solid ${ACCENT}`
-                : '1px solid rgba(255,255,255,0.22)',
-              background: inCompare
-                ? ACCENT
-                : hovCompare ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.30)',
-              color: '#fff',
-              cursor: (compareDisabled && !inCompare) ? 'not-allowed' : 'pointer',
-              opacity: (compareDisabled && !inCompare) ? 0.3 : 1,
-              transition: 'all 120ms',
-              backdropFilter: 'blur(4px)',
-            }}
-          >
-            {inCompare ? '✓ Added' : '+ Compare'}
-          </button>
+            }}>{isSaved ? '♥' : '♡'}</button>
+          <button type="button" className={`wk-compare-button${inCompare ? ' is-added' : ''}`}
+            aria-label={inCompare ? `Remove ${d.name} from compare` : `Compare ${d.name}`}
+            aria-pressed={inCompare} disabled={limitReached}
+            title={limitReached ? 'Compare up to 3 places. Remove one to add another.' : undefined}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (!inCompare) track('compare_added', { slug: d.slug, compare_count: compareList.length + 1 })
+              toggleCompare(d.slug)
+            }}>{inCompare ? '✓ Added' : '+ Compare'}</button>
         </div>
       </div>
     </article>

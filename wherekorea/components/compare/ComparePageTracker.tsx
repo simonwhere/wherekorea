@@ -8,11 +8,14 @@ interface Props {
 }
 
 export default function ComparePageTracker({ slugs }: Props) {
-  const slugsRef = useRef(slugs)
+  const lastTracked = useRef<string | null>(null)
+  const slugKey = slugs.join(',')
 
   useEffect(() => {
-    track('compare_view_opened', { slugs: slugsRef.current })
-  }, [])
+    if (slugKey === lastTracked.current) return
+    lastTracked.current = slugKey
+    track('compare_view_opened', { slugs: slugKey.split(',') })
+  }, [slugKey])
 
   return null
 }

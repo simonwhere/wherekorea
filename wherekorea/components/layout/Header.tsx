@@ -1,153 +1,98 @@
 'use client'
 
-import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import WKLogo from '@/components/shared/WKLogo'
 import { useSaved } from '@/lib/saved-context'
-
-const NOW_MONTH = (() => {
-  try { return new Date().toLocaleString('en-US', { month: 'long' }) }
-  catch { return 'June' }
-})()
-
-const ACCENT = '#FF6A3D'
-const ACCENT_SOFT = 'rgba(255,106,61,0.14)'
+import { useCompare } from '@/lib/compare-context'
+import { withBrowseContext } from '@/lib/browse-state'
+import { comparisonHref } from '@/lib/compare-navigation'
+import { track } from '@/lib/analytics'
+import { communityHref, parseCommunityState } from '@/lib/community'
 
 interface Props {
-  // Search is homepage-only; subpages render the header without it.
   searchQuery?: string
   onSearchChange?: (value: string) => void
   onLogoClick?: () => void
 }
 
 export default function Header({ searchQuery = '', onSearchChange, onLogoClick }: Props) {
-  const [navHover, setNavHover] = useState<number | null>(null)
-  const [searchFocused, setSearchFocused] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { savedList } = useSaved()
+  const { compareList } = useCompare()
+
+  function navigate(path: string) {
+    if (path === '/community') {
+      const { city } = parseCommunityState(new URLSearchParams(window.location.search))
+      track('community_opened', { source: 'navigation', city })
+      router.push(communityHref(path, window.location.search))
+    } else router.push(withBrowseContext(path, window.location.search))
+  }
+
   const navItems = [
-    { label: 'Explore', href: '/' },
-    { label: 'When to go', href: '/when-to-go' },
-    { label: 'Compare', href: '/compare' },
+    { label: 'Explore', path: '/' },
+    { label: 'Community', path: '/community' },
+    { label: 'When to go', path: '/when-to-go' },
+    { label: 'Compare', path: '/compare' },
   ]
 
   return (
-    <header style={{
-      position: 'sticky', top: 0, zIndex: 40,
-      background: 'rgba(20,22,28,0.96)',
-      backdropFilter: 'blur(14px)',
-      borderBottom: '1px solid rgba(255,255,255,0.07)',
-    }}>
-      <div style={{
-        maxWidth: 1400, margin: '0 auto',
-        padding: '0 20px', height: 56,
-        display: 'flex', alignItems: 'center', gap: 18,
-      }}>
-        {/* Logo */}
-        <button
-          onClick={onLogoClick ?? (() => router.push('/'))}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'none', border: 'none',
-            cursor: 'pointer', flexShrink: 0, padding: 0,
-          }}
-        >
-          <WKLogo size={25} />
-          <span style={{
-            fontSize: 17, fontWeight: 800,
-            letterSpacing: '-0.04em', color: '#fff',
-            lineHeight: 1,
-          }}>
-            Where<span style={{ color: ACCENT }}>Korea</span>
-          </span>
+    <header className="wk-header">
+      <div className="header-inner">
+        <button className="brand" onClick={onLogoClick ?? (() => navigate('/'))} aria-label="WhereKorea — explore destinations">
+          <WKLogo size={26} />
+          <span>Where<span className="accent">Korea</span></span>
         </button>
-
-        {/* Nav */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          {navItems.map((item, i) => (
+        <nav aria-label="Main navigation">
+          {navItems.map((item) => (
             <button
-              key={item.label}
-              onClick={() => router.push(item.href)}
-              onMouseEnter={() => setNavHover(i)}
-              onMouseLeave={() => setNavHover(null)}
-              style={{
-                fontSize: 13, fontWeight: 500,
-                padding: '6px 11px', borderRadius: 7,
-                background: navHover === i ? 'rgba(255,255,255,0.07)' : 'transparent',
-                border: 'none', cursor: 'pointer',
-                color: pathname === item.href ? '#fff' : 'rgba(255,255,255,0.62)',
-                transition: 'all 120ms', whiteSpace: 'nowrap',
-              }}
+              key={item.path}
+              aria-current={pathname === item.path || (item.path === '/community' && pathname.startsWith('/community/')) ? 'page' : undefined}
+              onClick={() => item.path === '/compare'
+                ? router.push(comparisonHref(compareList.length ? compareList : null, window.location.search))
+                : navigate(item.path)}
             >
               {item.label}
+              {item.path === '/compare' && compareList.length > 0 && <span className="count">{compareList.length}</span>}
             </button>
           ))}
         </nav>
-
-        {/* Right cluster */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Saved shortlist */}
-          <button
-            onClick={() => router.push('/saved')}
-            aria-label="Saved places"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 10px', borderRadius: 8,
-              background: pathname === '/saved' ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.10)',
-              color: savedList.length > 0 ? '#FF8E6B' : 'rgba(255,255,255,0.60)',
-              fontSize: 12, fontWeight: 600,
-              cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
-            }}
-          >
-            {savedList.length > 0 ? '♥' : '♡'}
-            {savedList.length > 0 && <span>{savedList.length}</span>}
-          </button>
-
-          {/* Now chip */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '5px 11px', borderRadius: 8,
-            background: ACCENT_SOFT,
-            border: `1px solid rgba(255,106,61,0.30)`,
-            flexShrink: 0,
-          }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#FF8E6B', whiteSpace: 'nowrap' }}>
-              Now · {NOW_MONTH}
-            </span>
-          </div>
-
-          {/* Search — homepage only */}
+        <div className="header-tools">
           {onSearchChange && (
-          <div style={{ position: 'relative', width: 220 }}>
-            <span style={{
-              position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)',
-              fontSize: 14, color: 'rgba(255,255,255,0.35)', pointerEvents: 'none',
-            }}>⌕</span>
-            <input
-              type="search"
-              placeholder="Search cities, food, seasons…"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={{
-                width: '100%', height: 36,
-                paddingLeft: 30, paddingRight: 12,
-                fontSize: 13,
-                background: 'rgba(255,255,255,0.07)',
-                border: `1px solid ${searchFocused ? 'rgba(255,106,61,0.55)' : 'rgba(255,255,255,0.10)'}`,
-                borderRadius: 9,
-                color: '#fff', outline: 'none',
-                transition: 'border-color 150ms',
-              }}
-            />
-          </div>
+            <input className="header-search" type="search" aria-label="Search destinations" placeholder="Search destinations…"
+              value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
           )}
+          <button className="saved" onClick={() => navigate('/saved')} aria-label={`Saved places, ${savedList.length} saved`} aria-current={pathname === '/saved' ? 'page' : undefined}>
+            <span aria-hidden="true">{savedList.length > 0 ? '♥' : '♡'}</span> Saved{savedList.length > 0 && <span className="count">{savedList.length}</span>}
+          </button>
         </div>
       </div>
+      <style jsx>{`
+        .wk-header { position: sticky; top: 0; z-index: 40; background: rgba(19,23,30,.97); backdrop-filter: blur(14px); border-bottom: 1px solid #303b49; }
+        .header-inner { max-width: 1400px; min-height: 66px; padding: 10px 24px; margin: auto; display: flex; align-items: center; gap: 30px; }
+        button { cursor: pointer; color: #c8cdd6; border: 0; background: none; border-radius: 8px; }
+        button:hover { color: #f5f4ef; background: #26303c; }
+        button:focus-visible, input:focus-visible { outline: 2px solid #ff936b; outline-offset: 3px; }
+        .brand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 4px 0; color: #f5f4ef; font-size: 19px; font-weight: 800; letter-spacing: -.7px; }
+        .brand:hover { background: none; }
+        .accent { color: #ff936b; }
+        nav { display: flex; align-items: center; gap: 4px; }
+        nav button { min-height: 42px; padding: 9px 13px; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; font-weight: 600; }
+        nav button[aria-current="page"] { color: #ffb496; background: #ff936b12; }
+        .header-tools { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .saved { display: flex; align-items: center; gap: 6px; padding: 8px 10px; min-height: 42px; font-size: 12px; white-space: nowrap; border: 1px solid #36404e; }
+        .count { display: inline-flex; justify-content: center; align-items: center; min-width: 19px; height: 19px; padding: 0 4px; color: #17202b; background: #ff936b; font-size: 11px; border-radius: 5px; font-weight: 800; }
+        .header-search { width: 185px; padding: 8px 11px; background: #1d2530; border: 1px solid #36404e; border-radius: 8px; font-size: 12px; color: #f5f4ef; }
+        @media (max-width: 760px) {
+          .header-inner { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 9px 16px 5px; }
+          .brand { font-size: 17px; }
+          .header-tools { grid-column: 2; grid-row: 1; }
+          .header-search { display: none; }
+          nav { grid-column: 1 / -1; grid-row: 2; gap: 2px; flex-wrap: wrap; }
+          nav button { min-height: 44px; padding: 7px 8px; font-size: 12px; }
+          .saved { min-height: 36px; padding: 5px 8px; }
+        }
+      `}</style>
     </header>
   )
 }

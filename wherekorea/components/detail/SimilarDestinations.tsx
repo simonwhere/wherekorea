@@ -4,13 +4,16 @@ import Link from 'next/link'
 import type { Destination } from '@/data/types'
 import { track } from '@/lib/analytics'
 import SectionTitle from '@/components/detail/SectionTitle'
+import { browseHref, withBrowseContext, type BrowseState } from '@/lib/browse-state'
 
 interface Props {
   destination: Destination
   allDestinations: Destination[]
+  browse?: BrowseState
+  contextSearch?: string
 }
 
-export default function SimilarDestinations({ destination: d, allDestinations }: Props) {
+export default function SimilarDestinations({ destination: d, allDestinations, browse, contextSearch = '' }: Props) {
   const similar = d.similar_destinations
     .map((slug) => allDestinations.find((x) => x.slug === slug))
     .filter((x): x is Destination => x !== undefined)
@@ -24,7 +27,7 @@ export default function SimilarDestinations({ destination: d, allDestinations }:
         {similar.map((s) => (
           <Link
             key={s.slug}
-            href={`/destination/${s.slug}`}
+            href={withBrowseContext(browse ? browseHref(browse, `/destination/${s.slug}`) : `/destination/${s.slug}`, contextSearch)}
             onClick={() => track('similar_destination_clicked', { from_slug: d.slug, to_slug: s.slug })}
             className="flex items-baseline justify-between gap-4 p-3 rounded-md border border-white/10 hover:border-white/40 transition-colors"
           >

@@ -1,14 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { arrivalPath, hasArrivalCard } from '@/lib/arrival-routes'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { parseBrowseState, browseHref, withBrowseContext } from '@/lib/browse-state'
 import { destinations } from '@/data/destinations'
 import { useSaved } from '@/lib/saved-context'
 import DestinationCard from '@/components/cards/DestinationCard'
 import Header from '@/components/layout/Header'
 
 export default function SavedPage() {
+  return <Suspense fallback={<div style={{ padding: 24 }}>Loading saved places…</div>}><SavedPlaces /></Suspense>
+}
+
+function SavedPlaces() {
   const { savedList } = useSaved()
   const router = useRouter()
+  const params = useSearchParams()
+  const browse = parseBrowseState(new URLSearchParams(params.toString()))
 
   const saved = savedList
     .map((slug) => destinations.find((d) => d.slug === slug))
@@ -30,25 +40,26 @@ export default function SavedPage() {
           </p>
         </div>
 
+        {saved.some(d => hasArrivalCard(d.slug)) && <section aria-labelledby="saved-arrivals" className="mt-5">
+          <h2 id="saved-arrivals" className="font-semibold text-white">Saved arrival cards</h2>
+          <div className="flex flex-wrap gap-x-5">{saved.map(d => hasArrivalCard(d.slug) && <Link key={d.slug} className="wk-arrival-entry" href={withBrowseContext(arrivalPath(d.slug), params.toString())}>{d.name} arrival card →</Link>)}</div>
+        </section>}
         {saved.length === 0 ? (
           <div style={{
             textAlign: 'center', padding: '80px 0',
-            color: 'rgba(255,255,255,0.25)', fontSize: 14,
+            color: 'rgba(255,255,255,0.55)', fontSize: 14,
           }}>
             Nothing saved yet — tap ♡ on any card to keep it here.
           </div>
         ) : (
-          <div style={{
-            marginTop: 20,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))',
-            gap: 14,
-          }}>
+          <div className="wk-destination-grid" style={{ marginTop: 20 }}>
             {saved.map((d) => (
               <DestinationCard
                 key={d.slug}
                 destination={d}
-                onSelect={() => router.push(`/destination/${d.slug}`)}
+                browse={browse}
+                month={browse.month}
+                onSelect={() => router.push(withBrowseContext(browseHref(browse, `/destination/${d.slug}`), params.toString()))}
                 isSelected={false}
               />
             ))}

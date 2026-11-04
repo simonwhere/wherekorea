@@ -56,6 +56,11 @@ export interface UsefulLink {
   url: string
 }
 
+export interface Hotspot {
+  name: string
+  note: string // practical one-liner in decision language (best for / skip if / go before …)
+}
+
 // Trust metadata — see data-policy.md §"Trust metadata". Structure now, UI later.
 export type MetricSource = 'official' | 'estimate' | 'api' | 'seed'
 export type Confidence = 'high' | 'medium' | 'low'
@@ -70,6 +75,8 @@ export interface DestinationImage {
   src: string
   alt: string
   credit?: string
+  sourceUrl?: string
+  licenseUrl?: string
 }
 
 // Live festival signal — information display only, never a ranking input.
@@ -99,6 +106,8 @@ export interface Destination {
   live_weather_snapshot: string
   live_weather_current?: number  // current temp °C — set at runtime by weather fetch
   live_weather_icon?: string     // WMO emoji — set at runtime
+  live_weather_code?: number     // WMO code — set at runtime (rain-aware ranking, v2.1)
+  live_weather_is_live?: boolean // false when the API failed and seeded copy is being used
   live_festivals?: LiveFestival[] // ongoing now — set at runtime by TourAPI fetch, info only
   live_festivals_upcoming?: UpcomingFestival[] // starting later — runtime, info only
   card_budget_level: BudgetLevel
@@ -124,10 +133,14 @@ export interface Destination {
   crowd_peak_months: number[]   // months 1–12 when crowding spikes (hybrid model)
   crowd_notes: string
   insider_tips: string[]
+  /** 4–6 signature spots shown as an info-only "Don't miss" block on the detail page.
+   *  Not a navigation unit — destination cards remain the unit (see CLAUDE.md non-goals). */
+  hotspots: Hotspot[]
   similar_destinations: string[] // slugs of other destinations
   useful_links: UsefulLink[]
   trust?: {
     budget?: MetricMeta
     crowd?: MetricMeta
+    travel_time?: MetricMeta
   }
 }

@@ -7,3 +7,10 @@ dist
 .env.local
 coverage
 .vscode
+
+# Developer environment files and host project links
+.env*
+!.env.example
+.vercel/
+.claude/settings.local.json
+*.tsbuildinfo

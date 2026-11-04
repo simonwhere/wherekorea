@@ -2,11 +2,15 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import { KRW_PER_USD } from '@/lib/currency'
+import { CONTACT_EMAIL, TELEGRAM_URL } from '@/lib/site'
+import { BUDGET_ASSUMPTIONS, TRAVEL_SCOPE, CROWD_SAMPLE_NOTE } from '@/lib/trust'
+import { homeHrefFromSearch } from '@/lib/browse-state'
 
 export const metadata: Metadata = {
-  title: 'About & data methodology — WhereKorea',
+  title: 'About WhereKorea',
+  alternates: { canonical: '/about' },
   description:
-    'What WhereKorea is, who it is for, and exactly where every number comes from: weather, visitor volumes, festivals, budgets, and crowd levels.',
+    'Compare places in Korea by season, travel time, suggested stay and approximate daily cost.',
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -21,80 +25,70 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-export default function AboutPage() {
+export default async function AboutPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) query.append(key, item)
+  }
   return (
     <div>
       <Header />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-semibold text-white mb-2">About WhereKorea</h1>
         <p className="text-base text-white/70 leading-relaxed mb-4">
-          WhereKorea answers one question: <em>where in Korea should I go right now?</em> It is a
-          decision tool, not a travel blog — every destination is described with the same
-          controlled vocabulary so you can compare honestly, and the &ldquo;Best now&rdquo; ranking
-          moves with real seasonal and live data.
+          Explore places in Korea, then compare their seasons, travel times, recommended stays
+          and approximate daily costs.
         </p>
         <p className="text-sm text-white/60 leading-relaxed">
-          Built for first-time and returning visitors planning a 1–2 week trip — typically Seoul
-          plus two or three other places. No bookings, no ads, no sponsored placements.
+          Save places as you browse, or put up to three side by side.
         </p>
 
-        <Section title="How the ranking works">
+        <Section title="How places are sorted">
           <p>
-            &ldquo;Best now&rdquo; = year-round appeal (editorial, 1–10) + season fit (is this
-            genuinely a good month?) + live weather comfort. Crowds and festivals are shown as
-            information but <strong>never</strong> move the ranking — busy can mean wonderful, and
-            only you know which way that cuts.
+            Filters narrow the list. The selected month&apos;s season comes next, followed by
+            the usual display order. &ldquo;Here now&rdquo; also uses current weather when available.
+            &ldquo;Plan a trip&rdquo; uses seasonal guidance, not today&apos;s weather.
           </p>
+          <p>The daily budget filter uses the shared-room estimate shown on cards. A private room for one costs more per person.</p>
         </Section>
 
-        <Section title="Where the numbers come from">
-          <p>
-            <strong>Weather</strong> — live conditions and 7-day forecasts from{' '}
-            <a className="underline text-white" href="https://open-meteo.com" rel="noopener">Open-Meteo</a>,
-            refreshed hourly. Monthly averages use last year&apos;s archive for the same month.
+        <Section title="About the estimates">
+          <p id="budget" className="scroll-mt-24">
+            <strong>Daily costs</strong> — {BUDGET_ASSUMPTIONS} Actual room prices vary by date.
           </p>
           <p>
-            <strong>Crowd seasonality</strong> — monthly visitor volumes per destination from the
-            Korea Tourism Organization&apos;s visitor data (KT/SKT mobile-network counts,
-            non-local and foreign visitors, 12-month sample). Peak-month markers on every timing
-            strip come from this data, not guesses.
+            <strong>Travel times</strong> — {TRAVEL_SCOPE}
           </p>
           <p>
-            <strong>Festivals</strong> — Korea Tourism Organization TourAPI, matched to each
-            destination by coordinates and refreshed daily.
+            <strong>Seasons and events</strong> — Usual conditions and recurring events can help
+            you compare months. Check the forecast, event dates and opening hours before departure.
           </p>
-          <p>
-            <strong>Budgets</strong> — the ₩/day figure is a mid-range traveler&apos;s all-in day:
-            per person, two people sharing one mid-range room, including lodging, meals, local
-            transport and light activities; excluding intercity travel, flights and shopping.
-            USD figures are approximations at ₩{KRW_PER_USD.toLocaleString()}/$.
-          </p>
-          <p>
-            <strong>Editorial fields</strong> — &ldquo;best for / skip if&rdquo;, insider tips and
-            best months are written and maintained by us, destination by destination. Every metric
-            carries internal source and confidence metadata, re-verified on a dated schedule.
-          </p>
+          <details className="text-xs text-white/65 leading-relaxed">
+            <summary className="cursor-pointer py-2">Sources and calculation details</summary>
+            <div className="space-y-3 mt-2">
+              <p><strong>Weather:</strong> <a className="underline text-white" href="https://open-meteo.com" rel="noopener">Open-Meteo</a> current conditions and 7-day forecasts, cached for up to an hour. Archive averages cover the same month in the previous year, not a long-term climate average.</p>
+              <p><strong>Visitor levels:</strong> Korea Tourism Organization mobile-network samples. {CROWD_SAMPLE_NOTE} The Low/Medium/High labels are general guides.</p>
+              <p><strong>Festivals:</strong> Korea Tourism Organization TourAPI listings, matched by location and cached daily. Seasonal highlights show usual timing, not confirmed dates.</p>
+              <p><strong>Currency:</strong> USD uses ₩{KRW_PER_USD.toLocaleString()}/$, a fixed reference rate rather than a live conversion.</p>
+              <p>Dates shown beside estimates record the last review of that information, not today&apos;s availability.</p>
+            </div>
+          </details>
         </Section>
 
-        <Section title="What WhereKorea is not">
+        <Section title="Contact">
           <p>
-            Not a booking site, not a review community, not an itinerary planner, and not an
-            exhaustive directory. Fifteen destinations, curated — depth over coverage.
+            Found an incorrect price, route or date? Let us know through{' '}
+            {CONTACT_EMAIL && (
+              <>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="underline text-white hover:text-white/80">{CONTACT_EMAIL}</a>
+                {' or '}
+              </>
+            )}
+            <a href={TELEGRAM_URL} rel="noopener" className="underline text-white hover:text-white/80">Telegram</a>.
+            Please include the place and a link to the correct information.
           </p>
         </Section>
-
-        <p className="text-xs text-white/55 mt-6">
-          Spotted something off?{' '}
-          <a
-            href={process.env.NEXT_PUBLIC_TELEGRAM_URL ?? 'https://t.me/wherekorea'}
-            rel="noopener"
-            className="underline text-white/85 hover:text-white"
-          >
-            Tell us on Telegram
-          </a>{' '}
-          — we want the numbers to be right.
-        </p>
-        <Link href="/" className="inline-block mt-4 text-sm text-white/60 hover:text-white">
+        <Link href={homeHrefFromSearch(query.toString())} className="inline-block mt-4 text-sm text-white/60 hover:text-white">
           ← Browse destinations
         </Link>
       </div>

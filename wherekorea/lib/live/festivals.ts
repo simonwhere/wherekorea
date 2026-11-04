@@ -1,11 +1,14 @@
 import type { Destination, LiveFestival, UpcomingFestival } from '@/data/types'
 import { COORDS } from '@/lib/weather'
 import { koreanTitleToEnglish } from '@/lib/romanize'
+import { koreaDateKey, festivalDateLabel, festivalPhase, validFestivalCoordinates, validFestivalDate } from '@/lib/live/festival-dates'
+import { logFestivalFailure, type FestivalDataStatus, type FestivalServiceStatus } from '@/lib/live/status'
 
 // TourAPI EngService2 searchFestival2 — festival signals per destination.
 // Information display only — festivals never affect Best-now ranking
 // (product decision 2026-07-11, docs/design-live-crowd-festival.md).
-// Fallback pattern follows lib/weather.ts: any failure → empty → UI section simply absent.
+// Existing helpers retain an empty-data fallback. The status-aware wrapper distinguishes
+// unavailable feeds from a successful response with no matching festival signals.
 //
 // Matching strategy (verified against live API 2026-07-11):
 // current-year entries ship with EMPTY areacode/sigungucode, so area filters miss them.
@@ -18,7 +21,7 @@ import { koreanTitleToEnglish } from '@/lib/romanize'
 
 const BASE_EN = 'https://apis.data.go.kr/B551011/EngService2/searchFestival2'
 // Korean DB is far richer; titles are dictionary-translated + romanized.
-// Requires 국문 관광정보 서비스 활용신청 (same key) — silently skipped until approved.
+// Requires 국문 관광정보 서비스 활용신청 (same key); a failure makes coverage partial.
 const BASE_KO = 'https://apis.data.go.kr/B551011/KorService2/searchFestival2'
 // 15km keeps festivals city-accurate (verified: 30km wrongly pulled an Anyang
 // event onto Seoul and Suwon cards). Wide rural nodes may miss some — acceptable.
@@ -28,8 +31,57 @@ interface RawFestivalItem {
   title?: string
   eventstartdate?: string // YYYYMMDD
   eventenddate?: string   // YYYYMMDD
-  mapx?: string           // lon
-  mapy?: string           // lat
+  mapx?: string | number  // lon
+  mapy?: string | number  // lat
+}
+
+interface FestivalServiceResult {
+  items: RawFestivalItem[]
+  status: FestivalServiceStatus
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function failed(reason: FestivalServiceStatus['reason'], httpStatus?: number): FestivalServiceResult {
+  return { items: [], status: { state: 'unavailable', reason, ...(httpStatus === undefined ? {} : { httpStatus }) } }
+}
+
+/** TourAPI may return HTTP 200 with an error header or XML instead of JSON. */
+export function parseFestivalResponse(input: unknown): FestivalServiceResult {
+  if (!record(input) || !record(input.response) || !record(input.response.header)) return failed('invalid_payload')
+  const code = input.response.header.resultCode
+  if (code !== '0000' && code !== '00' && code !== '0' && code !== 0) {
+    return failed(code === undefined ? 'invalid_payload' : 'provider_error')
+  }
+  const body = input.response.body
+  if (!record(body)) return failed('invalid_payload')
+  const total = typeof body.totalCount === 'string' && /^\d+$/.test(body.totalCount)
+    ? Number(body.totalCount) : body.totalCount
+  if (typeof total !== 'number' || !Number.isSafeInteger(total) || total < 0) return failed('invalid_payload')
+  const raw = record(body.items) ? body.items.item : undefined
+  const items = raw === undefined || raw === null ? [] : Array.isArray(raw) ? raw : [raw]
+  if (total === 0) {
+    if (items.length !== 0 || (body.items !== undefined && body.items !== null && body.items !== '' && !record(body.items))) return failed('invalid_payload')
+    return { items: [], status: { state: 'empty', reportedItems: 0, returnedItems: 0, rejectedItems: 0 } }
+  }
+  if (items.length === 0 || items.length > total) return failed('invalid_payload')
+  const valid = items.filter((item): item is RawFestivalItem => record(item)
+    && typeof item.title === 'string' && item.title.trim().length > 0
+    && validFestivalDate(item.eventstartdate) && validFestivalDate(item.eventenddate)
+    && item.eventstartdate <= item.eventenddate
+    && validFestivalCoordinates(item.mapy, item.mapx))
+  const rejectedItems = items.length - valid.length
+  const reason = rejectedItems > 0 ? 'invalid_items' : total > items.length ? 'truncated' : undefined
+  return {
+    items: valid,
+    status: {
+      state: reason ? 'partial' : 'available',
+      ...(reason ? { reason } : {}),
+      reportedItems: total, returnedItems: items.length, rejectedItems,
+    },
+  }
 }
 
 // Keep only genuine festivals. The Korean festival DB mixes in routine programs
@@ -52,19 +104,6 @@ export interface FestivalSignals {
   upcoming: Record<string, UpcomingFestival[]>
 }
 
-function yyyymmdd(d: Date): string {
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}${mm}${dd}`
-}
-
-function fmtDate(raw: string): string {
-  // '20260815' → 'Aug 15'
-  if (!/^\d{8}$/.test(raw)) return raw
-  const d = new Date(Number(raw.slice(0, 4)), Number(raw.slice(4, 6)) - 1, Number(raw.slice(6, 8)))
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric' })
-}
-
 function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -81,7 +120,7 @@ function cleanTitle(t: string): string {
   return cut.length > 0 ? cut : t
 }
 
-async function fetchService(base: string, key: string, today: string): Promise<RawFestivalItem[]> {
+async function fetchService(base: string, key: string, today: string): Promise<FestivalServiceResult> {
   const params = new URLSearchParams({
     serviceKey: key,
     MobileOS: 'ETC',
@@ -92,14 +131,20 @@ async function fetchService(base: string, key: string, today: string): Promise<R
     pageNo: '1',
     eventStartDate: today, // API semantics: active or upcoming as of this date
   })
-  const res = await fetch(`${base}?${params.toString()}`, {
-    next: { revalidate: 86400 }, // 24h
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  const item = data?.response?.body?.items?.item
-  if (item == null) return []
-  return Array.isArray(item) ? item : [item]
+  try {
+    const res = await fetch(`${base}?${params.toString()}`, {
+      next: { revalidate: 86400 }, // 24h; checkedAt is not an upstream fetch timestamp.
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return failed('http_error', res.status)
+    let input: unknown
+    try { input = await res.json() } catch (error) {
+      return failed(error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError') ? 'timeout' : 'invalid_json')
+    }
+    return parseFestivalResponse(input)
+  } catch (error) {
+    return failed(error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError') ? 'timeout' : 'network_error')
+  }
 }
 
 interface NormalizedFestival {
@@ -112,23 +157,28 @@ interface NormalizedFestival {
 
 // Merge both services: English titles win; Korean-only entries get
 // dictionary-translation + romanization. Dedupe by dates + rounded coords.
-async function fetchAllFestivals(key: string, today: string): Promise<NormalizedFestival[]> {
+async function fetchAllFestivals(key: string, today: string): Promise<{
+  items: NormalizedFestival[]
+  services: FestivalDataStatus['services']
+}> {
   const [en, ko] = await Promise.all([
-    fetchService(BASE_EN, key, today).catch(() => []),
-    fetchService(BASE_KO, key, today).catch(() => []),
+    fetchService(BASE_EN, key, today),
+    fetchService(BASE_KO, key, today),
   ])
+  logFestivalFailure('english', en.status)
+  logFestivalFailure('korean', ko.status)
   const valid = (items: RawFestivalItem[]) =>
     items.filter(
       (it) =>
-        it.title && it.eventstartdate && it.eventenddate &&
-        it.eventenddate! >= today && it.mapx && it.mapy &&
-        isMajorFestival(it.title!)
+        it && typeof it.title === 'string' && it.title.trim() &&
+        festivalPhase(it.eventstartdate, it.eventenddate, today) !== null &&
+        validFestivalCoordinates(it.mapy, it.mapx) && isMajorFestival(it.title)
     )
   const dupeKey = (it: RawFestivalItem) =>
     `${it.eventstartdate}-${it.eventenddate}-${Number(it.mapx).toFixed(2)},${Number(it.mapy).toFixed(2)}`
 
   const out = new Map<string, NormalizedFestival>()
-  for (const it of valid(en)) {
+  for (const it of valid(en.items)) {
     out.set(dupeKey(it), {
       title: cleanTitle(it.title!),
       start: it.eventstartdate!,
@@ -137,7 +187,7 @@ async function fetchAllFestivals(key: string, today: string): Promise<Normalized
       lon: Number(it.mapx),
     })
   }
-  for (const it of valid(ko)) {
+  for (const it of valid(ko.items)) {
     const k = dupeKey(it)
     if (out.has(k)) continue // English version exists — prefer it
     const title = koreanTitleToEnglish(it.title!)
@@ -150,26 +200,26 @@ async function fetchAllFestivals(key: string, today: string): Promise<Normalized
       lon: Number(it.mapx),
     })
   }
-  return [...out.values()]
+  return { items: [...out.values()], services: { english: en.status, korean: ko.status } }
 }
 
-export async function fetchFestivalSignals(
+export async function fetchFestivalData(
   destinations: Destination[]
-): Promise<FestivalSignals> {
+): Promise<{ data: FestivalSignals; status: FestivalDataStatus }> {
   const out: FestivalSignals = { now: {}, upcoming: {} }
-  const key = process.env.TOUR_API_KEY
-  if (!key) return out
-
-  const today = yyyymmdd(new Date())
-  let items: NormalizedFestival[] = []
-  try {
-    items = await fetchAllFestivals(key, today)
-  } catch {
-    return out
+  const status: FestivalDataStatus = {
+    state: 'unconfigured', checkedAt: new Date().toISOString(), cacheSeconds: 86400,
+    upstreamUpdatedAt: null, scheduleVerified: false, services: {}, matchedDestinations: 0,
   }
+  const key = process.env.TOUR_API_KEY?.trim()
+  if (!key) return { data: out, status }
+
+  const today = koreaDateKey()
+  const { items, services } = await fetchAllFestivals(key, today)
+  status.services = services
 
   for (const d of destinations) {
-    const c = COORDS[d.slug]
+    const c = Object.prototype.hasOwnProperty.call(COORDS, d.slug) ? COORDS[d.slug] : undefined
     if (!c) continue
     const near = items
       .map((it) => ({ it, km: distanceKm(c.lat, c.lon, it.lat, it.lon) }))
@@ -179,7 +229,7 @@ export async function fetchFestivalSignals(
       .filter((x) => x.it.start <= today)
       .sort((a, b) => (a.it.end < b.it.end ? -1 : 1)) // ending soonest first
       .slice(0, 2)
-      .map((x) => ({ name: x.it.title, ends: fmtDate(x.it.end) }))
+      .map((x) => ({ name: x.it.title, ends: festivalDateLabel(x.it.end) }))
     if (ongoing.length > 0) out.now[d.slug] = ongoing
 
     const upcoming = near
@@ -188,12 +238,29 @@ export async function fetchFestivalSignals(
       .slice(0, 3)
       .map((x) => ({
         name: x.it.title,
-        range: `${fmtDate(x.it.start)} – ${fmtDate(x.it.end)}`,
+        range: `${festivalDateLabel(x.it.start)} – ${festivalDateLabel(x.it.end)}`,
         month: Number(x.it.start.slice(4, 6)),
       }))
     if (upcoming.length > 0) out.upcoming[d.slug] = upcoming
   }
-  return out
+  status.matchedDestinations = new Set([...Object.keys(out.now), ...Object.keys(out.upcoming)]).size
+  const sourceStates = Object.values(services).map((service) => service.state)
+  status.state = sourceStates.every((state) => state === 'unavailable') ? 'unavailable'
+    : sourceStates.some((state) => state === 'unavailable' || state === 'partial') ? 'partial'
+      : status.matchedDestinations === 0 ? 'empty' : 'available'
+  return { data: out, status }
+}
+
+// Back-compatible rich helper for detail pages and the weekly post.
+export async function fetchFestivalSignals(destinations: Destination[]): Promise<FestivalSignals> {
+  return (await fetchFestivalData(destinations)).data
+}
+
+export async function fetchFestivalDataForAll(destinations: Destination[]): Promise<{
+  data: Record<string, LiveFestival[]>; status: FestivalDataStatus
+}> {
+  const result = await fetchFestivalData(destinations)
+  return { data: result.data.now, status: result.status }
 }
 
 // Back-compat helper for the homepage (ongoing only)

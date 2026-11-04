@@ -1,9 +1,12 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { destinations } from '@/data/destinations'
+import { sanitizeCompareList } from '@/lib/compare-state'
 
 interface CompareContextValue {
   compareList: string[]
+  isHydrated: boolean
   toggleCompare: (slug: string) => void
   replaceCompareList: (slugs: string[]) => void
 }
@@ -11,6 +14,7 @@ interface CompareContextValue {
 const CompareContext = createContext<CompareContextValue | null>(null)
 
 const STORAGE_KEY = 'wk_compare'
+const VALID_SLUGS = destinations.map((d) => d.slug)
 
 export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [compareList, setCompareList] = useState<string[]>([])
@@ -22,7 +26,7 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed)) setCompareList(parsed.slice(0, 3))
+        setCompareList(sanitizeCompareList(parsed, VALID_SLUGS))
       }
     } catch {
       // ignore malformed storage
@@ -33,10 +37,15 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   // Persist to localStorage only after hydration to avoid overwriting stored data
   useEffect(() => {
     if (!isHydrated) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(compareList))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(compareList))
+    } catch {
+      // Private browsing or blocked storage must not break this session's selection.
+    }
   }, [compareList, isHydrated])
 
   const toggleCompare = useCallback((slug: string) => {
+    if (!VALID_SLUGS.includes(slug)) return
     setCompareList((prev) => {
       if (prev.includes(slug)) return prev.filter((s) => s !== slug)
       if (prev.length >= 3) return prev
@@ -46,11 +55,12 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
 
   // Replaces the list with sanitized input: deduped, order preserved, capped at 3
   const replaceCompareList = useCallback((slugs: string[]) => {
-    setCompareList([...new Set(slugs)].slice(0, 3))
+    const next = sanitizeCompareList(slugs, VALID_SLUGS)
+    setCompareList((prev) => prev.join(',') === next.join(',') ? prev : next)
   }, [])
 
   return (
-    <CompareContext.Provider value={{ compareList, toggleCompare, replaceCompareList }}>
+    <CompareContext.Provider value={{ compareList, isHydrated, toggleCompare, replaceCompareList }}>
       {children}
     </CompareContext.Provider>
   )

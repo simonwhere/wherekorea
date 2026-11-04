@@ -20,7 +20,10 @@ export const COORDS: Record<string, { lat: number; lon: number }> = {
 
 // WMO weather interpretation codes
 // https://open-meteo.com/en/docs#weathervariables
-function wmoToCondition(code: number): string {
+const WMO_CODES = new Set([0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86, 95, 96, 99])
+
+export function wmoToCondition(code: number): string {
+  if (!WMO_CODES.has(code)) return 'conditions unavailable'
   if (code === 0)  return 'clear'
   if (code === 1)  return 'mostly clear'
   if (code === 2)  return 'partly cloudy'
@@ -35,6 +38,7 @@ function wmoToCondition(code: number): string {
 }
 
 export function wmoToEmoji(code: number): string {
+  if (!WMO_CODES.has(code)) return '—'
   if (code === 0)  return '☀️'
   if (code === 1)  return '🌤️'
   if (code === 2)  return '⛅'
@@ -54,20 +58,7 @@ function dominantCondition(codes: number[]): string {
     const cond = wmoToCondition(code)
     counts[cond] = (counts[cond] ?? 0) + 1
   }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
-}
-
-interface OpenMeteoForecastResponse {
-  current: {
-    temperature_2m: number
-    weathercode: number
-  }
-  daily: {
-    time: string[]
-    temperature_2m_max: number[]
-    temperature_2m_min: number[]
-    weathercode: number[]
-  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'conditions unavailable'
 }
 
 export interface DailyForecast {
@@ -77,19 +68,12 @@ export interface DailyForecast {
   code: number
 }
 
-interface OpenMeteoArchiveResponse {
-  daily: {
-    temperature_2m_max: number[]
-    temperature_2m_min: number[]
-    weathercode: number[]
-  }
-}
-
 export interface WeatherResult {
   snapshot: string
   currentTemp: number
   currentCode: number
   daily: DailyForecast[] // 7-day forecast; [] on fallback
+  isLive: boolean
 }
 
 export interface MonthlyAvg {
@@ -97,6 +81,135 @@ export interface MonthlyAvg {
   avgLow: number
   condition: string
   monthName: string
+  year: number
+  sampleDays: number
+}
+
+export interface ArchiveMonthWindow {
+  month: number
+  year: number
+  monthName: string
+  startDate: string
+  endDate: string
+  dayCount: number
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function finiteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+export function validWeatherDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) return false
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+export function koreaWeatherDate(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now)
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
+function datesFrom(startDate: string, length: number): string[] {
+  const start = new Date(`${startDate}T00:00:00Z`).getTime()
+  return Array.from({ length }, (_, index) => new Date(start + index * 86400000).toISOString().slice(0, 10))
+}
+
+/** Reject a partial/malformed series rather than rounding missing values into 0°C. */
+function parseDaily(value: unknown, expectedDates: string[]): DailyForecast[] | null {
+  if (!record(value)) return null
+  const { time, temperature_2m_max: highs, temperature_2m_min: lows, weathercode: codes } = value
+  if (!Array.isArray(time) || !Array.isArray(highs) || !Array.isArray(lows) || !Array.isArray(codes)) return null
+  if ([time, highs, lows, codes].some((array) => array.length !== expectedDates.length)) return null
+  const daily: DailyForecast[] = []
+  for (let index = 0; index < expectedDates.length; index++) {
+    const date = time[index]
+    const high = highs[index]
+    const low = lows[index]
+    const code = codes[index]
+    if (!validWeatherDate(date) || date !== expectedDates[index]
+      || !finiteNumber(high) || !finiteNumber(low) || low > high
+      || !finiteNumber(code) || !WMO_CODES.has(code)) return null
+    daily.push({ date, tmax: Math.round(high), tmin: Math.round(low), code })
+  }
+  return daily
+}
+
+/** Pure parser: current conditions plus seven complete Korea-local calendar days. */
+export function parseWeatherForecast(input: unknown, now = new Date()): WeatherResult | null {
+  if (!record(input) || !record(input.current)) return null
+  const temperature = input.current.temperature_2m
+  const code = input.current.weathercode
+  if (!finiteNumber(temperature) || !finiteNumber(code) || !WMO_CODES.has(code)) return null
+  const today = koreaWeatherDate(now)
+  // The provider includes current.time. Validate it when supplied while keeping
+  // compatibility with the existing minimal current-temperature response shape.
+  if (input.current.time !== undefined) {
+    const time = input.current.time
+    if (typeof time !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(time)
+      || time.slice(0, 10) !== today || Number(time.slice(11, 13)) > 23
+      || Number(time.slice(14, 16)) > 59 || (time.length > 16 && Number(time.slice(17, 19)) > 59)) return null
+  }
+  const daily = parseDaily(input.daily, datesFrom(today, 7))
+  if (!daily) return null
+  const high = Math.max(...daily.map((day) => day.tmax))
+  const low = Math.min(...daily.map((day) => day.tmin))
+  return {
+    snapshot: `This week · ${low}–${high}°C · ${dominantCondition(daily.map((day) => day.code))}`,
+    currentTemp: Math.round(temperature),
+    currentCode: code,
+    daily,
+    isLive: true,
+  }
+}
+
+/** Previous year's same Korea-local calendar month, not a multi-year climate normal. */
+export function previousYearMonthWindow(now = new Date()): ArchiveMonthWindow {
+  const [currentYear, month] = koreaWeatherDate(now).split('-').map(Number)
+  const year = currentYear - 1
+  const mm = String(month).padStart(2, '0')
+  const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return {
+    month, year, dayCount,
+    monthName: new Date(Date.UTC(year, month - 1, 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' }),
+    startDate: `${year}-${mm}-01`,
+    endDate: `${year}-${mm}-${String(dayCount).padStart(2, '0')}`,
+  }
+}
+
+export function parseWeatherArchive(input: unknown, window: ArchiveMonthWindow): MonthlyAvg | null {
+  if (!record(input) || !validWeatherDate(window.startDate) || !validWeatherDate(window.endDate)
+    || !Number.isInteger(window.dayCount) || window.dayCount < 28 || window.dayCount > 31) return null
+  const daily = parseDaily(input.daily, datesFrom(window.startDate, window.dayCount))
+  if (!daily || daily.at(-1)?.date !== window.endDate || !record(input.daily)) return null
+  // Preserve the original precision while averaging; only round the displayed means.
+  const highs = input.daily.temperature_2m_max as number[]
+  const lows = input.daily.temperature_2m_min as number[]
+  const avgHigh = Math.round(highs.reduce((sum, value) => sum + value, 0) / daily.length)
+  const avgLow = Math.round(lows.reduce((sum, value) => sum + value, 0) / daily.length)
+  if (!Number.isFinite(avgHigh) || !Number.isFinite(avgLow)) return null
+  return {
+    avgHigh,
+    avgLow,
+    condition: dominantCondition(daily.map((day) => day.code)),
+    monthName: window.monthName,
+    year: window.year,
+    sampleDays: daily.length,
+  }
+}
+
+export function forecastDayLabel(date: string, now = new Date()): string {
+  if (!validWeatherDate(date)) return 'Date unavailable'
+  if (date === koreaWeatherDate(now)) return 'Today'
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
 // Fetch current + 7-day forecast for one destination.
@@ -105,8 +218,14 @@ export async function fetchWeatherSnapshot(
   slug: string,
   fallback: string
 ): Promise<WeatherResult> {
-  const FALLBACK: WeatherResult = { snapshot: fallback, currentTemp: 0, currentCode: 0, daily: [] }
-  const coords = COORDS[slug]
+  const FALLBACK: WeatherResult = {
+    snapshot: fallback,
+    currentTemp: 0,
+    currentCode: 0,
+    daily: [],
+    isLive: false,
+  }
+  const coords = Object.prototype.hasOwnProperty.call(COORDS, slug) ? COORDS[slug] : undefined
   if (!coords) return FALLBACK
 
   const url =
@@ -117,73 +236,34 @@ export async function fetchWeatherSnapshot(
     `&timezone=Asia/Seoul&forecast_days=7`
 
   try {
-    const res = await fetch(url, { next: { revalidate: 3600 } })
+    const res = await fetch(url, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return FALLBACK
 
-    const data: OpenMeteoForecastResponse = await res.json()
-    const { time, temperature_2m_max, temperature_2m_min, weathercode } = data.daily
-    const currentTemp = Math.round(data.current.temperature_2m)
-    const currentCode = data.current.weathercode
-
-    const high = Math.round(Math.max(...temperature_2m_max))
-    const low  = Math.round(Math.min(...temperature_2m_min))
-    const condition = dominantCondition(weathercode)
-
-    const daily: DailyForecast[] = (time ?? []).map((t, i) => ({
-      date: t,
-      tmax: Math.round(temperature_2m_max[i]),
-      tmin: Math.round(temperature_2m_min[i]),
-      code: weathercode[i],
-    }))
-
-    return {
-      snapshot: `This week · ${low}–${high}°C · ${condition}`,
-      currentTemp,
-      currentCode,
-      daily,
-    }
+    return parseWeatherForecast(await res.json()) ?? FALLBACK
   } catch {
     return FALLBACK
   }
 }
 
-// Fetch average conditions for the current month using previous year's archive data.
+// Fetch one previous-year month as a clearly labeled historical reference.
 export async function fetchMonthlyAverage(slug: string): Promise<MonthlyAvg | null> {
-  const coords = COORDS[slug]
+  const coords = Object.prototype.hasOwnProperty.call(COORDS, slug) ? COORDS[slug] : undefined
   if (!coords) return null
 
-  const now = new Date()
-  const month = now.getMonth() + 1
-  const year = now.getFullYear() - 1
-  const mm = String(month).padStart(2, '0')
-  const daysInMonth = new Date(year, month, 0).getDate()
-  const startDate = `${year}-${mm}-01`
-  const endDate = `${year}-${mm}-${daysInMonth}`
-  const monthName = now.toLocaleString('en-US', { month: 'long' })
+  const window = previousYearMonthWindow()
 
   const url =
     `https://archive-api.open-meteo.com/v1/archive` +
     `?latitude=${coords.lat}&longitude=${coords.lon}` +
-    `&start_date=${startDate}&end_date=${endDate}` +
+    `&start_date=${window.startDate}&end_date=${window.endDate}` +
     `&daily=temperature_2m_max,temperature_2m_min,weathercode` +
     `&timezone=Asia/Seoul`
 
   try {
-    const res = await fetch(url, { next: { revalidate: 86400 * 7 } })
+    const res = await fetch(url, { next: { revalidate: 86400 * 7 }, signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
 
-    const data: OpenMeteoArchiveResponse = await res.json()
-    const { temperature_2m_max, temperature_2m_min, weathercode } = data.daily
-
-    const avgHigh = Math.round(
-      temperature_2m_max.reduce((a, b) => a + b, 0) / temperature_2m_max.length
-    )
-    const avgLow = Math.round(
-      temperature_2m_min.reduce((a, b) => a + b, 0) / temperature_2m_min.length
-    )
-    const condition = dominantCondition(weathercode)
-
-    return { avgHigh, avgLow, condition, monthName }
+    return parseWeatherArchive(await res.json(), window)
   } catch {
     return null
   }
@@ -213,8 +293,10 @@ export function applyWeather(
     return {
       ...d,
       live_weather_snapshot: w.snapshot,
-      live_weather_current: w.currentTemp,
-      live_weather_icon: wmoToEmoji(w.currentCode),
+      live_weather_current: w.isLive ? w.currentTemp : undefined,
+      live_weather_icon: w.isLive ? wmoToEmoji(w.currentCode) : undefined,
+      live_weather_code: w.isLive ? w.currentCode : undefined,
+      live_weather_is_live: w.isLive,
     }
   })
 }

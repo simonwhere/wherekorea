@@ -78,9 +78,9 @@ export const CATEGORIES: { id: CategoryId; label: string; icon: string }[] = [
 ]
 
 export const SECTION_COPY: Record<CategoryId, { h: string; s: string }> = {
-  'best-now':   { h: 'Best places in Korea right now',    s: 'Ranked by season, weather, crowd level and travel time.' },
+  'best-now':   { h: 'Best places in Korea right now',    s: 'Ranked by season fit and live weather — crowds shown as info, never in the score.' },
   'weekend':    { h: 'Weekend escapes',                   s: 'Short trips that work well in one or two days.' },
-  'near-seoul': { h: 'Close to Seoul',                   s: 'Reachable in roughly two hours or less.' },
+  'near-seoul': { h: 'Close to Seoul',                   s: 'A compact capital-region and nearby-city shortlist. Check the main journey and local connection.' },
   'food':       { h: 'Where to eat well',                s: 'Cities worth traveling for the food alone.' },
   'nature':     { h: 'Into nature',                      s: 'Coast, forest and mountain escapes.' },
   'beach':      { h: 'On the coast',                     s: 'Beaches, harbors and sea air.' },
@@ -93,7 +93,9 @@ export function matchesCategory(d: Destination, cat: CategoryId): boolean {
   switch (cat) {
     case 'best-now':   return true
     case 'weekend':    return d.recommended_stay === '1–2 days'
-    case 'near-seoul': return ['seoul', 'suwon', 'chuncheon', 'gangneung', 'jeonju', 'sokcho', 'gyeongju'].includes(d.slug)
+    // Conservative editorial collection, not a guaranteed two-hour journey.
+    // A fast rail leg alone does not make a far-away destination "near Seoul".
+    case 'near-seoul': return ['seoul', 'suwon', 'chuncheon'].includes(d.slug)
     case 'food':       return ['jeonju', 'busan', 'seoul'].includes(d.slug)
     case 'nature':     return d.tags.includes('nature')
     case 'beach':      return d.tags.includes('coastal')
