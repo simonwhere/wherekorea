@@ -34,3 +34,9 @@
 @media(max-width: 600px) { .visuals { grid-template-columns: 1fr; } .photo { height: clamp(145px,39vw,205px); } .map { height: 204px; } .intro { margin: 7px 0; } .stopInfo { padding: 13px; } }
 
 .visuals[data-has-photo="false"] { grid-template-columns: 1fr; }
+.map .marker { display: flex; align-items: center; justify-content: center; }
+@media(max-width: 600px) {
+  .stops { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); }
+  .stops button { display: block; padding: 5px 7px; line-height: 1.35; font-size: 12px; overflow-wrap: anywhere; }
+  .stops button span { display: block; font-size: 14px; }
+}
