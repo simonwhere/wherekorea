@@ -93,7 +93,7 @@ export default function CommunityAccount() {
 
   return <div className={styles.content}>
     <p className={styles.eyebrow}>Community</p><h1 className={styles.title}>Your browser profile</h1>
-    <p className={styles.intro}>Questions and comments use a public nickname. No Google account or email is needed to participate as a guest. My questions and Replies are available in the same browser.</p>
+    <p className={styles.intro}>Choose a nickname to post or reply. Open My posts or Replies in this browser to see the conversation.</p>
     {params.get('signIn') === 'retry' && !session?.user && <p className={styles.notice} role="status">Sign-in was not completed. Your saved draft has not been posted. Try again from here.</p>}
     {(error || sessionError) && <p className={styles.error} role="alert" style={{ marginTop: 20 }}>{error || sessionError}</p>}
     {status && <p className={styles.status} role="status" style={{ marginTop: 20 }}>{status}</p>}

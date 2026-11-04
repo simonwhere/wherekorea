@@ -33,7 +33,6 @@ export default function CommunityQuestion({ id }: { id: string }) {
   const [accountRecovery, setAccountRecovery] = useState(false)
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
-  const [commentConfirmed, setCommentConfirmed] = useState(false)
   const [recoveryBody, setRecoveryBody] = useState('')
   const pending = useRef(false)
   const requestId = useRef('')
@@ -42,7 +41,6 @@ export default function CommunityQuestion({ id }: { id: string }) {
   const activeContext = useRef(commentKey)
   activeContext.current = commentKey
   bodyRef.current = body
-  useEffect(() => { setCommentConfirmed(false) }, [session?.user?.id])
   useEffect(() => { setPage(1); setQuestion(null); setComments([]) }, [id, session?.user?.id])
   useEffect(() => {
     if (sessionLoading) return
@@ -73,7 +71,7 @@ export default function CommunityQuestion({ id }: { id: string }) {
   }, [id, page, reload, sessionLoading, session?.user?.id])
 
   async function comment(event: FormEvent) {
-    event.preventDefault(); if (pending.current || !question || !session?.user || !session.profileReady || !session.postingEnabled || !commentConfirmed) return
+    event.preventDefault(); if (pending.current || !question || !session?.user || !session.profileReady || !canReply) return
     if (body.trim().length < 2 || body.length > 2000) { setCommentError('Write a comment of 2 to 2,000 characters.'); return }
     pending.current = true; setBusy(true); setCommentError(''); setStatus('')
     const submittedContext = commentKey
@@ -83,7 +81,7 @@ export default function CommunityQuestion({ id }: { id: string }) {
       unsentComments.delete(submittedContext)
       try { clearCommentHandoff(window.sessionStorage, id) } catch { /* Posted content does not depend on browser cleanup. */ }
       if (activeContext.current !== submittedContext) return
-      setComments(previous => previous.some(item => item.id === result.comment.id) ? previous : [...previous, result.comment]); setBody(''); bodyRef.current = ''; requestId.current = ''; setCommentConfirmed(false); setStatus('Your comment is posted publicly.')
+      setComments(previous => previous.some(item => item.id === result.comment.id) ? previous : [...previous, result.comment]); setBody(''); bodyRef.current = ''; requestId.current = ''; setStatus('Your comment is posted publicly.')
     } catch (cause) {
       if (activeContext.current === submittedContext) {
         if (cause instanceof CommunityRequestError && (cause.code === 'session_changed' || cause.code === 'sign_in_required')) {
@@ -110,14 +108,17 @@ export default function CommunityQuestion({ id }: { id: string }) {
   }
   function refreshConversation() { setPage(1); setReload(value => value + 1) }
   const destination = COMMUNITY_DESTINATIONS.find(item => item.slug === question?.city)?.name
+  const type = question?.type === 'meetups' ? 'meetups' : 'questions'
+  const canReply = type === 'meetups' ? session?.meetupPostingEnabled && !question?.expired : session?.postingEnabled
   return <div className={styles.content}>
-    <Link className={styles.quiet} href={communityHref('/community', params.toString(), { type: 'questions' })}>← All questions</Link>
+    <Link className={styles.quiet} href={communityHref('/community', params.toString(), { type })}>← All {type}</Link>
     {error && <div className={styles.error} role="alert"><p>{error}</p><button className={styles.quiet} onClick={refreshConversation}>Try again</button></div>}
     {loading && !question && <p className={styles.skeleton} role="status">Loading question…</p>}
     {question && <>
       <div className={styles.meta} style={{ marginTop: 18 }}><span className={styles.badge}>{destination}</span><span>{question.authorName}</span><time dateTime={question.createdAt}>{communityDate(question.createdAt)}</time></div>
-      <h1 className={styles.title}>{question.title}</h1><p className={`${styles.body} ${styles.article}`}>{question.body}</p>
-      <CommunityContentActions questionId={question.id} authorId={question.authorId} owned={question.owned} onRemoved={() => router.replace(communityHref('/community', params.toString(), { city: question.city, type: 'questions' }))} onBlocked={refreshConversation} />
+      <h1 className={styles.title}>{question.title}</h1>
+      {question.meetupDate && <p className={styles.meetDate}>{question.expired ? 'This meetup has ended' : 'Meetup'} · {communityDate(question.meetupDate + 'T12:00:00+09:00')} (Korea time)</p>}<p className={`${styles.body} ${styles.article}`}>{question.body}</p>
+      <CommunityContentActions questionId={question.id} authorId={question.authorId} owned={question.owned} onRemoved={() => router.replace(communityHref('/community', params.toString(), { city: question.city, type }))} onBlocked={refreshConversation} />
       <Link className={styles.button} style={{ marginTop: 16 }} href={withBrowseContext(`/destination/${question.city}`, params.toString())}>Explore {destination}</Link>
       <section aria-label="Comments"><h2 className={styles.sectionTitle}>Comments</h2>
         {comments.map(item => <article className={styles.comment} key={item.id}>
@@ -127,13 +128,12 @@ export default function CommunityQuestion({ id }: { id: string }) {
         {!comments.length && !loading && <p className={styles.help}>No comments yet.</p>}
         {loading && question && <p className={styles.skeleton} role="status">Loading comments…</p>}
         {more && !loading && !error && <button className={styles.button} onClick={() => setPage(value => value + 1)} style={{ marginTop: 18 }}>Load more comments</button>}
-        {session?.postingEnabled ? <form onSubmit={comment} className={styles.form} style={{ marginTop: 28 }}>
-          <label className={styles.field}>Add a comment<textarea value={body} onChange={event => { setBody(event.target.value); requestId.current = ''; setCommentConfirmed(false); setCommentError(''); setStatus('') }} disabled={busy} maxLength={2000} rows={5} /><span className={styles.help}>{body.length}/2,000 characters. Your nickname and comment will be public. Leave out contact and booking details.</span></label>
+        {canReply && session ? <form onSubmit={comment} className={styles.form} style={{ marginTop: 28 }}>
+          <label className={styles.field}>Add a comment<textarea value={body} onChange={event => { setBody(event.target.value); requestId.current = ''; setCommentError(''); setStatus('') }} disabled={busy} maxLength={2000} rows={5} /><span className={styles.help}>{body.length}/2,000 characters. Your nickname and comment will be public. Leave out contact and booking details.</span></label>
           {commentError && <p className={styles.error} role="alert">{commentError}</p>}{accountRecovery && <Link className={styles.button} href={communityHref(`/community/account?returnTo=${encodeURIComponent(communityHref(`/community/questions/${id}?review=1`, params.toString()))}`, params.toString())}>Check browser profile</Link>}{status && <p className={styles.status} role="status">{status}</p>}
           {recoveryBody && <label className={styles.field}>Unposted text from before the profile change<textarea readOnly value={recoveryBody} rows={4} /><span className={styles.help}>This copy stays in this tab only. Check the browser profile before copying it into a new comment.</span></label>}
           {session.user && session.profileReady ? <>
-            <label className={styles.check}><input type="checkbox" checked={commentConfirmed} disabled={busy} onChange={event => setCommentConfirmed(event.target.checked)} /><span>I have checked this comment. Publish it as <strong>{session.user.displayName}</strong>.</span></label>
-            <button className={styles.primary} type="submit" disabled={busy || !commentConfirmed}>{busy ? 'Posting…' : 'Post comment publicly'}</button>
+            <button className={styles.primary} type="submit" disabled={busy || body.trim().length < 2}>{busy ? 'Posting…' : `Reply as ${session.user.displayName}`}</button>
           </> : <CommunityGuestSetup beforePrepare={() => { preparingGuest.current = { body, id: requestId.current || crypto.randomUUID(), context: commentKey, prepared: false }; setBusy(true); return true }} onPrepared={userId => {
             const kept = preparingGuest.current
             if (!kept) return
@@ -141,13 +141,13 @@ export default function CommunityQuestion({ id }: { id: string }) {
             unsentComments.delete(kept.context)
             unsentComments.set(`${id}:${userId}`, { body: kept.body, id: kept.id })
             setBody(kept.body); bodyRef.current = kept.body; requestId.current = kept.id
-            setCommentConfirmed(false); setStatus('Your nickname is ready. Review your comment before posting it.')
+            setStatus('Your nickname is ready. Review your comment before posting it.')
           }} onSettled={() => {
             const kept = preparingGuest.current
             if (kept && !kept.prepared && activeContext.current !== kept.context) { setRecoveryBody(kept.body); setBody(''); bodyRef.current = ''; requestId.current = '' }
             preparingGuest.current = null; setBusy(false)
           }} />}
-        </form> : <p className={styles.notice}>New questions and comments are not open on this site yet.</p>}
+        </form> : <p className={styles.notice}>{question.expired ? 'Replies are closed for this past meetup.' : 'New replies are closed for now.'}</p>}
       </section>
     </>}
   </div>

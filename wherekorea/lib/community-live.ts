@@ -1,4 +1,4 @@
-import { isCommunityCity } from '@/lib/community'
+import { isCalendarDate, isCommunityCity, meetupDateError } from '@/lib/community'
 
 export interface CommunityProfile {
   displayName: string
@@ -16,6 +16,9 @@ export interface CommunityQuestion {
   authorName: string
   createdAt: string
   owned: boolean
+  type?: 'questions' | 'meetups'
+  meetupDate?: string | null
+  expired?: boolean
   commentCount: number
 }
 
@@ -78,6 +81,19 @@ export function readCommunityPage(value: string | null): number {
 export function validateQuestionInput(input: Record<string, unknown>) {
   if (!isCommunityCity(input.city)) throw new CommunityInputError('Choose a destination.')
   return { id: uuid(input.id), city: input.city, title: plain(input.title, 5, 140, 'the title'), body: plain(input.body, 10, 3000, 'the question') }
+}
+
+export function readPostType(value: unknown): 'questions' | 'meetups' {
+  if (value === undefined || value === null || value === 'questions') return 'questions'
+  if (value === 'meetups') return 'meetups'
+  throw new CommunityInputError('Choose questions or travel buddies.')
+}
+
+export function readMeetupDate(value: unknown, posting: boolean): string {
+  if (typeof value !== 'string' || !isCalendarDate(value)) throw new CommunityInputError('Choose a valid meetup date.')
+  const message = posting && meetupDateError(value)
+  if (message) throw new CommunityInputError(message)
+  return value
 }
 
 export function validateCommentInput(input: Record<string, unknown>) {

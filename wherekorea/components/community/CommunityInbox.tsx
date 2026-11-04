@@ -29,7 +29,7 @@ export default function CommunityInbox({ mode }: { mode: 'questions' | 'replies'
   currentOwner.current = userId
   const isReplies = mode === 'replies'
   const path = isReplies ? '/community/notifications' : '/community/mine'
-  const heading = isReplies ? 'Replies to your questions' : 'My questions'
+  const heading = isReplies ? 'Replies to your posts' : 'My posts'
   const returnPath = communityHref(path, params.toString())
   const accountHref = communityHref(`/community/account?returnTo=${encodeURIComponent(returnPath)}`, params.toString())
   const draftHref = communityHref('/community/new', params.toString(), { type: 'questions' })
@@ -78,8 +78,8 @@ export default function CommunityInbox({ mode }: { mode: 'questions' | 'replies'
   return <div className={styles.content}>
     <h1 className={styles.title}>{heading}</h1>
     <p className={styles.intro}>{isReplies
-      ? 'Replies appear here when another person comments on a question you published. These are on-site notifications only; no email or phone alerts are sent.'
-      : 'Questions published with this browser profile. Browser drafts stay in My drafts. Removed or hidden questions are not listed.'}</p>
+      ? 'Replies appear here when another person comments on your post. Check them here in this browser.'
+      : 'Posts you shared with this nickname on this browser.'}</p>
     {session?.user?.isGuest && <p className={styles.help} style={{ marginTop: 12 }}>Return using the same browser and keep its cookies. A different browser or cleared cookies cannot recover this list. Use Refresh to check for new replies.</p>}
     {sessionError ? <div className={styles.error} role="alert" style={{ marginTop: 20 }}><p>{sessionError}</p><button className={styles.quiet} onClick={() => void refresh()}>Try again</button></div>
       : sessionLoading ? <p className={styles.skeleton} role="status">Checking your browser profile…</p>
@@ -92,12 +92,12 @@ export default function CommunityInbox({ mode }: { mode: 'questions' | 'replies'
         </div>
         {error && <div className={styles.error} role="alert" style={{ marginTop: 20 }}><p>{error}</p><button className={styles.quiet} onClick={() => setReload(value => value + 1)}>Try again</button></div>}
         {status && <p className={styles.status} role="status">{status}</p>}
-        {loading ? <p className={styles.skeleton} role="status">{isReplies ? 'Loading replies…' : 'Loading your questions…'}</p> : <>
-          {!error && current && rows === 0 && <div className={styles.empty}><h2>{page > 1 ? 'No more items on this page' : isReplies ? 'No reply notifications yet' : 'No published questions yet'}</h2><p>{isReplies ? 'New replies to your questions will appear here. Replies removed by their author, hidden by moderation or from a blocked account are not shown.' : 'You can start with a draft and publish it after reviewing the text.'}</p></div>}
+        {loading ? <p className={styles.skeleton} role="status">{isReplies ? 'Loading replies…' : 'Loading your posts…'}</p> : <>
+          {!error && current && rows === 0 && <div className={styles.empty}><h2>{page > 1 ? 'No more items on this page' : isReplies ? 'No reply notifications yet' : 'No published posts yet'}</h2><p>{isReplies ? 'New replies to your posts will appear here. Replies removed by their author, hidden by moderation or from a blocked account are not shown.' : 'You can start with a draft and publish it after reviewing the text.'}</p></div>}
           {current && rows > 0 && <ul className={styles.list}>{isReplies ? current.replies?.notifications.map(item => <li key={item.id} className={styles.row}>
             <div className={styles.meta}>{!item.readAt && <span className={styles.badge}>Unread</span>}<span>{cityName(item.city)}</span><time dateTime={item.createdAt}>{communityDate(item.createdAt)}</time></div>
-            <h2>{item.authorName} replied to your question</h2><p>{item.questionTitle}</p>
-            <div className={styles.actions} style={{ marginTop: 12 }}><Link className={styles.button} href={communityHref(`/community/questions/${item.questionId}`, params.toString(), { type: 'questions', city: item.city })}>View question</Link>
+            <h2>{item.authorName} replied to your post</h2><p>{item.questionTitle}</p>
+            <div className={styles.actions} style={{ marginTop: 12 }}><Link className={styles.button} href={communityHref(`/community/questions/${item.questionId}`, params.toString(), { type: 'questions', city: item.city })}>Read post</Link>
               {!item.readAt && <button className={styles.quiet} disabled={busy} onClick={() => void markRead([item.id])}>{busy ? 'Saving…' : 'Mark read'}</button>}
             </div>
           </li>) : current.questions.map(item => <li key={item.id} className={styles.row}>
@@ -108,6 +108,6 @@ export default function CommunityInbox({ mode }: { mode: 'questions' | 'replies'
           {current && (page > 1 || current.hasMore) && <nav className={styles.actions} aria-label={`${heading} pages`} style={{ marginTop: 20 }}><button className={styles.button} disabled={page <= 1 || busy} onClick={() => setPage(value => value - 1)}>Previous</button><span className={styles.muted}>Page {page}</span><button className={styles.button} disabled={!current.hasMore || page >= 1000 || busy} onClick={() => setPage(value => value + 1)}>Next</button></nav>}
         </>}
       </>}
-    <div className={styles.actions} style={{ marginTop: 24 }}><Link className={styles.quiet} href={communityHref(isReplies ? '/community/mine' : '/community/notifications', params.toString())}>{isReplies ? 'My questions' : 'Replies to my questions'}</Link><Link className={styles.quiet} href={communityHref('/community/drafts', params.toString())}>My drafts</Link></div>
+    <div className={styles.actions} style={{ marginTop: 24 }}><Link className={styles.quiet} href={communityHref(isReplies ? '/community/mine' : '/community/notifications', params.toString())}>{isReplies ? 'My posts' : 'Replies to my posts'}</Link><Link className={styles.quiet} href={communityHref('/community/drafts', params.toString())}>My drafts</Link></div>
   </div>
 }

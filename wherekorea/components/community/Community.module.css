@@ -96,3 +96,10 @@
   .draftHeading { flex-direction: column; gap: 5px; }
   .preview { padding: 18px; }
 }
+.meetDate { color: #ffb595; font-weight: 650; margin: 6px 0; }
+
+.navMore { position: relative; }
+.navMore summary { min-height: 44px; align-content: center; cursor: pointer; padding: 0 6px; }
+.navMore summary:focus-visible { outline: 2px solid #ffb595; }
+.navMore div { position: absolute; right: 0; min-width: 150px; padding: 4px 14px; z-index: 5; display: grid; border: 1px solid #526174; border-radius: 9px; background: #202b38; }
+@media(max-width: 600px) { .nav { gap: 2px 12px; margin-bottom: 18px; } .nav .back { flex-basis: 100%; } }

@@ -1,0 +1,44 @@
+-- Local fixtures only. All identities and posts disappear at rollback.
+begin;
+insert into auth.users(id,is_anonymous) values
+  ('15000000-0000-4000-8000-000000000001',true),('15000000-0000-4000-8000-000000000002',true);
+update community_private.settings set posting_enabled=true,guest_enabled=true;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub','15000000-0000-4000-8000-000000000001',true);
+select public.community_set_profile('Guest walker',true);
+select community_test.expect_error($q$select public.community_create_meetup(gen_random_uuid(),'andong','Village walk','Meet in the main square.',current_date + 1)$q$,'WK_MEETUPS_CLOSED');
+reset role;
+update community_private.settings set meetup_posting_enabled=true;
+set local role authenticated;
+select community_test.expect_error($q$select public.community_create_meetup(gen_random_uuid(),'andong','Village walk','Meet in the main square.',current_date - 1)$q$,'WK_INVALID');
+select community_test.expect_error($q$select public.community_create_meetup(gen_random_uuid(),'andong','Village walk','Contact me @some_name.',current_date + 1)$q$,'WK_PUBLIC_CONTACT');
+select public.community_create_meetup('25000000-0000-4000-8000-000000000001','andong','Village walk','Meet in the main square.',current_date + 1);
+select public.community_create_meetup('25000000-0000-4000-8000-000000000001','andong','Village walk','Meet in the main square.',current_date + 1);
+select community_test.expect_error($q$select public.community_create_question('25000000-0000-4000-8000-000000000001','andong','Village walk','Meet in the main square.')$q$,'WK_CONFLICT');
+select community_test.expect_error($q$select public.community_create_meetup('25000000-0000-4000-8000-000000000001','andong','Village walk','Meet in the main square.',current_date + 2)$q$,'WK_CONFLICT');
+select community_test.expect_error($q$select public.community_create_question(gen_random_uuid(),'andong','Question after meetup','Is this walk accessible?')$q$,'WK_RATE_LIMIT');
+set local role anon;
+select set_config('request.jwt.claim.sub','',true);
+select community_test.assert(public.community_list_meetups('andong',1,current_date + 1)->'questions'->0->>'type'='meetups','guest post listed for day and city');
+select community_test.assert(public.community_list_meetups('andong',1,current_date + 2)->'questions'='[]'::jsonb,'other date filtered');
+select community_test.assert(public.community_list_meetups('yeosu',1,null)->'questions'='[]'::jsonb,'other city filtered');
+select community_test.assert(public.community_list_questions('andong',1)->'questions'='[]'::jsonb,'meetup excluded from ordinary questions');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','15000000-0000-4000-8000-000000000002',true);
+select public.community_set_profile('Second walker',true);
+select public.community_create_comment('35000000-0000-4000-8000-000000000001','25000000-0000-4000-8000-000000000001','I can meet at the square.');
+select community_test.expect_error($q$select public.community_create_comment(gen_random_uuid(),'25000000-0000-4000-8000-000000000001','Send email to me@example.com.')$q$,'WK_PUBLIC_CONTACT');
+select set_config('request.jwt.claim.sub','15000000-0000-4000-8000-000000000001',true);
+select community_test.assert(public.community_notifications()->'notifications'->0->>'questionId'='25000000-0000-4000-8000-000000000001','second guest reply delivered to owner');
+select public.community_set_block((public.community_get_question('25000000-0000-4000-8000-000000000001')->'comments'->0->>'authorId')::uuid,true);
+select set_config('request.jwt.claim.sub','15000000-0000-4000-8000-000000000002',true);
+select community_test.assert(public.community_list_meetups()->'questions'='[]'::jsonb,'blocked reader cannot see meetup');
+reset role;
+delete from community_private.blocks;
+update community_private.questions set meetup_date=community_private.korea_today()-1 where id='25000000-0000-4000-8000-000000000001';
+set local role authenticated;
+select community_test.assert(public.community_list_meetups()->'questions'='[]'::jsonb,'expired post not advertised');
+select community_test.assert((public.community_get_question('25000000-0000-4000-8000-000000000001')->'question'->>'expired')::boolean,'permalink marked expired');
+select community_test.expect_error($q$select public.community_create_comment(gen_random_uuid(),'25000000-0000-4000-8000-000000000001','Can I still join?')$q$,'WK_MEETUP_ENDED');
+rollback;

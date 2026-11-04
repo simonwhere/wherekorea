@@ -14,6 +14,8 @@ import WeatherBlock from '@/components/detail/WeatherBlock'
 import WhenToGoBlock from '@/components/detail/WhenToGoBlock'
 import DontMiss from '@/components/detail/DontMiss'
 import FoodBlock from '@/components/detail/FoodBlock'
+import CityNeighborhoods from '@/components/detail/CityNeighborhoods'
+import { cityNeighborhoods } from '@/data/city-neighborhoods'
 import BudgetBlock from '@/components/detail/BudgetBlock'
 import InsiderTips from '@/components/detail/InsiderTips'
 import SimilarDestinations from '@/components/detail/SimilarDestinations'
@@ -87,6 +89,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
 
   if (!destination) notFound()
   const guide = getDestinationGuide(slug)
+  const neighborhoods = cityNeighborhoods[slug]
 
   const currentMonth = Number(
     new Date().toLocaleString('en-US', { month: 'numeric', timeZone: 'Asia/Seoul' })
@@ -142,6 +145,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       <HeroSummary destination={enriched} currentMonth={browse.month} browse={browse} showLive={showLive} backHref={homeHrefFromSearch(contextSearch)} sharePath={sharePath} />
       <BudgetFitNote slug={slug} browse={browse} />
       {festivals && <LiveDataNotice status={festivals.status} />}
+      {neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food} />}
       <BestForSkipIf destination={enriched} />
       <DontMiss destination={enriched} />
       {!guide && <DestinationCommunity slug={slug} name={destination.name} contextSearch={contextSearch} />}
@@ -151,7 +155,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       {guide && <DestinationQuestions guide={guide} name={destination.name} contextSearch={contextSearch} />}
       {guide && <DestinationCommunity slug={slug} name={destination.name} contextSearch={contextSearch} />}
       <WeatherBlock destination={enriched} monthlyAvg={monthlyAvg} daily={weather?.daily} showLive={showLive} month={browse.month} />
-      <FoodBlock destination={enriched} />
+      {!neighborhoods && <FoodBlock destination={enriched} />}
       <BudgetBlock destination={enriched} />
       <InsiderTips destination={enriched} />
       <UsefulLinks destination={enriched} />

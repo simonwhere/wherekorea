@@ -67,14 +67,14 @@ export default function CommunityGuestSetup({ beforePrepare, onPrepared, onSettl
 
   if (!session?.user && !session?.guestEnabled) return <p className={styles.notice}>Guest posting is not ready on this site yet. You can keep writing and save a draft on this browser.</p>
   return <div className={styles.compactForm} aria-label="Guest posting setup">
-    <p><strong>{session?.user ? 'Choose your public name' : 'Post as a guest'}</strong><br />No Google account or email is needed. Your nickname appears with your questions and comments.</p>
+    <p><strong>{session?.user ? 'Choose your public name' : 'Post as a guest'}</strong><br />Choose a nickname. No sign-up or email needed.</p>
     <label className={styles.field}>Public nickname<input autoComplete="nickname" value={displayName} onChange={event => setDisplayName(event.target.value)} minLength={2} maxLength={40} disabled={busy} /><span className={styles.help}>Use 2–40 characters. Leave out contact details and website addresses.</span></label>
-    <p className={styles.help}>My questions and Replies stay linked to this browser’s cookies. Clearing cookies, closing a private browsing session or changing devices loses access to managing those posts and viewing their reply notifications. Public posts remain visible.</p>
-    <label className={styles.check}><input type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} disabled={busy} /><span>I have read the <Link href={communityHref('/community/guidelines', params.toString())} target="_blank" rel="noopener">community guidelines</Link> and understand the browser-only access above.</span></label>
+    <p className={styles.help}>Use this browser to find your posts and replies. If you clear its cookies or close a private window, your posts stay public but you lose access to them.</p>
+    <label className={styles.check}><input type="checkbox" checked={accepted} onChange={event => setAccepted(event.target.checked)} disabled={busy} /><span>I agree to the <Link href={communityHref('/community/guidelines', params.toString())} target="_blank" rel="noopener">community guidelines</Link>.</span></label>
     {needsCaptcha && (hasCaptcha ? <CommunityCaptcha onToken={setCaptchaToken} resetKey={captchaResetKey} /> : <p className={styles.error} role="alert">The security check is not configured. Guest posting is unavailable.</p>)}
     {error && <p className={styles.error} role="alert">{error}</p>}
     {status && <p className={styles.status} role="status">{status}</p>}
     <button type="button" className={styles.primary} disabled={busy || !accepted || displayName.trim().length < 2 || (needsCaptcha && (!hasCaptcha || !captchaToken))} onClick={() => void prepare()}>{busy ? 'Preparing…' : session?.user ? 'Save nickname' : 'Continue as guest'}</button>
-    <p className={styles.help}>This step does not post anything. New browser profiles pass a security check; questions and comments have posting limits.</p>
+    <p className={styles.help}>Review your text before posting.</p>
   </div>
 }

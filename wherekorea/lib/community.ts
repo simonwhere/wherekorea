@@ -75,14 +75,19 @@ export function koreaToday(now = new Date()): string {
   return new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 }
 
-function isCalendarDate(value: string): boolean {
+export function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const parsed = new Date(`${value}T00:00:00Z`)
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
 }
 
-function isClockTime(value: string): boolean {
-  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)
+export function meetupDateError(value: string, now = new Date()): string {
+  if (!isCalendarDate(value)) return 'Choose a valid meetup date.'
+  const today = koreaToday(now)
+  if (value < today) return 'Choose today or a later date in Korea.'
+  const limit = new Date(today + 'T00:00:00Z')
+  limit.setUTCDate(limit.getUTCDate() + 365)
+  return value > limit.toISOString().slice(0, 10) ? 'Choose a date within the next 365 days.' : ''
 }
 
 /** Preview checks only. Passing these checks does not publish or reserve anything. */
@@ -104,22 +109,8 @@ export function validateDraft(draft: CommunityDraft, now = new Date()): Record<s
   }
 
   if (draft.type === 'meetups') {
-    const dateValid = isCalendarDate(draft.meetupDate)
-    if (!dateValid) errors.meetupDate = 'Choose a valid meetup date.'
-    else if (draft.meetupDate < koreaToday(now)) errors.meetupDate = 'Choose today or a later date in Korea.'
-    if (!isClockTime(draft.startTime)) errors.startTime = 'Enter a start time in Korea Standard Time.'
-    if (!isClockTime(draft.endTime)) errors.endTime = 'Enter an end time in Korea Standard Time.'
-    if (isClockTime(draft.startTime) && isClockTime(draft.endTime) && draft.endTime <= draft.startTime) {
-      errors.endTime = 'The end time must be later on the same day.'
-    }
-    if (dateValid && isClockTime(draft.startTime)) {
-      const start = new Date(`${draft.meetupDate}T${draft.startTime}:00+09:00`)
-      const latest = new Date(now)
-      latest.setUTCFullYear(latest.getUTCFullYear() + 1)
-      if (start.getTime() <= now.getTime()) errors.startTime = 'Choose a start time that has not passed in Korea.'
-      if (start.getTime() > latest.getTime()) errors.meetupDate = 'Choose a date within the next year.'
-    }
-    if (!/^[1-8]$/.test(draft.places)) errors.places = 'Choose 1 to 8 available places.'
+    const message = meetupDateError(draft.meetupDate, now)
+    if (message) errors.meetupDate = message
   }
   return errors
 }

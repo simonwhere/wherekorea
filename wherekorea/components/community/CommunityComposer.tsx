@@ -32,9 +32,9 @@ export default function CommunityComposer() {
   const [preview, setPreview] = useState(false)
   const [reload, setReload] = useState(0)
   const [today, setToday] = useState('')
-  const [publishConfirmed, setPublishConfirmed] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [sessionMismatchOwner, setSessionMismatchOwner] = useState('')
+  const canPublish = draft?.type === 'meetups' ? session?.meetupPostingEnabled : draft?.type === 'questions' && session?.postingEnabled
   const publishingRef = useRef(false)
   const skipDraftReload = useRef('')
   const dirty = draft !== null && JSON.stringify(draft) !== saved
@@ -46,7 +46,13 @@ export default function CommunityComposer() {
   draftRef.current = draft
   dirtyRef.current = dirty
 
-  useEffect(() => { setPublishConfirmed(false) }, [session?.user?.id])
+
+  const previousOwner = useRef(session?.user?.id)
+  useEffect(() => {
+    const owner = session?.user?.id
+    if (previousOwner.current && owner !== previousOwner.current) setPreview(false)
+    previousOwner.current = owner
+  }, [session?.user?.id])
 
   useEffect(() => {
     // Saving as part of an explicit publish changes only the URL identifier.
@@ -77,7 +83,6 @@ export default function CommunityComposer() {
       setSaved(JSON.stringify(found))
       if (returnToReview && found.type === 'questions' && !Object.keys(validateDraft(found)).length) {
         setPreview(true)
-        setPublishConfirmed(false)
         setStatus('Your saved draft is ready to review. Nothing has been posted.')
       }
     } else {
@@ -145,7 +150,6 @@ export default function CommunityComposer() {
     setDraft(previous => previous ? { ...previous, [field]: value } : previous)
     setErrors(previous => { const next = { ...previous }; delete next[field]; return next })
     setStatus('')
-    setPublishConfirmed(false)
   }
 
   const save = useCallback((navigate = true) => {
@@ -169,7 +173,7 @@ export default function CommunityComposer() {
   }, [draft, draftId, params, recoveryKey, router])
 
   async function publish() {
-    if (!draft || !preview || !publishConfirmed || publishingRef.current || !session?.postingEnabled || !session.user || !session.profileReady || draft.type !== 'questions') return
+    if (!draft || !preview || publishingRef.current || !canPublish || !session?.user || !session.profileReady) return
     const expectedUserId = session.user.id
     const nextErrors = validateDraft(draft)
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); setPreview(false); return }
@@ -179,17 +183,17 @@ export default function CommunityComposer() {
     if (!keptDraft) { skipDraftReload.current = ''; publishingRef.current = false; setPublishing(false); return }
     try {
       // A draft keeps the same publication id across retries, including a reload.
-      const result = await communityRequest<{ question: { id: string; city: string } }>('/questions', { method: 'POST', body: { id: draft.id, city: draft.city, title: draft.title, body: draft.body, expectedUserId } })
+      const result = await communityRequest<{ question: { id: string; city: string } }>('/questions', { method: 'POST', body: { id: draft.id, city: draft.city, title: draft.title, body: draft.body, type: draft.type, ...(draft.type === 'meetups' ? { meetupDate: draft.meetupDate } : {}), expectedUserId } })
       if (currentUser.current !== expectedUserId || draftRef.current?.id !== draft.id) return
       dirtyRef.current = false; unsavedDrafts.delete(recoveryKey); bypassGuard.current = true
-      router.push(communityHref(`/community/questions/${result.question.id}`, params.toString(), { type: 'questions', city: result.question.city }))
+      router.push(communityHref(`/community/questions/${result.question.id}`, params.toString(), { type: draft.type, city: result.question.city }))
     } catch (cause) {
       if (currentUser.current !== expectedUserId || draftRef.current?.id !== draft.id) return
       if (cause instanceof CommunityRequestError && (cause.code === 'session_changed' || cause.code === 'sign_in_required')) {
-        setSessionMismatchOwner(expectedUserId); setPublishConfirmed(false); setPreview(false)
+        setSessionMismatchOwner(expectedUserId); setPreview(false)
         await refresh()
       }
-      setError(cause instanceof Error ? cause.message : 'Publication was not confirmed. Your text is still here. Retry to check the same question.')
+      setError(cause instanceof Error ? cause.message : 'Publication was not confirmed. Your text is still here. Try posting it again.')
     }
     finally { publishingRef.current = false; setPublishing(false) }
   }
@@ -204,7 +208,6 @@ export default function CommunityComposer() {
       return
     }
     setPreview(true)
-    setPublishConfirmed(false)
     setTimeout(() => document.getElementById('community-preview-title')?.focus(), 0)
   }
 
@@ -221,7 +224,7 @@ export default function CommunityComposer() {
 
   if (sessionMismatchOwner && session?.user?.id !== sessionMismatchOwner) return <div className={styles.content}>
     <h1 className={styles.title}>Check your browser profile before posting</h1>
-    <p className={styles.notice} role="alert">Your browser profile changed or its cookies expired. Nothing was posted. Your question was saved in My drafts on this browser. Check the profile before reopening it.</p>
+    <p className={styles.notice} role="alert">Your browser profile changed or its cookies expired. Nothing was posted. Your post was saved in My drafts on this browser. Check the profile before reopening it.</p>
     <div className={styles.actions}><Link className={styles.primary} href={communityHref('/community/account', params.toString())}>Check browser profile</Link><Link className={styles.button} href={communityHref('/community/drafts', params.toString())}>My drafts</Link></div>
   </div>
   if (loadError) return <div className={styles.content}>
@@ -233,7 +236,10 @@ export default function CommunityComposer() {
   const destination = COMMUNITY_DESTINATIONS.find(item => item.slug === draft.city)?.name
 
   return <div className={styles.content}>
-    <div className={styles.heading}><div><p className={styles.eyebrow}>{config.label} · {draft.type === 'questions' && session?.postingEnabled ? 'review before posting' : 'draft only'}</p><h1>{preview ? 'Preview your draft' : draft.type === 'questions' && session?.postingEnabled ? 'Ask a question' : config.action}</h1><p className={styles.intro}>Save draft keeps your text on this browser; it does not publish it. Anyone using this browser profile may be able to read saved drafts. A question is public only after you choose Publish question.</p></div></div>
+    <div className={styles.heading}><div><p className={styles.eyebrow}>{config.label}</p>
+      <h1>{preview ? 'Check your post' : draft.type === 'meetups' ? 'Find a travel buddy' : draft.type === 'questions' ? 'Ask other travellers' : 'Write a trip note'}</h1>
+      <p className={styles.intro}>{draft.type === 'meetups' ? 'Pick a day and describe what you’d like to do together.' : draft.type === 'questions' ? 'Ask about a neighbourhood, a meal or getting around.' : 'Write down a place or a meal you remember.'}</p>
+    </div></div>
     <CommunityNotice />
     {error && <div className={styles.error} role="alert" style={{ marginBottom: 20 }}><p>{error}</p>{draft.updatedAt && <button type="button" className={styles.quiet} onClick={reopen}>Reopen saved draft</button>}</div>}
     {status && <p className={styles.status} role="status" style={{ marginBottom: 20 }}>{status}</p>}
@@ -241,35 +247,25 @@ export default function CommunityComposer() {
       <div className={styles.meta}><span className={styles.badge}>{destination}</span><span>Draft · not published</span></div>
       <h2 id="community-preview-title" tabIndex={-1}>{draft.title}</h2>
       {draft.type === 'notes' && draft.visitedMonth && <p className={styles.muted} style={{ marginBottom: 12 }}>Visited {draft.visitedMonth}</p>}
-      {draft.type === 'meetups' && <p style={{ marginBottom: 18 }}>{draft.meetupDate} · {draft.startTime}–{draft.endTime} KST<br />{draft.places} available {draft.places === '1' ? 'place' : 'places'} · not open for requests</p>}
+      {draft.type === 'meetups' && <p style={{ marginBottom: 18 }}>{draft.meetupDate} · Korea time</p>}
+      {draft.type === 'meetups' && (draft.startTime || draft.endTime) && <p className={styles.help}>Your earlier draft listed {draft.startTime || '…'}–{draft.endTime || '…'} (Korea time). To share these hours, add them to your post.</p>}
       <p className={styles.body}>{draft.body}</p>
       <div className={styles.actions}><button className={styles.button} type="button" disabled={publishing} onClick={() => setPreview(false)}>Continue editing</button><button className={styles.button} type="button" disabled={publishing} onClick={() => save()}>Save draft</button></div>
-      {draft.type === 'questions' && session?.postingEnabled && <div className={styles.compactForm}>
+      {canPublish && session && <div className={styles.compactForm}>
         {session.user && session.profileReady ? <>
-          <p>This question will be visible to everyone under <strong>{session.user.displayName}</strong>. Other people can add comments.</p>
-          <label className={styles.check}><input type="checkbox" checked={publishConfirmed} disabled={publishing} onChange={event => setPublishConfirmed(event.target.checked)} /><span>I have checked the preview and removed personal contact, accommodation and booking details.</span></label>
-          <button type="button" className={styles.primary} disabled={!publishConfirmed || publishing} onClick={publish}>{publishing ? 'Publishing…' : 'Publish question'}</button>
-          <p className={styles.help}>Publishing also saves a browser draft so a failed request can be retried without creating a second question. The draft is kept separately after publishing.</p>
-        </> : <CommunityGuestSetup beforePrepare={() => Boolean(save(false))} onPrepared={() => { setPublishConfirmed(false); setStatus('Your nickname is ready. Check the preview and choose Publish question. Nothing has been posted.') }} />}
+          <p>Anyone can read this post and reply.</p>
+          <button type="button" className={styles.primary} disabled={publishing} onClick={publish}>{publishing ? 'Posting…' : `Post as ${session.user.displayName}`}</button>
+          <p className={styles.help}>A copy stays in My drafts on this browser.</p>
+        </> : <CommunityGuestSetup beforePrepare={() => Boolean(save(false))} onPrepared={() => { setStatus('Your nickname is ready. Check your post and the name shown below. Nothing has been posted.') }} />}
       </div>}
     </section> : <form className={styles.form} noValidate onSubmit={showPreview}>
       {Object.keys(errors).length > 0 && <p className={styles.error} role="alert">Check the marked fields to preview this draft. You can still save it unfinished.</p>}
       <label className={styles.field}>Destination<select {...fieldProps('city')} value={draft.city} onChange={event => change('city', event.target.value)}><option value="">Choose a destination</option>{COMMUNITY_DESTINATIONS.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select>{fieldError('city')}</label>
       <label className={styles.field}>{draft.type === 'questions' ? 'Your question' : draft.type === 'notes' ? 'Title' : 'Activity'}<input {...fieldProps('title')} value={draft.title} maxLength={140} onChange={event => change('title', event.target.value)} placeholder={draft.type === 'questions' ? 'What would you like to check?' : draft.type === 'notes' ? 'What happened during your visit?' : 'A walk, a meal or another short activity'} />{fieldError('title')}<span className={styles.help}>{draft.title.length}/140 characters</span></label>
       {draft.type === 'notes' && <label className={styles.field}>Month of visit (optional)<input {...fieldProps('visitedMonth')} type="month" value={draft.visitedMonth} min="1900-01" max={today ? today.slice(0, 7) : undefined} onChange={event => change('visitedMonth', event.target.value)} />{fieldError('visitedMonth')}<span className={styles.help}>Leave this blank if you do not remember the month.</span></label>}
-      {draft.type === 'meetups' && <>
-        <div className={styles.formGrid}>
-          <label className={styles.field}>Meetup date<input {...fieldProps('meetupDate')} type="date" value={draft.meetupDate} min={today || undefined} onChange={event => change('meetupDate', event.target.value)} />{fieldError('meetupDate')}</label>
-          <label className={styles.field}>Available places<select {...fieldProps('places')} value={draft.places} onChange={event => change('places', event.target.value)}>{[1, 2, 3, 4, 5, 6, 7, 8].map(value => <option value={value} key={value}>{value}</option>)}</select>{fieldError('places')}<span className={styles.help}>Not including you.</span></label>
-        </div>
-        <div className={styles.formGrid}>
-          <label className={styles.field}>Start time (KST)<input {...fieldProps('startTime')} type="time" value={draft.startTime} onChange={event => change('startTime', event.target.value)} />{fieldError('startTime')}</label>
-          <label className={styles.field}>End time (KST)<input {...fieldProps('endTime')} type="time" value={draft.endTime} onChange={event => change('endTime', event.target.value)} />{fieldError('endTime')}</label>
-        </div>
-        <p className={styles.help}>Use Korea Standard Time. The activity must finish on the same day. This date is separate from the month selected in Explore.</p>
-      </>}
-      <label className={styles.field}>{draft.type === 'questions' ? 'Details' : draft.type === 'notes' ? 'Your trip note' : 'Activity and public meeting area'}<textarea {...fieldProps('body')} value={draft.body} maxLength={3000} rows={8} onChange={event => change('body', event.target.value)} />{fieldError('body')}<span className={styles.help}>{draft.body.length}/3,000 characters. Leave out contact details, booking references and accommodation addresses.</span></label>
-      <div className={styles.actions}><button type="submit" className={styles.button}>Preview draft</button><button type="button" className={styles.primary} onClick={() => save()}>Save draft</button></div>
+      {draft.type === 'meetups' && <label className={styles.field}>Meetup date (Korea time)<input {...fieldProps('meetupDate')} type="date" value={draft.meetupDate} min={today || undefined} onChange={event => change('meetupDate', event.target.value)} />{fieldError('meetupDate')}</label>}
+      <label className={styles.field}>{draft.type === 'questions' ? 'Details' : draft.type === 'notes' ? 'Your trip note' : 'What’s the plan?'}<textarea {...fieldProps('body')} value={draft.body} maxLength={3000} rows={8} onChange={event => change('body', event.target.value)} />{fieldError('body')}<span className={styles.help}>{draft.body.length}/3,000 characters. Leave out contact details, booking references and accommodation addresses.</span></label>
+      <div className={styles.actions}><button type="submit" className={styles.primary}>Preview</button><button type="button" className={styles.button} onClick={() => save()}>Save draft</button></div>
       <p className={styles.help}>{dirty ? 'You have unsaved changes.' : draft.updatedAt ? 'Saved in this browser only. Not published.' : 'You can save an unfinished draft.'} Drafts are not synced across browsers or devices.</p>
     </form>}
   </div>

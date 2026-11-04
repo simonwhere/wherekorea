@@ -8,6 +8,8 @@ export interface CommunitySessionData {
   googleEnabled: boolean
   guestEnabled: boolean
   postingEnabled: boolean
+  meetupsReady: boolean
+  meetupPostingEnabled: boolean
   user: { id: string; displayName: string | null; isGuest: boolean } | null
   profileReady: boolean
   moderator: boolean

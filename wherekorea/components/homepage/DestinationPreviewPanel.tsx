@@ -90,9 +90,9 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
     }
   }
 
-  function handleOpenFull() {
+  function openCity(section = '') {
     const path = browse ? browseHref(browse, `/destination/${d.slug}`) : `/destination/${d.slug}`
-    router.push(withBrowseContext(path, window.location.search))
+    router.push(withBrowseContext(path, window.location.search) + section)
   }
 
   return (
@@ -290,6 +290,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
             </div>
           )}
 
+          <button type="button" className="city-guide-shortcut" onClick={() => openCity('#neighborhoods')}>See streets, food &amp; map →</button>
           {/* Access */}
           <div style={{ marginBottom: 18 }}>
             <div style={{
@@ -393,7 +394,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
           {inCompare ? '✓ Added to compare' : '+ Add to compare'}
         </button>
         <button
-          onClick={handleOpenFull}
+          onClick={() => openCity()}
           style={{
             flexShrink: 0,
             padding: '11px 16px',
@@ -406,7 +407,7 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
             transition: 'all 120ms',
           }}
         >
-          Open full page →
+          Explore {d.name} →
         </button>
         {compareDisabled && <p style={{ flexBasis: '100%', fontSize: 12, color: 'rgba(255,255,255,.7)' }}>Compare holds up to 3 places. Remove one to add another.</p>}
       </div>

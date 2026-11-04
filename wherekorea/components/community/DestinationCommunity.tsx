@@ -9,16 +9,17 @@ export default function DestinationCommunity({ slug, name, contextSearch }: { sl
   return (
     <section className={styles.section} aria-labelledby="destination-community-heading">
       <div className={styles.heading}>
-        <div><h2 id="destination-community-heading">Community in {name}</h2></div>
+        <div><h2 id="destination-community-heading">Talk about {name}</h2></div>
         <CommunityEntryLink href={communityHref('/community', contextSearch, context)} city={slug} className={styles.link}>View community →</CommunityEntryLink>
       </div>
-      <p className={styles.description}>Questions, trip notes and meetups about {name}.</p>
+      <p className={styles.description}>Ask about the food and streets, or find someone for a walk or a meal.</p>
       {posts.length > 0 && <ul className={styles.posts}>{posts.map(post => <li key={post.id}>
         <span>WhereKorea team · Team guide</span>
         <CommunityEntryLink href={communityHref(`/community/posts/${post.id}`, contextSearch, context)} city={slug} className={styles.postTitle}>{post.title}</CommunityEntryLink>
       </li>)}</ul>}
-      <p className={styles.note}>Read city questions in Community. You can also prepare a question and keep a draft in this browser.</p>
-      <CommunityEntryLink href={communityHref('/community/new', contextSearch, context)} city={slug} className={styles.action}>Write a question about {name}</CommunityEntryLink>
+      <div className={styles.actions}>
+      <CommunityEntryLink href={communityHref('/community/new', contextSearch, context)} city={slug} className={styles.action}>Ask about {name}</CommunityEntryLink>
+      <CommunityEntryLink href={communityHref('/community', contextSearch, { city: slug, type: 'meetups' })} city={slug} className={styles.link}>Find a travel buddy →</CommunityEntryLink></div>
     </section>
   )
 }

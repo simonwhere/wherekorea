@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { COMMUNITY_TYPES, COMMUNITY_DESTINATIONS, communityHref, parseCommunityState } from '@/lib/community'
 import { getCommunityPosts } from '@/data/community-posts'
@@ -15,6 +16,7 @@ export default function CommunityHub() {
   const router = useRouter()
   const { session } = useCommunitySession()
   const { type, city } = parseCommunityState(new URLSearchParams(params.toString()))
+  const [meetupDate, setMeetupDate] = useState('')
   const current = COMMUNITY_TYPES.find(item => item.value === type)!
   const cityName = COMMUNITY_DESTINATIONS.find(item => item.slug === city)?.name
   const posts = getCommunityPosts(type, city)
@@ -22,8 +24,8 @@ export default function CommunityHub() {
 
   return <>
     <div className={styles.heading}>
-      <div><p className={styles.eyebrow}>Beyond the destination guide</p><h1>Community</h1><p className={styles.intro}>Questions about getting around, notes from a trip, and plans to meet other travellers.</p></div>
-      <Link href={newHref} className={styles.primary}>{type === 'questions' ? session?.postingEnabled ? 'Ask a question' : 'Draft a question' : type === 'notes' ? 'Draft a trip note' : 'Draft a meetup'}</Link>
+      <div><p className={styles.eyebrow}>WhereKorea</p><h1>Community</h1><p className={styles.intro}>Ask what to eat, share a favourite street or find someone to explore with.</p></div>
+      <Link href={newHref} className={styles.primary}>{type === 'questions' ? session?.postingEnabled ? 'Ask a question' : 'Draft a question' : type === 'notes' ? 'Draft a trip note' : session?.meetupPostingEnabled ? 'Suggest a meetup' : 'Draft a meetup'}</Link>
     </div>
     <CommunityNotice />
     <div className={styles.layout}>
@@ -36,18 +38,21 @@ export default function CommunityHub() {
             <option value="all">All destinations</option>
             {COMMUNITY_DESTINATIONS.map(item => <option key={item.slug} value={item.slug}>{item.name}</option>)}
           </select></label>
+          {type === 'meetups' && <label className={styles.field}>Date in Korea (optional)
+            <input type="date" value={meetupDate} onChange={event => setMeetupDate(event.target.value)} />
+          </label>}
           <p className={styles.muted}>{type === 'questions' ? 'Traveller questions and team guides are listed separately' : type === 'notes' ? 'Trip notes include the month of the visit' : 'Meetup dates use Korea time (KST)'}</p>
         </div>
-        {type === 'questions' && <CommunityQuestions key={city} city={city} />}
+        {type !== 'notes' && <CommunityQuestions key={[type, city, type === 'meetups' && meetupDate].join(':')} city={city} type={type} date={type === 'meetups' ? meetupDate : ''} />}
         {posts.length > 0 ? <><h2 className={styles.sectionTitle}>Team guides</h2><ul className={styles.list}>{posts.map(post => <li className={styles.row} key={post.id}>
           <div className={styles.meta}><span className={styles.badge}>{COMMUNITY_DESTINATIONS.find(item => item.slug === post.city)?.name}</span><span>{post.author} · Team guide</span></div>
           <h2><Link href={communityHref(`/community/posts/${post.id}`, params.toString(), { type, city })}>{post.title}</Link></h2>
           <p>{post.excerpt}</p>
           <p className={styles.muted}>Published {post.publishedAt}</p>
-        </li>)}</ul></> : type !== 'questions' ? <div className={styles.empty}>
+        </li>)}</ul></> : type === 'notes' ? <div className={styles.empty}>
           <p className={styles.eyebrow}>{cityName || 'Across Korea'}</p>
-          <h2>{type === 'notes' ? 'No trip notes here yet' : 'No meetups here yet'}</h2>
-          <p>{type === 'notes' ? 'Keep the places you visited and what happened on the trip in a draft on this browser. It will not be posted.' : 'You can draft a date, activity and meeting area. Nothing is listed publicly, and no requests can be sent yet.'}</p>
+          <h2>No trip notes here yet</h2>
+          <p>Write down places and meals from your trip. Trip notes stay on this browser.</p>
           <Link className={styles.primary} href={newHref}>Prepare a draft</Link>
         </div> : null}
         <p className={styles.help} style={{ marginTop: 18 }}>{current.description}</p>

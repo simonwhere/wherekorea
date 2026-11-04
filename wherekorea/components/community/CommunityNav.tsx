@@ -11,7 +11,10 @@ import type { CommunityNotificationsResult } from '@/lib/community-inbox'
 
 export function CommunityNotice() {
   const { session, loading, error } = useCommunitySession()
-  return <p className={styles.notice}>{loading ? 'Checking whether public questions are available…' : error ? 'Public questions could not be checked. Browser drafts are still available.' : session?.postingEnabled ? 'Questions and comments are public. Trip notes and meetup ideas remain browser-only drafts; meetup requests are not open.' : 'Public posting and meetup requests are not open yet. You can keep a draft on this browser.'}</p>
+  const type = useSearchParams().get('type')
+  if (type === 'notes') return <p className={styles.notice}>Trip notes stay in this browser.</p>
+  const open = type === 'meetups' ? session?.meetupPostingEnabled : session?.postingEnabled
+  return <p className={styles.notice}>{loading ? 'Checking posting availability…' : error ? 'Posting availability could not be checked. Browser drafts are still available.' : open ? 'Write with a nickname. Posts and replies are public.' : 'Posting is closed for now. Drafts stay on this browser.'}</p>
 }
 
 export default function CommunityNav() {
@@ -43,10 +46,12 @@ export default function CommunityNav() {
   return <nav className={styles.nav} aria-label="Community navigation">
     <Link className={styles.back} href={homeHrefFromSearch(params.toString())}>← Back to your destinations</Link>
     <Link href={communityHref('/community', params.toString())} aria-current={pathname === '/community' ? 'page' : undefined}>Community</Link>
-    <Link href={communityHref('/community/drafts', params.toString())} aria-current={pathname === '/community/drafts' ? 'page' : undefined}>My drafts</Link>
-    <Link href={communityHref('/community/mine', params.toString())} aria-current={pathname === '/community/mine' ? 'page' : undefined}>My questions</Link>
+    <Link href={communityHref('/community/mine', params.toString())} aria-current={pathname === '/community/mine' ? 'page' : undefined}>My posts</Link>
     <Link href={communityHref('/community/notifications', params.toString())} aria-current={pathname === '/community/notifications' ? 'page' : undefined}>Replies{count > 0 && <span className={styles.badge} style={{ marginLeft: 7 }} aria-label={`${count} unread replies`}>{count > 99 ? '99+' : count}</span>}</Link>
+    <details className={styles.navMore}><summary>More</summary><div>
+    <Link href={communityHref('/community/drafts', params.toString())} aria-current={pathname === '/community/drafts' ? 'page' : undefined}>My drafts</Link>
     <Link href={communityHref('/community/guidelines', params.toString())} aria-current={pathname === '/community/guidelines' ? 'page' : undefined}>Guidelines</Link>
     <Link href={communityHref('/community/account', params.toString())} aria-current={pathname.startsWith('/community/account') ? 'page' : undefined}>Browser profile</Link>
+    </div></details>
   </nav>
 }
