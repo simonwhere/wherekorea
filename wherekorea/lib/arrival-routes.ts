@@ -1,9 +1,10 @@
-import type { ArrivalCard } from '@/data/arrival/types'
+const arrivalSlugs = ['andong', 'gyeongju', 'jeonju', 'sokcho', 'tongyeong', 'jeju'] as const
+export type ArrivalSlug = typeof arrivalSlugs[number]
 
-export function hasArrivalCard(slug: string): slug is ArrivalCard['slug'] {
-  return slug === 'andong' || slug === 'gyeongju' || slug === 'jeonju'
+export function hasArrivalCard(slug: string): slug is ArrivalSlug {
+  return arrivalSlugs.some(city => city === slug)
 }
 
-export function arrivalPath(slug: ArrivalCard['slug']) {
+export function arrivalPath(slug: ArrivalSlug) {
   return `/from-seoul/${slug}`
 }

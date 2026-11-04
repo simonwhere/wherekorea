@@ -1,10 +1,13 @@
+import type { ArrivalSlug } from '@/lib/arrival-routes'
+
 export interface ArrivalCard {
-  slug: 'andong' | 'gyeongju' | 'jeonju'
+  slug: ArrivalSlug
+  mainMode: 'rail' | 'coach' | 'flight'
   place: string
   placeKo: string
   station: string
   stationKo: string
-  glance: { rail: string; onward: string; back: string }
+  glance: { fromSeoul: string; onward: string; back: string }
   fromSeoul: string
   onward: string
   returnLocal: string
@@ -12,5 +15,5 @@ export interface ArrivalCard {
   returnSeoul: string
   check: string
   checked: string
-  sources: { label: string; url: string; use: 'rail' | 'local' | 'return' }[]
+  sources: { label: string; url: string; use: 'intercity' | 'local' | 'return' }[]
 }

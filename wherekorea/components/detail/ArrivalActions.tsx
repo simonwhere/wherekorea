@@ -35,7 +35,7 @@ export default function ArrivalActions({ slug, city, place }: { slug: ArrivalCar
       <button type="button" onClick={copyLink}>Copy link</button>
       {typeof navigator.share === 'function' && <button type="button" onClick={async () => {
         try {
-          await navigator.share({ title: `${city} arrival card · WhereKorea`, text: `Seoul to ${place} and back by train and bus.`, url })
+          await navigator.share({ title: `${city} arrival card · WhereKorea`, text: `From Seoul to ${place} and back without a car.`, url })
           track('share_clicked', { slug })
         } catch (err) {
           if (!(err instanceof Error && err.name === 'AbortError')) setStatus('Use Copy link to share this card.')

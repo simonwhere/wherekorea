@@ -2,13 +2,14 @@ import type { ArrivalCard } from './types'
 
 export const jeonju: ArrivalCard = {
   slug: 'jeonju',
+  mainMode: 'rail',
   place: 'Jeondong Cathedral · Hanok Village',
   placeKo: '전동성당.한옥마을',
   station: 'Jeonju Station',
   stationKo: '전주역',
   returnStop: '30602',
   glance: {
-    rail: 'Yongsan → Jeonju by KTX',
+    fromSeoul: 'Yongsan → Jeonju by KTX',
     onward: 'Bus 119 → Jeondong Cathedral · Hanok Village',
     back: 'Bus 119 → Jeonju Station → KTX to Yongsan',
   },
@@ -19,7 +20,7 @@ export const jeonju: ArrivalCard = {
   check: 'Look up stop 30602 for the next 119 before leaving the village. Check the departure time and seats for Jeonju → Yongsan on KORAIL.',
   checked: '2026-11-04',
   sources: [
-    { label: 'KORAIL trains and seats', url: 'https://www.korail.com/global/eng/ticket/reservation', use: 'rail' },
+    { label: 'KORAIL trains and seats', url: 'https://www.korail.com/global/eng/ticket/reservation', use: 'intercity' },
     { label: 'Jeonju bus 119 route', url: 'https://its.jeonju.go.kr/fore/bus1.view?lang=en', use: 'local' },
     { label: 'Jeonju bus arrivals by stop number', url: 'https://its.jeonju.go.kr/fore/bus2.view?lang=en', use: 'return' },
     { label: 'Hanok Village directions', url: 'https://hanok.jeonju.go.kr/contents/en_map', use: 'local' },

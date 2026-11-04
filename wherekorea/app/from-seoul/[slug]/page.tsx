@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { arrivalCards } from '@/data/arrival'
+import { arrivalCards, modeLabels } from '@/data/arrival'
 import { arrivalPath } from '@/lib/arrival-routes'
 import { withBrowseContext, pageSearch } from '@/lib/browse-state'
 import ArrivalActions from '@/components/detail/ArrivalActions'
@@ -29,7 +29,7 @@ export default async function TravelCard({ params, searchParams }: Props) {
   const search = pageSearch(await searchParams)
   const checked = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(card.checked))
   return <main className="arr-wrap arr-single">
-    <Link className="arr-back" href={withBrowseContext('/from-seoul', search)}>← Compare the three routes</Link>
+    <Link className="arr-back" href={withBrowseContext('/from-seoul', search)}>← Compare routes from Seoul</Link>
     <p className="arr-kicker">ARRIVAL CARD · FROM SEOUL</p>
     <h1>{city}</h1>
     <p className="arr-subtitle">{card.place} <span lang="ko">{card.placeKo}</span></p>
@@ -40,12 +40,12 @@ export default async function TravelCard({ params, searchParams }: Props) {
     </nav>
     <div className="arr-trip">
       <section><h2>Getting there</h2><dl>
-        <div><dt>Train to {city}</dt><dd>{card.fromSeoul}</dd></div>
+        <div><dt>{modeLabels[card.mainMode].service} to {city}</dt><dd>{card.fromSeoul}</dd></div>
         <div><dt>{card.station} <span lang="ko">{card.stationKo}</span> → {card.place}</dt><dd>{card.onward}</dd></div>
       </dl></section>
       <section id="return"><h2>Heading back</h2><dl>
         <div><dt>{card.place} → {card.station}</dt><dd>{card.returnLocal}</dd></div>
-        <div><dt>Train back to Seoul</dt><dd>{card.returnSeoul}</dd></div>
+        <div><dt>{modeLabels[card.mainMode].service} back to Seoul</dt><dd>{card.returnSeoul}</dd></div>
       </dl></section>
     </div>
     <section className="arr-check" id="departures"><h2>Check on the day</h2><p>{card.check}</p>

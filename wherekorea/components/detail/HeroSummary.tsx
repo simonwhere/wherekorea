@@ -57,8 +57,6 @@ export default function HeroSummary({ destination: d, currentMonth, browse, show
           <KoreaMiniMap slug={d.slug} size={46} />
         </div>
         <p className="mt-3 text-xs font-semibold text-[#ffb495]">{showLive ? 'Right now' : `Planning · ${MONTH_SHORT[currentMonth - 1]}`}{peak ? ` · Peak month` : ''}</p>
-        {hasArrivalCard(d.slug) && <Link className="wk-arrival-entry" href={withBrowseContext(arrivalPath(d.slug), backHref.split('?')[1] ?? '')}>From Seoul · {d.name} arrival card →</Link>}
-        <DestinationPhotoGallery key={d.slug} photos={guide.photos} name={d.name} />
       </> : <>
       <div className="relative -mx-4 sm:mx-0 sm:rounded-xl overflow-hidden mb-5" style={{ aspectRatio: '21/9' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -105,6 +103,8 @@ export default function HeroSummary({ destination: d, currentMonth, browse, show
       </div>
       <PhotoCredit image={d.image} className="wk-hero-credit" />
       </>}
+      {hasArrivalCard(d.slug) && <Link className="wk-arrival-entry" href={withBrowseContext(arrivalPath(d.slug), backHref.split('?')[1] ?? '')}>From Seoul · {d.name} arrival card →</Link>}
+      {guide && <DestinationPhotoGallery key={d.slug} photos={guide.photos} name={d.name} />}
 
       <p className="text-base text-white/70 leading-relaxed mb-5">{d.hero_summary}</p>
 

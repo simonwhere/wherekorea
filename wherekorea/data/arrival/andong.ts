@@ -2,13 +2,14 @@ import type { ArrivalCard } from './types'
 
 export const andong: ArrivalCard = {
   slug: 'andong',
+  mainMode: 'rail',
   place: 'Hahoe Folk Village',
   placeKo: '하회마을',
   station: 'Andong Station',
   stationKo: '안동역',
   returnStop: '540854',
   glance: {
-    rail: 'Cheongnyangni → Andong by KTX-Eum',
+    fromSeoul: 'Cheongnyangni → Andong by KTX-Eum',
     onward: 'Bus 210 to Hahoe Folk Village',
     back: 'Bus 210 to Andong Station → Cheongnyangni',
   },
@@ -19,7 +20,7 @@ export const andong: ArrivalCard = {
   check: 'Before leaving for the village, check the return bus from 하회마을 and a later train from Andong.',
   checked: '2026-11-04',
   sources: [
-    { label: 'KORAIL train times and seats', url: 'https://www.korail.com/global/eng/ticket/reservation', use: 'rail' },
+    { label: 'KORAIL train times and seats', url: 'https://www.korail.com/global/eng/ticket/reservation', use: 'intercity' },
     { label: 'Andong bus stops · search 210', url: 'https://bus.andong.go.kr/route', use: 'local' },
     { label: 'Andong bus timetable · search 210', url: 'https://bus.andong.go.kr/timetable', use: 'local' },
     { label: 'Return bus arrivals · search 540854', url: 'https://bus.andong.go.kr/route?tab=stop', use: 'return' },

@@ -30,7 +30,7 @@ export default async function ComparePage({ searchParams }: Props) {
   const resolved = (resolvedSlugs ?? []).flatMap((slug) => destinations.filter((d) => d.slug === slug))
   const canonicalPath = comparisonHref(resolvedSlugs ?? [], params.toString())
   const homeHref = homeHrefFromSearch(params.toString())
-  const routeLink = <Link className="wk-arrival-entry" href={withBrowseContext('/from-seoul', params.toString())}>From Seoul without a car · Andong, Gyeongju &amp; Jeonju →</Link>
+  const routeLink = <Link className="wk-arrival-entry" href={withBrowseContext('/from-seoul', params.toString())}>From Seoul without a car · Compare arrival and return routes →</Link>
 
   if (resolved.length < 2) {
     return (
