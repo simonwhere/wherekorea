@@ -1,0 +1,73 @@
+import type { WalkGuide } from './types'
+
+export const hanok: WalkGuide = {
+  slug: 'hanok',
+  city: 'jeonju',
+  name: 'Jeonju Hanok Village',
+  nameKo: '전주 한옥마을',
+  intro: 'Start on Taejo-ro at Gyeonggijeon. Explore the hanok lanes, cross to the brick cathedral, then walk past the old city gate for lunch at Nambu Market.',
+  stops: [
+    {
+      name: 'Gyeonggijeon Shrine',
+      nameKo: '경기전',
+      lat: 35.814176,
+      lng: 127.149980,
+      walk: 'From the Jeondong Cathedral / Hanok Village bus stop, walk to the shrine entrance at 44 Taejo-ro. Look for the stone dismounting post beside the gate.',
+      what: 'Inside the walls, painted wooden gates lead to the hall dedicated to King Taejo. For a look at the hanok shops, follow Taejo-ro east to Eunhaeng-ro, then return to the shrine entrance.',
+      photo: {
+        src: '/walks/hanok/gyeonggijeon.webp',
+        alt: 'A tiled gate with painted eaves at Gyeonggijeon Shrine',
+        credit: 'Bernard Gagnon / Wikimedia Commons · resized and converted to WebP',
+        license: 'CC0 1.0',
+        source: 'https://commons.wikimedia.org/wiki/File:Gyeonggijeon_Shrine_01.jpg',
+        licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      },
+    },
+    {
+      name: 'Jeondong Cathedral',
+      nameKo: '전동성당',
+      lat: 35.81326,
+      lng: 127.14920,
+      walk: 'Back on Taejo-ro, cross from the shrine side to the cathedral at number 51.',
+      what: 'Step into the forecourt to see the red-brick arches and three domed towers. This is a working church. Keep the entrance clear during services.',
+      photo: {
+        src: '/walks/hanok/jeondong.webp',
+        alt: 'Three domed towers above the arched front doors of Jeondong Cathedral',
+        credit: 'Mobius6 / Wikimedia Commons · resized and converted to WebP',
+        license: 'CC BY-SA 4.0',
+        source: 'https://commons.wikimedia.org/wiki/File:Jeondong_Catholic_Cathedral_20230408_001.jpg',
+        licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      },
+    },
+    {
+      name: 'Nambu Market',
+      nameKo: '남부시장',
+      lat: 35.81278,
+      lng: 127.14754,
+      walk: 'Leave the cathedral and head west along Taejo-ro. Cross Paldal-ro towards Pungnammun, the old city gate. The covered market lanes are just south of the gate.',
+      what: 'Look for 피순대 (pi-sundae) on the signs for Jeonju’s dark pork-blood sausage. It comes sliced; the photo shows a serving with kimchi, garlic and dipping paste.',
+      photo: {
+        src: '/walks/hanok/nambu.webp',
+        alt: 'Sliced pi-sundae served with radish kimchi and garlic at Jeonju Nambu Market',
+        credit: 'Jjw / Wikimedia Commons · resized and converted to WebP',
+        license: 'CC BY 4.0',
+        source: 'https://commons.wikimedia.org/wiki/File:20240725_Jeonju_southern_market_-Pisundae.jpg',
+        licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+    },
+  ],
+  food: {
+    name: 'Bean sprout and rice soup',
+    nameKo: '콩나물국밥',
+    detail: 'In the ground-floor market lanes, look for 콩나물국밥 (kongnamul-gukbap). The market style is made by ladling hot broth over rice and bean sprouts. Anchovies and kelp often go into the broth.',
+  },
+  sources: [
+    { label: 'Jeonju City · Hanok Village walking routes', url: 'https://tour.jeonju.go.kr/eng/index.jeonju?menuCd=DOM_000000205004000000' },
+    { label: 'Jeonju Hanok Village · getting here', url: 'https://hanok.jeonju.go.kr/contents/en_map' },
+    { label: 'Academy of Korean Studies · the dismounting post at the start', url: 'https://dh.aks.ac.kr/~heritage/wiki/index.php/전주_경기전_하마비' },
+    { label: 'VisitKorea · Gyeonggijeon Shrine', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=108728' },
+    { label: 'VisitKorea · Jeondong Cathedral', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=108717' },
+    { label: 'Jeonju City · Nambu Market and its soup', url: 'https://tour.jeonju.go.kr/eng/index.jeonju?menuCd=DOM_000000203011001000' },
+    { label: 'VisitKorea · eating at Nambu Market', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=1593611' },
+  ],
+}

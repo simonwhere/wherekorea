@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next'
+import { walks } from '@/data/walks'
 import { destinations } from '@/data/destinations'
 import { arrivalCards } from '@/data/arrival'
 import { arrivalPath } from '@/lib/arrival-routes'
@@ -28,5 +29,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   })
   const community: MetadataRoute.Sitemap = COMMUNITY_POSTS.map(post => ({ url: absUrl(`/community/posts/${post.id}`), lastModified: new Date(post.publishedAt), changeFrequency: 'monthly', priority: 0.4 }))
-  return [...statics, { url: absUrl('/from-seoul'), changeFrequency: 'monthly' }, ...arrivalCards.map(card => ({ url: absUrl(arrivalPath(card.slug)), lastModified: new Date(card.checked) })), ...dests, ...community]
+  return [...statics, { url: absUrl('/from-seoul'), changeFrequency: 'monthly' }, ...arrivalCards.map(card => ({ url: absUrl(arrivalPath(card.slug)), lastModified: new Date(card.checked) })), ...dests, ...walks.map(({slug}) => ({url: absUrl('/walks/' + slug)})), ...community]
 }

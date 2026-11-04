@@ -14,6 +14,7 @@ import WeatherBlock from '@/components/detail/WeatherBlock'
 import WhenToGoBlock from '@/components/detail/WhenToGoBlock'
 import DontMiss from '@/components/detail/DontMiss'
 import FoodBlock from '@/components/detail/FoodBlock'
+import { walks } from '@/data/walks'
 import CityNeighborhoods from '@/components/detail/CityNeighborhoods'
 import { cityNeighborhoods } from '@/data/city-neighborhoods'
 import BudgetBlock from '@/components/detail/BudgetBlock'
@@ -90,6 +91,7 @@ export default async function DestinationPage({ params, searchParams }: Props) {
   if (!destination) notFound()
   const guide = getDestinationGuide(slug)
   const neighborhoods = cityNeighborhoods[slug]
+  const walk = walks.find(item => item.city === slug)
 
   const currentMonth = Number(
     new Date().toLocaleString('en-US', { month: 'numeric', timeZone: 'Asia/Seoul' })
@@ -145,7 +147,8 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       <HeroSummary destination={enriched} currentMonth={browse.month} browse={browse} showLive={showLive} backHref={homeHrefFromSearch(contextSearch)} sharePath={sharePath} />
       <BudgetFitNote slug={slug} browse={browse} />
       {festivals && <LiveDataNotice status={festivals.status} />}
-      {neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food} />}
+      {neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food}
+        walk={walk ? { name: walk.name, href: withBrowseContext('/walks/' + walk.slug, contextSearch), placeName: walk.slug === 'seongsu' ? 'Seongsu café street' : walk.slug === 'hwangnidan' ? 'Hwangnidan-gil' : undefined } : undefined} />}
       <BestForSkipIf destination={enriched} />
       <DontMiss destination={enriched} />
       {!guide && <DestinationCommunity slug={slug} name={destination.name} contextSearch={contextSearch} />}

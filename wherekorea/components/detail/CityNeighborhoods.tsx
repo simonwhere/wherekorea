@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { CityNeighborhoodGuide, CityPlace } from '@/data/city-neighborhoods'
 import SectionTitle from './SectionTitle'
@@ -77,7 +78,7 @@ function AreaOverview({ places, selected, onSelect }: {
   </div>
 }
 
-export default function CityNeighborhoods({ guide, city, food }: { guide: CityNeighborhoodGuide; city: string; food: string }) {
+export default function CityNeighborhoods({ guide, city, food, walk }: { guide: CityNeighborhoodGuide; city: string; food: string; walk?: { name: string; href: string; placeName?: string } }) {
   const [selected, setSelected] = useState(0)
   const [overview, setOverview] = useState(false)
   const place = guide.places[selected]
@@ -85,13 +86,15 @@ export default function CityNeighborhoods({ guide, city, food }: { guide: CityNe
 
   return <section className={styles.section} id="neighborhoods" aria-labelledby="neighborhood-title">
     <SectionTitle><span id="neighborhood-title">Streets &amp; local food</span></SectionTitle>
+    {walk && <Link className={styles.walkLink} href={walk.href}><span><strong>{walk.name} on foot</strong><small>Where to start, what to see and what to eat</small></span><b aria-hidden="true">→</b></Link>}
     <div className={styles.choices} role="group" aria-label={'Places in ' + city}>
-      {guide.places.map((item, index) => (
-        <button key={item.name} type="button" aria-pressed={index === selected}
+      {guide.places.map((item, index) => walk?.placeName === item.name
+        ? <Link key={item.name} href={walk.href} className={styles.walkChip}><span aria-hidden="true">{index + 1}</span>{item.name} →</Link>
+        : <button key={item.name} type="button" aria-pressed={index === selected}
           onClick={() => setSelected(index)} aria-controls="local-place-detail">
           <span aria-hidden="true">{index + 1}</span>{item.name}
         </button>
-      ))}
+      )}
     </div>
     <div className={styles.panel}>
       <div className={styles.mapTools} role="group" aria-label="Map view">

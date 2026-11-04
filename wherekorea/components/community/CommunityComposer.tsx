@@ -15,14 +15,14 @@ import CommunityGuestSetup from './CommunityGuestSetup'
 // This is not a persisted save and disappears when the tab reloads or closes.
 const unsavedDrafts = new Map<string, { draft: CommunityDraft; saved: string }>()
 
-export default function CommunityComposer() {
+export default function CommunityComposer({ suggestion }: { suggestion?: { key: string; title: string; body: string } }) {
   const params = useSearchParams()
   const router = useRouter()
   const { session, refresh } = useCommunitySession()
   const { type, city } = parseCommunityState(new URLSearchParams(params.toString()))
   const draftId = params.get('draft') || ''
   const returnToReview = params.get('review') === '1'
-  const recoveryKey = draftId || `new:${type}:${city}`
+  const recoveryKey = draftId || `new:${type}:${city}:${suggestion?.key || ''}`
   const [draft, setDraft] = useState<CommunityDraft | null>(null)
   const [saved, setSaved] = useState('')
   const [loadError, setLoadError] = useState('')
@@ -86,12 +86,12 @@ export default function CommunityComposer() {
         setStatus('Your saved draft is ready to review. Nothing has been posted.')
       }
     } else {
-      const next = { ...emptyDraft(type, city), id: newDraftId() }
+      const next = { ...emptyDraft(type, city), id: newDraftId(), title: suggestion?.title ?? '', body: suggestion?.body ?? '' }
       setDraft(next)
       setSaved(JSON.stringify(next))
       if (result.error) setError(result.error)
     }
-  }, [draftId, type, city, recoveryKey, reload, returnToReview])
+  }, [draftId, type, city, recoveryKey, reload, returnToReview, suggestion?.title, suggestion?.body])
 
   useEffect(() => () => {
     if (draftRef.current && dirtyRef.current) {

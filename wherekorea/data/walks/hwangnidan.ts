@@ -1,0 +1,72 @@
+import type { WalkGuide } from './types'
+
+export const hwangnidan: WalkGuide = {
+  slug: 'hwangnidan',
+  city: 'gyeongju',
+  name: 'Hwangnidan-gil',
+  nameKo: '황리단길',
+  intro: 'Start on the shop-lined street west of the tombs. Turn into a hanok yard for grilled rice cakes, then walk through the tomb park and out towards the stone observatory.',
+  stops: [
+    {
+      name: 'Hwangnidan-gil on Poseok-ro',
+      nameKo: '황리단길 · 포석로',
+      lat: 35.83741, lng: 129.20995,
+      walk: 'Start at 1080 Poseok-ro (포석로 1080). From Gyeongju KTX Station, bus 710 serves the nearby Cheonmachong Rear Gate · Hwangnidan-gil stop (천마총후문·황리단길).',
+      what: 'Walk past the low tile roofs and peek into the lanes off the main street. Old houses along here now hold cafés, small shops and photo studios.',
+      photo: {
+        src: '/walks/hwangnidan/street.webp',
+        alt: 'Shopfronts, tiled roofs and pedestrians along Hwangnidan-gil in Gyeongju',
+        credit: 'Seefooddiet, 2025 · resized and converted to WebP', license: 'CC BY-SA 4.0',
+        source: 'https://commons.wikimedia.org/wiki/File:Hwangnidan-gil_01.jpg',
+        licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+      },
+    },
+    {
+      name: 'Rice cakes at Bitgguri',
+      nameKo: '빛꾸리',
+      lat: 35.83743, lng: 129.21067,
+      walk: 'Leave Poseok-ro for the lanes on the tomb-park side. Look for 16-1 Sonhyoja-gil (손효자길 16-1) and the café’s hanok courtyard.',
+      what: 'The house has floor seating and a garden of earthenware jars. Look for the grilled rice cakes and tangerine ginger tea on the menu.',
+    },
+    {
+      name: 'Cheonmachong Tomb',
+      nameKo: '천마총',
+      lat: 35.83864, lng: 129.21047,
+      walk: 'From the café, follow signs for the rear gate of Daereungwon (대릉원 후문). Inside the park, follow the path to Cheonmachong.',
+      what: 'Look for the entrance cut into the grassy mound. The tomb takes its name from a painted horse found on a saddle flap inside.',
+      photo: {
+        src: '/walks/hwangnidan/tomb.webp',
+        alt: 'The three characters 天馬塚 above the entrance beneath Cheonmachong’s grassy mound',
+        credit: 'Daniel Mietchen, 2016 · resized and converted to WebP', license: 'CC0 1.0',
+        source: 'https://commons.wikimedia.org/wiki/File:대릉원_천마총_20160724_155901.jpg',
+        licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      },
+    },
+    {
+      name: 'Cheomseongdae Observatory',
+      nameKo: '첨성대',
+      lat: 35.83433, lng: 129.21853,
+      walk: 'Walk through the tomb park to the main gate (대릉원 정문). From there follow the signs for 첨성대 to the open grounds east of the park.',
+      what: 'Stand back from the stone tower to see its curved sides and the square opening partway up. It was built to observe the skies during the Silla kingdom.',
+      photo: {
+        src: '/walks/hwangnidan/observatory.webp',
+        alt: 'Cheomseongdae’s tapering stone tower and square window in an open field',
+        credit: 'Bernard Gagnon, 2022 · resized and converted to WebP', license: 'CC0 1.0',
+        source: 'https://commons.wikimedia.org/wiki/File:Cheomseongdae_Observatory_02.jpg',
+        licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      },
+    },
+  ],
+  food: {
+    name: 'Grilled rice cakes at Bitgguri',
+    nameKo: '색동 인절미구이',
+    detail: 'Ask for saekdong injeolmi at the second stop. The colourful rice cakes are grilled, dusted with soybean powder and served with jocheong (조청), a thick grain syrup for dipping.',
+  },
+  sources: [
+    { label: 'Hwangnidan Street · Korea Tourism Organization', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=174203' },
+    { label: 'Bitgguri · menu and address', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=174235' },
+    { label: 'Cheonmachong Tomb', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=112226' },
+    { label: 'Cheomseongdae Observatory', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=94442' },
+    { label: 'Gyeongju bus information', url: 'https://livebus.gyeongju.go.kr/' },
+  ],
+}
