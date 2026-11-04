@@ -597,7 +597,7 @@ export const destinations: Destination[] = [
     skip_if:
       "Village buses are infrequent. Scattered viewpoints and coastal stops are easier to reach by car.",
     travel_time: {
-      from_seoul: '~4h 30m bus (7/day)',
+      from_seoul: '~4h 30m intercity bus from Seoul Nambu',
       from_incheon_airport: '~6h (transfer in Seoul)',
       from_busan_station: '~2h+ bus',
     },

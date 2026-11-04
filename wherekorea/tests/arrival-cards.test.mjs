@@ -16,7 +16,9 @@ const { arrivalCards } = await import(registry.href)
 const cards = Object.fromEntries(arrivalCards.map(card => [card.slug, card]))
 
 test('only reviewed routes expose shareable city paths', () => {
-  assert.deepEqual(arrivalCards.map(card => card.slug).sort(), ['andong', 'gyeongju', 'jeju', 'jeonju', 'sokcho', 'tongyeong'])
+  assert.deepEqual(arrivalCards.map(card => card.slug).sort(), [
+    'andong', 'gangneung', 'gyeongju', 'jeju', 'jeonju', 'namhae', 'sokcho', 'tongyeong', 'yeosu',
+  ])
   for (const { slug } of arrivalCards) {
     assert.equal(hasArrivalCard(slug), true)
     assert.equal(arrivalPath(slug), `/from-seoul/${slug}`)
@@ -30,12 +32,15 @@ test('each card identifies the return stop, transport mode and official departur
   const seoulTerminals = {
     andong: /Cheongnyangni/, gyeongju: /Seoul Station/, jeonju: /Yongsan/,
     sokcho: /Gyeongbu|서울경부/, tongyeong: /Gyeongbu/, jeju: /Gimpo/,
+    gangneung: /Seoul Station/, yeosu: /Yongsan/, namhae: /Nambu/,
   }
   const localHosts = {
     andong: ['bus.andong.go.kr'],
     gyeongju: ['livebus.gyeongju.go.kr'],
     jeonju: ['its.jeonju.go.kr', 'hanok.jeonju.go.kr'],
     sokcho: ['bis.sokcho.go.kr'], tongyeong: ['tsbis.kr'], jeju: ['www.airport.co.kr', 'bus.jeju.go.kr'],
+    gangneung: ['bis.gn.go.kr'],
+    yeosu: ['its.yeosu.go.kr', 'www.yeosu.go.kr'], namhae: ['tsbis.kr'],
   }
   for (const card of arrivalCards) {
     assert.ok(card.returnLocal.includes(card.returnStop))
@@ -73,4 +78,22 @@ test('outbound and return instructions identify the correct local bus and stop f
   assert.equal(jeju.mainMode, 'flight')
   assert.match(jeju.onward, /Gate 5.*600.*주상절리대\[남\]/)
   assert.match(jeju.returnLocal, /406000402.*제주국제공항.*제주 썬호텔/)
+})
+
+test('Gyeongpo Beach uses separate arrival and departure stops on the two loops', () => {
+  const { gangneung } = cards
+  assert.match(gangneung.onward, /4200721.*202-1.*4201420/)
+  assert.match(gangneung.returnLocal, /202\b.*4201242.*경포호.*4200293/)
+})
+
+test('Hyangiram uses different transfers and a different stop for the ride home', () => {
+  const { yeosu } = cards
+  assert.match(yeosu.onward, /3259001.*화장동차고지.*3251180.*111.*3251044/)
+  assert.match(yeosu.returnLocal, /3251042.*111.*한국전력.*3250846.*3259001/)
+})
+
+test('the German Village loop continues from the same stop towards the terminal', () => {
+  const { namhae } = cards
+  assert.match(namhae.onward, /020.*3930542.*가천.*3930625/)
+  assert.match(namhae.returnLocal, /020.*3930625.*동천삼거리.*3930612/)
 })

@@ -7,7 +7,7 @@ import { homeHrefFromSearch, withBrowseContext, pageSearch } from '@/lib/browse-
 
 export const metadata: Metadata = {
   title: 'From Seoul without a car',
-  description: 'Compare car-free trips from Seoul to Andong, Gyeongju, Jeonju, Sokcho, Tongyeong and Jeju. Find the local bus and the stop for the journey back.',
+  description: 'Find the local bus when you arrive, the stop for the trip back and your connection to Seoul. Compare car-free routes across Korea.',
   alternates: { canonical: '/from-seoul' },
 }
 
