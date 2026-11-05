@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { destinations } from '@/data/destinations'
+import { walks } from '@/data/walks'
 import { fetchWeatherForAll, applyWeather } from '@/lib/weather'
 import { fetchFestivalDataForAll, applyFestivals } from '@/lib/live/festivals'
 import type { FestivalDataStatus } from '@/lib/live/status'
@@ -7,6 +8,9 @@ import HomepageClient from '@/components/homepage/HomepageClient'
 import { currentKoreaMonth, parseBrowseState } from '@/lib/browse-state'
 
 export const revalidate = 3600
+
+const cardWalks = Object.fromEntries(walks.map(({ city, slug, name, cardRoute }) =>
+  [city, { slug, name, cardRoute }]))
 
 export const metadata: Metadata = { alternates: { canonical: '/' } }
 
@@ -42,5 +46,5 @@ export default async function HomePage({ searchParams }: Props) {
     enriched = applyFestivals(applyWeather(destinations, weatherMap), festivalMap.data)
     festivalStatus = festivalMap.status
   }
-  return <HomepageClient destinations={enriched} selectedSlug={selectedSlug} month={browse.month} nowMonth={nowMonth} browse={browse} festivalStatus={festivalStatus} />
+  return <HomepageClient destinations={enriched} cardWalks={cardWalks} selectedSlug={selectedSlug} month={browse.month} nowMonth={nowMonth} browse={browse} festivalStatus={festivalStatus} />
 }

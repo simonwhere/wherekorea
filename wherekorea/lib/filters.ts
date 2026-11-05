@@ -24,6 +24,8 @@ function matchesSearch(d: Destination, searchQuery: string): boolean {
     d.best_for,
     d.food,
     d.seasonal_weather_context,
+    ...(d.hotspots ?? []).map(place => place.name),
+    ...(d.search_names ?? []),
     ...d.tags,
   ]
   return searchable.some((value) => value.toLowerCase().includes(q))

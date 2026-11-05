@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Destination, FilterTag } from '@/data/types'
+import type { WalkGuide } from '@/data/walks/types'
 import { type CategoryId } from '@/data/destinations-meta'
 import { track } from '@/lib/analytics'
 import { type BrowseState, browseHref, browseQuery, parseBrowseState, homeHrefFromSearch } from '@/lib/browse-state'
@@ -34,6 +35,7 @@ function useIsDesktop() {
 
 interface Props {
   destinations: Destination[]
+  cardWalks: Record<string, Pick<WalkGuide, 'slug' | 'name' | 'cardRoute'>>
   selectedSlug: string | null
   month: number
   nowMonth: number
@@ -41,7 +43,7 @@ interface Props {
   festivalStatus?: FestivalDataStatus
 }
 
-export default function HomepageClient({ destinations, nowMonth, browse, festivalStatus }: Props) {
+export default function HomepageClient({ destinations, cardWalks, nowMonth, browse, festivalStatus }: Props) {
   const router = useRouter()
   // Native search URL updates and router navigation share this one selection source.
   const selectedSlug = useSearchParams().get('destination')
@@ -302,8 +304,8 @@ export default function HomepageClient({ destinations, nowMonth, browse, festiva
               <p>{state.mode === 'plan' ? `${MONTHS[state.month - 1]} · usual seasonal conditions`
                 : `Current weather · ${liveCount} of ${destinations.length} places`}</p>
             </div>
-            <div className="wk-search"><span aria-hidden>⌕</span><label htmlFor="destination-search" className="sr-only">Search cities, food or experiences</label>
-              <input id="destination-search" type="search" value={state.q} onChange={(e) => search(e.target.value)} onBlur={() => searchCommit.current.cancel()} placeholder="City, food or experience…" maxLength={200} />
+            <div className="wk-search"><span aria-hidden>⌕</span><label htmlFor="destination-search" className="sr-only">Search cities, neighbourhoods, food or experiences</label>
+              <input id="destination-search" type="search" value={state.q} onChange={(e) => search(e.target.value)} onBlur={() => searchCommit.current.cancel()} placeholder="City, neighbourhood or food…" maxLength={200} />
               {state.q && <button type="button" onClick={() => update({ q: '' })} aria-label="Clear search">×</button>}
             </div>
           </div>
@@ -315,8 +317,18 @@ export default function HomepageClient({ destinations, nowMonth, browse, festiva
           </div>
 
           <div className="wk-destination-grid">
-            {filtered.map((d) => <DestinationCard key={d.slug} destination={d} isSelected={selectedSlug === d.slug}
-              browse={state} month={state.month} onSelect={() => navigate(stateRef.current, selectedSlug === d.slug ? null : d.slug)} />)}
+            {filtered.map((d) => {
+              const walk = cardWalks[d.slug]
+              return <DestinationCard key={d.slug} destination={d} isSelected={selectedSlug === d.slug}
+                walk={walk && {
+                  name: walk.name,
+                  route: walk.cardRoute,
+                  href: browseHref(state, '/walks/' + walk.slug, {
+                    from: 'explore', ...(selectedSlug ? { destination: selectedSlug } : {}),
+                  }),
+                }}
+                browse={state} month={state.month} onSelect={() => navigate(stateRef.current, selectedSlug === d.slug ? null : d.slug)} />
+            })}
           </div>
           {filtered.length === 0 && <section className="wk-empty-state">
             <h3>No places match these filters.</h3>

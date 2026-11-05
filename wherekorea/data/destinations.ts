@@ -8,6 +8,7 @@ export const destinations: Destination[] = [
   {
     slug: 'seoul',
     name: 'Seoul',
+    search_names: ['서울', '성수동', 'Seongsu Station, Exit 3', '성수역 3번 출구', 'Daelim Changgo warehouse', '대림창고', 'Somunnan Seongsu Gamjatang', '소문난성수감자탕'],
     hotspots: [
       { name: 'Seongsu-dong', note: 'Fashion shops and cafés' },
       { name: 'Gwanghwamun & Seochon', note: 'Gyeongbokgung Palace and the low-rise alleys to its west' },
@@ -221,6 +222,7 @@ export const destinations: Destination[] = [
   {
     slug: 'gyeongju',
     name: 'Gyeongju',
+    search_names: ['경주', 'Hwangnidan-gil on Poseok-ro', '황리단길 · 포석로', 'Rice cakes at Bitgguri', '빛꾸리', 'Cheonmachong Tomb', '천마총', 'Cheomseongdae Observatory', '첨성대'],
     hotspots: [
       { name: 'Hwangnidan-gil', note: 'Hanok cafés and shops near the central historic area' },
       { name: 'Daereungwon & Cheomseongdae', note: 'Royal burial mounds and a stone observatory within walking distance' },
@@ -290,6 +292,7 @@ export const destinations: Destination[] = [
   {
     slug: 'jeonju',
     name: 'Jeonju',
+    search_names: ['전주 한옥마을', '전주한옥마을', 'Jeonju Hanok Village', 'Gyeonggijeon Shrine', '경기전', 'Jeondong Cathedral', '전동성당', 'Nambu Market', '남부시장'],
     hotspots: [
       { name: 'Hanok Village', note: 'Traditional tiled-roof houses, guesthouses and food streets' },
       { name: 'Gaekridan-gil', note: 'Bars and restaurants west of the hanok village' },

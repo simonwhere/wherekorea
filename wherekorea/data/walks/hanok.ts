@@ -5,6 +5,7 @@ export const hanok: WalkGuide = {
   city: 'jeonju',
   name: 'Jeonju Hanok Village',
   nameKo: '전주 한옥마을',
+  cardRoute: 'From Gyeonggijeon Shrine to Nambu Market',
   intro: 'Start on Taejo-ro at Gyeonggijeon. Explore the hanok lanes, cross to the brick cathedral, then walk past the old city gate for lunch at Nambu Market.',
   stops: [
     {

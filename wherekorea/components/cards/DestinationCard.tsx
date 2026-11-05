@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import type { Destination } from '@/data/types'
 import { DAILY_AVG, KOREAN_NAMES, REGIONS } from '@/data/destinations-meta'
 import { type BrowseState, currentKoreaMonth } from '@/lib/browse-state'
@@ -27,12 +28,13 @@ interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
+  walk?: { name: string; route: string; href: string }
   bestNowReason?: string
   month?: number
   browse?: BrowseState
 }
 
-export default function DestinationCard({ destination: d, onSelect, isSelected, month = currentKoreaMonth(), browse, bestNowReason }: Props) {
+export default function DestinationCard({ destination: d, onSelect, isSelected, walk, month = currentKoreaMonth(), browse, bestNowReason }: Props) {
   const { compareList, toggleCompare } = useCompare()
   const { savedList, toggleSaved } = useSaved()
   const [imgError, setImgError] = useState(false)
@@ -91,6 +93,11 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
           : 'Current weather unavailable · seasonal guidance shown'}</p>}
         {!!browse?.filters.length && rationale.length > 1 && <p className="wk-card-reason">{rationale[1]}</p>}
         {isPeakNow(d, selectedMonth) && <p className="wk-card-caution">Usually a busier month here</p>}
+        {walk && <Link className="wk-card-walk" href={walk.href} prefetch={false}>
+          <span className="wk-card-walk-name">{walk.name} walk</span>
+          <strong>{walk.route}</strong>
+          <span className="wk-card-walk-arrow" aria-hidden="true">→</span>
+        </Link>}
         <div className="wk-card-actions">
           <span className="wk-card-detail-hint">Explore <span aria-hidden>↗</span></span>
           <button type="button" className="wk-save-button" aria-label={isSaved ? `Remove ${d.name} from saved` : `Save ${d.name}`}

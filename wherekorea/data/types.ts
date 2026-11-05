@@ -95,6 +95,8 @@ export interface Destination {
   // identity
   slug: string
   name: string
+  /** Additional spellings and local names travellers can search for. */
+  search_names?: string[]
 
   // card image
   image: DestinationImage

@@ -2,6 +2,7 @@ import type { WalkGuide } from './types'
 
 export const hwangnidan: WalkGuide = {
   slug: 'hwangnidan',
+  cardRoute: 'Past the royal tombs to Cheomseongdae',
   city: 'gyeongju',
   name: 'Hwangnidan-gil',
   nameKo: '황리단길',

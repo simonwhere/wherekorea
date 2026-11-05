@@ -23,6 +23,7 @@ export interface WalkGuide {
   name: string
   nameKo: string
   intro: string
+  cardRoute: string
   stops: WalkStop[]
   food: { name: string; nameKo: string; detail: string }
   sources: { label: string; url: string }[]

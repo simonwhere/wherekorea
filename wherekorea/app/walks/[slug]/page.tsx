@@ -8,7 +8,7 @@ import { walks, findWalk } from '@/data/walks'
 import { walkStopNumber, walkStopPath } from '@/lib/walk-links'
 import { getCommunityConfig } from '@/lib/community-config'
 import { getDestinationBySlug } from '@/data/destinations'
-import { withBrowseContext, pageSearch } from '@/lib/browse-state'
+import { withBrowseContext, homeHrefFromSearch, pageSearch } from '@/lib/browse-state'
 
 type Props = { params: Promise<{slug: string}>; searchParams: Promise<Record<string,string|string[]|undefined>> }
 export const generateStaticParams = () => walks.map(({slug}) => ({slug}))
@@ -34,8 +34,11 @@ export default async function WalkPage({params,searchParams}: Props) {
   const query = await searchParams
   const initialStop = walkStopNumber(query.stop, guide.stops.length)
   const context = pageSearch(query)
+  const fromExplore = query.from === 'explore'
   return <><Header /><main className={styles.shell}>
-    <Link className={styles.back} href={withBrowseContext('/destination/' + guide.city + '#neighborhoods',context)}>← Back to {city}</Link>
+    <Link className={styles.back} href={fromExplore ? homeHrefFromSearch(context) : withBrowseContext('/destination/' + guide.city + '#neighborhoods', context)}>
+      ← {fromExplore ? 'Back to places' : 'Back to ' + city}
+    </Link>
     <header className={styles.intro}><p className={styles.kicker}>{city} · On foot</p>
       <h1>{guide.name} <small lang="ko">{guide.nameKo}</small></h1><p>{guide.intro}</p></header>
     <WalkExplorer key={guide.slug + (initialStop ?? 0)} initialStop={initialStop} walk={guide} context={context} draftsOnly={!getCommunityConfig().postingEnabled} />
