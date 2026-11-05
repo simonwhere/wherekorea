@@ -40,3 +40,12 @@
   .stops button { display: block; padding: 5px 7px; line-height: 1.35; font-size: 12px; overflow-wrap: anywhere; }
   .stops button span { display: block; font-size: 14px; }
 }
+.actions { margin: 8px 0 15px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.buttons :is(button,a), .shareBox button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 7px 12px; border: 1px solid #6c7987; border-radius: 8px; color: #f5f4ef; font-size: 14px; }
+.buttons :first-child { border-color: #ebad8e; color: #ffcaaf; }
+.actions :is(p,[role=status]) { font-size: 13px; line-height: 1.5; margin: 4px 0; color: #ced6e0; }
+.offlineStatus button { color: #ffbc98; text-decoration: underline; padding: 6px; }
+.shareBox { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; padding: 12px; background: #212a35; border-radius: 9px; }
+.shareBox label { width: 100%; color: #e8edf2; font-size: 14px; }
+.shareBox input { width: 100%; margin-top: 5px; border-radius: 5px; background: #141b23; color: #f5f6f8; padding: 9px; }

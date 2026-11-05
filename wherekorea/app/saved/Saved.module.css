@@ -1,0 +1,12 @@
+.walks { max-width: 720px; margin: 24px 0; color: #f5f4ef; }
+.walks h2 { font-size: 18px; font-weight: 650; margin-bottom: 10px; }
+.walks ul { display: grid; gap: 8px; padding: 0; list-style: none; }
+.walks li { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 16px; border: 1px solid #465360; border-radius: 10px; background: #202733; }
+.walks a { flex: 1; min-width: 0; padding: 14px 0; }
+.walks a strong { display: block; font-size: 16px; color: #ffd1bb; }
+.walks a > span { display: block; margin-top: 4px; font-size: 13px; color: #d1d9e0; overflow-wrap: anywhere; }
+.walks [lang="ko"] { display: inline-block; word-break: keep-all; }
+.walks button { padding: 8px; min-height: 44px; font-size: 13px; color: #e4e8ec; text-decoration: underline; }
+.walks :is(a,button):focus-visible { outline: 2px solid #ffad8c; outline-offset: 2px; }
+.status { color: #d1d9e0; font-size: 13px; }
+.status:not(:empty) { margin-top: 12px; }

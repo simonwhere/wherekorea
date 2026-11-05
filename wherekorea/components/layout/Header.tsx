@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation'
 import WKLogo from '@/components/shared/WKLogo'
+import { useSavedWalkCount } from '@/lib/use-saved-walk-count'
 import { useSaved } from '@/lib/saved-context'
 import { useCompare } from '@/lib/compare-context'
 import { withBrowseContext } from '@/lib/browse-state'
@@ -19,6 +20,8 @@ export default function Header({ searchQuery = '', onSearchChange, onLogoClick }
   const router = useRouter()
   const pathname = usePathname()
   const { savedList } = useSaved()
+  const savedWalkCount = useSavedWalkCount()
+  const savedCount = savedList.length + savedWalkCount
   const { compareList } = useCompare()
 
   function navigate(path: string) {
@@ -62,8 +65,8 @@ export default function Header({ searchQuery = '', onSearchChange, onLogoClick }
             <input className="header-search" type="search" aria-label="Search destinations" placeholder="Search destinations…"
               value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} />
           )}
-          <button className="saved" onClick={() => navigate('/saved')} aria-label={`Saved places, ${savedList.length} saved`} aria-current={pathname === '/saved' ? 'page' : undefined}>
-            <span aria-hidden="true">{savedList.length > 0 ? '♥' : '♡'}</span> Saved{savedList.length > 0 && <span className="count">{savedList.length}</span>}
+          <button className="saved" onClick={() => window.location.assign(withBrowseContext('/saved', window.location.search))} aria-label={`Saved places, ${savedCount} saved`} aria-current={pathname === '/saved' ? 'page' : undefined}>
+            <span aria-hidden="true">{savedCount > 0 ? '♥' : '♡'}</span> Saved{savedCount > 0 && <span className="count">{savedCount}</span>}
           </button>
         </div>
       </div>

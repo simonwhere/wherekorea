@@ -45,7 +45,7 @@ export const hanok: WalkGuide = {
       lat: 35.81278,
       lng: 127.14754,
       walk: 'Leave the cathedral and head west along Taejo-ro. Cross Paldal-ro towards Pungnammun, the old city gate. The covered market lanes are just south of the gate.',
-      what: 'Look for 피순대 (pi-sundae) on the signs for Jeonju’s dark pork-blood sausage. It comes sliced; the photo shows a serving with kimchi, garlic and dipping paste.',
+      what: 'Look for 피순대 (pi-sundae) on the signs for Jeonju’s dark pork-blood sausage. It’s served in slices.',
       photo: {
         src: '/walks/hanok/nambu.webp',
         alt: 'Sliced pi-sundae served with radish kimchi and garlic at Jeonju Nambu Market',
