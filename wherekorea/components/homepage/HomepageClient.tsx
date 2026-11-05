@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Destination, FilterTag } from '@/data/types'
-import type { WalkGuide } from '@/data/walks/types'
+import type { WalkGuide, WalkStop } from '@/data/walks/types'
+import { searchedWalkStop, walkStopPath } from '@/lib/walk-links'
 import { type CategoryId } from '@/data/destinations-meta'
 import { track } from '@/lib/analytics'
 import { type BrowseState, browseHref, browseQuery, parseBrowseState, homeHrefFromSearch } from '@/lib/browse-state'
@@ -35,7 +36,7 @@ function useIsDesktop() {
 
 interface Props {
   destinations: Destination[]
-  cardWalks: Record<string, Pick<WalkGuide, 'slug' | 'name' | 'cardRoute'>>
+  cardWalks: Record<string, Pick<WalkGuide, 'slug' | 'name' | 'nameKo' | 'cardRoute'> & { stops: Pick<WalkStop, 'name' | 'nameKo'>[] }>
   selectedSlug: string | null
   month: number
   nowMonth: number
@@ -319,11 +320,12 @@ export default function HomepageClient({ destinations, cardWalks, nowMonth, brow
           <div className="wk-destination-grid">
             {filtered.map((d) => {
               const walk = cardWalks[d.slug]
+              const stop = walk && searchedWalkStop(walk, state.q)
               return <DestinationCard key={d.slug} destination={d} isSelected={selectedSlug === d.slug}
                 walk={walk && {
                   name: walk.name,
-                  route: walk.cardRoute,
-                  href: browseHref(state, '/walks/' + walk.slug, {
+                  route: stop ? `Stop ${stop} · ${walk.stops[stop - 1].name}` : walk.cardRoute,
+                  href: browseHref(state, stop ? walkStopPath(walk.slug, stop) : '/walks/' + walk.slug, {
                     from: 'explore', ...(selectedSlug ? { destination: selectedSlug } : {}),
                   }),
                 }}

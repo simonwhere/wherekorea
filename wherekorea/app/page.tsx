@@ -9,8 +9,8 @@ import { currentKoreaMonth, parseBrowseState } from '@/lib/browse-state'
 
 export const revalidate = 3600
 
-const cardWalks = Object.fromEntries(walks.map(({ city, slug, name, cardRoute }) =>
-  [city, { slug, name, cardRoute }]))
+const cardWalks = Object.fromEntries(walks.map(({ city, slug, name, nameKo, cardRoute, stops }) =>
+  [city, { slug, name, nameKo, cardRoute, stops: stops.map(({ name, nameKo }) => ({ name, nameKo })) }]))
 
 export const metadata: Metadata = { alternates: { canonical: '/' } }
 
