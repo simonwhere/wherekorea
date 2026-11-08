@@ -12,10 +12,10 @@ function commonsPhoto(file: string, alt: string, author: string, original: strin
   }
 }
 
-const ujin = visitKorea('Ujin Haejangguk menu and hours', 52937)
+const ujin = { label: 'VisitJeju · main dining room menu and hours', url: 'https://www.visitjeju.net/kr/detail/view?contentsid=CNTS_000000000018375' }
 const halmae = visitKorea('Ttungbo Halmae Gimbap menu and hours', 85867)
-const ohburim = visitKorea('Ohburim menu and hours', 188745)
-const yeosudang = visitKorea('Yeosudang menu and hours', 177537)
+const ohburim = { label: 'VisitKorea in Korean · Ohburim menu, map and hours', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=7a7b37b9-fcd9-4d3f-bcff-671f5314f849' }
+const yeosudang = { label: 'VisitKorea in Korean · Yeosudang menu and hours', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=555e23f3-28e8-4de3-b974-9f2ff80784fa' }
 const bamtol = { label: 'Bamtol bakery · menu, address and opening hours', url: 'https://bamtol.cafe/' }
 const ccBySa3 = 'https://creativecommons.org/licenses/by-sa/3.0/'
 
@@ -28,7 +28,7 @@ export const southCoastWalks: WalkGuide[] = [
       {
         name: 'Ujin Haejangguk', nameKo: '우진해장국', lat: 33.51156, lng: 126.52002,
         walk: 'From Jeju Airport, take bus 325 toward Hamdeok (함덕) and get off at Gwandeokjeong (관덕정). Walk west on Gwandeok-ro, then turn left onto Seosa-ro to number 11.',
-        what: 'Order 고사리해장국. The fern shoots and pork cook down into a thick brown soup, served with rice. There can be a queue even in the morning.',
+        what: 'Order 고사리육개장. The fern shoots and pork cook down into a thick brown soup, served with rice. Take a number at the main dining room when there is a queue.',
       },
       {
         name: 'Gwandeokjeong Pavilion', nameKo: '관덕정', lat: 33.51326, lng: 126.52196,
@@ -43,7 +43,7 @@ export const southCoastWalks: WalkGuide[] = [
         photo: commonsPhoto('dongmun-market', 'Shoppers at a covered entrance with the blue Dongmun Market sign', 'thddbwnd', 'Jeju_dongmun_market_1.JPG', 'CC BY 3.0', 'https://creativecommons.org/licenses/by/3.0/'),
       },
     ],
-    food: { name: 'Jeju bracken and pork soup', nameKo: '고사리해장국', detail: 'Ask for gosari haejangguk at Ujin. Despite the name of the fern, the soup contains pork.', stop: 1 },
+    food: { name: 'Jeju bracken and pork soup', nameKo: '고사리육개장', detail: 'Ask for gosari yukgaejang at Ujin. The bracken and pork simmer together until the broth is almost as thick as porridge.', stop: 1 },
     breakfast: { venue: 'Ujin Haejangguk', venueKo: '우진해장국', hours: '06:00–22:00', address: '11 Seosa-ro, Jeju City', detail: 'Closed over the Seollal and Chuseok holidays. Allow time for the queue.', checked: '2026-11-09', source: ujin, stop: 1 },
     sources: [ujin, visitKorea('Gwandeokjeong Pavilion', 85014), visitKorea('Dongmun Traditional Market', 91650),
       { label: 'Jeju Bus · 325 from the airport to the old town', url: 'https://bus.jeju.go.kr/mobile/schedule/detailSchedule?scheduleId=2511' },
@@ -81,13 +81,13 @@ export const southCoastWalks: WalkGuide[] = [
   {
     slug: 'german-village', city: 'namhae', name: 'Namhae German Village', nameKo: '남해독일마을',
     aliases: ['German Village & Mulgeon'],
-    cardRoute: 'Cod soup at the foot of the hill, then the lanes up to the village square',
+    cardRoute: 'A farmhouse breakfast at the foot of the hill, then the lanes up to the village square',
     intro: 'Start on Dongbu-daero below the German Village. Walk uphill past the red-roofed houses to the square and the exhibition about the Korean miners and nurses who worked in Germany.',
     stops: [
       {
-        name: 'Ohburim', nameKo: '어부림', lat: 34.79619, lng: 128.04725,
+        name: 'Ohburim', nameKo: '어부림', lat: 34.79916, lng: 128.04399,
         walk: 'Bus 020 serves the German Village from Namhae Bus Terminal. For breakfast, head to the lower end of Dogil-ro and find the restaurant at 1126 Dongbu-daero.',
-        what: 'Ask for 대구탕, a bowl of cod soup. The larger 어부림밥상 set includes anchovies, braised cutlassfish and beef patties, and needs an advance reservation.',
+        what: 'Look for 농가정식 on the menu for the farmhouse set with rice and side dishes. For a bowl of soup, ask for 한우곰탕 (Korean beef broth).',
       },
       {
         name: 'Dogil-ro by Kunst Lounge', nameKo: '독일로 쿤스트라운지 앞', lat: 34.79775, lng: 128.04314,
@@ -101,8 +101,8 @@ export const southCoastWalks: WalkGuide[] = [
         photo: commonsPhoto('german-village', 'A brick arch and pointed tower on the square at Namhae German Village', 'Choi2451', 'German_Village_in_Namhae,_South_Korea_on_August_31st,_2019.jpg', 'CC0 1.0', 'https://creativecommons.org/publicdomain/zero/1.0/'),
       },
     ],
-    food: { name: 'Cod soup', nameKo: '대구탕', detail: 'At Ohburim, daegutang is the fish soup on the menu. The spicy mixed noodles, bibimguksu (비빔국수), are another option.', stop: 1 },
-    breakfast: { venue: 'Ohburim', venueKo: '어부림', hours: '09:00–20:00 daily', address: '1126 Dongbu-daero, Samdong-myeon, Namhae', detail: 'The Ohburim set meal requires an advance reservation.', checked: '2026-11-09', source: ohburim, stop: 1 },
+    food: { name: 'Farmhouse set meal', nameKo: '농가정식', detail: 'At Ohburim, ask for nongga jeongsik, a farmhouse meal with rice and side dishes. The restaurant uses its own anchovy sauce. Braised cutlassfish (갈치조림) is also on the menu.', stop: 1 },
+    breakfast: { venue: 'Ohburim', venueKo: '어부림', hours: '09:00–20:00 daily', address: '1126 Dongbu-daero, Samdong-myeon, Namhae', detail: 'For the larger Ohburim set meal, reserve ahead on 055-867-3362.', checked: '2026-11-09', source: ohburim, stop: 1 },
     sources: [ohburim, visitKorea('Namhae German Village', 75683), visitKorea('Namhae German Exhibition Hall', 68074),
       { label: 'VisitKorea · Kunst Lounge on Dogil-ro', url: 'https://english.visitkorea.or.kr/svc/whereToGo/hdrdslt/hdrdsltView.do?crsSn=206' },
       { label: 'Namhae Bus · German Village loop 020', url: 'https://tsbis.kr/393/main_search.do?main_searchKeyword=020' }],
@@ -130,8 +130,8 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Baguette burger', nameKo: '수제바게트버거', detail: 'Pick up a warm baguette burger at Yeosudang beside the square. The mugwort ice cream, 쑥 아이스크림, has a grassy flavour.', stop: 1 },
-    breakfast: { venue: 'Yeosudang', venueKo: '여수당', hours: '09:30–22:00 daily', address: '72 Jungang-ro, Yeosu', detail: 'The shop is beside Yi Sun-sin Square. There can be a queue for baguettes and ice cream.', checked: '2026-11-09', source: yeosudang, stop: 1 },
-    sources: [yeosudang, visitKorea('Yi Sun-sin Square', 33693), visitKorea('Jinnamgwan Hall', 84183),
+    breakfast: { venue: 'Yeosudang', venueKo: '여수당', hours: '07:30–23:00 daily', address: '72 Jungang-ro, Yeosu', detail: 'VisitKorea’s English guide lists a 09:30 opening. For breakfast before 09:30, call 061-661-0222.', checked: '2026-11-09', source: yeosudang, stop: 1 },
+    sources: [yeosudang, visitKorea('Yeosudang · English hours', 177537), visitKorea('Yi Sun-sin Square', 33693), visitKorea('Jinnamgwan Hall', 84183),
       { label: 'Yeosu Bus · city routes and stops', url: 'https://its.yeosu.go.kr/bus/busroute' }],
   },
   {
@@ -163,7 +163,7 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Hadong chestnut pie', nameKo: '하동 밤파이', detail: 'Bamtol’s chestnut pastry is sold across the street from the terminal, an easy stop before the bus. Their own website also links to pickup reservations.', stop: 2 },
-    breakfast: { venue: 'Bamtol bakery', venueKo: '밤톨', hours: '09:00–18:00 daily on the bakery website', address: '17-1 Hwagae-ro, Hwagae-myeon, Hadong', detail: 'Some map listings show a 09:30 opening. For a visit before 09:30, confirm with the bakery at 055-883-8999.', checked: '2026-11-09', source: bamtol, stop: 2 },
+    breakfast: { venue: 'Bamtol bakery', venueKo: '밤톨', hours: '09:00–18:00 daily on the bakery website', address: '17-1 Hwagae-ro, Hwagae-myeon, Hadong', detail: 'VisitKorea lists a 09:30 opening. For a visit before 09:30, confirm with the bakery at 055-883-8999.', checked: '2026-11-09', source: bamtol, stop: 2 },
     sources: [bamtol, visitKorea('Hwagae Market', 80298),
       { label: 'VisitKorea · Ssanggye Myeongcha and buses from Hadong', url: 'https://access.visitkorea.or.kr/food/detail.do?cotId=97848a65-5d58-43a8-82b2-61de698a1cfb' },
       { label: 'VisitKorea · Bamtol bakery by Hwagae Terminal', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=69b74eb5-1a10-4cfc-8387-dfbc7a2c4a67' },
