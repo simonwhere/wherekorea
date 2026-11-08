@@ -34,13 +34,13 @@ export default function WalkActions({ slug, walkName, stopNumber, stopName, save
     if (!saved) return
     let active = true
     setOffline('pending')
-    prepareOfflineWalks().then(() => {
+    prepareOfflineWalks(slug).then(() => {
       if (active) setOffline('ready')
     }).catch(() => {
       if (active) setOffline('failed')
     })
     return () => { active = false }
-  }, [saved, retry])
+  }, [saved, retry, slug])
 
   function save() {
     try {

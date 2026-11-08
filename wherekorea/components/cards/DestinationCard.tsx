@@ -28,7 +28,7 @@ interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
-  walk?: { name: string; route: string; href: string }
+  walk?: { label: string; route: string; href: string }
   bestNowReason?: string
   month?: number
   browse?: BrowseState
@@ -94,7 +94,7 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
         {!!browse?.filters.length && rationale.length > 1 && <p className="wk-card-reason">{rationale[1]}</p>}
         {isPeakNow(d, selectedMonth) && <p className="wk-card-caution">Usually a busier month here</p>}
         {walk && <Link className="wk-card-walk" href={walk.href} prefetch={false}>
-          <span className="wk-card-walk-name">{walk.name} walk</span>
+          <span className="wk-card-walk-name">{walk.label}</span>
           <strong>{walk.route}</strong>
           <span className="wk-card-walk-arrow" aria-hidden="true">→</span>
         </Link>}

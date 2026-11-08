@@ -7,7 +7,7 @@ import type { WalkStop } from '@/data/walks/types'
 import styles from './Walk.module.css'
 
 export default function StopMap({ stops, selected, onSelect }: {
-  stops: WalkStop[]; selected: number; onSelect: (index: number) => void
+  stops: Pick<WalkStop, 'name' | 'lat' | 'lng'>[]; selected: number; onSelect: (index: number) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const markers = useRef<Marker[]>([])

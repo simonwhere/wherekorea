@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Destination, FilterTag } from '@/data/types'
 import type { WalkGuide, WalkStop } from '@/data/walks/types'
-import { searchedWalkStop, walkStopPath } from '@/lib/walk-links'
+import { searchedCityWalk, searchedWalkStop, walkStopPath } from '@/lib/walk-links'
+import { searchedCityFestival, type CardFestivalLink } from '@/lib/festival-search'
 import { type CategoryId } from '@/data/destinations-meta'
 import { track } from '@/lib/analytics'
 import { type BrowseState, browseHref, browseQuery, parseBrowseState, homeHrefFromSearch } from '@/lib/browse-state'
@@ -34,9 +35,41 @@ function useIsDesktop() {
   return desktop
 }
 
+type CardWalk = Pick<WalkGuide, 'city' | 'slug' | 'name' | 'nameKo' | 'cardRoute'> & {
+  stops: Pick<WalkStop, 'name' | 'nameKo'>[]
+  food: Pick<WalkGuide['food'], 'name' | 'nameKo' | 'stop'>
+}
+
+function cityGuideLink(city: Destination, guides: CardWalk[], events: CardFestivalLink[], state: BrowseState, selectedSlug: string | null) {
+  const extras: Record<string, string> = selectedSlug ? { destination: selectedSlug } : {}
+  const festival = searchedCityFestival(events, city.slug, state.q)
+  if (festival) return {
+    label: 'Festival guide',
+    route: festival.name,
+    href: browseHref(state, '/destination/' + city.slug + '#' + festival.anchor, extras),
+  }
+  const choices = guides.filter(walk => walk.city === city.slug)
+  if (!choices.length) return
+  const walk = searchedCityWalk(choices, state.q)
+  if (!walk) return {
+    label: 'Choose a neighbourhood',
+    route: choices.map(choice => choice.name).join(' · '),
+    href: browseHref(state, '/destination/' + city.slug + '#neighborhoods', extras),
+  }
+  const stop = searchedWalkStop(walk, state.q)
+  return {
+    label: walk.name + ' walk',
+    route: stop ? `Stop ${stop} · ${walk.stops[stop - 1].name}` : walk.cardRoute,
+    href: browseHref(state, stop ? walkStopPath(walk.slug, stop) : '/walks/' + walk.slug, {
+      ...extras, from: 'explore',
+    }),
+  }
+}
+
 interface Props {
   destinations: Destination[]
-  cardWalks: Record<string, Pick<WalkGuide, 'slug' | 'name' | 'nameKo' | 'cardRoute'> & { stops: Pick<WalkStop, 'name' | 'nameKo'>[] }>
+  cardWalks: CardWalk[]
+  cardFestivalLinks: CardFestivalLink[]
   selectedSlug: string | null
   month: number
   nowMonth: number
@@ -44,7 +77,7 @@ interface Props {
   festivalStatus?: FestivalDataStatus
 }
 
-export default function HomepageClient({ destinations, cardWalks, nowMonth, browse, festivalStatus }: Props) {
+export default function HomepageClient({ destinations, cardWalks, cardFestivalLinks, nowMonth, browse, festivalStatus }: Props) {
   const router = useRouter()
   // Native search URL updates and router navigation share this one selection source.
   const selectedSlug = useSearchParams().get('destination')
@@ -318,19 +351,9 @@ export default function HomepageClient({ destinations, cardWalks, nowMonth, brow
           </div>
 
           <div className="wk-destination-grid">
-            {filtered.map((d) => {
-              const walk = cardWalks[d.slug]
-              const stop = walk && searchedWalkStop(walk, state.q)
-              return <DestinationCard key={d.slug} destination={d} isSelected={selectedSlug === d.slug}
-                walk={walk && {
-                  name: walk.name,
-                  route: stop ? `Stop ${stop} · ${walk.stops[stop - 1].name}` : walk.cardRoute,
-                  href: browseHref(state, stop ? walkStopPath(walk.slug, stop) : '/walks/' + walk.slug, {
-                    from: 'explore', ...(selectedSlug ? { destination: selectedSlug } : {}),
-                  }),
-                }}
-                browse={state} month={state.month} onSelect={() => navigate(stateRef.current, selectedSlug === d.slug ? null : d.slug)} />
-            })}
+            {filtered.map((d) => <DestinationCard key={d.slug} destination={d} isSelected={selectedSlug === d.slug}
+              walk={cityGuideLink(d, cardWalks, cardFestivalLinks, state, selectedSlug)}
+              browse={state} month={state.month} onSelect={() => navigate(stateRef.current, selectedSlug === d.slug ? null : d.slug)} />)}
           </div>
           {filtered.length === 0 && <section className="wk-empty-state">
             <h3>No places match these filters.</h3>

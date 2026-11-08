@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { destinations } from '@/data/destinations'
+import { searchableDestinations as destinations } from '@/data/searchable-destinations'
 import { KOREAN_NAMES } from '@/data/destinations-meta'
 import { browseHref, homeHrefFromSearch, withBrowseContext } from '@/lib/browse-state'
 import { CROWD_SAMPLE_NOTE } from '@/lib/trust'
@@ -15,7 +15,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'When to go where in Korea',
   alternates: { canonical: '/when-to-go' },
-  description: 'Compare typical seasons, busy periods and recurring events across Korean destinations.',
+  description: 'Compare seasons, festival dates and busy periods across Korean destinations.',
 }
 
 interface Props {
@@ -51,6 +51,7 @@ export default async function WhenToGoPage({ searchParams }: Props) {
           <p className="text-sm text-white/85">{visible.length} {visible.length === 1 ? 'place' : 'places'}{narrowed ? ' matching your conditions' : ' to compare'}.
             <span className="block text-xs text-white/65 mt-1">Your search and filters also apply to the events below.</span>
           </p>
+          <a href="#signature-ideas-heading" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#ffb495] hover:underline lg:hidden">Jump to this month’s events ↓</a>
           {narrowed && <Link href={resetHref} className="min-h-10 inline-flex items-center rounded-lg border border-white/25 px-3 text-xs text-white hover:bg-white/5">Show all places for this month</Link>}
         </div>
 

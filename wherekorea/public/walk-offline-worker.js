@@ -18,7 +18,8 @@ self.addEventListener('fetch', event => {
     return
   }
   if (request.mode !== 'navigate' || request.headers.has('rsc') || url.searchParams.has('_rsc')) return
-  if (url.pathname !== '/' && !/^\/(?:saved|walks\/(?:seongsu|hwangnidan|hanok))\/?$/.test(url.pathname)) return
+  const walkSlug = /^\/walks\/([a-z0-9-]+)\/?$/.exec(url.pathname)?.[1]
+  if (!walkSlug && url.pathname !== '/' && !/^\/saved\/?$/.test(url.pathname)) return
 
   event.respondWith((async () => {
     let unavailable
@@ -30,7 +31,9 @@ self.addEventListener('fetch', event => {
     try {
       const cache = await caches.open(WALK_CACHE)
       const [shell, script] = await Promise.all([cache.match(WALK_SHELL), cache.match(WALK_SCRIPT)])
-      if (shell && script) return shell
+      // Older saved guides have no slug header and contain the original three walks.
+      const supported = shell?.headers.get('X-WhereKorea-Walk-Slugs') ?? 'seongsu,hwangnidan,hanok'
+      if (shell && script && (!walkSlug || supported.split(',').includes(walkSlug))) return shell
     } catch { /* Storage may have been cleared or disabled. */ }
     return unavailable || new Response('Offline directions are unavailable. Reconnect and save this walk for offline use.', {
       status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' },

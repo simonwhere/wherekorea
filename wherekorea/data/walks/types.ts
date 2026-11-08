@@ -24,7 +24,8 @@ export interface WalkGuide {
   nameKo: string
   intro: string
   cardRoute: string
+  aliases?: string[]
   stops: WalkStop[]
-  food: { name: string; nameKo: string; detail: string }
+  food: { name: string; nameKo: string; detail: string; stop?: number }
   sources: { label: string; url: string }[]
 }

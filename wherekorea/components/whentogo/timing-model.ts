@@ -3,6 +3,7 @@ import type { SignatureEvent } from '@/data/signature-events'
 import { browseHref, parseBrowseState, type BrowseState } from '@/lib/browse-state'
 import { rankDestinations } from '@/lib/recommendation'
 import { seasonFit } from '@/lib/best-now'
+import { festivalDateLabel, koreaDateKey } from '@/lib/live/festival-dates'
 
 export const TIMING_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -33,12 +34,20 @@ export function timingCellLabel(destination: Destination, month: number, selecte
 export function signatureEventsForMonth(events: SignatureEvent[], month: number, allowedCities: string[]): SignatureEvent[] {
   if (!Number.isInteger(month) || month < 1 || month > 12) return []
   const allowed = new Set(allowedCities)
-  return events.filter((event) => allowed.has(event.city) && event.months.includes(month))
+  return events.filter((event) => allowed.has(event.city) && event.official?.schedule.kind !== 'paused' && event.months.includes(month))
     .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name))
 }
 
-/** A seed contains no event year or confirmed dates. Never promote it to a schedule. */
-export function signatureTimingLabel(event: SignatureEvent): string {
+export function signatureTimingLabel(event: SignatureEvent, today?: string): string {
+  const schedule = event.official?.schedule
+  if (schedule?.kind === 'paused') return 'On hold'
+  if (schedule?.kind === 'dated') {
+    const date = today ?? koreaDateKey()
+    const range = schedule.start === schedule.end ? festivalDateLabel(schedule.start) : `${festivalDateLabel(schedule.start)} – ${festivalDateLabel(schedule.end)}`
+    const status = date > schedule.end ? 'Ended' : date < schedule.start ? 'Confirmed dates' : 'Underway'
+    return `${status} · ${range}`
+  }
+
   const months = [...new Set(event.months)].filter((month) => Number.isInteger(month) && month >= 1 && month <= 12)
   if (months.length === 0) return 'Typical timing not recorded'
   if (months.length === 12) return 'Typical pattern: year-round'

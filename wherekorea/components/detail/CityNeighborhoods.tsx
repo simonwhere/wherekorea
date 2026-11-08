@@ -78,13 +78,13 @@ function AreaOverview({ places, selected, onSelect }: {
   </div>
 }
 
-export default function CityNeighborhoods({ guide, city, food, walk }: { guide: CityNeighborhoodGuide; city: string; food: string; walk?: { name: string; href: string; placeName?: string } }) {
+export default function CityNeighborhoods({ guide, city, food, walk, sectionId = 'neighborhoods' }: { guide: CityNeighborhoodGuide; city: string; food: string; walk?: { name: string; href: string; placeName?: string }; sectionId?: string }) {
   const [selected, setSelected] = useState(0)
   const [overview, setOverview] = useState(false)
   const place = guide.places[selected]
   if (!place) return null
 
-  return <section className={styles.section} id="neighborhoods" aria-labelledby="neighborhood-title">
+  return <section className={styles.section} id={sectionId} aria-labelledby="neighborhood-title">
     <SectionTitle><span id="neighborhood-title">Streets &amp; local food</span></SectionTitle>
     {walk && <Link className={styles.walkLink} href={walk.href}><span><strong>{walk.name} on foot</strong><small>Where to start, what to see and what to eat</small></span><b aria-hidden="true">→</b></Link>}
     <div className={styles.choices} role="group" aria-label={'Places in ' + city}>

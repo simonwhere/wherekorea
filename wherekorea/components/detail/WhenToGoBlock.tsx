@@ -2,6 +2,8 @@ import type { Destination } from '@/data/types'
 import TimingStrip from '@/components/shared/TimingStrip'
 import { CROWD_MONTHLY } from '@/data/crowd-monthly'
 import { SIGNATURE_EVENTS } from '@/data/signature-events'
+import { festivalDateLabel, koreaDateKey } from '@/lib/live/festival-dates'
+import FestivalMap from '@/components/whentogo/FestivalMap'
 import { signatureTimingLabel } from '@/components/whentogo/timing-model'
 import SectionTitle from '@/components/detail/SectionTitle'
 import { CROWD_SAMPLE_NOTE } from '@/lib/trust'
@@ -17,6 +19,7 @@ const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'
 
 export default function WhenToGoBlock({ destination: d, currentMonth, showLive = false }: Props) {
   const crowd = CROWD_MONTHLY[d.slug]
+  const today = koreaDateKey()
   const selectedCrowd = crowdIndex(d.slug, currentMonth)
   const maxRatio = crowd ? Math.max(...crowd) : 0
   const signature = SIGNATURE_EVENTS
@@ -78,35 +81,56 @@ export default function WhenToGoBlock({ destination: d, currentMonth, showLive =
         <p className="text-sm text-white/85 leading-relaxed mt-1">{d.crowd_notes}</p>
       )}
 
-      {/* Annual highlights — signature events, editorial seed (yearly refresh) */}
+      {/* Published event dates and typical seasons share this list. */}
       {signature.length > 0 && (
-        <div className="mt-5">
+        <div id="festivals" className="mt-5 scroll-mt-24">
           <p className="text-xs font-bold text-white/75 uppercase tracking-wide mb-2">
-            Seasonal highlights
+            Festivals &amp; seasons
           </p>
           <p className="text-xs text-white/65 leading-relaxed mb-3">
-            Usual timing only. Check this year&apos;s dates and tickets with the organizer.
+            Published dates include the year. Other listings show their usual season.
           </p>
           <ul className="space-y-1.5">
             {signature.map((e) => (
-              <li key={e.name}
-                className="text-[13px] px-3 py-2.5 rounded-lg bg-white/5 border border-white/10">
+              <li key={e.name} id={e.official?.anchor}
+                className="scroll-mt-24 text-[13px] px-3 py-2.5 rounded-lg bg-white/5 border border-white/10">
                 <span className="flex-1 min-w-0">
                   <span className="block text-white/90 leading-relaxed">
                     {e.name}
-                    {e.months.includes(currentMonth) && (
+                    {!e.official && e.months.includes(currentMonth) && (
                       <span className="ml-2 text-[10px] font-semibold" style={{ color: '#ff936b' }}>typically in {MONTH_SHORT[currentMonth - 1]}</span>
                     )}
                   </span>
-                  <span className="block text-[11px] text-white/65 mt-1">{signatureTimingLabel(e)}</span>
+                  {e.official && <span className="block text-xs text-white/65 mt-0.5" lang="ko">{e.official.korean}</span>}
+                  <span className={e.official ? 'block text-xs font-semibold text-[#ffc4aa] mt-1.5' : 'block text-[11px] text-white/65 mt-1'}>{signatureTimingLabel(e, today)}</span>
                 </span>
+                {e.official && (
+                  <div className="text-[13px] leading-relaxed text-white/85">
+                    <p className="mt-2">{e.note}</p>
+                    {e.official.visitorDetails && (
+                      <dl className="mt-3 space-y-2">
+                        {e.official.visitorDetails.map(detail => <div key={detail.label}>
+                          <dt className="font-semibold text-white">{detail.label}</dt>
+                          <dd>{detail.text}</dd>
+                        </div>)}
+                      </dl>
+                    )}
+                    {e.official.maps && <FestivalMap points={e.official.maps} />}
+                    {e.official.schedule.kind === 'dated' && today > e.official.schedule.end && <p className="mt-2 text-xs text-white/70">The next edition’s dates are pending.</p>}
+                    <div className="mt-2 flex flex-wrap gap-x-3 items-center text-xs">
+                      <a href={e.official.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-[#ffb495] hover:underline">{e.official.source.label} ↗</a>
+                      {e.official.visitorInfo && <a href={e.official.visitorInfo.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-[#ffb495] hover:underline">{e.official.visitorInfo.label} ↗</a>}
+                      <span className="text-white/55">Checked {festivalDateLabel(e.official.source.checked)}</span>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Feed listings are separate from the undated editorial ideas above. */}
+      {/* Same-day feed entries are separate from the seasonal guide. */}
       {showLive && d.live_festivals_upcoming && d.live_festivals_upcoming.length > 0 && (
         <div className="mt-5">
           <p className="text-xs font-bold text-white/75 uppercase tracking-wide mb-2">

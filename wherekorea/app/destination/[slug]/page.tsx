@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { destinations, getDestinationBySlug } from '@/data/destinations'
+import { searchableDestinations } from '@/data/searchable-destinations'
 import { fetchWeatherSnapshot, fetchMonthlyAverage, wmoToEmoji, COORDS } from '@/lib/weather'
 import { KOREAN_NAMES, DAILY_AVG } from '@/data/destinations-meta'
 import { usdApprox } from '@/lib/currency'
@@ -16,6 +17,8 @@ import DontMiss from '@/components/detail/DontMiss'
 import FoodBlock from '@/components/detail/FoodBlock'
 import { walks } from '@/data/walks'
 import CityNeighborhoods from '@/components/detail/CityNeighborhoods'
+import NeighborhoodWalks from '@/components/detail/NeighborhoodWalks'
+import walkStyles from '@/components/detail/NeighborhoodWalks.module.css'
 import { cityNeighborhoods } from '@/data/city-neighborhoods'
 import BudgetBlock from '@/components/detail/BudgetBlock'
 import InsiderTips from '@/components/detail/InsiderTips'
@@ -86,12 +89,13 @@ interface Props {
 
 export default async function DestinationPage({ params, searchParams }: Props) {
   const { slug } = await params
-  const destination = getDestinationBySlug(slug)
+  const destination = searchableDestinations.find(city => city.slug === slug)
 
   if (!destination) notFound()
   const guide = getDestinationGuide(slug)
   const neighborhoods = cityNeighborhoods[slug]
-  const walk = walks.find(item => item.city === slug)
+  const cityWalks = walks.filter(item => item.city === slug)
+  const walk = cityWalks[0]
 
   const currentMonth = Number(
     new Date().toLocaleString('en-US', { month: 'numeric', timeZone: 'Asia/Seoul' })
@@ -147,7 +151,13 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       <HeroSummary destination={enriched} currentMonth={browse.month} browse={browse} showLive={showLive} backHref={homeHrefFromSearch(contextSearch)} sharePath={sharePath} />
       <BudgetFitNote slug={slug} browse={browse} />
       {festivals && <LiveDataNotice status={festivals.status} />}
-      {neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food}
+      {cityWalks.length > 1 ? <>
+        <NeighborhoodWalks walks={cityWalks} city={destination.name} context={contextSearch} />
+        {neighborhoods && <details className={walkStyles.otherPlaces}>
+          <summary>More places and food in {destination.name}</summary>
+          <CityNeighborhoods sectionId="other-places" city={destination.name} guide={neighborhoods} food={destination.food} />
+        </details>}
+      </> : neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food}
         walk={walk ? { name: walk.name, href: withBrowseContext('/walks/' + walk.slug, contextSearch), placeName: walk.slug === 'seongsu' ? 'Seongsu café street' : walk.slug === 'hwangnidan' ? 'Hwangnidan-gil' : undefined } : undefined} />}
       <BestForSkipIf destination={enriched} />
       <DontMiss destination={enriched} />

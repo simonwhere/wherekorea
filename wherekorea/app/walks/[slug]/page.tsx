@@ -35,8 +35,9 @@ export default async function WalkPage({params,searchParams}: Props) {
   const initialStop = walkStopNumber(query.stop, guide.stops.length)
   const context = pageSearch(query)
   const fromExplore = query.from === 'explore'
+  const cityLink = '/destination/' + guide.city + (walks.some(walk => walk.city === guide.city && walk.slug !== guide.slug) ? '?area=' + guide.slug : '') + '#neighborhoods'
   return <><Header /><main className={styles.shell}>
-    <Link className={styles.back} href={fromExplore ? homeHrefFromSearch(context) : withBrowseContext('/destination/' + guide.city + '#neighborhoods', context)}>
+    <Link className={styles.back} href={fromExplore ? homeHrefFromSearch(context) : withBrowseContext(cityLink, context)}>
       ← {fromExplore ? 'Back to places' : 'Back to ' + city}
     </Link>
     <header className={styles.intro}><p className={styles.kicker}>{city} · On foot</p>

@@ -28,5 +28,6 @@ li[aria-current="step"]{border-color:#ffb595;border-left-width:4px}li[aria-curre
   return new Response(document, { headers: {
     'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow',
     'X-WhereKorea-Offline': '1',
+    'X-WhereKorea-Walk-Slugs': walks.map(walk => walk.slug).join(','),
   } })
 }

@@ -290,7 +290,9 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
             </div>
           )}
 
-          <button type="button" className="city-guide-shortcut" onClick={() => openCity('#neighborhoods')}>See streets, food &amp; map →</button>
+          <button type="button" className="city-guide-shortcut" onClick={() => openCity('#neighborhoods')}>
+            {d.slug === 'busan' ? 'Choose a Busan neighbourhood' : 'See streets, food & map'} →
+          </button>
           {/* Access */}
           <div style={{ marginBottom: 18 }}>
             <div style={{
