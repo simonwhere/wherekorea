@@ -12,6 +12,16 @@
 .caption span { font-size: 12px; color: #eee; margin-top: 2px; }
 .check { position: absolute; right: 5px; top: 5px; border-radius: 50%; background: #ffb18e; color: #26190f; width: 23px; height: 23px; text-align: center; font-size: 15px; line-height: 23px; }
 .preview { margin-top: 16px; }
+.breakfastLink { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; color: #ffccb1; font-size: 13px; }
+.banner { position: relative; height: clamp(125px, 32vw, 215px); overflow: hidden; border-radius: 10px; background: #283340; }
+.banner img { object-fit: cover; }
+.banner figcaption { position: absolute; left: 8px; bottom: 8px; max-width: calc(100% - 16px); padding: 3px 7px; border-radius: 4px; color: white; background: #13212cdd; font-size: 12px; }
+.stopPhoto { margin-top: 10px; }
+.stopPhoto img { width: auto; max-width: 100%; height: auto; max-height: 295px; border-radius: 6px; }
+.stopPhoto figcaption { margin: 5px 0 0; font-size: 11px; color: #c9d4df; }
+.stopPhoto figcaption a { text-decoration: underline; }
+.moreFood { margin-top: 8px; font-size: 14px; color: #d8e0e7; }
+.moreFood summary, .moreFood button { padding: 10px 0; min-height: 44px; width: fit-content; cursor: pointer; color: #ffc5aa; }
 .preview h3 { font-weight: 700; letter-spacing: -.025em; font-size: 22px; }
 .route { margin: 2px 0 12px; font-size: 14px; color: #c9d4df; }
 .food { display: flex; gap: 6px 15px; flex-wrap: wrap; align-items: center; justify-content: space-between; }

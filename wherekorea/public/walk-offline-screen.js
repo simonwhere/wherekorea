@@ -128,6 +128,12 @@
       ko.lang = 'ko'
       title.append(ko)
       item.append(node('p', number === 1 ? '1 · Start here' : 'Stop ' + number, 'step'), title, node('p', stop.walk), node('p', stop.what))
+      if (guide.breakfast?.stop === number) {
+        const breakfast = guide.breakfast
+        item.append(node('h3', 'Breakfast · ' + breakfast.venue + ' · ' + breakfast.venueKo),
+          node('p', breakfast.hours), node('p', breakfast.detail), node('p', breakfast.address),
+          node('p', 'Hours checked ' + breakfast.checked, 'note'))
+      }
       if (number !== selected || saved.stop !== selected) {
         const button = node('button', 'Save this stop')
         button.setAttribute('aria-label', 'Save stop ' + number + ' · ' + stop.name)

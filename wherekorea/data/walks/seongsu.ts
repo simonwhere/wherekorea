@@ -41,13 +41,22 @@ export const seongsu: WalkGuide = {
       nameKo: '소문난성수감자탕',
       lat: 37.54288, lng: 127.05441,
       walk: 'Return to the Yeonmujang-gil junction. Follow the street west past the small shops to number 45.',
-      what: 'The sign reads 소문난성수감자탕. There are seats for one as well as tables for a group. For a solo seat, ask at the counter.',
+      what: 'Look for the 소문난성수감자탕 sign. Solo diners can ask at the counter for a seat. For the subway afterwards, Seongsu Station Exit 4 is about 230 m away.',
     },
   ],
   food: {
+    stop: 3,
     name: 'Pork-bone soup and stew',
     nameKo: '감자국 · 감자탕',
     detail: 'At the last stop, gamjaguk (감자국 식사) is the meal for one. For the table, gamjatang (감자탕) comes in a shared pot with pork bones and greens.',
+  },
+  breakfast: {
+    venue: 'Somunnan Seongsu Gamjatang', venueKo: '소문난성수감자탕', stop: 3,
+    hours: 'Open 24 hours daily.',
+    address: '45 Yeonmujang-gil, Seongdong-gu, Seoul',
+    detail: 'Order gamjaguk (감자국 식사) for a bowl of pork-bone soup. For breakfast first, take Line 2 to Seongsu and use Exit 4.',
+    checked: '2026-11-09',
+    source: { label: 'Visit Seoul · restaurant hours', url: 'https://english.visitseoul.net/restaurants/SeongsuGamjatang/ENPlceoxk' },
   },
   sources: [
     { label: 'Visit Seoul · Seongsu Station and the streets', url: 'https://english.visitseoul.net/editorspicks/2026-Seongsu/ENNky3epf' },

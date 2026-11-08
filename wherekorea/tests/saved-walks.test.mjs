@@ -6,7 +6,7 @@ registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === '@/lib/saved-walk-events') return nextResolve(new URL('../lib/saved-walk-events.ts', import.meta.url).href, context)
     if (specifier === '@/data/walks') return nextResolve(new URL('../data/walks/index.ts', import.meta.url).href, context)
-    if (context.parentURL?.endsWith('/data/walks/index.ts') && specifier.startsWith('./')) {
+    if (context.parentURL?.includes('/data/walks/') && specifier.startsWith('./')) {
       return nextResolve(new URL(specifier + '.ts', context.parentURL).href, context)
     }
     return nextResolve(specifier, context)

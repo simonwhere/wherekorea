@@ -14,6 +14,10 @@ export const searchableDestinations: Destination[] = destinations.map(destinatio
   names.add(KOREAN_NAMES[destination.slug])
   for (const walk of walks.filter(walk => walk.city === destination.slug)) {
     for (const alias of walk.aliases ?? []) names.add(alias)
+    if (walk.breakfast) {
+      names.add(walk.breakfast.venue)
+      names.add(walk.breakfast.venueKo)
+    }
     for (const place of [walk, walk.food, ...walk.stops]) {
       names.add(place.name)
       names.add(place.nameKo)

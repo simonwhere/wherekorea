@@ -1,6 +1,7 @@
 export interface WalkPhoto {
   src: string
   alt: string
+  caption?: string
   credit: string
   license: string
   source: string
@@ -27,5 +28,17 @@ export interface WalkGuide {
   aliases?: string[]
   stops: WalkStop[]
   food: { name: string; nameKo: string; detail: string; stop?: number }
+  breakfast?: WalkBreakfast
   sources: { label: string; url: string }[]
+}
+
+export interface WalkBreakfast {
+  venue: string
+  venueKo: string
+  hours: string
+  detail: string
+  address: string
+  checked: string
+  source: { label: string; url: string }
+  stop: number
 }

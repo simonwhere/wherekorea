@@ -95,7 +95,6 @@ export default async function DestinationPage({ params, searchParams }: Props) {
   const guide = getDestinationGuide(slug)
   const neighborhoods = cityNeighborhoods[slug]
   const cityWalks = walks.filter(item => item.city === slug)
-  const walk = cityWalks[0]
 
   const currentMonth = Number(
     new Date().toLocaleString('en-US', { month: 'numeric', timeZone: 'Asia/Seoul' })
@@ -151,14 +150,13 @@ export default async function DestinationPage({ params, searchParams }: Props) {
       <HeroSummary destination={enriched} currentMonth={browse.month} browse={browse} showLive={showLive} backHref={homeHrefFromSearch(contextSearch)} sharePath={sharePath} />
       <BudgetFitNote slug={slug} browse={browse} />
       {festivals && <LiveDataNotice status={festivals.status} />}
-      {cityWalks.length > 1 ? <>
+      {cityWalks.length > 0 ? <>
         <NeighborhoodWalks walks={cityWalks} city={destination.name} context={contextSearch} />
         {neighborhoods && <details className={walkStyles.otherPlaces}>
           <summary>More places and food in {destination.name}</summary>
           <CityNeighborhoods sectionId="other-places" city={destination.name} guide={neighborhoods} food={destination.food} />
         </details>}
-      </> : neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food}
-        walk={walk ? { name: walk.name, href: withBrowseContext('/walks/' + walk.slug, contextSearch), placeName: walk.slug === 'seongsu' ? 'Seongsu café street' : walk.slug === 'hwangnidan' ? 'Hwangnidan-gil' : undefined } : undefined} />}
+      </> : neighborhoods && <CityNeighborhoods key={slug} city={destination.name} guide={neighborhoods} food={destination.food} />}
       <BestForSkipIf destination={enriched} />
       <DontMiss destination={enriched} />
       {!guide && <DestinationCommunity slug={slug} name={destination.name} contextSearch={contextSearch} />}

@@ -9,9 +9,10 @@ import { currentKoreaMonth, parseBrowseState } from '@/lib/browse-state'
 
 export const revalidate = 3600
 
-const cardWalks = walks.map(({ city, slug, name, nameKo, cardRoute, aliases, stops, food }) => ({
+const cardWalks = walks.map(({ city, slug, name, nameKo, cardRoute, aliases, stops, food, breakfast }) => ({
   city, slug, name, nameKo, cardRoute, aliases,
   food: { name: food.name, nameKo: food.nameKo, stop: food.stop },
+  breakfast: breakfast && { venue: breakfast.venue, venueKo: breakfast.venueKo, stop: breakfast.stop },
   stops: stops.map(({ name, nameKo }) => ({ name, nameKo })),
 }))
 

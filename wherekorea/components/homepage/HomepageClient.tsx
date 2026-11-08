@@ -38,6 +38,7 @@ function useIsDesktop() {
 type CardWalk = Pick<WalkGuide, 'city' | 'slug' | 'name' | 'nameKo' | 'cardRoute'> & {
   stops: Pick<WalkStop, 'name' | 'nameKo'>[]
   food: Pick<WalkGuide['food'], 'name' | 'nameKo' | 'stop'>
+  breakfast?: Pick<NonNullable<WalkGuide['breakfast']>, 'venue' | 'venueKo' | 'stop'>
 }
 
 function cityGuideLink(city: Destination, guides: CardWalk[], events: CardFestivalLink[], state: BrowseState, selectedSlug: string | null) {
@@ -52,7 +53,7 @@ function cityGuideLink(city: Destination, guides: CardWalk[], events: CardFestiv
   if (!choices.length) return
   const walk = searchedCityWalk(choices, state.q)
   if (!walk) return {
-    label: 'Choose a neighbourhood',
+    label: city.slug === 'busan' ? 'Choose a neighbourhood' : 'Choose a walk',
     route: choices.map(choice => choice.name).join(' · '),
     href: browseHref(state, '/destination/' + city.slug + '#neighborhoods', extras),
   }

@@ -9,6 +9,7 @@ import { withBrowseContext } from '@/lib/browse-state'
 import { readSavedWalk, updateSavedWalkStop } from '@/lib/saved-walks'
 import { walkStopPath } from '@/lib/walk-links'
 import StopMap from '@/components/walks/StopMap'
+import WalkBreakfast from '@/components/walks/WalkBreakfast'
 import WalkActions from '@/components/walks/WalkActions'
 import styles from './NeighborhoodWalks.module.css'
 
@@ -26,20 +27,22 @@ function WalkPreview({ walk, context }: { walk: WalkGuide; context: string }) {
   }, [walk.slug])
   const stop = walk.stops[selected]
   const foodStop = walk.food.stop
+  function showOnMap(number: number) {
+    selectStop(number - 1)
+    document.getElementById('area-map')?.scrollIntoView({ block: 'center' })
+  }
 
   return <div className={styles.preview} id="area-walk">
-    <h3>{walk.name} on foot</h3>
+    <h3>{walk.name}</h3>
     <p className={styles.route}>{walk.cardRoute}</p>
-    <div className={styles.food}>
+    {walk.breakfast && <WalkBreakfast breakfast={walk.breakfast} food={walk.food} onMap={showOnMap} controls="area-map area-stop" />}
+    {!walk.breakfast && <><div className={styles.food}>
       <div><p className={styles.label}>What to eat</p>
         <h4>{walk.food.name} <span lang="ko">{walk.food.nameKo}</span></h4>
       </div>
-      {foodStop && <button type="button" aria-controls="area-map area-stop" onClick={() => {
-        selectStop(foodStop - 1)
-        document.getElementById('area-map')?.scrollIntoView({ block: 'nearest' })
-      }}>Find on map · {foodStop} <span aria-hidden="true">↓</span></button>}
+      {foodStop && <button type="button" aria-controls="area-map area-stop" onClick={() => showOnMap(foodStop)}>Find on map · {foodStop} <span aria-hidden="true">↓</span></button>}
     </div>
-    <p className={styles.foodNote}>{walk.food.detail}</p>
+    <p className={styles.foodNote}>{walk.food.detail}</p></>}
     <div id="area-map" className={styles.map}>
       <StopMap stops={walk.stops} selected={selected} onSelect={selectStop} />
     </div>
@@ -54,7 +57,15 @@ function WalkPreview({ walk, context }: { walk: WalkGuide; context: string }) {
       <p className={styles.label}>{selected === 0 ? 'Start here' : 'Stop ' + (selected + 1)}</p>
       <h4>{stop.name} <span lang="ko">{stop.nameKo}</span></h4>
       <p>{stop.walk}</p><p>{stop.what}</p>
+      {stop.photo && <figure className={styles.stopPhoto}>
+        <Image src={stop.photo.src} alt={stop.photo.alt} width={640} height={360} sizes="(max-width: 640px) 88vw, 570px" />
+        <figcaption>{stop.photo.caption && <>{stop.photo.caption} · </>}<a href={stop.photo.source} target="_blank" rel="noreferrer">{stop.photo.credit}</a> · <a href={stop.photo.licenseUrl} target="_blank" rel="noreferrer">{stop.photo.license}</a></figcaption>
+      </figure>}
     </div>
+    {walk.breakfast && <details className={styles.moreFood}><summary>What to eat · {walk.food.name}</summary>
+      <p lang="ko">{walk.food.nameKo}</p><p>{walk.food.detail}</p>
+      {foodStop && <button type="button" onClick={() => showOnMap(foodStop)}>Find on map · {foodStop} ↓</button>}
+    </details>}
     <Link className={styles.fullWalk} href={withBrowseContext(walkStopPath(walk.slug, selected + 1), context)}>
       Open the {walk.name} walking guide <span aria-hidden="true">→</span>
     </Link>
@@ -68,10 +79,14 @@ export default function NeighborhoodWalks({ walks, context, city }: {
 }) {
   const area = useSearchParams().get('area')
   const active = walks.find(walk => walk.slug === area) ?? walks[0]
-  const choices = walks.map(walk => ({ walk, photo: walk.stops.find(stop => stop.photo)?.photo }))
+  const breakfastWalk = active.breakfast ? undefined : walks.find(walk => walk.breakfast)
+  const choices = walks.map(walk => {
+    const picturedStop = walk.stops.find(stop => stop.photo)
+    return { walk, photo: picturedStop?.photo, caption: picturedStop?.photo?.caption ?? picturedStop?.name }
+  })
   return <section id="neighborhoods" aria-labelledby="choose-area" className={styles.section}>
     <h2 id="choose-area">Where to walk in {city}</h2>
-    <nav aria-label={city + ' neighbourhoods'} className={styles.choices}>
+    {choices.length > 1 ? <nav aria-label={city + ' neighbourhoods'} className={styles.choices} style={{ gridTemplateColumns: 'repeat(' + choices.length + ', minmax(0, 1fr))' }}>
       {choices.map(({ walk, photo }) => <a key={walk.slug} className={styles.choice}
         href={withBrowseContext('/destination/' + walk.city + '?area=' + walk.slug + '#neighborhoods', context)}
         onClick={event => {
@@ -84,7 +99,14 @@ export default function NeighborhoodWalks({ walks, context, city }: {
         {active.slug === walk.slug && <b className={styles.check} aria-hidden="true">✓</b>}
         <span className={styles.caption}><strong>{walk.name}</strong><span lang="ko">{walk.nameKo}</span></span>
       </a>)}
-    </nav>
+    </nav> : choices[0].photo && <figure className={styles.banner}>
+      <Image src={choices[0].photo.src} alt={choices[0].photo.alt} fill sizes="(max-width: 672px) 96vw, 640px" />
+      <figcaption>{choices[0].caption}</figcaption>
+    </figure>}
+    {breakfastWalk?.breakfast && <Link className={styles.breakfastLink}
+      href={withBrowseContext(walkStopPath(breakfastWalk.slug, breakfastWalk.breakfast.stop), context)}>
+      Breakfast at {breakfastWalk.breakfast.venue} · {breakfastWalk.breakfast.hours} →
+    </Link>}
     <WalkPreview key={active.slug} walk={active} context={context} />
     <details className={styles.credits}><summary>Neighbourhood photos</summary>
       <ul>{choices.map(({ walk, photo }) => photo && <li key={walk.slug}>

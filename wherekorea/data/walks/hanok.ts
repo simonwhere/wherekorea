@@ -1,5 +1,12 @@
 import type { WalkGuide } from './types'
 
+const nambuSources = [
+  { label: 'VisitKorea · Nambu Market trading hours', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=75565' },
+  { label: 'VisitKorea · riverside dawn market and market food', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=1593611' },
+]
+
+const nambuHours = 'The riverside produce market runs daily from 04:00 to 09:00 between Ssajeon Bridge (싸전다리) and Maegokgyo Bridge (매곡교). The covered market lists 09:30–23:00, with hours varying by shop.'
+
 export const hanok: WalkGuide = {
   slug: 'hanok',
   city: 'jeonju',
@@ -46,7 +53,7 @@ export const hanok: WalkGuide = {
       lat: 35.81278,
       lng: 127.14754,
       walk: 'Leave the cathedral and head west along Taejo-ro. Cross Paldal-ro towards Pungnammun, the old city gate. The covered market lanes are just south of the gate.',
-      what: 'Look for 피순대 (pi-sundae) on the signs for Jeonju’s dark pork-blood sausage. It’s served in slices.',
+      what: `Look for 피순대 (pi-sundae) on the signs for Jeonju’s sliced pork-blood sausage. ${nambuHours}`,
       photo: {
         src: '/walks/hanok/nambu.webp',
         alt: 'Sliced pi-sundae served with radish kimchi and garlic at Jeonju Nambu Market',
@@ -69,6 +76,79 @@ export const hanok: WalkGuide = {
     { label: 'VisitKorea · Gyeonggijeon Shrine', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=108728' },
     { label: 'VisitKorea · Jeondong Cathedral', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=108717' },
     { label: 'Jeonju City · Nambu Market and its soup', url: 'https://tour.jeonju.go.kr/eng/index.jeonju?menuCd=DOM_000000203011001000' },
-    { label: 'VisitKorea · eating at Nambu Market', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=1593611' },
+    ...nambuSources,
+  ],
+}
+
+const sinbaengiHours = {
+  label: 'Jeonbuk Food Culture Plaza · Sinbaengi menu, hours and closing days (Korean)',
+  url: 'https://jbfood.go.kr/juhtml/food/foodshop/main.html?cnt=1191&smbu=shop2&fpmode=view',
+}
+
+export const hanokBreakfast: WalkGuide = {
+  slug: 'hanok-breakfast',
+  city: 'jeonju',
+  name: 'Breakfast in Hanok Village',
+  nameKo: '한옥마을 아침 산책',
+  cardRoute: 'Bean sprout soup at Sinbaengi, then Nambu Market',
+  aliases: ['Sinbaengi', '콩나물국밥', '남부시장'],
+  intro: 'Sit down for bean sprout soup in the hanok lanes, then walk past the red-brick cathedral and the old city gate to Nambu Market.',
+  stops: [
+    {
+      name: 'Sinbaengi',
+      nameKo: '신뱅이',
+      lat: 35.812636,
+      lng: 127.151819,
+      walk: 'From Taejo-ro in Hanok Village, turn south onto Gyeonggijeon-gil. Follow the street numbers to 153-9 and look for the sign 신뱅이 in the side lane.',
+      what: 'Order 콩나물국밥 for a bowl of rice and bean sprout soup. The menu offers two kimchis in the soup: 빨간김치 (red kimchi) and 백김치 (white kimchi).',
+      photo: {
+        src: '/walks/hanok/jeonju-bean-sprout-soup.webp',
+        alt: 'Bean sprouts, scallions and chili in a black soup bowl with kimchi alongside',
+        caption: 'Jeonju bean sprout soup · a local example photographed in Jeonju.',
+        credit: 'Chae Ji-hyeong (채지형) / Korea Copyright Commission · Jeonju dish photo, resized and converted to WebP',
+        license: 'CC BY 4.0',
+        source: 'https://gongu.copyright.or.kr/gongu/wrt/wrt/view.do?menuNo=200018&wrtSn=13278905',
+        licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+    },
+    {
+      ...hanok.stops[1],
+      walk: 'Return to Gyeonggijeon-gil and walk north to Taejo-ro. Turn left. The cathedral stands on the left at number 51, across the street from Gyeonggijeon Shrine.',
+      what: 'Look for three domes above the red-brick façade. You can see them from Taejo-ro when the church grounds are closed.',
+    },
+    {
+      ...hanok.stops[2],
+      walk: 'Continue west on Taejo-ro to Paldal-ro. Use the crossing toward Pungnammun Gate (풍남문), then take the lane on its south side into the covered market.',
+      what: `For fresh produce before 09:00, continue south to the river. ${nambuHours}`,
+      photo: {
+        src: '/walks/hanok/nambu-entrance.webp',
+        alt: 'Tiled entrance sign above a lane into Jeonju Nambu Market',
+        credit: 'Jjw / Wikimedia Commons · resized and converted to WebP',
+        license: 'CC BY 4.0',
+        source: 'https://commons.wikimedia.org/wiki/File:20240725_Jeonju_southern_market_001.jpg',
+        licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+      },
+    },
+  ],
+  food: {
+    name: 'Rice soup with bean sprouts and kimchi',
+    nameKo: '김치 콩나물국밥',
+    detail: 'At Sinbaengi, choose the red-kimchi or white-kimchi version. The soup pictured is a local example photographed in Jeonju.',
+    stop: 1,
+  },
+  breakfast: {
+    venue: 'Sinbaengi', venueKo: '신뱅이', stop: 1,
+    hours: '08:00–20:00 daily',
+    address: '153-9 Gyeonggijeon-gil, Wansan-gu, Jeonju · 경기전길 153-9',
+    detail: 'Choose soup with red kimchi (빨간김치) or white kimchi (백김치). For the riverside produce stalls, reach Nambu Market before 09:00. For holiday hours at Sinbaengi, call +82 63 282 3030.',
+    checked: '2026-11-09',
+    source: sinbaengiHours,
+  },
+  sources: [
+    sinbaengiHours,
+    { label: 'Jeonju Hanok Village · official lane map and addresses', url: 'https://hanok.jeonju.go.kr/assets/down/2024-hanokvillage-map-new3.pdf' },
+    { label: 'VisitKorea · Jeondong Cathedral', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=108717' },
+    { label: 'Jeonju City · Nambu Market', url: 'https://tour.jeonju.go.kr/eng/index.jeonju?menuCd=DOM_000000203011001000' },
+    ...nambuSources,
   ],
 }
