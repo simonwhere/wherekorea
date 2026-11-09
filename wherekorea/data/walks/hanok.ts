@@ -138,11 +138,16 @@ export const hanokBreakfast: WalkGuide = {
   },
   breakfast: {
     venue: 'Sinbaengi', venueKo: '신뱅이', stop: 1,
-    hours: '08:00–20:00 daily',
+    hours: 'Restaurant open 08:00–20:00 daily.',
     address: '153-9 Gyeonggijeon-gil, Wansan-gu, Jeonju · 경기전길 153-9',
-    detail: 'Choose soup with red kimchi (빨간김치) or white kimchi (백김치). For the riverside produce stalls, reach Nambu Market before 09:00. For holiday hours at Sinbaengi, call +82 63 282 3030.',
+    detail: 'Choose red kimchi (빨간김치) or milder white kimchi (백김치) in your soup. For the riverside produce stalls, reach Nambu Market before 09:00.',
+    ordering: {
+      summary: 'Bean sprout soup from 08:00',
+      phone: '+82 63 282 3030',
+      questionKo: '오늘 아침 8시에 콩나물국밥을 먹을 수 있나요? 백김치와 빨간김치 둘 다 되나요?',
+    },
     checked: '2026-11-09',
-    source: sinbaengiHours,
+    source: { label: 'Jeonju City · soup served from 08:00', url: 'https://tour.jeonju.go.kr/board/view.jeonju?boardId=BBS_0000038&dataSid=14264' },
   },
   sources: [
     sinbaengiHours,

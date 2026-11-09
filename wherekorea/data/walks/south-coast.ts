@@ -15,6 +15,8 @@ function commonsPhoto(file: string, alt: string, author: string, original: strin
 const ujin = { label: 'VisitJeju · main dining room menu and hours', url: 'https://www.visitjeju.net/kr/detail/view?contentsid=CNTS_000000000018375' }
 const halmae = visitKorea('Ttungbo Halmae Gimbap menu and hours', 85867)
 const ohburim = { label: 'VisitKorea in Korean · Ohburim menu, map and hours', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=7a7b37b9-fcd9-4d3f-bcff-671f5314f849' }
+const ohburimFarmGuide = { label: 'Nongsaro · Ohburim weekday and weekend hours', url: 'https://www.nongsaro.go.kr/portal/ps/psz/psza/contentSub.ps?cntntsNo=201066&menuId=PS03968' }
+const ohburimShop = { label: 'Naver Map · Ohburim hours and menu at 1126 Dongbu-daero', url: 'https://map.naver.com/p/entry/place/38419513' }
 const yeosudang = { label: 'VisitKorea in Korean · Yeosudang menu and hours', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=555e23f3-28e8-4de3-b974-9f2ff80784fa' }
 const bamtol = { label: 'Bamtol bakery · menu, address and opening hours', url: 'https://bamtol.cafe/' }
 const ccBySa3 = 'https://creativecommons.org/licenses/by-sa/3.0/'
@@ -44,7 +46,18 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Jeju bracken and pork soup', nameKo: '고사리육개장', detail: 'Ask for gosari yukgaejang at Ujin. The bracken and pork simmer together until the broth is almost as thick as porridge.', stop: 1 },
-    breakfast: { venue: 'Ujin Haejangguk', venueKo: '우진해장국', hours: '06:00–22:00', address: '11 Seosa-ro, Jeju City', detail: 'Closed over the Seollal and Chuseok holidays. Allow time for the queue.', checked: '2026-11-09', source: ujin, stop: 1 },
+    breakfast: {
+      venue: 'Ujin Haejangguk', venueKo: '우진해장국', stop: 1,
+      hours: 'Main dining room 06:00–22:00. Closed over the Seollal and Chuseok holidays.',
+      address: 'Main dining room (본관) · 11 Seosa-ro, Jeju City',
+      detail: 'Use the main dining room for an early visit. The annex usually opens at 08:00 and closes on Tuesdays. Take a number at the main room when there is a queue.',
+      ordering: {
+        summary: 'First bowl of bracken soup · time unconfirmed',
+        phone: '+82 64 757 3393',
+        questionKo: '오늘 본관에서 고사리육개장은 몇 시부터 주문해서 먹을 수 있나요?',
+      },
+      checked: '2026-11-09', source: ujin,
+    },
     sources: [ujin, visitKorea('Gwandeokjeong Pavilion', 85014), visitKorea('Dongmun Traditional Market', 91650),
       { label: 'Jeju Bus · 325 from the airport to the old town', url: 'https://bus.jeju.go.kr/mobile/schedule/detailSchedule?scheduleId=2511' },
       { label: 'Jeju Bus · 325 from Dongmun Rotary to the airport', url: 'https://bus.jeju.go.kr/mobile/schedule/detailSchedule?scheduleId=2512' }],
@@ -74,19 +87,30 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Chungmu gimbap', nameKo: '충무김밥', detail: 'Rice and seaweed are rolled separately from the squid and kimchi. The dish grew out of meals sailors carried out to sea.', stop: 1 },
-    breakfast: { venue: 'Ttungbo Halmae Gimbap', venueKo: '뚱보할매김밥', hours: '06:00–22:00 daily', address: '325 Tongyeonghaean-ro, Tongyeong', detail: 'The Chungmu gimbap set is the only item on the menu.', checked: '2026-11-09', source: halmae, stop: 1 },
-    sources: [halmae, visitKorea('Jungang Traditional Market', 77738), visitKorea('Dongpirang Village', 113285),
+    breakfast: {
+      venue: 'Ttungbo Halmae Gimbap', venueKo: '뚱보할매김밥', stop: 1,
+      hours: 'Shop hours 06:00–22:00 daily.',
+      address: '325 Tongyeonghaean-ro, Tongyeong',
+      detail: 'The harbour shop serves just one dish, Chungmu gimbap. Call before an early ferry if you want to pick up a portion on the way.',
+      ordering: {
+        summary: 'First Chungmu gimbap · time unconfirmed',
+        phone: '+82 55 645 2619',
+        questionKo: '오늘 아침 충무김밥은 몇 시부터 주문할 수 있나요? 포장도 그때 가능한가요?',
+      },
+      checked: '2026-11-09', source: halmae,
+    },
+    sources: [halmae, { label: 'Naver Map · Ttungbo Halmae Gimbap shop hours', url: 'https://map.naver.com/p/entry/place/11694124' }, visitKorea('Jungang Traditional Market', 77738), visitKorea('Dongpirang Village', 113285),
       { label: 'Tongyeong Bus · route 101 in both directions', url: 'https://tsbis.kr/383/main_search.do?main_searchKeyword=101' }],
   },
   {
     slug: 'german-village', city: 'namhae', name: 'Namhae German Village', nameKo: '남해독일마을',
     aliases: ['German Village & Mulgeon'],
-    cardRoute: 'A farmhouse breakfast at the foot of the hill, then the lanes up to the village square',
+    cardRoute: 'A farmhouse restaurant at the foot of the hill, then the lanes up to the village square',
     intro: 'Start on Dongbu-daero below the German Village. Walk uphill past the red-roofed houses to the square and the exhibition about the Korean miners and nurses who worked in Germany.',
     stops: [
       {
         name: 'Ohburim', nameKo: '어부림', lat: 34.79916, lng: 128.04399,
-        walk: 'Bus 020 serves the German Village from Namhae Bus Terminal. For breakfast, head to the lower end of Dogil-ro and find the restaurant at 1126 Dongbu-daero.',
+        walk: 'Bus 020 serves the German Village from Namhae Bus Terminal. At the lower end of Dogil-ro, find the restaurant at 1126 Dongbu-daero.',
         what: 'Look for 농가정식 on the menu for the farmhouse set with rice and side dishes. For a bowl of soup, ask for 한우곰탕 (Korean beef broth).',
       },
       {
@@ -102,8 +126,19 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Farmhouse set meal', nameKo: '농가정식', detail: 'At Ohburim, ask for nongga jeongsik, a farmhouse meal with rice and side dishes. The restaurant uses its own anchovy sauce. Braised cutlassfish (갈치조림) is also on the menu.', stop: 1 },
-    breakfast: { venue: 'Ohburim', venueKo: '어부림', hours: '09:00–20:00 daily', address: '1126 Dongbu-daero, Samdong-myeon, Namhae', detail: 'For the larger Ohburim set meal, reserve ahead on 055-867-3362.', checked: '2026-11-09', source: ohburim, stop: 1 },
-    sources: [ohburim, visitKorea('Namhae German Village', 75683), visitKorea('Namhae German Exhibition Hall', 68074),
+    breakfast: {
+      venue: 'Ohburim', venueKo: '어부림', stop: 1,
+      hours: 'The shop’s Naver listing and VisitKorea both give 09:00–20:00 daily. The farm guide lists later opening times and Mondays closed.',
+      address: '1126 Dongbu-daero, Samdong-myeon, Namhae',
+      detail: 'Ask about the farmhouse set (농가정식) before taking the bus. Reserve ahead for the larger Ohburim set (어부림밥상).',
+      ordering: {
+        summary: 'Farmhouse set meal · call before setting out',
+        phone: '+82 55 867 3362',
+        questionKo: '오늘 농가정식은 예약 없이 몇 시부터 먹을 수 있나요?',
+      },
+      checked: '2026-11-09', source: ohburimShop,
+    },
+    sources: [ohburimShop, ohburim, ohburimFarmGuide, visitKorea('Ohburim opening hours and set meal reservations', 188745), visitKorea('Namhae German Village', 75683), visitKorea('Namhae German Exhibition Hall', 68074),
       { label: 'VisitKorea · Kunst Lounge on Dogil-ro', url: 'https://english.visitkorea.or.kr/svc/whereToGo/hdrdslt/hdrdsltView.do?crsSn=206' },
       { label: 'Namhae Bus · German Village loop 020', url: 'https://tsbis.kr/393/main_search.do?main_searchKeyword=020' }],
   },

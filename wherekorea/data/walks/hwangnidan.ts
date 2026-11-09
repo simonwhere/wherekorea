@@ -80,11 +80,16 @@ export const hwangnidan: WalkGuide = {
   },
   breakfast: {
     venue: 'Hwangnamppang bakery', venueKo: '황남빵 경주 본점', stop: 5,
-    hours: '08:00–22:00 daily.',
+    hours: 'Bakery and phone orders open 08:00–22:00 daily.',
     address: '783 Taejong-ro, Gyeongju',
-    detail: 'Pick up red-bean pastries here before the cafés open. Walk west along Taejong-ro to the Poseok-ro entrance to Hwangnidan-gil to join the walk at stop 1.',
+    detail: 'For a red-bean pastry warm from the oven, ask the main shop when today’s first batch will be ready. Walk west along Taejong-ro to join the walk at stop 1.',
+    ordering: {
+      summary: 'Phone orders from 08:00 · call for the first fresh batch',
+      phone: '+82 54 749 7000',
+      questionKo: '오늘 본점에서 황남빵을 몇 시부터 살 수 있나요? 갓 구운 첫 빵은 몇 시에 나오나요?',
+    },
     checked: '2026-11-09',
-    source: { label: 'Hwangnamppang · main shop hours', url: 'https://www.hwangnam.co.kr/' },
+    source: { label: 'Hwangnamppang · main shop and phone orders', url: 'https://www.hwangnam.co.kr/shopinfo/store.html' },
   },
   sources: [
     { label: 'Hwangnidan Street · Korea Tourism Organization', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=174203' },

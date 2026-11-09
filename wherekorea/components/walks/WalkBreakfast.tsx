@@ -12,10 +12,10 @@ export default function WalkBreakfast({ breakfast, food, onMap, controls }: {
     <p className={styles.label}>Breakfast · Stop {breakfast.stop}</p>
     <h3>{breakfast.venue} <span lang="ko">{breakfast.venueKo}</span></h3>
     <p className={styles.hours}>{ordering?.summary ?? breakfast.hours}</p>
+    {ordering && <p className={styles.listedHours}>{breakfast.hours}</p>}
     {food.stop === breakfast.stop && <p className={styles.dish}>{food.name} <span lang="ko">{food.nameKo}</span></p>}
     <p>{breakfast.detail}</p>
     {ordering && <>
-      <p className={styles.listedHours}>{breakfast.hours}</p>
       <div className={styles.contact}>
         {ordering.pickupUrl && <a href={ordering.pickupUrl} target="_blank" rel="noreferrer">Reserve pickup on Naver ↗</a>}
         <a href={'tel:' + ordering.phone.replaceAll(' ', '')}>Call {ordering.phone}</a>

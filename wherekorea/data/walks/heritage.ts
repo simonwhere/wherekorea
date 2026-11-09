@@ -9,8 +9,8 @@ const damyangNoodles = {
   url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=8d4a25e8-c944-4454-8a45-e70d865ba424',
 }
 const boseongRestaurant = {
-  label: 'VisitKorea · Dawon Swimteo restaurant hours',
-  url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=e31094b8-2b0b-446b-86ac-a293e71da564',
+  label: 'Daehan Dawon · takeaway menu at the tea fields',
+  url: 'https://dhdawon.com/page/sub_01_03.asp?pageNum=1&subNum=3',
 }
 
 export const heritageWalks: WalkGuide[] = [
@@ -55,14 +55,20 @@ export const heritageWalks: WalkGuide[] = [
     },
     breakfast: {
       venue: 'Mammoth Bakery', venueKo: '맘모스베이커리 본점', stop: 1,
-      hours: '09:00–18:00. Last order 16:30.',
+      hours: 'Bakery open 09:00–18:00.',
       address: '34 Munhwagwangjang-gil, Andong',
-      detail: 'Cream-cheese buns and coffee at the downtown bakery. Closed on Seollal and Chuseok day, with shorter hours during the holiday periods.',
+      detail: 'Ask the downtown shop when the first cream-cheese buns will be ready to take away. It closes on Seollal and Chuseok day and has shorter hours during the surrounding holidays.',
+      ordering: {
+        summary: 'First cream-cheese buns · call for the time',
+        phone: '+82 54 857 6000',
+        questionKo: '오늘 문화광장길 본점에서 크림치즈빵은 몇 시에 처음 나오나요? 그때 예약 없이 살 수 있나요?',
+      },
       checked: '2026-11-09', source: andongBakery,
     },
     sources: [
       { label: 'VisitKorea · the market and jjimdak', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=221295' },
       { label: 'Andong Tourism · Mammoth Bakery', url: 'https://www.tourandong.com/public/sub1/sub3.cshtml?idx=2&seq=1548' },
+      { label: 'Mammoth Bakery · downtown main shop (Korean)', url: 'https://m.place.naver.com/restaurant/20027201/home' },
       { label: 'OpenStreetMap · Ungbu Park', url: 'https://www.openstreetmap.org/way/545945976' },
       { label: 'Andong city bus departures', url: 'https://bus.andong.go.kr/route?tab=stop' },
     ],
@@ -108,9 +114,14 @@ export const heritageWalks: WalkGuide[] = [
     },
     breakfast: {
       venue: 'Jinune Jip Guksu', venueKo: '진우네집국수', stop: 3,
-      hours: '09:00–20:00. Closed for the traditional holidays.',
+      hours: 'Restaurant open 09:00–20:00. Closed for the traditional holidays.',
       address: '32 Gaeksa 3-gil, Damyang-eup, Damyang',
-      detail: 'For a hot breakfast, order the anchovy-broth noodles. The restaurant is on the market side of the river, across from the bamboo garden.',
+      detail: 'For an early bowl, ask when the kitchen starts serving hot anchovy-broth noodles (멸치국물국수). The shop is across the river from the bamboo garden.',
+      ordering: {
+        summary: 'First bowl of anchovy noodles · call for the time',
+        phone: '+82 61 381 5344',
+        questionKo: '오늘 객사3길 가게에서 멸치국물국수는 몇 시부터 주문할 수 있나요?',
+      },
       checked: '2026-11-09', source: damyangNoodles,
     },
     sources: [
@@ -122,7 +133,7 @@ export const heritageWalks: WalkGuide[] = [
   },
   {
     slug: 'boseong-tea-fields', city: 'damyang-boseong', name: 'Daehan Dawon tea fields', nameKo: '보성 대한다원',
-    cardRoute: 'Cedar avenue, green-tea noodles and the hillside rows',
+    cardRoute: 'Cedar avenue, local green tea and the hillside rows',
     intro: 'In Boseong, take the cedar-lined path into Daehan Dawon, stop for tea and walk up the central steps for a view across the rows of tea bushes.',
     stops: [
       {
@@ -137,9 +148,9 @@ export const heritageWalks: WalkGuide[] = [
         },
       },
       {
-        name: 'Dawon Swimteo restaurant', nameKo: '다원쉼터', lat: 34.71569, lng: 127.07881,
-        walk: 'Continue along the cedar path. Look for the restaurant on the second floor beside the ticket office.',
-        what: 'The menu includes green-tea jjajangmyeon (녹차자장면), cold noodles and green tea. A cup of nokcha (녹차) is the simplest way to taste the local leaves.',
+        name: 'Dawon Swimteo tea stop', nameKo: '다원쉼터', lat: 34.71569, lng: 127.07881,
+        walk: 'Go through the ticket gate and follow the cedar path past the fountain. Look for the white building marked 대한다원쉼터 by the main square.',
+        what: 'The ground-floor takeaway counter serves Boseong green tea (보성 녹차) hot or iced, matcha lattes and ice cream.',
       },
       {
         name: 'Tea field viewpoint', nameKo: '대한다원 차밭 전망 지점', lat: 34.71657, lng: 127.0783,
@@ -154,17 +165,24 @@ export const heritageWalks: WalkGuide[] = [
       },
     ],
     food: {
-      name: 'Green-tea noodles and local tea', nameKo: '녹차자장면 · 녹차', stop: 2,
-      detail: 'Look for nokcha jajangmyeon (녹차자장면), noodles with black-bean sauce. The restaurant also serves green tea and green-tea ice cream (녹차 아이스크림).',
+      name: 'Boseong green tea and matcha ice cream', nameKo: '보성 녹차 · 말차 아이스크림', stop: 2,
+      detail: 'Ask for Boseong nokcha (보성 녹차) for plain green tea, or malcha aiseukeurim (말차 아이스크림) for matcha ice cream.',
     },
     breakfast: {
       venue: 'Dawon Swimteo', venueKo: '다원쉼터', stop: 2,
-      hours: '09:00–17:00. Closing days vary.',
+      hours: 'The tea fields open at 09:00. The plantation lists no separate time for the takeaway counter.',
       address: '763-67 Nokcha-ro, Boseong-eup, Boseong',
-      detail: 'Stop for morning tea beside the ticket office. Call 061-852-2126 before travelling for a meal on a particular day.',
+      detail: 'The takeaway menu lists tea and ice cream. For a meal, call the plantation before buying an entry ticket and ask whether the kitchen is serving green-tea noodles (녹차자장면) that day.',
+      ordering: {
+        summary: 'Morning tea or noodles · call before visiting',
+        phone: '+82 61 852 4540',
+        questionKo: '오늘 다원쉼터에서 녹차는 몇 시부터 주문할 수 있나요? 녹차자장면도 판매하나요? 몇 시부터 먹을 수 있나요?',
+      },
       checked: '2026-11-09', source: boseongRestaurant,
     },
     sources: [
+      { label: 'Daehan Dawon · rest stop location on the grounds', url: 'https://dhdawon.com/page/sub_01_05.asp?pageNum=1&subNum=5' },
+      { label: 'Boseong County · plantation phone number', url: 'https://www.boseong.go.kr/english/tourism/contact_numbers' },
       { label: 'VisitKorea · Daehan Dawon trail and admission', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=110794' },
       { label: 'Boseong County · tea field map', url: 'https://www.boseong.go.kr/tour/tourist/9tour/greentea_field' },
       { label: 'Boseong County · buses from the terminal', url: 'https://www.boseong.go.kr/tour/tourguide/traffic/rural_bus' },

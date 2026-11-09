@@ -17,9 +17,9 @@ function commonsPhoto(
 }
 
 const shareAlike = 'https://creativecommons.org/licenses/by-sa/4.0/'
-const chodangHours = visitKorea('Chodang Halmeoni Sundubu menu, hours and closing day', 174296)
+const chodangHours = { label: 'VisitKorea · Chodang Halmeoni Sundubu menu and hours (Korean)', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=d0b55bf6-a9e0-4120-83d6-f55c648b2bc6' }
 const dancheonHours = visitKorea('Dancheon Sikdang menu and hours', 188441)
-const chuncheonHours = visitKorea('Myeongdong 1 Beonji Dakgalbi menu and hours', 86410)
+const chuncheonHours = { label: 'VisitKorea · Myeongdong 1 Beonji Dakgalbi menu and closing day (Korean)', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=4b6a6986-0b03-4dcd-880a-7e91f81f38c9' }
 const boyeongHours = { label: 'Boyeong Mandu · Bukmun main branch listing (Korean)', url: 'https://www.by1977.co.kr/' }
 
 const chodang: WalkGuide = {
@@ -53,9 +53,14 @@ const chodang: WalkGuide = {
   food: { name: 'Soft tofu with rice', nameKo: '순두부백반', detail: 'The plain tofu set comes with rice and side dishes. The lightly set curds are served in a bowl.', stop: 1 },
   breakfast: {
     venue: 'Chodang Halmeoni Sundubu', venueKo: '초당할머니순두부', stop: 1,
-    hours: 'Mon & Thu–Sun 08:00–19:00 · Tue 08:00–15:00 · Wed closed',
+    hours: 'Mon, Thu & Fri 08:00–19:00 · Tue 08:00–15:00 · Sat & Sun 08:00–18:30 · Wed closed',
     address: '77 Chodangsundubu-gil, Gangneung · 초당순두부길 77',
-    detail: 'On Mondays and Thursday through Sunday the kitchen pauses from 15:30 to 17:00 and takes its last order at 18:30. Tuesday last order is 14:30.',
+    detail: 'The kitchen takes a break from 16:00 to 17:00 on Monday, Thursday and Friday, and from 15:30 to 17:00 on weekends.',
+    ordering: {
+      summary: 'Soft tofu with rice · call for the first serving',
+      phone: '+82 33 652 2058',
+      questionKo: '아침에 순두부백반은 몇 시부터 매장에서 주문할 수 있나요?',
+    },
     checked: '2026-11-09', source: chodangHours,
   },
   sources: [chodangHours, visitKorea('Chodang Tofu Village', 109344), visitKorea('Gangmun Beach', 77680),
@@ -101,7 +106,12 @@ const abaiVillage: WalkGuide = {
   breakfast: {
     venue: 'Dancheon Sikdang', venueKo: '단천식당', stop: 2, hours: '08:30–19:00 daily',
     address: '17 Abaimaeul-gil, Sokcho · 아바이마을길 17',
-    detail: 'The restaurant takes a break from 15:30 to 16:00. The opening time applies to this restaurant on the village side of the ferry.',
+    detail: 'The restaurant takes a break from 15:30 to 16:00. Call before crossing on the ferry for an early plate of stuffed squid.',
+    ordering: {
+      summary: 'Stuffed squid · call for the first order',
+      phone: '+82 33 632 7828',
+      questionKo: '아침에 오징어순대는 매장에서 몇 시부터 주문할 수 있나요?',
+    },
     checked: '2026-11-09', source: dancheonHours,
   },
   sources: [dancheonHours, { label: 'Sokcho Facilities Management Corporation · ferry hours and fares (Korean)', url: 'https://sokchosiseol.or.kr/biz/ferry.do' },
@@ -138,9 +148,14 @@ const chuncheonMyeongdong: WalkGuide = {
   ],
   food: { name: 'Spicy chicken on an iron plate', nameKo: '철판닭갈비', detail: 'Dakgalbi is chicken stir-fried with vegetables. Ask for dakgalbi at stop 2 or order the buckwheat noodles listed as 막국수.', stop: 2 },
   breakfast: {
-    venue: 'Myeongdong 1 Beonji Dakgalbi', venueKo: '명동1번지닭갈비', stop: 2, hours: '10:00–22:00 daily',
+    venue: 'Myeongdong 1 Beonji Dakgalbi', venueKo: '명동1번지닭갈비', stop: 2, hours: '10:00–22:00 · closed the first Wednesday of each month',
     address: '7 Geumgang-ro 62beon-gil, Chuncheon · 금강로62번길 7',
-    detail: 'The first meal here starts at 10:00. The stalls inside Jungang Market have separate opening times.',
+    detail: 'Last order is at 21:00. The stalls inside Jungang Market keep their own hours.',
+    ordering: {
+      summary: 'Iron-plate dakgalbi · call for the first order',
+      phone: '+82 33 256 6448',
+      questionKo: '아침에 철판닭갈비는 몇 시부터 매장에서 주문할 수 있나요?',
+    },
     checked: '2026-11-09', source: chuncheonHours,
   },
   sources: [chuncheonHours, visitKorea('Chuncheon Jungang Market', 76551), visitKorea('Myeongdong Dakgalbi Street', 108005), visitKorea('Yukrimgogae', 43252)],
@@ -178,7 +193,12 @@ const janganmun: WalkGuide = {
     venue: 'Boyeong Mandu · north gate shop', venueKo: '보영만두 북문본점', stop: 3,
     hours: '10:00–01:00 daily · last order 00:30',
     address: '271 Paldal-ro, Jangan-gu, Suwon · 장안구 팔달로 271',
-    detail: 'The north gate shop starts serving at 10:00 and closes at 01:00 the following morning.',
+    detail: 'Use the Bukmun main branch at 271 Paldal-ro. It closes at 01:00 the following morning.',
+    ordering: {
+      summary: 'Fried dumplings and jjolmyeon · call for the first order',
+      phone: '+82 31 255 1085',
+      questionKo: '북문본점에서 아침에 군만두와 쫄면은 각각 몇 시부터 주문할 수 있나요?',
+    },
     checked: '2026-11-09', source: boyeongHours,
   },
   sources: [boyeongHours, { label: 'Gyeonggi Cultural Foundation · Boyeong Mandu, address and menu', url: 'https://ggc.ggcf.kr/p/5a5c8f28482b6a0c41df567f' },

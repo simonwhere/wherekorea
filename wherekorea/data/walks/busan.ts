@@ -104,17 +104,24 @@ export const nampo: WalkGuide = {
   ],
 }
 
+const pohangGukbap = { label: 'Visit Busan · Pohang Dwaeji Gukbap on the soup alley', url: 'https://www.visitbusan.net/index.do?lang_cd=ko&menuCd=DOM_000000201002004001&uc_seq=2420' }
+
 export const jeonpo: WalkGuide = {
   slug: 'jeonpo',
   city: 'busan',
   name: 'Jeonpo',
   breakfast: {
     venue: 'Pohang Dwaeji Gukbap', venueKo: '포항돼지국밥',
-    hours: 'Daily, 5:00 am–9:40 pm',
-    detail: 'Order dwaeji gukbap (돼지국밥), sliced pork in broth with rice. For an early breakfast, start at the soup alley near Seomyeon Station and walk back toward the Jeonpo cafés.',
-    address: '25 Seomyeon-ro 68beon-gil, Busanjin-gu, Busan',
+    hours: 'The shop’s Naver listing and Visit Busan both say 24 hours. VisitKorea lists 05:00–21:40.',
+    detail: 'For a bowl before dawn, call the shop in Seomyeon Market. Look for the 포항돼지국밥 sign at number 27.',
+    address: '27 Seomyeon-ro 68beon-gil, Busanjin-gu, Busan',
+    ordering: {
+      summary: 'Pork and rice soup · call before an early visit',
+      phone: '+82 51 807 5439',
+      questionKo: '오늘 새벽에도 매장에서 돼지국밥을 먹을 수 있나요? 주문을 쉬는 시간이 있나요?',
+    },
     checked: '2026-11-09', stop: 3,
-    source: { label: 'VisitKorea', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=60053' },
+    source: pohangGukbap,
   },
   aliases: ['전포동', 'Jeonpo-dong', 'Jeonpo Cafe Street'],
   nameKo: '전포',
@@ -145,8 +152,8 @@ export const jeonpo: WalkGuide = {
     {
       name: 'Seomyeon pork soup alley',
       nameKo: '서면 돼지국밥골목',
-      lat: 35.15590, lng: 129.05853,
-      walk: 'Head west toward Seomyeon Station. Cross Jungang-daero and follow Seomyeon-ro 68beon-gil beside Seomyeon Market. The pin marks number 25 on the soup alley.',
+      lat: 35.155785, lng: 129.05853,
+      walk: 'Head west toward Seomyeon Station. Cross Jungang-daero and follow Seomyeon-ro 68beon-gil beside Seomyeon Market. Look for 포항돼지국밥 at number 27 on the soup alley.',
       what: 'Look for 돼지국밥 on the boards outside the restaurants. After the meal, walk north to Seomyeon Station for Metro Lines 1 and 2.',
     },
   ],
@@ -161,6 +168,8 @@ export const jeonpo: WalkGuide = {
     { label: 'VisitKorea · Jeonpo Café Street', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=192977' },
     { label: 'VisitKorea · Jeonpo Tool Street', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=183790' },
     { label: 'VisitKorea · Busan pork and rice soup', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=221285' },
-    { label: 'VisitKorea · soup alley at number 25', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=60053' },
+    pohangGukbap,
+    { label: 'Naver Map · Pohang Dwaeji Gukbap hours and menu', url: 'https://map.naver.com/p/entry/place/11738501' },
+    { label: 'VisitKorea · Pohang Dwaeji Gukbap hours', url: 'https://english.visitkorea.or.kr/svc/contents/contentsView.do?vcontsId=60053' },
   ],
 }
