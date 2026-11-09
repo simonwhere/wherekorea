@@ -52,17 +52,22 @@ export const seongsu: WalkGuide = {
   },
   breakfast: {
     venue: 'Somunnan Seongsu Gamjatang', venueKo: '소문난성수감자탕', stop: 3,
-    hours: 'Open 24 hours daily.',
+    hours: 'Main restaurant: open 24 hours daily.',
     address: '45 Yeonmujang-gil, Seongdong-gu, Seoul',
-    detail: 'Order gamjaguk (감자국 식사) for a bowl of pork-bone soup. For breakfast first, take Line 2 to Seongsu and use Exit 4.',
+    detail: 'For one person, ask for gamjaguk (감자국식사): regular (일반) or with extra greens (우거지). Neither version has a separate start time listed. For breakfast first, use Seongsu Station Exit 4.',
     checked: '2026-11-09',
-    source: { label: 'Visit Seoul · restaurant hours', url: 'https://english.visitseoul.net/restaurants/SeongsuGamjatang/ENPlceoxk' },
+    source: { label: 'Main restaurant · menu (Korean)', url: 'https://pcmap.place.naver.com/restaurant/11721256/menu/list' },
+    ordering: {
+      summary: 'Meals served around the clock',
+      phone: '+82 2 465 6580',
+      questionKo: '지금 본점에서 감자국식사 1인분 주문할 수 있나요? 일반이랑 우거지 둘 다 되나요?',
+    },
   },
   sources: [
     { label: 'Visit Seoul · Seongsu Station and the streets', url: 'https://english.visitseoul.net/editorspicks/2026-Seongsu/ENNky3epf' },
     { label: 'OpenStreetMap · Seongsu Exit 3', url: 'https://www.openstreetmap.org/node/3404887386' },
     { label: 'Visit Seoul · Daelim Changgo warehouse', url: 'https://english.visitseoul.net/shopping/2024-musinsa-daelim/ENPnh3bjr' },
-    { label: 'Visit Seoul · Somunnan Seongsu Gamjatang', url: 'https://english.visitseoul.net/area/SeongsuGamjatang/ENPlceoxk' },
-    { label: 'VisitKorea · soup and stew menu (Korean)', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=4c7ad228-1a53-4f8c-9fa7-3e0b70bb2097' },
+    { label: 'Visit Seoul · 24-hour dining at the main restaurant', url: 'https://english.visitseoul.net/restaurants/SeongsuGamjatang/ENPlceoxk' },
+    { label: 'Main restaurant · soup and stew menu (Korean)', url: 'https://pcmap.place.naver.com/restaurant/11721256/menu/list' },
   ],
 }
