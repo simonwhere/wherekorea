@@ -130,9 +130,16 @@
       item.append(node('p', number === 1 ? '1 · Start here' : 'Stop ' + number, 'step'), title, node('p', stop.walk), node('p', stop.what))
       if (guide.breakfast?.stop === number) {
         const breakfast = guide.breakfast
-        item.append(node('h3', 'Breakfast · ' + breakfast.venue + ' · ' + breakfast.venueKo),
-          node('p', breakfast.hours), node('p', breakfast.detail), node('p', breakfast.address),
-          node('p', 'Hours checked ' + breakfast.checked, 'note'))
+        item.append(node('h3', 'Breakfast · ' + breakfast.venue + ' · ' + breakfast.venueKo))
+        const ordering = breakfast.ordering
+        if (ordering) item.append(node('strong', ordering.summary))
+        item.append(node('p', breakfast.hours), node('p', breakfast.detail), node('p', breakfast.address))
+        if (ordering) {
+          const question = node('p', ordering.questionKo)
+          question.lang = 'ko'
+          item.append(link('tel:' + ordering.phone.replaceAll(' ', ''), 'Call ' + ordering.phone), question)
+        }
+        item.append(node('p', (ordering ? 'Listing checked ' : 'Hours checked ') + breakfast.checked, 'note'))
       }
       if (number !== selected || saved.stop !== selected) {
         const button = node('button', 'Save this stop')

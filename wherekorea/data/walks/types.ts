@@ -41,4 +41,10 @@ export interface WalkBreakfast {
   checked: string
   source: { label: string; url: string }
   stop: number
+  ordering?: {
+    summary: string
+    phone: string
+    questionKo: string
+    pickupUrl?: string
+  }
 }

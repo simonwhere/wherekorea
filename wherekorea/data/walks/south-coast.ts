@@ -110,7 +110,7 @@ export const southCoastWalks: WalkGuide[] = [
   {
     slug: 'yeosu-harbour', city: 'yeosu', name: 'Yeosu old harbour', nameKo: '여수 이순신광장 일대',
     cardRoute: 'A warm baguette burger, the harbour square and Jinnamgwan Hall',
-    intro: 'Take breakfast to the harbour square, then walk uphill to the wooden guest hall that stood on the site of Yeosu’s naval base. All three stops are in the old town.',
+    intro: 'Start across from Yi Sun-sin Square, walk to the waterfront, then head uphill to the wooden guest hall on the site of Yeosu’s naval base.',
     stops: [
       {
         name: 'Yeosudang', nameKo: '여수당', lat: 34.73990, lng: 127.73532,
@@ -130,8 +130,21 @@ export const southCoastWalks: WalkGuide[] = [
       },
     ],
     food: { name: 'Baguette burger', nameKo: '수제바게트버거', detail: 'Pick up a warm baguette burger at Yeosudang beside the square. The mugwort ice cream, 쑥 아이스크림, has a grassy flavour.', stop: 1 },
-    breakfast: { venue: 'Yeosudang', venueKo: '여수당', hours: '07:30–23:00 daily', address: '72 Jungang-ro, Yeosu', detail: 'VisitKorea’s English guide lists a 09:30 opening. For breakfast before 09:30, call 061-661-0222.', checked: '2026-11-09', source: yeosudang, stop: 1 },
+    breakfast: {
+      venue: 'Yeosudang', venueKo: '여수당', stop: 1,
+      hours: 'VisitKorea lists a 07:30 shop opening in Korean and 09:30 in English.',
+      address: 'Main shop · 72 Jungang-ro, Yeosu (중앙로 72)',
+      detail: 'Call the main shop before heading to the square to ask when you can order and collect the first burger of the day.',
+      ordering: {
+        summary: 'First baguette burger · time unconfirmed',
+        phone: '+82 61 661 0222',
+        questionKo: '오늘 수제바게트버거는 몇 시부터 주문할 수 있나요? 가장 일찍 받을 수 있는 시간은 언제인가요?',
+      },
+      checked: '2026-11-09', source: yeosudang,
+    },
     sources: [yeosudang, visitKorea('Yeosudang · English hours', 177537), visitKorea('Yi Sun-sin Square', 33693), visitKorea('Jinnamgwan Hall', 84183),
+      { label: 'Yeosu City · main shop contact and hours', url: 'https://www.yeosu.go.kr/tour/lodge_food/food/group_food/other?idx=5897&mode=foodView' },
+      { label: 'Yeosudang · main shop and bakery addresses', url: 'https://www.instagram.com/yeosudang/' },
       { label: 'Yeosu Bus · city routes and stops', url: 'https://its.yeosu.go.kr/bus/busroute' }],
   },
   {
@@ -143,7 +156,7 @@ export const southCoastWalks: WalkGuide[] = [
       {
         name: 'Hwagae Market', nameKo: '화개장터', lat: 35.18799, lng: 127.62407,
         walk: 'Arrive at Hwagae Bus Terminal (화개버스터미널) and follow signs for 화개장터 toward the river. The market is at 15 Ssanggye-ro.',
-        what: 'Walk between the stalls of chestnuts, dried mountain greens and medicinal roots. Each trader keeps their own hours. Early arrivals can go straight to the bakery when it opens.',
+        what: 'Walk between stalls selling chestnuts, dried mountain greens and medicinal roots. Each trader keeps their own hours.',
         photo: {
           src: '/walks/south-coast/hwagae-market.webp', alt: 'Hwagae Market between two rivers, with cherry trees below Namdo Bridge',
           credit: 'Hadong County · Hwagae Market · resized and converted to WebP', license: 'KOGL Type 1',
@@ -154,7 +167,7 @@ export const southCoastWalks: WalkGuide[] = [
       {
         name: 'Bamtol bakery', nameKo: '밤톨', lat: 35.19003, lng: 127.62341,
         walk: 'Head back toward the bus terminal. Bamtol is opposite it at 17-1 Hwagae-ro, with the shop name 밤톨 on the front.',
-        what: 'Ask for 하동 밤파이. The bakery wraps Hadong chestnuts and chestnut paste in buttery pastry. There is also an apple pie made with Jirisan apples.',
+        what: 'Look for 하동 밤파이 on the menu. For a Naver order, collect the pies at the time you entered, even if the automatic ready message arrives earlier.',
       },
       {
         name: 'Ssanggye Myeongcha tea shop', nameKo: '쌍계명차', lat: 35.19088, lng: 127.62425,
@@ -162,8 +175,21 @@ export const southCoastWalks: WalkGuide[] = [
         what: 'Try ujeon (우전), an early-season green tea, or green tea ice cream. Upstairs is a small museum of tea wares. Walk back down the same street for the bus from Hwagae Terminal.',
       },
     ],
-    food: { name: 'Hadong chestnut pie', nameKo: '하동 밤파이', detail: 'Bamtol’s chestnut pastry is sold across the street from the terminal, an easy stop before the bus. Their own website also links to pickup reservations.', stop: 2 },
-    breakfast: { venue: 'Bamtol bakery', venueKo: '밤톨', hours: '09:00–18:00 daily on the bakery website', address: '17-1 Hwagae-ro, Hwagae-myeon, Hadong', detail: 'VisitKorea lists a 09:30 opening. For a visit before 09:30, confirm with the bakery at 055-883-8999.', checked: '2026-11-09', source: bamtol, stop: 2 },
+    food: { name: 'Hadong chestnut pie', nameKo: '하동 밤파이', detail: 'Look for the flaky pastry filled with chestnut paste and a whole chestnut at the bakery across from Hwagae Bus Terminal.', stop: 2 },
+    breakfast: {
+      venue: 'Bamtol bakery', venueKo: '밤톨', stop: 2,
+      hours: 'The bakery lists shop hours of 09:00–18:00 daily.',
+      address: '17-1 Hwagae-ro, Hwagae-myeon, Hadong (화개로 17-1)',
+      detail: 'Enter your pickup time when ordering on Naver. For a pie without a reservation, call to ask when the first batch will be ready.',
+      ordering: {
+        summary: 'Reserved chestnut pies · pickup 09:30–18:00',
+        phone: '+82 55 883 8999',
+        questionKo: '오늘 예약 없이 밤파이를 사려면 몇 시부터 주문하고 바로 받을 수 있나요?',
+        pickupUrl: 'https://m.booking.naver.com/order/bizes/530347/items/3938101?theme=place',
+      },
+      checked: '2026-11-09',
+      source: { label: 'Bamtol · pickup hours on Naver Place', url: 'https://m.place.naver.com/restaurant/1973970023/information?entry=ple' },
+    },
     sources: [bamtol, visitKorea('Hwagae Market', 80298),
       { label: 'VisitKorea · Ssanggye Myeongcha and buses from Hadong', url: 'https://access.visitkorea.or.kr/food/detail.do?cotId=97848a65-5d58-43a8-82b2-61de698a1cfb' },
       { label: 'VisitKorea · Bamtol bakery by Hwagae Terminal', url: 'https://korean.visitkorea.or.kr/detail/ms_detail.do?cotid=69b74eb5-1a10-4cfc-8387-dfbc7a2c4a67' },

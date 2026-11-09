@@ -5,6 +5,12 @@
 .breakfast .hours { margin: 4px 0; font-weight: 700; color: #ffcfad; }
 .dish { margin-bottom: 4px; font-weight: 650; }
 .dish span { display: inline-block; color: #e0cabe; font-size: .92em; font-weight: 450; }
+.listedHours { margin-top: 5px; color: #d7cabc; font-size: 13px; }
+.contact { display: flex; flex-wrap: wrap; gap: 0 18px; }
+.contact a, .ask summary { display: inline-flex; align-items: center; min-height: 44px; color: #ffccb1; }
+.contact a { text-decoration: underline; text-underline-offset: 3px; }
+.ask summary { display: list-item; width: fit-content; padding: 10px 0; cursor: pointer; }
+.ask p { padding-bottom: 8px; }
 .actions { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 18px; }
 .actions button, .actions summary { color: #ffccb1; padding: 10px 0; min-height: 44px; cursor: pointer; text-align: left; }
 .actions button { font-weight: 650; }

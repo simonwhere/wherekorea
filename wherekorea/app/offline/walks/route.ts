@@ -7,7 +7,13 @@ export function GET() {
   // bookmarks and meetup drafts do not belong in this offline document.
   const snapshot = walks.map(({ slug, name, nameKo, stops, breakfast }) => ({
     slug, name, nameKo, stops: stops.map(({ name, nameKo, walk, what }) => ({ name, nameKo, walk, what })),
-    breakfast: breakfast && { venue: breakfast.venue, venueKo: breakfast.venueKo, hours: breakfast.hours, checked: breakfast.checked, stop: breakfast.stop, address: breakfast.address, detail: breakfast.detail },
+    breakfast: breakfast && {
+      venue: breakfast.venue, venueKo: breakfast.venueKo, hours: breakfast.hours, checked: breakfast.checked,
+      stop: breakfast.stop, address: breakfast.address, detail: breakfast.detail,
+      ordering: breakfast.ordering && {
+        summary: breakfast.ordering.summary, phone: breakfast.ordering.phone, questionKo: breakfast.ordering.questionKo,
+      },
+    },
   }))
   const data = JSON.stringify(snapshot).replace(/</g, '\\u003c')
   const document = `<!doctype html>

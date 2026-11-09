@@ -105,7 +105,7 @@ export default function NeighborhoodWalks({ walks, context, city }: {
     </figure>}
     {breakfastWalk?.breakfast && <Link className={styles.breakfastLink}
       href={withBrowseContext(walkStopPath(breakfastWalk.slug, breakfastWalk.breakfast.stop), context)}>
-      Breakfast at {breakfastWalk.breakfast.venue} · {breakfastWalk.breakfast.hours} →
+      Breakfast at {breakfastWalk.breakfast.venue} · {breakfastWalk.breakfast.ordering?.summary ?? breakfastWalk.breakfast.hours} →
     </Link>}
     <WalkPreview key={active.slug} walk={active} context={context} />
     <details className={styles.credits}><summary>Neighbourhood photos</summary>
