@@ -239,13 +239,15 @@ button { font-family: inherit; }
   .wk-card-metrics strong { font-size: 17px; }
 }
 @media (max-width: 640px) and (max-height: 640px) {
-  .wk-explore-main { padding-top: 12px; }
+  .wk-explore-main { padding-top: 8px; }
   .wk-intro { margin-bottom: 4px; }
   .wk-trip-controls:not(.is-open) + .wk-category-rail { display: none; }
-  .wk-results-toolbar { margin-top: 10px; }
-  .wk-card-body { padding-top: 60px; }
+  .wk-results-toolbar { margin-top: 6px; }
+  .wk-results-note { margin-block: 5px 7px; }
+  .wk-card-body { padding-top: 56px; }
 }
 @media (max-width: 360px) {
+  .wk-card-title h2 { font-size: 24px; }
   .wk-explore .wk-header nav { flex-wrap: nowrap; min-width: 0; overflow-x: auto; }
   .wk-explore .wk-header nav button { flex-shrink: 0; padding-inline: 5px; }
 }
