@@ -12,7 +12,6 @@ import { usdApprox } from '@/lib/currency'
 import { track } from '@/lib/analytics'
 import { useCompare } from '@/lib/compare-context'
 import { useSaved } from '@/lib/saved-context'
-import KoreaMiniMap from '@/components/shared/KoreaMiniMap'
 import PhotoCredit from '@/components/shared/PhotoCredit'
 
 // Art direction, not a data claim. Keep the landmark in view as the card grows.
@@ -28,7 +27,7 @@ interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
-  walk?: { label: string; route: string; href: string; more?: { label: string; href: string }; festival?: { label: string; href: string } }
+  walk?: { stopLabel?: string; route: string; href: string; more?: { label: string; href: string }; festival?: { label: string; href: string } }
   bestNowReason?: string
   month?: number
   browse?: BrowseState
@@ -69,20 +68,17 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
           }}
             onError={() => setImgError(true)} loading="lazy" decoding="async" />
         ) : <span className="wk-photo-unavailable">{d.name} · photo unavailable</span>}
-      </div>
-      <div className="wk-card-topline" aria-hidden="true">
-        <span className="wk-card-region">{REGIONS[d.slug]}</span>
-        <span className="wk-card-map"><KoreaMiniMap slug={d.slug} size={31} /></span>
+        <div className="wk-card-caption">
+          <span className="wk-card-region">{REGIONS[d.slug]}</span>
+          <div className="wk-card-title"><h2>{d.name}</h2><span lang="ko">{KOREAN_NAMES[d.slug]}</span></div>
+        </div>
       </div>
       <button type="button" className="wk-card-hitarea" onClick={preview}
         aria-label={`Preview ${d.name}`} aria-pressed={isSelected} />
-      {!imgError && <PhotoCredit image={d.image} className="wk-card-credit" compact />}
       <div className="wk-card-body">
-        <div className="wk-card-title"><h2>{d.name}</h2><span lang="ko">{KOREAN_NAMES[d.slug]}</span></div>
         {walk && <Link className="wk-card-walk" href={walk.href} prefetch={false}>
-          <span className="wk-card-walk-name">{walk.label}</span>
-          <strong>{walk.route}</strong>
-          <span className="wk-card-walk-arrow" aria-hidden="true">→</span>
+          <span>{walk.route}{walk.stopLabel && <small className="wk-card-stop">{walk.stopLabel}</small>}</span>
+          <span className="sr-only"> (open on map)</span>
         </Link>}
         <p className="wk-card-vibe">{d.card_vibe}</p>
         <div className="wk-card-signals">
@@ -118,6 +114,7 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
               toggleCompare(d.slug)
             }}>{inCompare ? '✓ Added' : '+ Compare'}</button>
         </div>
+        {!imgError && <PhotoCredit image={d.image} className="wk-card-credit" compact />}
       </div>
     </article>
   )

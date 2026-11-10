@@ -134,8 +134,8 @@ export default function DestinationPreviewPanel({ destination: d, onClose, month
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to top, rgba(22,24,31,0.72) 0%, rgba(22,24,31,0) 45%)',
           }} />
-          <PhotoCredit image={d.image} className="wk-preview-credit" />
         </div>
+        <PhotoCredit image={d.image} className="wk-preview-credit" compact />
 
         {/* Content */}
         <div style={{ padding: '20px 22px 28px' }}>

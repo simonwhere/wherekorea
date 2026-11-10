@@ -49,7 +49,7 @@ function cityGuideLink(city: Destination, guides: CardWalk[], events: CardFestiv
   const stop = searchedWalkStop(walk, state.q)
   const festival = searchedCityFestival(events, city.slug, state.q)
   return {
-    label: stop ? `Map · Stop ${stop} · ${walk.stops[stop - 1].name}` : `Walk map · ${walk.name}`,
+    stopLabel: stop ? `Stop ${stop} · ${walk.stops[stop - 1].name}` : undefined,
     route: walk.cardRoute,
     href: browseHref(state, walkStopPath(walk.slug, stop ?? 1) + '#walk-map', { ...extras, from: 'explore', view: 'map' }),
     more: choices.length > 1 ? {

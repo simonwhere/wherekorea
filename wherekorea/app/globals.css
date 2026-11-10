@@ -113,33 +113,34 @@ button { font-family: inherit; }
 .wk-results-note details[open] { max-width: 340px; }
 .wk-results-note details p { line-height: 1.6; margin-top: 8px; color: #c6d2df; }
 .wk-destination-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; align-items: stretch; }
-.wk-destination-card { position: relative; overflow: hidden; background: #1d2834; border: 1px solid #546271; border-radius: 16px; display: flex; flex-direction: column; justify-content: flex-end; min-height: 440px; isolation: isolate; }
+.wk-destination-card { position: relative; overflow: hidden; background: #17212d; border: 1px solid #546271; border-radius: 16px; display: flex; flex-direction: column; isolation: isolate; }
 .wk-destination-card.is-selected { border-color: #ffb595; box-shadow: 0 0 0 2px #ffb595; }
-.wk-card-image { position: absolute; inset: 0; z-index: 0; overflow: hidden; background: #30465b; }
+.wk-card-image { position: relative; aspect-ratio: 16 / 9; flex: none; overflow: hidden; background: #30465b; }
 .wk-card-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.wk-card-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #08121e10 0%, #08121e00 28%, #08121e40 40%, #08121ecc 62%, #08121eef 82%, #08121efa 100%); }
-.wk-card-topline { position: absolute; inset: 12px 12px auto; display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; pointer-events: none; }
-.wk-card-region { font-size: 10px; color: #fff; background: #102030c9; padding: 5px 9px; border-radius: 20px; border: 1px solid #ffffff5c; backdrop-filter: blur(8px); }
-.wk-card-map { background: #102030ba; border: 1px solid #ffffff3d; border-radius: 7px; padding: 4px; }
-.wk-photo-unavailable { display: flex; height: 100%; align-items: flex-start; justify-content: center; padding-top: 80px; color: #cedae5; font-size: 13px; }
+.wk-card-caption { position: absolute; inset: auto 0 0; padding: 28px 16px 12px; background: linear-gradient(transparent, #09121fd9 82%); }
+.wk-card-region { display: block; margin-bottom: 3px; font-size: 11px; line-height: 1.3; color: #e5edf5; }
+.wk-photo-unavailable { display: block; padding: 12px 16px; color: #cedae5; font-size: 13px; }
 .wk-photo-credit { font-size: 9px; line-height: 1.5; color: #edf3f7; }
 .wk-photo-credit a { text-decoration: underline; text-underline-offset: 2px; }
-.wk-card-credit { position: absolute; top: 55px; left: 12px; right: 12px; z-index: 3; width: fit-content; max-width: calc(100% - 24px); background: #0b1627cc; border-radius: 6px; }
 .wk-credit-disclosure summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; padding: 6px 9px; font-size: 10px; }
 .wk-credit-disclosure summary::after { content: '+'; padding-left: 6px; }
 .wk-credit-disclosure[open] summary::after { content: '−'; }
 .wk-credit-disclosure[open] { background: #0b1627f2; }
 .wk-credit-disclosure p { padding: 0 9px 9px; max-width: 250px; font-size: 10px; }
 .wk-credit-disclosure a { display: inline-block; padding-block: 5px; }
-.wk-preview-credit { position: absolute; bottom: 5px; left: 8px; right: 8px; background: #071424cc; padding: 3px 6px; border-radius: 4px; }
+.wk-card-credit, .wk-preview-credit { width: fit-content; max-width: 100%; pointer-events: auto; color: #b9c8d5; }
+.wk-preview-credit { margin-inline: 22px; }
+.wk-card-credit summary, .wk-preview-credit summary { padding-inline: 0; font-size: 11px; }
+.wk-card-credit[open], .wk-preview-credit[open] { background: transparent; }
+.wk-card-credit p, .wk-preview-credit p { padding: 0 0 6px; }
 .wk-hero-credit { margin: -14px 0 18px; color: #b9c8d5; }
 .wk-card-hitarea { position: absolute; inset: 0; z-index: 1; cursor: pointer; background: transparent; border: none; border-radius: inherit; }
 .wk-card-hitarea:focus-visible { outline-offset: -4px; }
-.wk-card-body { position: relative; z-index: 2; padding: 194px 16px 12px; display: flex; flex-direction: column; flex: 1; pointer-events: none; }
+.wk-card-body { position: relative; z-index: 2; padding: 4px 16px 3px; display: flex; flex-direction: column; flex: 1; pointer-events: none; }
 .wk-card-title { display: flex; align-items: baseline; gap: 9px; }
 .wk-card-title h2 { font-size: 26px; font-weight: 750; line-height: 1.1; letter-spacing: -.035em; color: #fff; text-shadow: 0 2px 12px #0009; }
 .wk-card-title > span { font-size: 12px; color: #e0e8ee; white-space: nowrap; text-shadow: 0 1px 5px #000; }
-.wk-card-vibe { font-size: 12px; line-height: 1.5; color: #f0f3f6; margin-top: 6px; text-shadow: 0 1px 7px #000; }
+.wk-card-vibe { font-size: 12px; line-height: 1.5; color: #e0e7ed; }
 .wk-card-signals { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 10px; }
 .wk-signal, .wk-mobility { padding: 5px 7px; border-radius: 5px; border: 1px solid #9eafbf80; color: #f0f3f6; background: #102030d9; }
 .wk-signal.is-good { color: #cff8e3; border-color: #81b69d; background: #18392ff0; }
@@ -152,12 +153,10 @@ button { font-family: inherit; }
 .wk-card-reason, .wk-card-weather, .wk-card-caution { font-size: 11px; line-height: 1.45; color: #d6e1eb; margin: 2px 0 6px; }
 .wk-card-caution { color: #ffd09b; }
 .wk-card-weather { color: #b6d8f3; }
-.wk-card-walk { pointer-events: auto; display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 2px 8px; min-height: 44px; margin: 8px 0 0; padding: 7px 10px; border-left: 2px solid #ffb595; border-radius: 0 6px 6px 0; background: #162638f5; text-align: left; }
+.wk-card-walk { pointer-events: auto; display: flex; align-items: center; width: fit-content; min-height: 44px; padding: 6px 0; color: #ffc3a5; font-size: 14px; font-weight: 600; line-height: 1.4; text-decoration: underline; text-decoration-color: #aa826f; text-underline-offset: 3px; }
 .wk-card-related { pointer-events: auto; width: fit-content; display: inline-flex; align-items: center; min-height: 44px; color: #ffd1b9; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
-.wk-card-walk-name { font-size: 11px; line-height: 1.3; color: #ffd1b9; }
-.wk-card-walk strong { grid-column: 1; font-size: 13px; line-height: 1.4; font-weight: 650; color: #fff; }
-.wk-card-walk-arrow { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 18px; color: #ffc3a5; }
-.wk-card-walk:hover strong, .wk-card-walk:focus-visible strong { text-decoration: underline; text-underline-offset: 3px; }
+.wk-card-walk:hover, .wk-card-walk:focus-visible { text-decoration-color: currentColor; }
+.wk-card-stop { display: block; font-size: 12px; }
 .wk-card-actions { display: flex; gap: 6px; align-items: center; border-top: 1px solid #9eafbf66; padding-top: 8px; margin-top: auto; }
 .wk-card-detail-hint { flex: 1; font-size: 11px; color: #d4e0ea; }
 .wk-save-button, .wk-compare-button { position: relative; z-index: 2; pointer-events: auto; min-height: 44px; border: 1px solid #9bafc3; border-radius: 8px; cursor: pointer; }
@@ -225,13 +224,9 @@ button { font-family: inherit; }
   .wk-search { min-height: 42px; }
   .wk-results-note { font-size: 10px; margin: 10px 0 12px; gap: 8px; }
   .wk-destination-grid { grid-template-columns: minmax(0, 1fr); }
-  .wk-destination-card { min-height: 400px; }
-  .wk-card-body { padding: clamp(76px, 16svh, 144px) 14px 12px; }
-  .wk-card-image::after { background: linear-gradient(180deg, #08121e00 5%, #08121e66 25%, #08121edb 52%, #08121ef5 90%); }
-  .wk-card-credit { top: 12px; left: auto; right: 58px; }
+  .wk-card-body { padding-inline: 14px; }
+  .wk-card-caption { padding-inline: 14px; }
   .wk-card-title { flex-wrap: wrap; gap: 2px 8px; }
-  .wk-card-walk { border: 1px solid #c29a84; border-radius: 8px; background: #102031f5; min-height: 50px; margin-top: 6px; }
-  .wk-card-walk strong { font-size: 14px; }
   .wk-card-vibe { min-height: 0; }
   .wk-card-title h2 { font-size: 28px; }
   .wk-card-signals { margin-top: 8px; }
@@ -244,7 +239,7 @@ button { font-family: inherit; }
   .wk-trip-controls:not(.is-open) + .wk-category-rail { display: none; }
   .wk-results-toolbar { margin-top: 6px; }
   .wk-results-note { margin-block: 5px 7px; }
-  .wk-card-body { padding-top: 56px; }
+  .wk-card-image { max-height: 24svh; }
 }
 @media (max-width: 360px) {
   .wk-card-title h2 { font-size: 24px; }

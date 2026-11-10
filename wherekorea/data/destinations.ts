@@ -650,7 +650,7 @@ export const destinations: Destination[] = [
     image: {
       src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Korea-Mountain-Jirisan-07.jpg/960px-Korea-Mountain-Jirisan-07.jpg',
       alt: 'Autumn ridgeline of Jirisan National Park',
-      credit: 'eimoberg / Wikimedia Commons · CC BY 2.0',
+      credit: '“jir30085” by eimoberg / Wikimedia Commons · CC BY 2.0',
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Korea-Mountain-Jirisan-07.jpg',
       licenseUrl: 'https://creativecommons.org/licenses/by/2.0/',
     },
@@ -995,7 +995,7 @@ export const destinations: Destination[] = [
     image: {
       src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Boseong_Green_Tea_Field_South_Korea_Travel_Photography_%28253061695%29.jpeg/1280px-Boseong_Green_Tea_Field_South_Korea_Travel_Photography_%28253061695%29.jpeg',
       alt: 'Sunlight over the terraced green tea fields of Boseong',
-      credit: 'Giuseppe Milo / Wikimedia Commons · CC BY 3.0',
+      credit: '“Boseong Green Tea Field South Korea Travel Photography” by Giuseppe Milo / Wikimedia Commons · CC BY 3.0',
       sourceUrl: 'https://commons.wikimedia.org/wiki/File:Boseong_Green_Tea_Field_South_Korea_Travel_Photography_(253061695).jpeg',
       licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
     },
