@@ -12,7 +12,7 @@ export const hanok: WalkGuide = {
   city: 'jeonju',
   name: 'Jeonju Hanok Village',
   nameKo: '전주 한옥마을',
-  cardRoute: 'From Gyeonggijeon Shrine to Nambu Market',
+  cardRoute: 'Gyeonggijeon Shrine → bean sprout soup at Nambu Market',
   intro: 'Start on Taejo-ro at Gyeonggijeon. Explore the hanok lanes, cross to the brick cathedral, then walk past the old city gate for lunch at Nambu Market.',
   stops: [
     {
@@ -90,7 +90,7 @@ export const hanokBreakfast: WalkGuide = {
   city: 'jeonju',
   name: 'Breakfast in Hanok Village',
   nameKo: '한옥마을 아침 산책',
-  cardRoute: 'Bean sprout soup at Sinbaengi, then Nambu Market',
+  cardRoute: '08:00 bean sprout soup at Sinbaengi → Jeondong Cathedral → Nambu Market',
   aliases: ['Sinbaengi', '콩나물국밥', '남부시장'],
   intro: 'Sit down for bean sprout soup in the hanok lanes, then walk past the red-brick cathedral and the old city gate to Nambu Market.',
   stops: [

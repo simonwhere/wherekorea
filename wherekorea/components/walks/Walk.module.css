@@ -22,6 +22,16 @@
 .shell summary { width: fit-content; padding: 9px 0; cursor: pointer; }
 .credit a, .sources a { text-decoration: underline; text-underline-offset: 3px; }
 .mapBox { min-width: 0; }
+.routeMap { scroll-margin-top: 70px; }
+.routeMap h2 { margin-bottom: 8px; }
+.routeMap .mapBox { overflow: hidden; border-radius: 10px; }
+.routeMap .map { height: clamp(210px, 35svh, 360px); }
+.mapPlace { margin-top: 8px; font-size: 14px; font-weight: 650; }
+.mapPlace span { color: #d4dbe2; font-weight: 450; }
+.routeMap .stops { margin-top: 8px; }
+.visuals[data-map-first="true"] { grid-template-columns: 1fr; }
+@media(max-width: 760px) { .routeMap { scroll-margin-top: 110px; } }
+@media(max-width: 345px) { .routeMap { scroll-margin-top: 154px; } }
 .map { background: #d1d6cc; z-index: 0; }
 .marker { display: grid; place-items: center; background: #25374a; color: white; border: 2px solid white; border-radius: 50%; font: bold 16px/1 sans-serif; box-shadow: 0 1px 5px #0008; }
 .marker[aria-pressed=true] { background: #a43b17; outline: 2px solid #81351a; }

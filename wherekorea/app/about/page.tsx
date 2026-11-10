@@ -75,6 +75,11 @@ export default async function AboutPage({ searchParams }: { searchParams: Promis
           </details>
         </Section>
 
+        <Section title="Saved and shared walks">
+          <p>Your bookmarked stops stay in this browser. When a walk is saved, shared or opened from a shared link, we count whether this browser opens it again on a later day in Korea.</p>
+          <p>Each count uses the walk, the action, the dates and a random key specific to that walk and action. You can turn off these counts with Global Privacy Control or Do Not Track in your browser.</p>
+        </Section>
+
         <Section title="Contact">
           <p>
             Found an incorrect price, route or date? Let us know through{' '}

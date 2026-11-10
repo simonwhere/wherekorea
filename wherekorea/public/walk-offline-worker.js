@@ -5,6 +5,7 @@
 const WALK_CACHE = 'wherekorea-offline-walks-v1'
 const WALK_SHELL = '/offline/walks'
 const WALK_SCRIPT = '/walk-offline-screen.js'
+const WALK_METRICS = '/walk-metrics.mjs'
 
 self.addEventListener('install', event => { event.waitUntil(self.skipWaiting()) })
 self.addEventListener('activate', event => { event.waitUntil(self.clients.claim()) })
@@ -13,8 +14,8 @@ self.addEventListener('fetch', event => {
   const request = event.request
   const url = new URL(request.url)
   if (request.method !== 'GET' || url.origin !== self.location.origin) return
-  if (request.destination === 'script' && url.pathname === WALK_SCRIPT && !url.search) {
-    event.respondWith(caches.match(WALK_SCRIPT, { cacheName: WALK_CACHE }).then(saved => saved || fetch(request)))
+  if (request.destination === 'script' && [WALK_SCRIPT, WALK_METRICS].includes(url.pathname) && !url.search) {
+    event.respondWith(caches.match(url.pathname, { cacheName: WALK_CACHE }).then(saved => saved || fetch(request)))
     return
   }
   if (request.mode !== 'navigate' || request.headers.has('rsc') || url.searchParams.has('_rsc')) return

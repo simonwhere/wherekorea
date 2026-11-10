@@ -122,7 +122,7 @@ const abaiVillage: WalkGuide = {
 const chuncheonMyeongdong: WalkGuide = {
   slug: 'chuncheon-myeongdong', city: 'chuncheon', name: 'Chuncheon Myeongdong', nameKo: '춘천 명동',
   aliases: ['Yukrimgogae', 'Jungang Market', '닭갈비골목'],
-  cardRoute: 'Jungang Market, the dakgalbi alley and the shops on Yukrimgogae',
+  cardRoute: 'Jungang Market → spicy chicken in Dakgalbi Alley → Yukrimgogae',
   intro: 'Start under the market roof in downtown Chuncheon, step into the alley for chicken cooked on an iron plate, then walk up to the small shops on Yukrimgogae.',
   stops: [
     {

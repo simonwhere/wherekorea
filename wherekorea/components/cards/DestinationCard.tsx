@@ -28,7 +28,7 @@ interface Props {
   destination: Destination
   onSelect: () => void
   isSelected: boolean
-  walk?: { label: string; route: string; href: string }
+  walk?: { label: string; route: string; href: string; more?: { label: string; href: string }; festival?: { label: string; href: string } }
   bestNowReason?: string
   month?: number
   browse?: BrowseState
@@ -79,6 +79,11 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
       {!imgError && <PhotoCredit image={d.image} className="wk-card-credit" compact />}
       <div className="wk-card-body">
         <div className="wk-card-title"><h2>{d.name}</h2><span lang="ko">{KOREAN_NAMES[d.slug]}</span></div>
+        {walk && <Link className="wk-card-walk" href={walk.href} prefetch={false}>
+          <span className="wk-card-walk-name">{walk.label}</span>
+          <strong>{walk.route}</strong>
+          <span className="wk-card-walk-arrow" aria-hidden="true">→</span>
+        </Link>}
         <p className="wk-card-vibe">{d.card_vibe}</p>
         <div className="wk-card-signals">
           <span className={`wk-signal ${season === 35 ? 'is-good' : ''}`}>{MONTH_SHORT[selectedMonth - 1]} · {seasonLabel}</span>
@@ -93,11 +98,8 @@ export default function DestinationCard({ destination: d, onSelect, isSelected, 
           : 'Current weather unavailable · seasonal guidance shown'}</p>}
         {!!browse?.filters.length && rationale.length > 1 && <p className="wk-card-reason">{rationale[1]}</p>}
         {isPeakNow(d, selectedMonth) && <p className="wk-card-caution">Usually a busier month here</p>}
-        {walk && <Link className="wk-card-walk" href={walk.href} prefetch={false}>
-          <span className="wk-card-walk-name">{walk.label}</span>
-          <strong>{walk.route}</strong>
-          <span className="wk-card-walk-arrow" aria-hidden="true">→</span>
-        </Link>}
+        {walk?.festival && <Link className="wk-card-related" href={walk.festival.href}>{walk.festival.label} →</Link>}
+        {walk?.more && <Link className="wk-card-related" href={walk.more.href}>{walk.more.label} →</Link>}
         <div className="wk-card-actions">
           <span className="wk-card-detail-hint">Explore <span aria-hidden>↗</span></span>
           <button type="button" className="wk-save-button" aria-label={isSaved ? `Remove ${d.name} from saved` : `Save ${d.name}`}

@@ -75,7 +75,7 @@ export const heritageWalks: WalkGuide[] = [
   },
   {
     slug: 'damyang-riverside', city: 'damyang-boseong', name: 'Damyang Noodle Street & Juknokwon', nameKo: '담양 국수거리 · 죽녹원',
-    cardRoute: 'Bamboo paths, the riverbank and anchovy noodles',
+    cardRoute: 'Juknokwon bamboo paths → anchovy noodles by the river',
     intro: 'Walk under tall bamboo at Juknokwon, cross Damyangcheon and finish with a bowl of noodles by the river. All three stops are in Damyang.',
     stops: [
       {

@@ -5,7 +5,7 @@ export const seongsu: WalkGuide = {
   city: 'seoul',
   name: 'Seongsu',
   nameKo: '성수',
-  cardRoute: 'Daelim Changgo warehouse, then pork-bone soup',
+  cardRoute: 'Daelim Changgo warehouse → pork-bone soup at Seongsu Gamjatang',
   intro: 'Start under the elevated railway, walk past a red-brick warehouse and turn onto Yeonmujang-gil for pork-bone soup.',
   stops: [
     {

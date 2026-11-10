@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import WalkExplorer from '@/components/walks/WalkExplorer'
+import { WalkVisit } from '@/components/walks/WalkVisit'
 import styles from '@/components/walks/Walk.module.css'
 import { walks, findWalk } from '@/data/walks'
 import { walkStopNumber, walkStopPath } from '@/lib/walk-links'
@@ -37,11 +38,12 @@ export default async function WalkPage({params,searchParams}: Props) {
   const fromExplore = query.from === 'explore'
   const cityLink = '/destination/' + guide.city + (walks.some(walk => walk.city === guide.city && walk.slug !== guide.slug) ? '?area=' + guide.slug : '') + '#neighborhoods'
   return <><Header /><main className={styles.shell}>
+    <WalkVisit slug={guide.slug} shared={query.via === 'share'} />
     <Link className={styles.back} href={fromExplore ? homeHrefFromSearch(context) : withBrowseContext(cityLink, context)}>
       ← {fromExplore ? 'Back to places' : 'Back to ' + city}
     </Link>
     <header className={styles.intro}><p className={styles.kicker}>{city} · On foot</p>
       <h1>{guide.name} <small lang="ko">{guide.nameKo}</small></h1><p>{guide.intro}</p></header>
-    <WalkExplorer key={guide.slug + (initialStop ?? 0)} initialStop={initialStop} walk={guide} context={context} draftsOnly={!getCommunityConfig().postingEnabled} />
+    <WalkExplorer key={guide.slug + (initialStop ?? 0)} initialStop={initialStop} mapFirst={query.view === 'map'} walk={guide} context={context} draftsOnly={!getCommunityConfig().postingEnabled} />
   </main></>
 }

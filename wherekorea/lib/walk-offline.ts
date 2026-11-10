@@ -3,7 +3,8 @@
 const CACHE = 'wherekorea-offline-walks-v1'
 const SHELL = '/offline/walks'
 const SCREEN = '/walk-offline-screen.js'
-const WORKER = '/walk-offline-worker.js?v=2'
+const METRICS = '/walk-metrics.mjs'
+const WORKER = '/walk-offline-worker.js?v=3'
 const TIMEOUT = 15_000
 
 function isReady(registration?: ServiceWorkerRegistration) {
@@ -58,9 +59,12 @@ async function prepare() {
   const timer = setTimeout(() => abort.abort(), TIMEOUT)
   try {
     // addAll is atomic: a failed refresh leaves the last complete snapshot intact.
-    await cache.addAll([SHELL, SCREEN].map(url => new Request(url, {
+    const refresh = (url: string) => new Request(url, {
       credentials: 'omit', redirect: 'error', cache: 'reload', signal: abort.signal,
-    })))
+    })
+    await cache.addAll([SHELL, SCREEN].map(refresh))
+    // Optional measurement must never prevent offline directions.
+    await cache.add(refresh(METRICS)).catch(() => {})
   } finally { clearTimeout(timer) }
 }
 

@@ -53,6 +53,7 @@ export function runtimeReadiness(env: Record<string, string | undefined> = proce
     configuration: {
       festivalsConfigured: configured(env.TOUR_API_KEY),
       analyticsConfigured: analytics.mode !== 'disabled',
+      walkMetricsConfigured: configured(env.BLOB_STORE_ID) || configured(env.BLOB_READ_WRITE_TOKEN),
       canonicalUrlConfigured: publicCanonical,
     },
     contentVerification: 'not-assessed' as const,

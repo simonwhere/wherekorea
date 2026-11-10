@@ -4,6 +4,7 @@ import { SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, SITE_URL } from '@/lib/site'
 import { CompareProvider } from '@/lib/compare-context'
 import { SavedProvider } from '@/lib/saved-context'
 import CompareTray from '@/components/layout/CompareTray'
+import WalkMetricsDelivery from '@/components/walks/WalkMetricsDelivery'
 import Footer from '@/components/layout/Footer'
 import { getAnalyticsConfig, analyticsBootstrap } from '@/lib/analytics-config'
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </>}
       </head>
       <body>
+        <WalkMetricsDelivery />
         <CompareProvider>
           <SavedProvider>
             {children}

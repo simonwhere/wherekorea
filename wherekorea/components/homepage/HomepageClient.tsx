@@ -43,27 +43,23 @@ type CardWalk = Pick<WalkGuide, 'city' | 'slug' | 'name' | 'nameKo' | 'cardRoute
 
 function cityGuideLink(city: Destination, guides: CardWalk[], events: CardFestivalLink[], state: BrowseState, selectedSlug: string | null) {
   const extras: Record<string, string> = selectedSlug ? { destination: selectedSlug } : {}
-  const festival = searchedCityFestival(events, city.slug, state.q)
-  if (festival) return {
-    label: 'Festival guide',
-    route: festival.name,
-    href: browseHref(state, '/destination/' + city.slug + '#' + festival.anchor, extras),
-  }
   const choices = guides.filter(walk => walk.city === city.slug)
   if (!choices.length) return
-  const walk = searchedCityWalk(choices, state.q)
-  if (!walk) return {
-    label: city.slug === 'busan' ? 'Choose a neighbourhood' : 'Choose a walk',
-    route: choices.map(choice => choice.name).join(' · '),
-    href: browseHref(state, '/destination/' + city.slug + '#neighborhoods', extras),
-  }
+  const walk = searchedCityWalk(choices, state.q) ?? choices[0]
   const stop = searchedWalkStop(walk, state.q)
+  const festival = searchedCityFestival(events, city.slug, state.q)
   return {
-    label: walk.name + ' walk',
-    route: stop ? `Stop ${stop} · ${walk.stops[stop - 1].name}` : walk.cardRoute,
-    href: browseHref(state, stop ? walkStopPath(walk.slug, stop) : '/walks/' + walk.slug, {
-      ...extras, from: 'explore',
-    }),
+    label: stop ? `Map · Stop ${stop} · ${walk.stops[stop - 1].name}` : `Walk map · ${walk.name}`,
+    route: walk.cardRoute,
+    href: browseHref(state, walkStopPath(walk.slug, stop ?? 1) + '#walk-map', { ...extras, from: 'explore', view: 'map' }),
+    more: choices.length > 1 ? {
+      label: `All ${choices.length} walks in ${city.name}`,
+      href: browseHref(state, '/destination/' + city.slug + '#neighborhoods', extras),
+    } : undefined,
+    festival: festival && {
+      label: festival.name,
+      href: browseHref(state, '/destination/' + city.slug + '#' + festival.anchor, extras),
+    },
   }
 }
 
@@ -90,6 +86,7 @@ export default function HomepageClient({ destinations, cardWalks, cardFestivalLi
   const pendingQuery = useRef<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [travelOptionsOpen, setTravelOptionsOpen] = useState(false)
   const searchCommit = useRef(createBrowseCommitQueue())
   const scrollSnapshot = useRef<BrowseScrollSnapshot>({ key: browseQuery(browse).toString(), y: 0 })
   const isRestoringScroll = useRef(false)
@@ -276,6 +273,7 @@ export default function HomepageClient({ destinations, cardWalks, cardFestivalLi
   const filtered = rankDestinations(destinations, state)
   const noCar = state.filters.includes('no-car friendly')
   const moreCount = state.filters.filter((tag) => tag !== 'no-car friendly').length + (state.maxDailyKrw === undefined ? 0 : 1)
+  const travelFilterCount = moreCount + Number(noCar) + Number(state.excludeSeoul) + Number(state.category !== 'best-now')
   const narrowed = state.filters.length > 0 || !!state.q || state.excludeSeoul || state.category !== 'best-now' || state.maxDailyKrw !== undefined
   const liveCount = destinations.filter((d) => d.live_weather_is_live).length
 
@@ -294,7 +292,12 @@ export default function HomepageClient({ destinations, cardWalks, cardFestivalLi
             <a className="wk-method-link" href={browseHref(state, '/about')}>About this guide <span aria-hidden>↗</span></a>
           </section>
 
-          <section className="wk-trip-controls" aria-label="Your travel conditions">
+          <button type="button" className="wk-travel-options" aria-expanded={travelOptionsOpen} aria-controls="travel-options destination-collections"
+            onClick={() => setTravelOptionsOpen(!travelOptionsOpen)}>
+            <span>{state.mode === 'now' ? 'Here now' : MONTHS[state.month - 1]}</span>
+            <strong>Month &amp; filters{travelFilterCount ? ` (${travelFilterCount})` : ''} {travelOptionsOpen ? '−' : '+'}</strong>
+          </button>
+          <section id="travel-options" className={`wk-trip-controls${travelOptionsOpen ? ' is-open' : ''}`} aria-label="Your travel conditions">
             <div className="wk-condition-row">
               <div className="wk-mode-control" role="group" aria-label="Planning mode">
                 <button type="button" aria-pressed={state.mode === 'plan'} onClick={() => changeMode('plan')}>By month</button>

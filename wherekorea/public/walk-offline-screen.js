@@ -167,4 +167,10 @@
   window.addEventListener('storage', event => { if (!event.key || event.key.startsWith(prefix)) render() })
   window.addEventListener('pageshow', render)
   render()
+  import('/walk-metrics.mjs').then(({ connectWalkMetrics, watchWalkOpening }) => {
+    connectWalkMetrics()
+    if (walk && read(walk)) {
+      watchWalkOpening(walk.slug, new URLSearchParams(location.search).get('via') === 'share', () => Boolean(read(walk)))
+    }
+  }).catch(() => { /* An older cached reader can still open its saved directions. */ })
 })()

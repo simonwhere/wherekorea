@@ -13,7 +13,7 @@ import StopMap from './StopMap'
 import WalkBreakfast from './WalkBreakfast'
 import styles from './Walk.module.css'
 
-export default function WalkExplorer({ walk, context, draftsOnly, initialStop }: { walk: WalkGuide; context: string; draftsOnly: boolean; initialStop?: number }) {
+export default function WalkExplorer({ walk, context, draftsOnly, initialStop, mapFirst }: { walk: WalkGuide; context: string; draftsOnly: boolean; initialStop?: number; mapFirst?: boolean }) {
   const [selected, setSelected] = useState((initialStop ?? 1) - 1)
   const [saveError, setSaveError] = useState('')
   const { slug, stops } = walk
@@ -42,16 +42,25 @@ export default function WalkExplorer({ walk, context, draftsOnly, initialStop }:
   const picturedStop = stop.photo ? stop : stops.find(item => item.photo)
   const photo = picturedStop?.photo
   const meetup = communityHref('/community/new?walk=' + walk.slug + '&stop=' + (selected + 1), context, { type: 'meetups', city: walk.city })
+  const map = <StopMap stops={walk.stops} selected={selected} onSelect={select} />
+  const stopButtons = <nav aria-label="Stops on this walk" className={styles.stops}>
+    {walk.stops.map((item, i) => <button key={item.name} type="button" aria-pressed={i === selected}
+      aria-controls="walk-stop walk-map" onClick={() => select(i)}><span>{i + 1}</span>{item.name}</button>)}
+  </nav>
+  const walkActions = <WalkActions slug={slug} walkName={walk.name} stopNumber={selected + 1} stopName={stop.name} savedHref={withBrowseContext('/saved', context)} />
   return <>
+    {mapFirst && <section className={styles.routeMap} id="walk-map" aria-label={walk.name + ' walking map'} tabIndex={-1}>
+      <h2>{walk.name} <small>· Walking map</small></h2>
+      {map}
+      <p className={styles.mapPlace} aria-live="polite">Stop {selected + 1} · {stop.name} <span lang="ko">{stop.nameKo}</span></p>
+      {stopButtons}
+      {walkActions}
+    </section>}
     {walk.breakfast && <WalkBreakfast breakfast={walk.breakfast} food={walk.food} controls="walk-map walk-stop" onMap={number => {
       select(number - 1)
       requestAnimationFrame(() => document.getElementById('walk-map')?.scrollIntoView({ block: 'center' }))
     }} />}
-    <nav aria-label="Stops on this walk" className={styles.stops}>
-      {walk.stops.map((item, i) => <button key={item.name} type="button" aria-pressed={i === selected}
-        aria-controls="walk-stop" onClick={() => select(i)}><span>{i + 1}</span>{item.name}</button>)}
-    </nav>
-    <WalkActions slug={slug} walkName={walk.name} stopNumber={selected + 1} stopName={stop.name} savedHref={withBrowseContext('/saved', context)} />
+    {!mapFirst && <>{stopButtons}{walkActions}</>}
     {saveError && <p role="alert">{saveError}</p>}
     <section id="walk-stop" className={styles.card}>
       <div className={styles.stopInfo} aria-live="polite">
@@ -60,7 +69,7 @@ export default function WalkExplorer({ walk, context, draftsOnly, initialStop }:
         <p>{stop.walk}</p>
         <p>{stop.what}</p>
       </div>
-      <div className={styles.visuals} data-has-photo={Boolean(photo)}>
+      <div className={styles.visuals} data-has-photo={Boolean(photo)} data-map-first={Boolean(mapFirst)}>
         {photo && <figure>
           <div className={styles.photo}>
             <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 640px) 100vw, 420px" priority={selected === 0} />
@@ -68,7 +77,7 @@ export default function WalkExplorer({ walk, context, draftsOnly, initialStop }:
           <figcaption>{!stop.photo && 'On this walk · '}{photo.caption ?? picturedStop?.name}</figcaption>
           <details className={styles.credit}><summary>Photo credit</summary><a href={photo.source} target="_blank" rel="noreferrer">{photo.credit}</a> · <a href={photo.licenseUrl} target="_blank" rel="noreferrer">{photo.license}</a> · Cropped to fit</details>
         </figure>}
-        <div id="walk-map"><StopMap stops={walk.stops} selected={selected} onSelect={select} /></div>
+        {!mapFirst && <div id="walk-map">{map}</div>}
       </div>
     </section>
     <div className={styles.food}>

@@ -105,7 +105,7 @@ export const southCoastWalks: WalkGuide[] = [
   {
     slug: 'german-village', city: 'namhae', name: 'Namhae German Village', nameKo: '남해독일마을',
     aliases: ['German Village & Mulgeon'],
-    cardRoute: 'A farmhouse restaurant at the foot of the hill, then the lanes up to the village square',
+    cardRoute: 'A farmhouse set meal at Ohburim → German Village square',
     intro: 'Start on Dongbu-daero below the German Village. Walk uphill past the red-roofed houses to the square and the exhibition about the Korean miners and nurses who worked in Germany.',
     stops: [
       {
