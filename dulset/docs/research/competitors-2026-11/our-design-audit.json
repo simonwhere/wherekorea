@@ -1,0 +1,1479 @@
+{
+ "made": "2026-11-13",
+ "note": "둘셋 화면 디자인 점검. 390×844 헤드리스 Chromium 캡처 197장을 보고 쓴 것으로, 캡처 파일은 저장소에 넣지 않았어요(screens[].path는 파일 이름만 남김).",
+ "screens": [
+  {
+   "name": "Welcome (light)",
+   "path": "01-welcome-vp.png",
+   "notes": "Taped polaroid with a landscape, mark + 둘셋, one line 남편이 같이 하는 임신 준비, sub-copy, 시작하기 (pill), 백업 파일로 복원하기, beige box 예시로 둘러보기. Content ends near y=690; the lower ~150px is empty. Dark: 01-welcome-dark-vp.png."
+  },
+  {
+   "name": "Welcome illustration by hour",
+   "path": "95-welcome-morning-vp.png",
+   "notes": "The same landscape recoloured by the clock hour (also 95-welcome-day-vp.png, 95-welcome-evening-vp.png, 95-welcome-night-vp.png). Dark mode always uses the night set."
+  },
+  {
+   "name": "Onboarding 1 우리 둘 (untouched)",
+   "path": "02-onb1-couple-empty-vp.png",
+   "notes": "Two name fields, two role pickers with emoji (👩 아내 / 👨 남편 / 🧑 배우자), whose cycle (disabled until roles are chosen). 다음 disabled with the reason above it."
+  },
+  {
+   "name": "Onboarding 1 우리 둘 (filled)",
+   "path": "02-onb1-couple-filled-vp.png",
+   "notes": "Selected chips in peach with a brown outline; 주기를 기록할 사람 filled in automatically. Dark: 02-onb1-couple-filled-dark-vp.png."
+  },
+  {
+   "name": "Onboarding 2 주기 (untouched)",
+   "path": "03-onb2-cycle-empty-vp.png",
+   "notes": "Native date input, five quick chips (3주 전 wraps alone to a second row), 잘 모르겠어요 · 나중에 할게요, collapsed 더 넣기, disclaimer. 다음 is enabled with nothing entered."
+  },
+  {
+   "name": "Onboarding 2 주기 (filled)",
+   "path": "03-onb2-cycle-filled-vp.png",
+   "notes": "2주 전 picked; a new link + 최근 시작일 더 넣기 (선택) appears. Dark: 03-onb2-cycle-filled-dark-vp.png."
+  },
+  {
+   "name": "Onboarding 2 with 더 넣기 open",
+   "path": "03-onb2-cycle-more-full.png",
+   "notes": "Average cycle stepper, 45일 이상·들쭉날쭉 switch, period length stepper, LH use (3 chips). 1019px tall."
+  },
+  {
+   "name": "Onboarding 3 동의·공유 (untouched)",
+   "path": "04-onb3-consent-empty-vp.png",
+   "notes": "Three share-level radio cards (우리의 주간 preselected), then two consent checkboxes; the second one is cut by the footer at 844px."
+  },
+  {
+   "name": "Onboarding 3 full page (filled)",
+   "path": "04-onb3-consent-filled-full.png",
+   "notes": "1030px tall, 415 characters. Dark: 04-onb3-consent-filled-dark-full.png."
+  },
+  {
+   "name": "Onboarding 3 with the three disclosures open",
+   "path": "04-onb3-consent-open-full.png",
+   "notes": "1531px tall, 823 characters of label/value legal detail. (The sticky header is drawn mid-page in this full-page capture: capture artefact.)"
+  },
+  {
+   "name": "Onboarding 4 초대·설치",
+   "path": "05-onb4-done-vp.png",
+   "notes": "Peach invite card with 카톡으로 링크 보내기, an add-to-home-screen line drawing, 시작하기. Dark: 05-onb4-done-dark-vp.png."
+  },
+  {
+   "name": "First home after onboarding (one period date)",
+   "path": "06-fresh-home-vp.png",
+   "notes": "Greeting, stock landscape with + 우리 사진 걸기, card 가임기 범위예요 (넓음) · 주기 15일째. Full page 06-fresh-home-full.png (1482px). Dark: 06-fresh-home-dark-vp.png."
+  },
+  {
+   "name": "Her home, first viewport",
+   "path": "10-her-home-vp.png",
+   "notes": "Header (wordmark, viewer pill, bell with badge, gear), demo-date banner, date + 함께한 지 D+2,010, headline 민수님이 신호를 보냈어요 · 답하기, cover polaroid, status card 가임기예요 with ring, legend, + LH 기록, 주기 보기. 오늘 할 일 starts under the tab bar."
+  },
+  {
+   "name": "Her home, full page",
+   "path": "10-her-home-full.png",
+   "notes": "1951px = 2.31 screens: status card, 오늘 할 일 0/4, 우리 한 줄 (438px, four sub-blocks), 이번 달 할 일 row, install banner, 더 보기."
+  },
+  {
+   "name": "Her home with 더 보기 open",
+   "path": "10-her-home-more-full.png",
+   "notes": "2847px = 3.37 screens: adds 쉬는 주기 switch, 병원과 함께 switch, 다가오는 일정, 이번 주 챙길 것, 건강 습관 타이머 with source links."
+  },
+  {
+   "name": "Her home (dark)",
+   "path": "10-her-home-dark-vp.png",
+   "notes": "Warm near-black page, cream primary button and FAB, hairline cards. Full page: 10-her-home-dark-full.png, 10-her-home-more-dark-full.png."
+  },
+  {
+   "name": "His home, first viewport",
+   "path": "20-him-home-vp.png",
+   "notes": "Greeting, shorter cover, card 이번 달 할 일 · 정액검사 받기 (319px, seven text blocks, text link 일정 보기), then only the title of 이번 주는 우리의 주간이에요."
+  },
+  {
+   "name": "His home, full page",
+   "path": "20-him-home-full.png",
+   "notes": "2567px = 3.04 screens, 8 cards: monthly task, 우리의 주간 with week strip and two date ideas, 이번 주 우리 둘, 지은님과 같이 챙길 것, 내 준비, 오늘 할 일 1/2, 우리 한 줄, install banner. Dark: 20-him-home-dark-full.png, 20-him-home-dark-vp.png."
+  },
+  {
+   "name": "주기 tab (her)",
+   "path": "11-her-cycle-vp.png",
+   "notes": "First viewport: title, 병원과 함께 준비 중 switch, violet summary card with four label/value pairs and 오늘 기록하기; the calendar is below the tab bar. Full: 11-her-cycle-full.png (2215px). Dark: 11-her-cycle-dark-vp.png, 11-her-cycle-dark-full.png."
+  },
+  {
+   "name": "주기 tab (him)",
+   "path": "21-him-cycle-vp.png",
+   "notes": "Her lens applied: 지금은 우리의 주간이에요 (예상) and a plain calendar with six tinted days. 1134px. Full: 21-him-cycle-full.png. Dark: 21-him-cycle-dark-vp.png."
+  },
+  {
+   "name": "+ 기록 sheet (her, opens on LH in the fertile window)",
+   "path": "15-her-log-sheet-vp.png",
+   "notes": "Title, date stepper card with a native date input, four-way segmented control, two large answers with test-strip pictograms, 자세히, 어떻게 해요?, disclaimer. Dark: 15-her-log-sheet-dark-vp.png. 375×667: 92-her-log-sheet-375x667-vp.png."
+  },
+  {
+   "name": "+ 기록 sheet, 생리 panel",
+   "path": "80-demo-log-sheet-period-vp.png",
+   "notes": "Amber note about an 11-day gap, two red buttons 오늘 시작 / 어제 시작. Empty-couple version: 78-empty-log-sheet-open-vp.png. 임테기: 82-demo-log-sheet-ptest-vp.png. 메모: 83-demo-log-sheet-note-vp.png."
+  },
+  {
+   "name": "After logging a period",
+   "path": "79-after-period-log-toast-vp.png",
+   "notes": "Sheet closed; toast at the top 오늘 시작으로 남겼어요 · 되돌리기 (covers the header); home card now 생리 1일째 · 이번 주기도 수고했어요 with 바다님에게 알릴까요? Demo version: 81-demo-after-period-log-vp.png. Home after: 79-home-after-first-period-full.png."
+  },
+  {
+   "name": "His 기록하기 sheet",
+   "path": "25-him-log-sheet-vp.png",
+   "notes": "Repeats home cards inside a sheet: 이번 주 우리 둘, 내 준비, 오늘 체크, 신호 보내기, 메모 남기기. Dark: 25-him-log-sheet-dark-vp.png."
+  },
+  {
+   "name": "챙길 것 (her)",
+   "path": "12-her-plan-full.png",
+   "notes": "3490px = 4.14 screens: 난임 시술·지원 counters, 이번 주 챙길 것, 다가오는 일정 with date tiles and two buttons per item, 준비하면서 챙길 것 4/14 checklist. First viewport: 12-her-plan-vp.png. Dark: 12-her-plan-dark-full.png."
+  },
+  {
+   "name": "챙길 것 (him)",
+   "path": "22-him-plan-full.png",
+   "notes": "3558px = 4.22 screens, same structure from his side. Dark: 22-him-plan-dark-full.png."
+  },
+  {
+   "name": "우리 (이야기)",
+   "path": "13-her-us-photos-loaded-full.png",
+   "notes": "3887px = 4.61 screens: peach hero 함께한 지 D+2,010, segmented 이야기/앨범/기념일, composer with mood emoji, feed with emoji reactions. First viewport: 13-her-us-vp.png. (13-her-us-full.png shows grey photo boxes only because photos lazy-load.) Dark: 13-her-us-photos-loaded-dark-full.png. His view: 23-him-us-full.png."
+  },
+  {
+   "name": "우리 › 앨범 and 기념일",
+   "path": "13b-her-us-album-vp.png",
+   "notes": "Album grid of built-in demo scenes; 기념일 list with emoji and D-day badges (13c-her-us-days-vp.png)."
+  },
+  {
+   "name": "설정 (collapsed)",
+   "path": "14-her-settings-vp.png",
+   "notes": "Sticky chip index of 11 sections, accordion with 우리 둘 open. 1245px. Dark: 14-her-settings-dark-vp.png."
+  },
+  {
+   "name": "설정 › 연결 with a link made",
+   "path": "30-settings-link-vp.png",
+   "notes": "Mint status box, raw URL in monospace, 카톡으로 보내기 + 복사, 새 링크로 바꾸기 / 링크 해제, cover-photo switch; toast 링크를 만들었어요. Dark: 30-settings-link-dark-vp.png."
+  },
+  {
+   "name": "설정 › 민수님 화면 미리보기",
+   "path": "31-settings-link-preview-box.png",
+   "notes": "The link page rendered inside 설정 (box expanded for the capture). In place: 31-settings-link-preview-vp.png."
+  },
+  {
+   "name": "설정 with every section open",
+   "path": "32-settings-all-open-full.png",
+   "notes": "Capture also has the preview expanded (10323px); with the preview closed the page is 6577px = 7.79 screens. Dark: 32-settings-all-open-dark-full.png."
+  },
+  {
+   "name": "알림 sheet (her)",
+   "path": "16-her-notifications-vp.png",
+   "notes": "Emoji in circles as row icons, unread dot, 모두 읽음 / 비우기, inline 고마워요. His: 26-him-notifications-vp.png. Empty: 74-empty-notifications-vp.png. Dark: 16-her-notifications-dark-vp.png, 26-him-notifications-dark-vp.png."
+  },
+  {
+   "name": "Partner link page, first open",
+   "path": "40-link-first-run-vp.png",
+   "notes": "No app chrome, wordmark only; setup card 민수님, 처음이죠? with three question groups fills the first viewport. Dark: 40-link-first-run-dark-vp.png."
+  },
+  {
+   "name": "Partner link page",
+   "path": "41-link-page-vp.png",
+   "notes": "After setup: greeting, stock landscape (cover photo is not sent by default), 이번 달 할 일 card. Full: 41-link-page-full.png (3352px = 3.97 screens, 10 cards + 8 nested). Dark: 41-link-page-dark-vp.png, 41-link-page-dark-full.png."
+  },
+  {
+   "name": "Example switch confirm",
+   "path": "49-example-confirm-vp.png",
+   "notes": "Sheet 임신 중 예시 열기 with 먼저 백업하러 가기 / 지우고 예시 열기 / 그만둘게요."
+  },
+  {
+   "name": "Pregnant home (her)",
+   "path": "50-pregnant-her-home-vp.png",
+   "notes": "Peach hero 임신 12주 3일 · D-193 with a progress bar and 이번 주 정보 보기. Full: 50-pregnant-her-home-full.png (2689px). Dark: 50-pregnant-her-home-dark-vp.png. Tab bar: 오늘·임신·챙길 것·우리, no +."
+  },
+  {
+   "name": "Pregnant home (him)",
+   "path": "53-pregnant-him-home-vp.png",
+   "notes": "Same hero, then 이번 주 내가 맡을 것 하나. Full: 53-pregnant-him-home-full.png (2783px). His tab bar has the + button. Dark: 53-pregnant-him-home-dark-vp.png."
+  },
+  {
+   "name": "임신 tab",
+   "path": "51-pregnant-her-pregnancy-full.png",
+   "notes": "3330px: hero with trimester bar, 이번 주 with a citrus emoji for size, pink and blue advice boxes, 검사 일정 checklist, 지원 제도 cards. First viewport: 51-pregnant-her-pregnancy-vp.png."
+  },
+  {
+   "name": "Parenting home (her)",
+   "path": "60-parenting-her-home-vp.png",
+   "notes": "Hero 콩이 태어난 지 95일째 · 백일까지 D-5. Full: 60-parenting-her-home-full.png (2446px). Tab bar: 오늘·아기·우리·챙길 것. Dark: 60-parenting-her-home-dark-vp.png."
+  },
+  {
+   "name": "Parenting home (him)",
+   "path": "63-parenting-him-home-full.png",
+   "notes": "2513px, 11 cards. First viewport: 63-parenting-him-home-vp.png."
+  },
+  {
+   "name": "아기 tab",
+   "path": "61-parenting-her-baby-full.png",
+   "notes": "3913px: baby card with emoji avatar, 기념일 list, growth line chart, milestones with emoji, 영유아 건강검진."
+  },
+  {
+   "name": "Empty home (fresh couple, no records)",
+   "path": "70-empty-her-home-vp.png",
+   "notes": "Card 시작해 볼까요 · 마지막 생리 시작일을 알려 주세요 with + 생리 시작 기록 and 달력에서 고르기. Full: 70-empty-her-home-full.png (1472px). Dark: 70-empty-her-home-dark-vp.png. Minimum-path variant with blank names (아내님): 70b-empty-min-path-home-vp.png."
+  },
+  {
+   "name": "Empty 주기 / 챙길 것 / 우리",
+   "path": "71-empty-her-cycle-vp.png",
+   "notes": "Peach card with date input and quick chips; 챙길 것 with a dashed empty box (72-empty-her-plan-vp.png); 우리 asking for 처음 만난 날 (73-empty-her-us-vp.png)."
+  },
+  {
+   "name": "His first-run sheet in the app",
+   "path": "75-empty-him-first-run-vp.png",
+   "notes": "바다님, 처음이죠? — smoking, drinking, already doing, how to get news. 933px tall; 이대로 시작하기 at the bottom (75-empty-him-first-run-bottom-vp.png) stays disabled until two are answered."
+  },
+  {
+   "name": "His empty home",
+   "path": "76-empty-him-home-full.png",
+   "notes": "2611px = 3.09 screens on day one; nested card 임신 전 검사 지원 신청하기 with label/value rows; three different check styles on one page. First viewport with the toast over the text: 76-empty-him-home-vp.png. His 주기: 77-empty-him-cycle-vp.png."
+  },
+  {
+   "name": "Her home at 375×667",
+   "path": "90-her-home-375x667-vp.png",
+   "notes": "Cover shrinks to a strip about 60px tall (figures cut off), status card and + LH 기록 stay above the tab bar. Full: 90-her-home-375x667-full.png (1793px). Dark: 90-her-home-375x667-dark-vp.png. His: 91-him-home-375x667-vp.png (monthly task collapses to one row)."
+  },
+  {
+   "name": "Check feedback",
+   "path": "85-demo-home-all-checked-vp.png",
+   "notes": "Green filled checks, counter 4/4, green line 오늘 할 일을 모두 마쳤어요, toast above the tab bar. One check: 84-demo-home-after-check-vp.png. Focus ring: 86-demo-focus-ring-vp.png."
+  },
+  {
+   "name": "Home on the due day",
+   "path": "88-fresh-home-on-2026-11-27-vp.png",
+   "notes": "Card 생리 예정 무렵이에요 with two equal buttons: dark 테스트 결과 기록, soft 생리 시작 기록. Sheet: 88-fresh-period-sheet-on-2026-11-27-vp.png. One day late: 88-fresh-home-on-2026-11-30-vp.png."
+  },
+  {
+   "name": "둘만의 시간 아이디어 (#date, not in the tab bar)",
+   "path": "17-her-date-vp.png",
+   "notes": "Violet banner, horizontally scrolling idea cards with emoji thumbnails and 일정에 담기."
+  }
+ ],
+ "system": {
+  "colour": "Warm paper palette, defined as CSS variables in app/globals.css and used only through Tailwind tokens. Light: page #FBF7F1, card #FFFDF9, tinted panel #F4EDE3, hairline #E9DFD2; text #2B221D / #5F524A / #70635A. One dark fill for primary buttons, the FAB and badges (espresso #3D2C22); links and numbers in cocoa #6C3A1C; apricot #E2925C as decoration only (tape, heart, active-tab dot). Meaning colours: period red #B83442 and fertile violet #7054C8 (each kept for that one meaning), ok green #1E7850, warn amber #965F0A, him blue #3464AA, her pink #B43C68, each with a soft tint. As it appears: a calm beige-and-brown app with one violet state and one red button; coherent. Costs: cards are only 1.05:1 away from the page, so a soft shadow does the separating; up to six pastel tints share one screen (the link page has peach, beige, violet, mint, blue and pink); him = blue and her = pink is the conventional gender code.",
+  "typography": "No font is shipped: the stack starts with Pretendard but there is no @font-face or font file, so each phone shows its own system Korean font (my captures fell back to WenQuanYi Zen Hei + Inter, so glyph shapes in the screenshots are not what an iPhone or Galaxy shows). Weights 400/500/600/700/800 are all in use. Rendered on her home: 17 sizes (10, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 17, 20, 21, 23, 24px), 30 size×weight pairs, 7 text colours; his home 17 sizes / 34 pairs; link page 16 / 33. In source: 22 arbitrary px sizes (440 uses of text-[Npx]) on top of 7 Tailwind steps. Hierarchy as seen: greeting 20px/800, card title 23px/800, section title 17px/800, body 12.5–13.5px, captions 11–12px. Body text is small: 83% of the characters on her home are 13.5px or smaller and 51% are 12.5px or smaller (his home 76% / 52%). Headings use tight negative tracking and heavy weights; numbers are tabular.",
+  "iconography_illustration": "Two icon languages side by side. (1) A custom inline-SVG line set: 56 icons, 24px grid, 1.8 stroke, used in the tab bar, header, list rows and buttons; consistent. (2) Emoji as avatars, icons and illustration: people are 👩 👨 🧑 👧 in tinted circles; 콕/응원 and signal chips, reply chips, notification rows (🗒️ 🙏 👏 ✅ 💞 📝 👉 🔔), mood and reaction pickers, anniversaries (💞 💍 🎉), date ideas (🌲 🌇), baby size (a citrus emoji) and milestones (🐢 👣). At least 85 distinct emoji in UI source; visible on one screen: her home 15, 챙길 것 27, 우리 43. Illustration: one flat SVG landscape (hills, a tree, sun or moon, two birds) in a taped polaroid, recoloured for morning/day/evening/night plus a muted set; a Han-river sunset SVG as the demo cover; test-strip pictograms on the LH and 임테기 buttons (the best custom drawing in the app); the cycle ring; one line drawing for add-to-home-screen. No mascot, no drawn people, no illustrated empty states. Brand mark: two overlapping circles and a small dot, blue + pink on the welcome screen and cream + tan on the app icon; inside the app only the text 둘셋.",
+  "layout_density": "Single column, 16px gutters; sticky header 57px (92px with the demo-date banner), tab bar 65px with a 56px centre FAB; everything is a rounded card. Page heights at 390×844 (light, demo couple, banner included): her home 1951px = 2.31 screens (2847px = 3.37 with 더 보기 open); his home 2567px = 3.04; partner link 3352px = 3.97 (4023px = 4.77 on first open); pregnant her / him 2689 / 2783; parenting her / him 2446 / 2513; fresh couple her / him 1472 / 2611; at 375×667 her / him 1793px (2.69 screens) / 2316px (3.47). Other tabs: 주기 her 2215, him 1134; 챙길 것 3490 (4.14 screens); 우리 3887 (4.61); 설정 1245 collapsed, 6577 (7.79) with all 11 sections open. Card-like surfaces at top level (at least 60% wide, radius 12px or more, own fill, shadow or border; the cover polaroid is extra): her home 5 (+5 behind 더 보기), his home 8, link 10 (+8 nested), pregnant 9 / 10, parenting 10 / 11, fresh her 5, fresh him 8 (+4 nested). First viewport of her home: greeting, cover (266px = 39% of the 687px between header and tab bar), status card; 오늘 할 일 starts under the tab bar. His: cover (166px), one 319px text card, the title of the next card. Rhythm is uneven: card radii 24/22/20/12px, inner paddings 18/14/16/10px, gaps between stacked cards 18/14/10px on his home, left edges at 16, 18 and 20–25px.",
+  "components": "Card (six tones), primary button (espresso; full pill on welcome and home, 12px-radius rectangle in onboarding, sheets and stage heroes), soft secondary button, text link with chevron, chips (choice, filter, signal), radio cards, switch, number stepper, segmented control (log sheet, 우리), bottom sheet with grabber and drag-to-close, pill toast with 되돌리기, check rows, progress bar, D-day badge, date tile, cycle ring, week strip, month calendar with five day marks (solid red, dashed red, tinted violet, solid violet, hatched) plus a star, a dot and a 희미 tag, accordion with a sticky chip index (설정), polaroid cover, tab bar + FAB, dashed empty box. The + 기록 sheet is the most finished piece: date stepper, four tabs, two or three large answers, saves on tap. Inconsistencies: four looks for a check (circle on the right in 오늘 할 일; circle on the left for 이번 주 내가 맡을 것 하나; square box in 내 준비 and 챙길 것; bordered row with a square box on the link page and the parenting home); section titles sometimes outside the card (17px heading), sometimes inside as a small coloured label; tab order changes by stage (preparing 오늘·주기·+·챙길 것·우리; pregnant 오늘·임신·챙길 것·우리 with + only on his screen; parenting 오늘·아기·우리·챙길 것); native date inputs in onboarding, the log sheet, 우리 and 설정.",
+  "motion_feedback": "Read from stills and the source, not from video: there is almost no motion. No @keyframes anywhere; the only animation is a pulse on a loading label. Transitions: colour on press and hover, chevron rotation, switch knob, the check circle filling (120ms), progress bars (500ms), cover photo fade (200ms), a sheet settling after a drag (160ms). Sheets, toasts and tab changes appear at once, with no enter or exit animation; no haptics, no celebration, no skeletons except photo placeholders. The feedback that exists is clear: tap-to-save with a toast and 되돌리기 (오늘 시작으로 남겼어요 · 되돌리기), the home card changing state right after a log (생리 1일째 · 이번 주기도 수고했어요, then 알릴까요?), counters (0/4 to 4/4), a green line 오늘 할 일을 모두 마쳤어요 and a toast 오늘 체크를 모두 마쳤어요. 민수님에게 알렸어요. Toasts sit above the tab bar and cover content while shown; while a sheet is open or just after a log they move to the top and cover the header.",
+  "dark_mode": "Follows the phone setting only (prefers-color-scheme); 설정 has no theme switch. Every screen was captured in dark and none broke. Page #16110E, cards one step lighter with a hairline instead of a shadow, the primary fill flips from espresso to cream #F0CFA8 with dark text, accents are lightened and stay readable, the cover illustration always uses its night palette, cover photos are dimmed. Lowest measured text contrast in dark: 4.90:1 across 13 screens. It looks deliberate and warm. Weak spots: the salmon demo cover and the cream FAB are the two brightest objects and pull the eye; tinted cards (the violet 주기 summary, the brown stage hero) are heavy blocks.",
+  "accessibility": "Strong on the measurable basics. Text contrast: every visible text node is at least 4.5:1 on 13 screens in both themes (lowest 4.67 light, 4.90 dark); the one miss is a disabled button label (3.47 / 2.44), which WCAG exempts. Controls with no accessible name: 0 of 33 / 63 / 69 / 53 on 오늘 / 주기 / 챙길 것 / 우리. Emoji are aria-hidden, icon-only buttons have labels, one h1 per screen, header/nav/main landmarks, lang=ko, checks are role=checkbox, sheets are aria-modal with the background inert, 2px focus ring, a prefers-reduced-motion rule, forced-colors fallbacks, pinch zoom is not blocked. Small pills are 36px tall on screen but padded to 44px hit areas. Calendar states use pattern as well as colour. Gaps: text under 12px is common (12 text nodes on her home, 32 on the pregnant home, 112 on 챙길 것; 10px labels in the cycle ring and badges); most sizes are fixed px and will not follow a larger system text size; the calendar needs a six-swatch legend. Not tested with VoiceOver or TalkBack: this is a static reading.",
+  "tone_of_voice": "해요체, short, concrete, no exclamation marks, no cheerleading. Predictions always say 예상; pressure words are avoided (우리의 주간; 이 기간엔 하루나 이틀에 한 번이면 충분해요). Kind at hard moments (이번 주기도 수고했어요), and telling him is offered as a choice (민수님에게 알릴까요? ‘이번 달은 쉬어 가요’라고만 전해요). Privacy consequences are stated where the choice is made (링크가 있는 사람은 누구나 이 화면을 볼 수 있어요). Empty states are one plain line (새 알림이 없어요). Costs: the amount of text. His task card carries office detail at 12.5px (검사 마감 2월 3일 (수) · 신청 후 3개월 안, plus a paragraph about medication); a not-for-contraception line appears on every log sheet, on 주기 and in onboarding, in two wordings (날짜 예상은 참고용이에요. 피임 목적으로 쓰면 안 돼요); some labels sound internal (기다리는 주, 우리 한 줄, 달력 기준 · 설정값). The demo-date banner and the ⇄ …님 화면으로 바꾸기 pill are prototype furniture, not product."
+ },
+ "first_run": "Screens: welcome + 4 steps (① 우리 둘 ② 주기 ③ 동의·공유 ④ 초대·설치) = 5 screens, then home. Welcome: polaroid landscape, mark + 둘셋, the line 남편이 같이 하는 임신 준비, sub-copy, 시작하기, 백업 파일로 복원하기, 준비 중 예시 보기; the lower ~150px of 844 is empty and nothing shows the product. ① two name fields (optional), two role pickers (required, three options each), whose cycle (filled in automatically once roles are chosen). ② one date field with five quick chips and 잘 모르겠어요 · 나중에 할게요 (all optional); a collapsed 더 넣기 holds average cycle, an irregular-cycle switch, period length and LH use. ③ share level (three radio cards, 우리의 주간 preselected), two required consent checkboxes, three 자세히 disclosures; 415 characters, 1030px tall, so the second checkbox is below the first viewport. ④ 카톡으로 링크 보내기 (optional), an install tip, 시작하기. Required decisions: 4 (two roles, two consents). Measured path: 10 taps + 2 typed names; minimum 9 taps with no typing (the app then calls her 아내님). Time: not timed with people; about one minute is my estimate. Time to first value for her: immediate. From one date the first home shows 가임기 범위예요 (넓음) · 주기 15일째; with no date it shows one card, 마지막 생리 시작일을 알려 주세요, and logging takes 2 taps. For him nothing happens until he opens his screen: in the app a 933px sheet with four questions (smoking, drinking, an optional already-doing, how to get news; 13 buttons) that cannot be passed until the first two are answered; on the link page three of those questions sit as a card on top of a page that is 4023px (4.77 screens) on first open, and there he can skip them. Taps to log a period: 2 on the empty home (+ → 오늘 시작, the sheet opens on 생리) and 2 from the home card on and after the due date (생리 시작 기록 → 오늘 시작); 3 through + in mid-cycle, because the sheet then opens on LH (+ → 생리 → 오늘 시작).",
+ "strengths": [
+  "A recognisable warm palette (paper, espresso, apricot); violet and red are each kept for one meaning.",
+  "Dark mode is complete and tuned rather than inverted: every captured screen holds up, lowest text contrast 4.90:1.",
+  "Accessibility basics are measured, not assumed: all text at least 4.5:1 in both themes, no unnamed controls on four tabs, 44px hit areas, focus ring, reduced-motion and forced-colors rules.",
+  "The + 기록 sheet: one sheet, four tabs, tap-to-save with 되돌리기; a period takes 2–3 taps and the home answers at once with a changed card.",
+  "Her home leads with one state card and a clear primary button (+ LH 기록, + 생리 시작 기록), and the cycle ring reads at a glance.",
+  "Copy is short, adult and kind: no exclamation marks, no fake cheer, predictions always labelled 예상, sharing consequences stated where the choice is made.",
+  "The two-person idea is visible in the design: his 주기 tab is a narrower view (1134px against her 2215px), signals come with ready replies, and telling him about a period is a choice on the card.",
+  "The first run is short: 4 required decisions, about 10 taps, value on the first home; the empty home has one obvious next action.",
+  "The cover polaroid gives the home a personal object and is the one distinctive visual idea; on short screens it shrinks so the action card stays above the tab bar.",
+  "The partner link opens without install, and 설정 has a preview of what he will see.",
+  "No horizontal scroll on any captured screen at 390 or 375 wide; sheets fit 375×667."
+ ],
+ "weaknesses": [
+  {
+   "issue": "His screens are long and text-led, which works against the promise that he knows what to do without being pushed.",
+   "where": "His home, partner link page",
+   "evidence": "His home is 2567px (3.04 screens) with 8 cards, 974 characters and 37 controls; the link page is 3352px (3.97 screens) with 10 cards + 8 nested, and 4023px on first open. His first viewport holds 323 characters against her 149. The top card (이번 달 할 일 · 정액검사 받기) is 319px tall with seven text blocks, and its only action is a text link, 일정 보기. Shots: 20-him-home-full.png, 20-him-home-vp.png, 41-link-page-full.png, 40-link-first-run-vp.png",
+   "severity": "critical"
+  },
+  {
+   "issue": "Emoji do the work of avatars, icons and illustration, next to a separate line-icon set; this is the main reason it reads as a prototype.",
+   "where": "Every screen; worst on 우리, 챙길 것, 알림, 임신 and 아기 tabs",
+   "evidence": "People are 👩/👨 everywhere, notification rows are 🗒️ 🙏 👏 ✅ 💞, baby size is a citrus emoji, milestones are 🐢 👣. At least 85 distinct emoji in UI source against a 56-icon custom set; visible per screen: her home 15, 챙길 것 27, 우리 43. Emoji are drawn by each phone maker, so the look is not under the app's control. Shots: 10-her-home-full.png, 16-her-notifications-vp.png, 13-her-us-photos-loaded-full.png, 51-pregnant-her-pregnancy-full.png, 61-parenting-her-baby-full.png",
+   "severity": "critical"
+  },
+  {
+   "issue": "No ownable brand: a weak mark, no typeface, one generic landscape.",
+   "where": "Welcome, header, app icon, cover",
+   "evidence": "The mark is two circles and a dot, blue + pink on the welcome screen and cream + tan in public/icon.svg; inside the app the brand is the word 둘셋 in the system font. No font file ships (Pretendard is named but never loaded; my captures rendered WenQuanYi Zen Hei + Inter). The only illustration is hills, a tree and a sun, which says nothing about a couple or about preparing. Shots: 01-welcome-vp.png, 95-welcome-night-vp.png, 06-fresh-home-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The type scale has no system and body text is small.",
+   "where": "All screens (measured on the homes)",
+   "evidence": "17 font sizes and 5 weights on her home (30 size×weight pairs), 17 / 34 on his; half-pixel steps (11.5, 12.5, 13.5, 14.5, 15.5px); 22 arbitrary px sizes in source. 83% of the characters on her home are 13.5px or smaller and 51% are 12.5px or smaller. Shots: 10-her-home-full.png, 20-him-home-full.png",
+   "severity": "major"
+  },
+  {
+   "issue": "Almost no motion or touch feedback.",
+   "where": "Sheets, toasts, tab changes, checks",
+   "evidence": "No @keyframes in the codebase; sheets and toasts have no enter or exit animation (components/ui/index.tsx: Sheet, ToastProvider), tabs swap at once, finishing all checks gives a green line and a toast and nothing else; no haptics. Stills: 85-demo-home-all-checked-vp.png, 79-after-period-log-toast-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "Too many cards with uneven rhythm.",
+   "where": "Both homes, link page, stage homes",
+   "evidence": "On one home: card radii 24, 22, 20 and 12px; inner paddings 18, 14, 16 and 10px; gaps between stacked cards 18, 14 and 10px; left edges at 16, 18 and 20–25px; titles outside the card for two blocks and inside as a coloured label for the rest. Cards differ from the page by 1.05:1, so the shadow does all the separating. Shots: 20-him-home-full.png, 10-her-home-more-full.png, 50-pregnant-her-home-full.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The cover takes the best space on the home and does no work.",
+   "where": "Her home, first viewport",
+   "evidence": "The polaroid is 266px tall, 39% of the 687px between header and tab bar; with it the first viewport ends at the status card and 오늘 할 일 starts under the tab bar. Until a couple adds a photo it is a stock landscape with a + 우리 사진 걸기 button. Shots: 10-her-home-vp.png, 06-fresh-home-vp.png, 70-empty-her-home-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The 주기 tab opens on text, not on the calendar.",
+   "where": "주기 (her)",
+   "evidence": "The first viewport is a switch row and a violet summary card with a title, a paragraph and four label/value pairs; the 달력 heading starts at y=734 and the month grid is below the tab bar. The calendar then needs a legend of six swatches (solid red, dashed red, tinted violet, solid violet, hatched, star) and a footnote. Shots: 11-her-cycle-vp.png, 11-her-cycle-full.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The 우리 한 줄 card is four things in one box.",
+   "where": "Her home",
+   "evidence": "438px tall: partner progress with 콕 / 응원, 이번 주 민수님 with 고마워요 and three chips, a received signal with two reply chips, and a sideways-scrolling row of six signal chips; 11 tap targets, most of them emoji + text pills of the same weight. Shot: 10-her-home-full.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The same control is drawn four ways, and navigation changes by stage.",
+   "where": "His home, link page, parenting home, tab bar",
+   "evidence": "Checks: circle on the right (오늘 할 일), circle on the left (이번 주 내가 맡을 것 하나), square box (올해 독감 접종 맞기), bordered row with a square box (link page, parenting home). Primary buttons are full pills on welcome and home and 12px rectangles in onboarding and sheets. Tab order: preparing 오늘·주기·+·챙길 것·우리; pregnant 오늘·임신·챙길 것·우리 (no + for her, + for him); parenting 오늘·아기·우리·챙길 것. Shots: 76-empty-him-home-full.png, 41-link-page-full.png, 60-parenting-her-home-full.png, 53-pregnant-him-home-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The welcome screen neither shows nor sells the product.",
+   "where": "Welcome",
+   "evidence": "One headline, one sub-line and a landscape; no view of his screen, of the link, or of a first week; the lower ~150px is blank; the demo sits in a beige box labelled 예시로 둘러보기. Shot: 01-welcome-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "챙길 것 and 설정 are long lists with little hierarchy.",
+   "where": "챙길 것, 설정",
+   "evidence": "챙길 것 is 3490px (4.14 screens): 4 cards with 14 nested rows, 69 controls, 112 text nodes under 12px, and in the demo it opens on a 난임 시술 · 지원 counter card. 설정 has 11 accordion sections, is 6577px (7.79 screens) with all open, and also holds content (정부 지원 programme cards). Shots: 12-her-plan-full.png, 32-settings-all-open-full.png, 14-her-settings-vp.png",
+   "severity": "major"
+  },
+  {
+   "issue": "The consent step is the heaviest screen of the first run.",
+   "where": "Onboarding ③",
+   "evidence": "415 characters, three radio cards + two checkboxes + three disclosures, 1030px tall; the second required checkbox is below the first viewport; 1531px with the disclosures open. Shots: 04-onb3-consent-empty-vp.png, 04-onb3-consent-filled-full.png, 04-onb3-consent-open-full.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "Stage heroes have no picture of the stage.",
+   "where": "Pregnant home, 임신 tab, parenting home",
+   "evidence": "Pregnancy is a week count and a progress bar; baby size is a citrus emoji in a box; the baby is a 👧 emoji. Shots: 50-pregnant-her-home-vp.png, 51-pregnant-her-pregnancy-full.png, 60-parenting-her-home-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "His first-run sheet asks before it gives.",
+   "where": "His first open in the app",
+   "evidence": "A 933px sheet with 13 buttons; 이대로 시작하기 stays disabled until smoking and drinking are answered, while the link page lets him skip the same questions. Shots: 75-empty-him-first-run-vp.png, 75-empty-him-first-run-bottom-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "Toasts cover content.",
+   "where": "Home, after a log or a save",
+   "evidence": "저장했어요 sits on body text in his first card; the log toast covers the header and the viewer pill; the all-done toast covers the 우리 한 줄 card. Shots: 76-empty-him-home-vp.png, 79-after-period-log-toast-vp.png, 85-demo-home-all-checked-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "Native date inputs break the look.",
+   "where": "Onboarding ②, + 기록 sheet (다른 날), 우리 composer, 설정",
+   "evidence": "A browser-default date control sits inside a custom UI. In my capture it printed mm/dd/yyyy (capture environment); on phones it follows the OS, so its look is not designed. Shots: 03-onb2-cycle-empty-vp.png, 15-her-log-sheet-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "Empty states are functional only.",
+   "where": "알림, 챙길 것 › 다가오는 일정",
+   "evidence": "A dashed box, an icon in a circle and one line (새 알림이 없어요; 잡아 둔 병원·검사 일정이 없어요). Shots: 74-empty-notifications-vp.png, 72-empty-her-plan-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "Short screens crop the cover awkwardly.",
+   "where": "Her home at 375×667",
+   "evidence": "The cover shrinks to a strip about 60px tall that cuts the two figures off. Shot: 90-her-home-375x667-vp.png",
+   "severity": "minor"
+  },
+  {
+   "issue": "No theme choice in the app, and two hot spots in dark.",
+   "where": "설정, dark home",
+   "evidence": "설정 has no light/dark switch (checked); in dark the salmon demo cover and the cream FAB are the brightest objects on the screen. Shot: 10-her-home-dark-vp.png",
+   "severity": "minor"
+  }
+ ],
+ "summary": "둘셋 looks like a careful, warm, accessible prototype, not yet like a top consumer app. Already good: the palette, dark mode, contrast and labelling, the + 기록 sheet, the copy, a short first run. What a senior product designer would mark first: (1) his screens are three to four screens of small text and cards, the opposite of the promise; (2) emoji stand in for avatars, icons and illustration; (3) there is no ownable brand (mark, typeface, illustration); (4) 17 font sizes on one screen and body text at 12.5–13.5px; (5) no motion; (6) uneven card rhythm. Measured at 390×844: her home 1951px with 5 cards (+5 behind 더 보기), his home 2567px with 8 cards, link page 3352px with 10 cards; 17 font sizes and 5 weights on each home; a period takes 2 taps on the empty home or from the home card near the due date, and 3 through + in mid-cycle; onboarding is welcome + 4 steps with 4 required decisions and about 10 taps. Limits: still captures in headless Chromium with a fallback font, no real phone, no screen reader, no timing with people; heights include a 35px demo-date banner. This audit makes no claims about other apps. The saved file also carries a measurements block.",
+ "measurements": {
+  "conditions": "Next.js dev server, headless Chromium (Playwright 1.63), viewport 390×844 at device scale 2, locale ko-KR, ?today=2026-11-13, clock fixed at 10:30 KST, demo couple 민수·지은 unless stated. Heights include the 35px demo-date banner that only shows when the date is pinned. Counts ignore content inside closed 더 보기 blocks.",
+  "cardRule": "Card-like surface = visible element in <main>, at least 60% of the viewport wide and 48px tall, corner radius 12px or more, with its own fill, shadow or border; pills excluded; top level = not inside another such surface. The cover polaroid (5px radius) is not counted.",
+  "perScreen": {
+   "her-home": {
+    "pageHeightPx": 1951,
+    "screensAt844": 2.31,
+    "cardsTopLevel": 5,
+    "cardsNested": 0,
+    "fontSizesPx": [
+     10,
+     11,
+     11.5,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     15.5,
+     16,
+     17,
+     20,
+     21,
+     23,
+     24
+    ],
+    "fontSizeCount": 17,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 30,
+    "textColours": 7,
+    "visibleChars": 542,
+    "emojiVisible": 15,
+    "controls": 33,
+    "textNodesUnder12px": 12,
+    "contrast": {
+     "textNodes": 80,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "her-home-more-open": {
+    "pageHeightPx": 2847,
+    "screensAt844": 3.37,
+    "cardsTopLevel": 10,
+    "cardsNested": 0,
+    "fontSizesPx": [
+     10,
+     11,
+     11.5,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     15.5,
+     16,
+     17,
+     20,
+     21,
+     23,
+     24
+    ],
+    "fontSizeCount": 17,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 37,
+    "textColours": 9,
+    "visibleChars": 888,
+    "emojiVisible": 17,
+    "controls": 42,
+    "textNodesUnder12px": 23,
+    "contrast": {
+     "textNodes": 119,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "him-home": {
+    "pageHeightPx": 2567,
+    "screensAt844": 3.04,
+    "cardsTopLevel": 8,
+    "cardsNested": 1,
+    "fontSizesPx": [
+     10,
+     10.5,
+     11,
+     11.5,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     17,
+     20,
+     21,
+     22,
+     23
+    ],
+    "fontSizeCount": 17,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 34,
+    "textColours": 7,
+    "visibleChars": 974,
+    "emojiVisible": 13,
+    "controls": 37,
+    "textNodesUnder12px": 17,
+    "contrast": {
+     "textNodes": 131,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "link-page": {
+    "pageHeightPx": 3352,
+    "screensAt844": 3.97,
+    "cardsTopLevel": 10,
+    "cardsNested": 8,
+    "fontSizesPx": [
+     10.5,
+     11,
+     11.5,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     17,
+     20,
+     21,
+     22,
+     23
+    ],
+    "fontSizeCount": 16,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 33,
+    "textColours": 7,
+    "visibleChars": 1085,
+    "emojiVisible": 13,
+    "controls": 31,
+    "textNodesUnder12px": 12,
+    "contrast": {
+     "textNodes": 148,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "pregnant-her-home": {
+    "pageHeightPx": 2689,
+    "screensAt844": 3.19,
+    "cardsTopLevel": 9,
+    "cardsNested": 3,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     17,
+     20,
+     21,
+     22
+    ],
+    "fontSizeCount": 14,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 32,
+    "textColours": 6,
+    "visibleChars": 867,
+    "emojiVisible": 16,
+    "controls": 40,
+    "textNodesUnder12px": 32,
+    "contrast": {
+     "textNodes": 127,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "pregnant-him-home": {
+    "pageHeightPx": 2783,
+    "screensAt844": 3.3,
+    "cardsTopLevel": 10,
+    "cardsNested": 3,
+    "fontSizesPx": [
+     10,
+     10.5,
+     11,
+     11.5,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     17,
+     20,
+     21,
+     22
+    ],
+    "fontSizeCount": 16,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 32,
+    "textColours": 6,
+    "visibleChars": 897,
+    "emojiVisible": 11,
+    "controls": 39,
+    "textNodesUnder12px": 16,
+    "contrast": {
+     "textNodes": 112,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "parenting-her-home": {
+    "pageHeightPx": 2446,
+    "screensAt844": 2.9,
+    "cardsTopLevel": 10,
+    "cardsNested": 5,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     20,
+     22
+    ],
+    "fontSizeCount": 12,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 25,
+    "textColours": 6,
+    "visibleChars": 625,
+    "emojiVisible": 12,
+    "controls": 31,
+    "textNodesUnder12px": 9,
+    "contrast": {
+     "textNodes": 94,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "parenting-him-home": {
+    "pageHeightPx": 2513,
+    "screensAt844": 2.98,
+    "cardsTopLevel": 11,
+    "cardsNested": 3,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     12.5,
+     13,
+     13.5,
+     14,
+     14.5,
+     15,
+     16,
+     17,
+     20,
+     22
+    ],
+    "fontSizeCount": 13,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 26,
+    "textColours": 6,
+    "visibleChars": 649,
+    "emojiVisible": 11,
+    "controls": 31,
+    "textNodesUnder12px": 8,
+    "contrast": {
+     "textNodes": 96,
+     "below": 0,
+     "min": 4.69
+    }
+   },
+   "her-cycle": {
+    "pageHeightPx": 2215,
+    "screensAt844": 2.62,
+    "cardsTopLevel": 6,
+    "cardsNested": 0,
+    "fontSizesPx": [
+     8,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     18,
+     20
+    ],
+    "fontSizeCount": 10,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 22,
+    "textColours": 9,
+    "visibleChars": 887,
+    "emojiVisible": 2,
+    "controls": 63,
+    "textNodesUnder12px": 29,
+    "contrast": {
+     "textNodes": 145,
+     "below": 0,
+     "min": 4.67
+    }
+   },
+   "him-cycle": {
+    "pageHeightPx": 1134,
+    "screensAt844": 1.34,
+    "cardsTopLevel": 3,
+    "cardsNested": 0,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     18,
+     20
+    ],
+    "fontSizeCount": 9,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 20,
+    "textColours": 6,
+    "visibleChars": 328,
+    "emojiVisible": 2,
+    "controls": 53,
+    "textNodesUnder12px": 16,
+    "contrast": {
+     "textNodes": 81,
+     "below": 0,
+     "min": 4.67
+    }
+   },
+   "her-plan": {
+    "pageHeightPx": 3490,
+    "screensAt844": 4.14,
+    "cardsTopLevel": 4,
+    "cardsNested": 14,
+    "fontSizesPx": [
+     10,
+     10.5,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     18,
+     20
+    ],
+    "fontSizeCount": 10,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 22,
+    "textColours": 6,
+    "visibleChars": 1250,
+    "emojiVisible": 27,
+    "controls": 69,
+    "textNodesUnder12px": 112,
+    "contrast": {
+     "textNodes": 212,
+     "below": 0,
+     "min": 4.9
+    }
+   },
+   "him-plan": {
+    "pageHeightPx": 3558,
+    "screensAt844": 4.22,
+    "cardsTopLevel": 4,
+    "cardsNested": 14,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     18,
+     20
+    ],
+    "fontSizeCount": 9,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 22,
+    "textColours": 6,
+    "visibleChars": 1335,
+    "emojiVisible": 26,
+    "controls": 70,
+    "textNodesUnder12px": 103,
+    "contrast": {
+     "textNodes": 208,
+     "below": 0,
+     "min": 4.8
+    }
+   },
+   "her-us": {
+    "pageHeightPx": 3887,
+    "screensAt844": 4.61,
+    "cardsTopLevel": 12,
+    "cardsNested": 5,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     18,
+     20,
+     34
+    ],
+    "fontSizeCount": 9,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 23,
+    "textColours": 6,
+    "visibleChars": 1074,
+    "emojiVisible": 43,
+    "controls": 53,
+    "textNodesUnder12px": 26,
+    "contrast": {
+     "textNodes": 131,
+     "below": 1,
+     "min": 3.47
+    }
+   },
+   "her-settings-collapsed": {
+    "pageHeightPx": 1245,
+    "screensAt844": 1.48,
+    "cardsTopLevel": 1,
+    "cardsNested": 2,
+    "fontSizesPx": [
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     20,
+     24
+    ],
+    "fontSizeCount": 8,
+    "fontWeights": [
+     400,
+     500,
+     600,
+     700,
+     800
+    ],
+    "sizeWeightPairs": 15,
+    "textColours": 5,
+    "visibleChars": 189,
+    "emojiVisible": 5,
+    "controls": 36,
+    "textNodesUnder12px": 7,
+    "contrast": {
+     "textNodes": 54,
+     "below": 0,
+     "min": 4.99
+    }
+   }
+  },
+  "freshCouple": {
+   "herHome": {
+    "pageHeight": 1472,
+    "screens": 1.74,
+    "cards": 5,
+    "nested": 0,
+    "polaroids": 2,
+    "sizes": 12,
+    "weights": 4,
+    "combos": 23,
+    "emoji": 10,
+    "chars": 358,
+    "controls": 27
+   },
+   "himHome": {
+    "pageHeight": 2611,
+    "screens": 3.09,
+    "cards": 8,
+    "nested": 4,
+    "polaroids": 2,
+    "sizes": 16,
+    "weights": 5,
+    "combos": 29,
+    "emoji": 11,
+    "chars": 867,
+    "controls": 40
+   },
+   "himFirstRunSheet": {
+    "h": 933,
+    "groups": [
+     "담배를 피우나요? (전자담배 포함)",
+     "술은 얼마나 마시나요?",
+     "소식 받는 방식"
+    ],
+    "buttons": 13,
+    "startDisabled": true
+   }
+  },
+  "small375x667": {
+   "herHomePx": 1793,
+   "himHomePx": 2316
+  },
+  "linkFirstOpen": {
+   "pageHeight": 4023,
+   "screens": 4.77,
+   "firstRunQuestions": [
+    "담배를 피우나요? (전자담배 포함)",
+    "술은 얼마나 마시나요?",
+    "소식 받는 방식",
+    "알림 받을 요일"
+   ],
+   "firstRunButtons": 42
+  },
+  "settingsAllSectionsOpen": {
+   "opened": 10,
+   "pageHeight": 6577,
+   "screens": 7.79,
+   "chars": 2413,
+   "interactive": 84,
+   "switches": 11,
+   "radios": 8,
+   "sizes": 11
+  },
+  "firstViewport": {
+   "her": {
+    "chars": 149,
+    "textNodes": 29,
+    "controlsInMain": 5
+   },
+   "him": {
+    "chars": 323,
+    "textNodes": 28,
+    "controlsInMain": 3
+   },
+   "himFirstCard": {
+    "heightPx": 319,
+    "chars": 181,
+    "textBlocks": 7,
+    "actions": [
+     "일정 보기"
+    ]
+   }
+  },
+  "chrome": {
+   "headerPx": 57,
+   "demoBannerPx": 35,
+   "tabBarPx": 65,
+   "fabPx": 56,
+   "usableFirstViewportPx": 687
+  },
+  "herHomeBlocks": [
+   {
+    "what": "11월 13일 금요일 함께한 지D+2,010",
+    "x": 18,
+    "top": 106,
+    "bottom": 123,
+    "h": 17,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "👨 민수님이 신호를 보냈어요 답하기",
+    "x": 18,
+    "top": 127,
+    "bottom": 163,
+    "h": 36,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "",
+    "x": 157,
+    "top": 164,
+    "bottom": 190,
+    "h": 26,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "지은 과 민수 11.4 · 한강 산책",
+    "x": 20,
+    "top": 174,
+    "bottom": 432,
+    "h": 257,
+    "paddingLeft": "8px",
+    "radius": "5px"
+   },
+   {
+    "what": "",
+    "x": 23,
+    "top": 176,
+    "bottom": 440,
+    "h": 264,
+    "paddingLeft": "0px",
+    "radius": "5px"
+   },
+   {
+    "what": "가임기 · 11월 16일까지 (예상) 가임기예요",
+    "x": 16,
+    "top": 447,
+    "bottom": 737,
+    "h": 290,
+    "paddingLeft": "18px",
+    "radius": "24px"
+   },
+   {
+    "what": "편집 : 내 체크 항목",
+    "x": 340,
+    "top": 765,
+    "bottom": 809,
+    "h": 44,
+    "paddingLeft": "6px",
+    "radius": "12px"
+   },
+   {
+    "what": "오늘 할 일 오늘 0/4",
+    "x": 18,
+    "top": 774,
+    "bottom": 800,
+    "h": 26,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "엽산 영양제 · 400µg 비타민 D 영양제 ·",
+    "x": 16,
+    "top": 815,
+    "bottom": 1072,
+    "h": 257,
+    "paddingLeft": "14px",
+    "radius": "22px"
+   },
+   {
+    "what": "우리 한 줄",
+    "x": 16,
+    "top": 1100,
+    "bottom": 1125,
+    "h": 26,
+    "paddingLeft": "2px",
+    "radius": "0px"
+   },
+   {
+    "what": "👨 민수님 오늘 1/2 👉 콕 👏 응원 이",
+    "x": 16,
+    "top": 1131,
+    "bottom": 1570,
+    "h": 438,
+    "paddingLeft": "14px",
+    "radius": "22px"
+   },
+   {
+    "what": "👨 이번 달 할 일 민수님 · 정액검사 예약했",
+    "x": 16,
+    "top": 1582,
+    "bottom": 1634,
+    "h": 53,
+    "paddingLeft": "10px",
+    "radius": "12px"
+   },
+   {
+    "what": "홈 화면에 추가해 두세요 브라우저에서는 7일 동",
+    "x": 16,
+    "top": 1650,
+    "bottom": 1773,
+    "h": 123,
+    "paddingLeft": "16px",
+    "radius": "12px"
+   },
+   {
+    "what": "더 보기",
+    "x": 16,
+    "top": 1791,
+    "bottom": 1839,
+    "h": 48,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   }
+  ],
+  "himHomeBlocks": [
+   {
+    "what": "11월 13일 금요일 함께한 지D+2,010",
+    "x": 18,
+    "top": 106,
+    "bottom": 123,
+    "h": 17,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "민수님, 좋은 아침이에요",
+    "x": 18,
+    "top": 127,
+    "bottom": 163,
+    "h": 36,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "",
+    "x": 157,
+    "top": 164,
+    "bottom": 190,
+    "h": 26,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "민수 와 지은 11.4 · 한강 산책",
+    "x": 21,
+    "top": 174,
+    "bottom": 332,
+    "h": 157,
+    "paddingLeft": "8px",
+    "radius": "5px"
+   },
+   {
+    "what": "",
+    "x": 25,
+    "top": 176,
+    "bottom": 340,
+    "h": 164,
+    "paddingLeft": "0px",
+    "radius": "5px"
+   },
+   {
+    "what": "이번 달 할 일 예약됨 정액검사 받기 검사 마감",
+    "x": 16,
+    "top": 347,
+    "bottom": 666,
+    "h": 319,
+    "paddingLeft": "14px",
+    "radius": "20px"
+   },
+   {
+    "what": "11월 16일까지 (예상) 아이디어 더 보기 이",
+    "x": 16,
+    "top": 684,
+    "bottom": 1075,
+    "h": 392,
+    "paddingLeft": "18px",
+    "radius": "24px"
+   },
+   {
+    "what": "이번 주 우리 둘 · 11월 9일부터 집안일 하",
+    "x": 16,
+    "top": 1089,
+    "bottom": 1193,
+    "h": 104,
+    "paddingLeft": "18px",
+    "radius": "24px"
+   },
+   {
+    "what": "지은님과 같이 챙길 것 전체 보기 : 챙길 것 ",
+    "x": 16,
+    "top": 1203,
+    "bottom": 1467,
+    "h": 265,
+    "paddingLeft": "18px",
+    "radius": "24px"
+   },
+   {
+    "what": "내 준비 생활 습관 3개월을 채웠어요 이번 주 ",
+    "x": 16,
+    "top": 1477,
+    "bottom": 1675,
+    "h": 197,
+    "paddingLeft": "18px",
+    "radius": "24px"
+   },
+   {
+    "what": "편집 : 내 체크 항목",
+    "x": 340,
+    "top": 1703,
+    "bottom": 1747,
+    "h": 44,
+    "paddingLeft": "6px",
+    "radius": "12px"
+   },
+   {
+    "what": "오늘 할 일 오늘 1/2",
+    "x": 18,
+    "top": 1712,
+    "bottom": 1738,
+    "h": 26,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   },
+   {
+    "what": "30분 걷기·운동 생활 습관 7시간 이상 자기 ",
+    "x": 16,
+    "top": 1753,
+    "bottom": 2022,
+    "h": 269,
+    "paddingLeft": "14px",
+    "radius": "22px"
+   },
+   {
+    "what": "우리 한 줄",
+    "x": 16,
+    "top": 2050,
+    "bottom": 2075,
+    "h": 26,
+    "paddingLeft": "2px",
+    "radius": "0px"
+   },
+   {
+    "what": "👩 지은님 👉 콕 👏 응원 신호 보내기 �",
+    "x": 16,
+    "top": 2081,
+    "bottom": 2250,
+    "h": 169,
+    "paddingLeft": "14px",
+    "radius": "22px"
+   },
+   {
+    "what": "홈 화면에 추가해 두세요 브라우저에서는 7일 동",
+    "x": 16,
+    "top": 2266,
+    "bottom": 2389,
+    "h": 123,
+    "paddingLeft": "16px",
+    "radius": "12px"
+   },
+   {
+    "what": "더 보기",
+    "x": 16,
+    "top": 2407,
+    "bottom": 2455,
+    "h": 48,
+    "paddingLeft": "0px",
+    "radius": "0px"
+   }
+  ],
+  "herCycle": {
+   "calendarHeadingTopPx": 734,
+   "tabBarTopPx": 779
+  },
+  "tapsToLogPeriod": {
+   "viaPlusOnEmptyHome": 2,
+   "viaPlusMidCycleDemo": 3,
+   "fromHomeCardOnDueDay": 2,
+   "fromHomeCardOneDayLate": 2
+  },
+  "onboarding": {
+   "screensBeforeHome": 5,
+   "steps": [
+    "welcome",
+    "① 우리 둘",
+    "② 주기",
+    "③ 동의·공유",
+    "④ 초대·설치"
+   ],
+   "measuredTaps": 10,
+   "typedFields": 2,
+   "minimumTaps": 9,
+   "requiredDecisions": 4,
+   "stepHeightsPx": {
+    "welcome": 844,
+    "onb1-empty": 844,
+    "onb1-filled": 844,
+    "onb2-empty": 844,
+    "onb2-more-open": 1019,
+    "onb2-filled": 844,
+    "onb3-empty": 1030,
+    "onb3-all-open": 1531,
+    "onb3-filled": 1030,
+    "onb4": 844
+   },
+   "stepChars": {
+    "onb1-empty": 132,
+    "onb1-filled": 116,
+    "onb2-empty": 190,
+    "onb2-more-open": 265,
+    "onb2-filled": 209,
+    "onb3-empty": 415,
+    "onb3-all-open": 823,
+    "onb3-filled": 415,
+    "onb4": 158
+   },
+   "humanTime": "not measured"
+  },
+  "accessibility": {
+   "unnamedControls": {
+    "오늘": 0,
+    "주기": 0,
+    "챙길 것": 0,
+    "우리": 0
+   },
+   "controls": {
+    "오늘": 33,
+    "주기": 63,
+    "챙길 것": 69,
+    "우리": 53
+   },
+   "darkContrast": {
+    "her-home": {
+     "below": 0,
+     "min": 5.65
+    },
+    "her-cycle": {
+     "below": 0,
+     "min": 5.22
+    },
+    "her-plan": {
+     "below": 0,
+     "min": 5.03
+    },
+    "her-us": {
+     "below": 1,
+     "min": 2.44
+    },
+    "her-settings-collapsed": {
+     "below": 0,
+     "min": 5.65
+    },
+    "him-home": {
+     "below": 0,
+     "min": 5.57
+    },
+    "him-cycle": {
+     "below": 0,
+     "min": 5.22
+    },
+    "him-plan": {
+     "below": 0,
+     "min": 5.03
+    },
+    "link-page": {
+     "below": 0,
+     "min": 4.9
+    },
+    "pregnant-her-home": {
+     "below": 0,
+     "min": 5.03
+    },
+    "pregnant-him-home": {
+     "below": 0,
+     "min": 5.03
+    },
+    "parenting-her-home": {
+     "below": 0,
+     "min": 5.65
+    },
+    "parenting-him-home": {
+     "below": 0,
+     "min": 4.9
+    }
+   },
+   "themeSwitchInSettings": false
+  },
+  "source": {
+   "iconSetSize": 56,
+   "distinctEmojiInUiSource": 85,
+   "arbitraryPxFontSizes": 22,
+   "arbitraryPxFontSizeUses": 440,
+   "keyframes": 0,
+   "fontFilesShipped": 0,
+   "renderedFontsInCapture": {
+    "h1": [],
+    "main p": [
+     "WenQuanYi Zen Hei×9",
+     "Inter×11"
+    ],
+    "nav button": [
+     "WenQuanYi Zen Hei×2"
+    ],
+    "header": []
+   }
+  },
+  "tokenContrast": {
+   "cardVsPageLight": 1.05,
+   "tintedPanelVsPageLight": 1.09,
+   "cardVsPageDark": 1.08
+  }
+ }
+}

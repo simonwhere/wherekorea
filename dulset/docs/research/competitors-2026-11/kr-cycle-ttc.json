@@ -1,0 +1,999 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "핑크다이어리 (핑다)",
+   "maker": "NHN에듀 (NHN Edu Corp.) · 대한산부인과의사회 공식 앱",
+   "country": "한국",
+   "category": "주기 앱 (생리·피임 / 임신준비 / 임신 3모드) + 커뮤니티 + 광고 매체",
+   "platforms": "iOS, Android (com.dnt7.threeW). 파트너는 앱 없이 카카오 알림톡·문자 링크(웹)",
+   "price_model": "무료 + 광고. 앱 내 구입(한국 App Store 표기, 검색 요약 기준): 공유하기(커플커넥트) 1개월 ₩2,500, 광고제거 1개월 ₩2,500 · 6개월 ₩13,500 · 12개월 ₩24,000. 커플커넥트는 1개월 무료 체험(나무위키)",
+   "scale": "가임기 여성 220만 명 이용, 그중 2030 166만(NHN에듀 보도자료 2025-10-13) · 누적 다운로드 659만, 월 123만 명(회사 발표, 2023-11) · App Store 한국 4.8 / 21만 평가, Google Play 4.4 / 12.9만 리뷰(검색 요약, 조회 시점 불명)",
+   "cycle_fertility_features": [
+    "생리 예정일·배란 예정일·가임기·'오늘의 임신 확률'을 자동 계산하고 예정일 알림 (무료)",
+    "모드 3개: 생리피임 / 임신준비 / 임신. 임신준비 모드를 켜면 기초체온·배란테스트·임신테스트·배란일 직접 입력이 열림(고객센터 FAQ)",
+    "AI 핑봇: 테스트기를 카메라로 찍으면 판독. 임신테스트기 판독은 2022-08 베타 출시, 스토어 설명은 임신·배란 테스트기 모두 언급",
+    "피임약 복용 알림",
+    "2025-10 딥메디와 MOU: 얼굴 스캔으로 스트레스 지수 측정 기능 도입 예정(가임기·임신준비·임신 상태별 결과)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 모드 있음(세부 기능은 확인 못 함)"
+   ],
+   "partner_features": [
+    "커플커넥트(2020-11-18 출시): 여성이 남자친구·남편 전화번호를 등록하고 상대가 수락하면, 선택한 항목이 카카오 알림톡 또는 문자로 자동 발송됨",
+    "남성이 보는 것: 알림톡 링크로 여는 캘린더. 여성이 공유하기로 설정한 항목만. 기본 항목은 생리 시작·종료일, 생리 예정일, 가임기 시작·종료일이고 항목 추가 가능",
+    "남성에게 가는 알림: 생리일·가임기·생리 예정일. 생리 시작·종료는 입력 뒤 정각, 가임기·예정일은 당일 오전 8시(공식 안내의 검색 요약, 정확한 문구 미확인)",
+    "남성은 앱 설치·가입 없음. 공유 중단은 여성만 할 수 있음",
+    "남성이 하는 것: 시크릿 코멘트에 답글 남기기(여성이 보내면 알림톡으로 받고 답함), 선물하기. 그 밖의 할 일·체크·본인 건강 항목은 찾지 못함",
+    "유료: 여성 쪽이 월 2,500원 결제"
+   ],
+   "korea_system_features": [
+    "대한산부인과의사회 공식 앱 표기",
+    "정부 지원·검사 기한 안내 기능은 찾지 못함"
+   ],
+   "content_community_ai": [
+    "핑다톡: 익명 여성 커뮤니티(휴대폰 본인인증으로 성별 확인)",
+    "매거진: 의사가 쓰는 피임·생리·임신·출산 정보",
+    "디어닥터: 산부인과 전문의 1:1 상담(2015 기사 기준, 현재 운영 여부 미확인)",
+    "AI 핑봇 테스트기 판독"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시",
+    "파트너 전달은 카카오 알림톡·문자(서버 발송) → 웹 링크",
+    "계정·본인인증 기반 동기화. 위젯·워치·건강 데이터 연동은 확인 못 함"
+   ],
+   "privacy_trust": [
+    "2022-10 SBS 보도: 개인정보 처리 수탁사가 중국 다롄의 자회사(NHNST). NHN은 '실제 넘어간 정보 없음, 고객센터 솔루션 유지·보수만'이라 해명하고 국내 이관 방침을 밝힘. 회사 관계자가 가입자 이탈 증가를 언급",
+    "처리방침(2022-10-28 개정)에 수탁 항목(아이디·연락처·이메일) 명시",
+    "스토어 설명: 개인정보·민감정보 암호화",
+    "광고 상품에 '생리주기 기준 타겟팅' 캘린더 팝업이 있음(2023 광고 소개서) — 주기 데이터가 광고 노출 조건으로 쓰임"
+   ],
+   "design": {
+    "summary": "첫 탭 '나의 오늘' 상단에 생리 예정일·배란 예정일·가임기를 숫자로 보여 주고, 둘째 탭이 기록용 캘린더, 그 뒤로 커뮤니티·매거진이 붙는 포털형 구조. 광고 지면이 화면 곳곳에 있음",
+    "home": "'나의 오늘': 상단에 생리 예정일·배란 예정일·가임기 정보, 홈 상단 배너 광고",
+    "onboarding": "확인 못 함(휴대폰 본인인증 요구는 리뷰로 확인)",
+    "visual_style": "분홍 계열(앱 이름·아이콘 기준, 기억). 스크린샷은 못 봄",
+    "notable_patterns": [
+     "앱을 열 때 전면 팝업 광고(1일 1광고주, '오늘 하루 보지 않을래요')",
+     "캘린더 진입 팝업, 전 지면 하단 띠배너, 캘린더 날짜 스티커 광고",
+     "모드 전환으로 기록 항목이 바뀜(임신준비 모드에서만 기초체온·테스트기)",
+     "'오늘의 임신 확률'을 등급(예: 낮음)으로 표시"
+    ],
+    "evidence": "리뷰 기사(signature-library)의 화면 설명, 2023 광고상품 소개서의 지면 목록, 스토어 설명·고객센터 FAQ의 검색 요약. 스토어 페이지를 직접 열지 못했고(apps.apple.com·play.google.com 차단) 앱 설치·스크린샷 확인도 못 함"
+   },
+   "strengths": [
+    "남성 진입 장벽이 가장 낮음: 설치·가입 없이 카톡으로 받고, 알림도 카톡으로 옴(푸시 문제를 알림톡으로 해결)",
+    "무엇을 보일지 여성이 항목별로 정함",
+    "임신 준비 기본기(임신 확률, 기초체온, 배테기·임테기 등록, AI 판독)가 한 앱에 있음",
+    "규모와 공신력(220만 이용, 의사회 공식 앱)"
+   ],
+   "weaknesses_from_reviews": [
+    "광고가 많다(Google Play 2016 리뷰, 여성시대 글 약 2021 — '광고 많은데 월 2,900원 내면 없앨 수 있다')",
+    "임신 확률 '낮음'으로 뜬 날 임신했다는 리뷰 — 개발사 답: 참고용이며 임신·피임을 보장하지 않음",
+    "앱이 무겁고 로딩이 길다(2021), 접속 오류가 잦다(2024)",
+    "해외 거주자가 국내 휴대폰 본인인증을 요구받음(2025)",
+    "개인정보 관련 소문 때문에 다른 앱으로 옮겼다는 경험담(여성시대)",
+    "2025~2026년 최신 리뷰는 검색으로 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id516498899",
+     "what": "한국 App Store: 개발사, 평점, 앱 내 구입 가격, 기능 설명(검색 요약으로만 확인)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.dnt7.threeW",
+     "what": "Google Play: 평점 4.4/12.9만, 리뷰와 개발사 답변(임신 확률, 본인인증)",
+     "level": "official"
+    },
+    {
+     "url": "https://iamservice.gslb.toastoven.net/pinkdiary/static/premium/pd-share-reason-v2/",
+     "what": "공식 '커커 A to Z': 알림톡 발송 항목·시점, 시크릿 코멘트 답글",
+     "level": "official"
+    },
+    {
+     "url": "https://iamservice.oc.nhncloud.com/pingda/hc/article/117/",
+     "what": "고객센터 FAQ: 임신준비 모드에서 열리는 기능",
+     "level": "official"
+    },
+    {
+     "url": "https://inside.nhn.com/news/531",
+     "what": "커플커넥트 3주년 보도자료(2023-11-14)",
+     "level": "official"
+    },
+    {
+     "url": "https://inside.nhn.com/news/817",
+     "what": "딥메디 MOU, 이용자 220만(2025-10-13)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.cnet.co.kr/view/?no=20201118001025",
+     "what": "커플커넥트 출시 보도(2020-11-18): 앱 설치 없이 카톡·문자",
+     "level": "press"
+    },
+    {
+     "url": "https://news.bizwatch.co.kr/article/mobile/2023/11/14/0005",
+     "what": "누적 659만 다운로드, 월 123만(2023-11-14)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.cosmopolitan.co.kr/article/59458",
+     "what": "커플커넥트 체험 기사: 남성은 알림톡 눌러 설정된 항목만 봄",
+     "level": "press"
+    },
+    {
+     "url": "http://www.m2digital.co.kr/wp-content/uploads/2023/04/NHN-EDU%ED%95%91%ED%81%AC%EB%8B%A4%EC%9D%B4%EC%96%B4%EB%A6%AC-%EC%83%81%ED%92%88%EC%86%8C%EA%B0%9C%EC%84%9C_2303.pdf",
+     "what": "NHN에듀 광고상품 소개서(2023-03): 광고 지면, MAU",
+     "level": "official"
+    },
+    {
+     "url": "https://www.ads-soon.com/product/details/252",
+     "what": "캘린더 팝업 광고 상품(1,000만 원~, 생리주기 타겟팅)",
+     "level": "press"
+    },
+    {
+     "url": "https://news.sbs.co.kr/news/endPage.do?news_id=N1006922013",
+     "what": "개인정보 중국 자회사 위탁 보도(2022-10)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.segye.com/newsView/20221007505053",
+     "what": "NHN 해명(2022-10-07)",
+     "level": "press"
+    },
+    {
+     "url": "https://zdnet.co.kr/view/?no=20220804091417",
+     "what": "AI 임신테스트기 사진 판독 출시(2022-08-04)",
+     "level": "press"
+    },
+    {
+     "url": "https://signature-library.co.kr/art/ART0200000000?no=1000041",
+     "what": "생리 앱 3종 비교 리뷰: '나의 오늘' 탭·캘린더·핑다톡",
+     "level": "press"
+    },
+    {
+     "url": "https://namu.wiki/w/%ED%95%91%ED%81%AC%EB%8B%A4%EC%9D%B4%EC%96%B4%EB%A6%AC",
+     "what": "커플커넥트 월 2,500원·1개월 무료·공유 중단은 여성",
+     "level": "user-review"
+    },
+    {
+     "url": "https://m.cafe.daum.net/subdued20club/LxCT/306476",
+     "what": "여성시대 생리 앱 비교 글(약 2021): 광고, 월 2,900원",
+     "level": "user-review"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id516498899",
+     "what": "분홍 계열 시각 스타일 — 기억, 오늘 스크린샷으로 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "해피문데이 (구 헤이문) + 해피문데이 커넥트",
+   "maker": "해피문데이 (Happy Moonday Inc.) — 유기농 생리대 제조·판매사",
+   "country": "한국",
+   "category": "주기 앱 + 자사 커머스(생리대·영양제 정기배송) + 파트너 전용 앱",
+   "platforms": "본 앱 iOS·Android (app.heymoon.release) · 커넥트 iOS·Android (app.heymoon.connect.release)",
+   "price_model": "두 앱 모두 무료. 본 앱은 '앱 내 구입' 표기(항목 미확인). 수익은 자사 제품 판매·주기 맞춤 정기구독. 광고 식별자(IDFA) 선택 권한 있음",
+   "scale": "누적 설치 300만(회사 발표 2025-11-13) · App Store 한국 4.8 / 6.3만 평가 · 커넥트는 App Store 3.7 / 55 평가, Google Play 1만+ 다운로드(AppBrain) · 구독 12개월 유지율 87%(회사 주장)",
+   "cycle_fertility_features": [
+    "생리일·배란일·가임기 예측, 알림은 생리 7·3·1일 전부터 배란일까지 직접 설정",
+    "기록: 월경통·월경량·기분·성생활·영양제·체중·병원 방문 → 생리주기 리포트",
+    "피임약 복용 알림 모드(복용 기록이 예측에 반영)",
+    "임신 모드는 예측·알림을 멈추는 기능(임신 추적 아님)",
+    "앱 이름에 '임신 준비'가 있지만 전용 임신 준비 모드·배테기 기록은 검색에서 확인 못 함"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 모드 = 생리 예측과 알림 일시 정지만"
+   ],
+   "partner_features": [
+    "해피문데이 커넥트(2023-10-18 '헤이문 커넥트'로 출시): 여성이 본 앱 마이 탭에서 공유를 시작(이중인증 필수)하고 파트너가 커넥트 앱을 설치",
+    "파트너가 보는 것: 캘린더에 지난 생리, 다음 생리·배란 예상일·가임기. 앱을 열면 지금이 생리 기간인지 가임기인지 표시",
+    "파트너 알림: 생리 7·3·1일 전·시작일, 가임기, 배란일 중 파트너가 받고 싶은 것만 골라 켬",
+    "파트너용 콘텐츠: 생리 전후 몸과 감정 변화를 짧게 정리(전문가·약사 검토)",
+    "파트너가 하는 것: '선물하기' 탭에서 온열팩·영양제 등 구매·선물. 그 밖의 할 일·체크는 찾지 못함",
+    "연결 해지는 양쪽 모두 가능, 끊는 즉시 공유 정보 영구 삭제. 파트너가 끊어도 상대에게 알림이 가지 않음",
+    "무료"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "고민 검색, 퀵테스트, 전문의·약사가 검토한 건강 콘텐츠, 블로그",
+    "체험단(제품 받고 앱 내 리뷰 작성)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 2개 + 푸시",
+    "계정 기반 연결(이중인증)",
+    "위젯·워치·건강 데이터 연동은 확인 못 함"
+   ],
+   "privacy_trust": [
+    "기록 숨기기, 비밀번호 앱 잠금",
+    "연결 해지 시 파트너 앱의 공유 정보 영구 삭제",
+    "콘텐츠는 전문가·약사 검토, '의료적 진단·치료를 대신하지 않음' 명시"
+   ],
+   "design": {
+    "summary": "메인에 남은 일수를 크게 보여 주고 그날 증상·관계·메모를 바로 체크하는 깔끔한 구조. 대화형 온보딩과 UX 라이팅이 강점으로 꼽힘. 2025-07 리브랜딩으로 색이 '문 블루'로 바뀜",
+    "home": "남은 일수 숫자 + 그날 몸 증상·관계 여부·메모 체크(약 2021 후기 기준)",
+    "onboarding": "딱딱한 설문 대신 화면·문구를 다듬은 대화형 질문(브런치 분석 글)",
+    "visual_style": "예전: 화이트 톤. 2025-07부터: 주색 '문 블루', 곡선형 로고(미소·상승감)",
+    "notable_patterns": [
+     "주기 예측 → 생리대 정기배송으로 이어지는 커머스 연결",
+     "파트너 앱 안에 '선물하기' 탭",
+     "파트너가 받을 알림을 직접 고름"
+    ],
+    "evidence": "브런치 UX 분석 글, 여성시대 후기(약 2021), 리브랜딩 보도(2025-07-01), 스토어 설명·리뷰의 검색 요약. 2025-07 이후 홈 화면 구조는 확인 못 함. 스크린샷·설치 확인 없음"
+   },
+   "strengths": [
+    "10대 후반~20대 사용 비중이 높고(와이즈앱 인용 보도) 온보딩·문구 평가가 좋음",
+    "파트너가 알림을 스스로 고름, 해지 때 상대에게 알리지 않음",
+    "주기 데이터와 커머스(정기배송)가 한 앱에서 이어짐"
+   ],
+   "weaknesses_from_reviews": [
+    "2025 리브랜딩 뒤 색감 불만 여러 건: '파란색이 너무 쨍하고 월경앱엔 맞지 않다', 예전 무드가 더 편했다",
+    "주기가 들쭉날쭉하면 예측일을 직접 고쳐야 해 불편(공식몰 후기)",
+    "메인의 남은 일수 숫자가 처음엔 무슨 뜻인지 알기 어렵다(약 2021 후기)",
+    "커넥트: 통증·복용 약 같은 상태가 안 보여 상대 컨디션을 모른다(App Store 리뷰), 평점 3.7"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1477295943",
+     "what": "본 앱 App Store: 기능·모드·평점·리뷰(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=app.heymoon.release",
+     "what": "본 앱 Google Play: 설명, 리브랜딩 리뷰와 개발사 답변",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id6458044941",
+     "what": "커넥트 App Store: 파트너가 보는 것·알림 선택·선물 추천·해지, 평점 3.7/55",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=app.heymoon.connect.release",
+     "what": "커넥트 Google Play 설명",
+     "level": "official"
+    },
+    {
+     "url": "https://www.mt.co.kr/future/2023/10/18/2023101817113936671",
+     "what": "헤이문 커넥트 출시(2023-10-18): 알림 시점, 캘린더·선물하기 탭, 이중인증, 해지 시 삭제",
+     "level": "press"
+    },
+    {
+     "url": "https://www.newsis.com/view/NISX20231018_0002487213",
+     "what": "커넥트 출시 보도(2023-10-18)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/future/2025/11/13/2025111312080181484",
+     "what": "누적 설치 300만, 구독 유지율(2025-11-13)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.etnews.com/20250701000094",
+     "what": "리브랜딩: 헤이문 → 해피문데이, 문 블루(2025-07-01)",
+     "level": "press"
+    },
+    {
+     "url": "https://brunch.co.kr/@eunmee910/24",
+     "what": "헤이문 온보딩·UX 라이팅 분석",
+     "level": "press"
+    },
+    {
+     "url": "https://happymoonday.com/shopping/subscription",
+     "what": "월경 구독(정기배송) 공식 페이지",
+     "level": "official"
+    },
+    {
+     "url": "https://m.cafe.daum.net/subdued20club/LxCT/306476",
+     "what": "여성시대 비교 글: 화이트 톤, 메인 숫자",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.appbrain.com/app/%ED%95%B4%ED%94%BC%EB%AC%B8%EB%8D%B0%EC%9D%B4-%EC%BB%A4%EB%84%A5%ED%8A%B8-%ED%8C%8C%ED%8A%B8%EB%84%88%EC%9A%A9-%EC%83%9D%EB%A6%AC%EC%A3%BC%EA%B8%B0-%EC%BA%98%EB%A6%B0%EB%8D%94/app.heymoon.connect.release",
+     "what": "커넥트 Android 1만+ 다운로드(제3자 집계)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "봄 캘린더",
+   "maker": "봄컴즈 (bomcomes Corp.)",
+   "country": "한국",
+   "category": "주기 앱 (생리·피임·임신 준비·임신 모드, 꾸미는 달력)",
+   "platforms": "iOS, Android (kr.co.ll2016.theday)",
+   "price_model": "무료 + 광고. 프리미엄 구독으로 광고 제거(미국 스토어 표기 $2.39 · 6개월 $11.99 · $21.99, 원화 가격 미확인). Google Play 설명상 기분·건강 상태 공유는 프리미엄",
+   "scale": "누적 다운로드 240만, 평점 4.7(개발사 사이트 주장) · App Store 4.6 / 1.6천 평가(검색 요약)",
+   "cycle_fertility_features": [
+    "다음 생리일과 임신 확률 계산 — 표준일 피임법(조지타운대)과 ACOG 주기 계산법을 쓴다고 설명",
+    "'사랑한 날'(관계일)·몸무게·기분·일정 기록, 달력에 표시할 항목 선택",
+    "기록을 PDF로 내려받아 의사와 공유"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 모드: 출산일까지 매주 아기 크기, 아기와 엄마의 변화, 이번 주 할 일"
+   ],
+   "partner_features": [
+    "'달력 공유하기': 소중한 사람과 달력 공유. 몸무게·사랑한 날 같은 민감 항목은 제외할 수 있음",
+    "중요한 내용이 업데이트되면 상대에게 알림",
+    "받는 사람이 앱을 깔아야 하는지, 어떤 화면을 보는지는 확인 못 함",
+    "상대가 하는 일: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "기분 체크 알림, 신체 상태 정보(블로그 리뷰). 커뮤니티는 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시",
+    "회원가입·자동 백업/복원, 로그인하면 기기 변경 시 데이터 유지",
+    "앱 아이콘·달력 표시 방식 변경"
+   ],
+   "privacy_trust": [
+    "공유에서 민감 항목 제외 가능",
+    "여성시대 글에 '예전에 사용자 기록을 페이스북에 공유하다 걸렸다'는 주장이 있음 — 출처 미확인, 검증 못 함"
+   ],
+   "design": {
+    "summary": "달력 중심. 표시 항목·아이콘을 사용자가 고르는 꾸미기형. 이전 주기와 비교가 쉽다는 평과 화면이 다소 복잡하다는 평이 함께 있음",
+    "home": "달력 + 생리 예정일·임신 확률(세부 배치 확인 못 함). 무료는 화면 위·아래에 광고",
+    "onboarding": "확인 못 함",
+    "visual_style": "깔끔하다는 후기(블로그). 스크린샷 못 봄",
+    "notable_patterns": [
+     "달력에 보일 기록·일정을 사용자가 선택",
+     "PDF 리포트 내보내기",
+     "공유 시 항목별 제외"
+    ],
+    "evidence": "스토어 설명의 검색 요약, 블로그 5년 사용 후기(약 2023), 여성시대 후기. 스크린샷·설치 확인 없음"
+   },
+   "strengths": [
+    "기록 항목이 넓고 PDF 내보내기가 있음",
+    "프리미엄이 저렴하다는 평",
+    "공유에서 관계일 같은 민감 항목을 뺄 수 있음"
+   ],
+   "weaknesses_from_reviews": [
+    "화면 위·아래에 광고가 수시로 뜸, 프리미엄을 써야 사라짐(블로그·리뷰 기사)",
+    "고정 일수로 예측하는 것 같다, 실제 생리가 예측보다 5일 빨랐다(Google Play 리뷰)",
+    "기기 변경 뒤 iCloud 복원 중 1년 치 기록 유실(App Store 리뷰)",
+    "화면이 다소 복잡(여성시대)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1190438906",
+     "what": "App Store: 기능, 공유, 임신 모드, 프리미엄(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=kr.co.ll2016.theday",
+     "what": "Google Play: 공유·PDF 설명, 예측 정확도 리뷰",
+     "level": "official"
+    },
+    {
+     "url": "https://bomcomes.com/",
+     "what": "개발사 사이트: 평점 4.7, 누적 240만 다운로드",
+     "level": "official"
+    },
+    {
+     "url": "https://ccoha.com/%EB%B4%84-%EC%BA%98%EB%A6%B0%EB%8D%94-%EC%83%9D%EB%A6%AC-%EC%A3%BC%EA%B8%B0-%EC%96%B4%ED%94%8C-%EC%B6%94%EC%B2%9C-5%EB%85%84-%EC%8B%A4%EC%82%AC%EC%9A%A9-%ED%9B%84%EA%B8%B0-%EC%9E%A5%EC%A0%90/",
+     "what": "5년 사용 후기: 광고가 단점, 깔끔한 디자인",
+     "level": "user-review"
+    },
+    {
+     "url": "https://signature-library.co.kr/art/ART0200000000?no=1000041",
+     "what": "생리 앱 3종 비교 리뷰: 광고 많음, 프리미엄",
+     "level": "press"
+    },
+    {
+     "url": "https://m.cafe.daum.net/subdued20club/ReHf/2218535",
+     "what": "여성시대 글: 봄 캘린더 개인정보 관련 주장(미검증)",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Flo (한국어판) + Flo for Partners",
+   "maker": "Flo Health",
+   "country": "영국 (한국어 지원)",
+   "category": "글로벌 주기·임신 준비·임신 앱 (구독)",
+   "platforms": "iOS, Android. 파트너도 같은 Flo 앱 설치",
+   "price_model": "무료 + Flo Premium 구독. 한국 App Store 앱 내 구입은 ₩2,200~₩59,000대로 여러 상품(기본 구독가 미확정). 파트너 기능은 구독 없이 기본 사용 가능, 프리미엄은 파트너용 전문가 글·맞춤 인사이트·영상·퀴즈 추가",
+   "scale": "한국 App Store 4.7 / 약 4.5만~5.4만 평가(검색 요약, 조회 시점에 따라 다름). 한국 사용자 수는 unknown",
+   "cycle_fertility_features": [
+    "주기·배란·가임기 예측, 모드 전환(주기 추적 / 임신 준비 / 임신)",
+    "프리미엄: 월별 주기 리포트, 증상 예측·패턴 분석",
+    "임신 준비 모드의 세부(일별 임신 가능성, 배테기 기록)는 도움말에서 확인 못 함"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 모드: 주차별 아기 성장(상세는 프리미엄)"
+   ],
+   "partner_features": [
+    "Flo for Partners(2023 출시): 주 사용자가 Partner 탭 → 'Link your partner' → 페어링 코드(48시간 유효) 생성, 파트너가 Flo를 깔고 코드 입력",
+    "파트너가 보는 것(읽기 전용): 현재 주기 일차와 주기 단계 예측, 배란 가능 시기(임신 준비 중이면 언제가 좋은지), 임신 중이면 임신 진행",
+    "파트너가 받는 것: 주요 단계마다 맞춤 일일 인사이트와 푸시, 증상 설명, 돕는 방법 조언",
+    "파트너가 못 보는 것: 과거·미래 달력, 개인 메모, 기록한 증상·이벤트. 수정 불가",
+    "주 사용자가 모드를 바꾸면 파트너에게 알려짐. 공유 중단은 주 사용자가 언제든(재연결은 새 코드)",
+    "파트너가 하는 것: 읽기, 커플 퀴즈·설문. 할 일·체크·본인 건강 항목은 찾지 못함",
+    "한국어로 파트너 화면이 제공되는지는 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "전문가 글·영상·스토리(대부분 프리미엄), 익명 Q&A 커뮤니티, 커플 퀴즈"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시, 계정 동기화",
+    "페어링 코드 연결"
+   ],
+   "privacy_trust": [
+    "ISO 27001·27701 인증을 스토어에서 홍보",
+    "미국 집단소송: 2025-08-04 배심이 Meta의 캘리포니아 사생활침해법 위반 인정. Flo 800만 달러·Google 4,800만 달러·Flurry 350만 달러 합의(2016-11~2019-02 미국 사용자 대상, 책임 인정 없음)",
+    "앞선 FTC 조치가 소송의 근거가 됐다는 해설(법학 저널)"
+   ],
+   "design": {
+    "summary": "메인에 주기 상태(남은 일수)를 크게 보여 주고, 하단에 Partner 탭이 따로 있음. 콘텐츠 피드와 구독 유도가 많음",
+    "home": "남은 생리 일수를 메인에 표시 — 헤이문보다 이해하기 쉽다는 한국 후기(약 2021)",
+    "onboarding": "확인 못 함(기억: 목표·주기 질문이 긴 설문형 뒤 구독 제안)",
+    "visual_style": "분홍·보라 계열 일러스트(기억). 스크린샷 못 봄",
+    "notable_patterns": [
+     "파트너 전용 탭(홈 오른쪽 아래)",
+     "파트너에게 '무슨 뜻인지'를 설명하는 일일 인사이트",
+     "모드 전환이 파트너 화면까지 바꿈"
+    ],
+    "evidence": "Flo 도움말·제품 소개 페이지의 검색 요약, 여성시대 후기. 홈·온보딩·색은 기억이며 오늘 확인 못 함"
+   },
+   "strengths": [
+    "파트너 기능이 무료 기본에 포함",
+    "파트너에게 데이터가 아니라 설명과 돕는 법을 줌",
+    "공유 범위가 좁게 고정(현재 단계만, 기록·메모 제외)이라 설정 부담이 없음"
+   ],
+   "weaknesses_from_reviews": [
+    "번역투가 강하고 매거진은 유료(여성시대, 약 2021)",
+    "프리미엄 가입을 계속 권해 사용 경험을 해친다(미국 App Store 리뷰)",
+    "개인정보 소송 이력"
+   ],
+   "sources": [
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19871976024596-How-do-I-set-up-Flo-for-Partners",
+     "what": "연결 방법: Partner 탭, 페어링 코드",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19872048333972-What-data-will-be-shared-with-my-partner",
+     "what": "파트너에게 공유되는 데이터",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19872024107284-Can-my-partner-edit-my-data-or-see-my-symptoms-and-personal-notes",
+     "what": "파트너가 못 보는 것·수정 불가",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/20524949465876-Do-I-need-to-have-a-subscription-to-access-Flo-for-Partners",
+     "what": "구독 없이 사용 가능(작성 2년 이상 전)",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/product-tour/flo-for-partners",
+     "what": "파트너가 받는 인사이트·알림 소개",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/newsroom/flo-for-partners",
+     "what": "출시 발표: 푸시, 팁, 퀴즈·설문",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1038369065",
+     "what": "한국 App Store: 평점, 앱 내 구입, 프리미엄 혜택(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.digitalhealth.net/2025/08/meta-found-liable-for-using-period-tracking-data-from-flo-health/",
+     "what": "2025-08 Meta 배심 평결",
+     "level": "press"
+    },
+    {
+     "url": "https://therecord.media/google-flo-health-settle-privacy-class-action",
+     "what": "Google·Flo 합의 금액",
+     "level": "press"
+    },
+    {
+     "url": "https://m.cafe.daum.net/subdued20club/LxCT/306476",
+     "what": "여성시대 비교 글: 번역투, 매거진 유료, 메인 화면",
+     "level": "user-review"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1038369065",
+     "what": "온보딩이 긴 설문형이고 구독 제안으로 끝남, 분홍·보라 일러스트, 광고 없음 — 기억, 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "삼성 헬스 생리 주기 (Natural Cycles 기술)",
+   "maker": "삼성전자 (알고리즘: Natural Cycles Nordic AB)",
+   "country": "한국",
+   "category": "플랫폼 기본 건강 앱의 주기 기능",
+   "platforms": "갤럭시 폰의 삼성 헬스. 피부 온도 예측은 갤럭시 워치5 이후·갤럭시 링",
+   "price_model": "무료. 광고·구독 없음(기억)",
+   "scale": "unknown (삼성 헬스 기본 탑재)",
+   "cycle_fertility_features": [
+    "마지막 생리 시작일을 넣으면 다음 생리 예정일·예상 가임기·예상 배란일 표시",
+    "몸 상태·기분을 정해진 항목으로 기록(Daily log)",
+    "워치·링이 수면 중 피부 온도를 재서 예측 보조(수면 중 4시간 이상·주 5회 이상 착용 권장), 온도 그래프",
+    "생리 예정 알림(예정일 2일 전, 커뮤니티 답변 기준)",
+    "'피임 용도로 사용할 수 없음', 배란 억제 호르몬제 투약 중엔 배란 추적 불가 명시",
+    "식약처 허가: '싸이클 트래킹' 소프트웨어 2023-02-10, 18세 이상, 한국은 2023-04 지원"
+   ],
+   "partner_features": [
+    "none found — 파트너·가족 공유 기능을 공식 안내·검색에서 찾지 못함"
+   ],
+   "korea_system_features": [
+    "식약처 의료기기 허가(주기 예측)"
+   ],
+   "platform_delivery": [
+    "폰·워치·링 연동, 삼성 계정",
+    "생리 주기 데이터는 Health Connect로 연동되지 않는다는 사용자 글"
+   ],
+   "privacy_trust": [
+    "데이터를 암호화해 기기에 저장한다는 2023 보도",
+    "식약처 허가"
+   ],
+   "design": {
+    "summary": "삼성 헬스 홈의 '여성 건강/생리 주기' 타일로 들어가는 달력 + 일일 기록 화면. 독립 앱이 아니라 건강 앱 안의 한 칸",
+    "home": "삼성 헬스 홈 타일 → 달력에서 생리 날짜 선택, 예상 가임기·배란일 표시",
+    "onboarding": "주기·기간 길이 입력(상세 설정)",
+    "notable_patterns": [
+     "웨어러블 온도 그래프",
+     "타일을 직접 추가해야 보임 — 못 찾는 사용자 있음"
+    ],
+    "evidence": "삼성 서비스센터 안내·삼성 공식 페이지의 검색 요약, Samsung Members 글. 스크린샷 못 봄"
+   },
+   "strengths": [
+    "무료, 광고 없음, 웨어러블 온도 기반 배란 예측(의료기기 허가)",
+    "갤럭시 사용자는 설치 없이 바로 씀"
+   ],
+   "weaknesses_from_reviews": [
+    "파트너 공유 없음, Health Connect 연동·공유 권한을 요청하는 글",
+    "당일 알림이 없어 불편하다는 글",
+    "생리 주기 탭·타일을 못 찾겠다는 글",
+    "피임약 복용 기록을 요청하는 글"
+   ],
+   "sources": [
+    {
+     "url": "https://www.samsungsvc.co.kr/solution/1399512",
+     "what": "삼성 서비스: 생리주기 이용 방법, 주의 문구",
+     "level": "official"
+    },
+    {
+     "url": "https://www.samsung.com/sec/apps/samsung-health/",
+     "what": "삼성 헬스 공식: Natural Cycles 기술, 지원 기기",
+     "level": "official"
+    },
+    {
+     "url": "https://news.samsung.com/kr/%EA%B0%A4%EB%9F%AD%EC%8B%9C-%EC%9B%8C%EC%B9%985-%EC%8B%9C%EB%A6%AC%EC%A6%88-%ED%94%BC%EB%B6%80-%EC%98%A8%EB%8F%84-%EA%B8%B0%EB%B0%98%EC%9D%98-%EC%83%9D%EB%A6%AC-%EC%A3%BC%EA%B8%B0-%EC%98%88%EC%B8%A1",
+     "what": "삼성 뉴스룸: 피부 온도 기반 주기 예측 지원(2023-04)",
+     "level": "official"
+    },
+    {
+     "url": "https://mobile.newsis.com/view.html?ar_id=NISX20230215_0002193754",
+     "what": "식약처 허가 보도(2023-02-15)",
+     "level": "press"
+    },
+    {
+     "url": "https://techcrunch.com/2023/02/13/samsung-adds-temperature-based-period-tracking-to-its-galaxy-watch5/",
+     "what": "데이터 암호화·기기 저장(2023-02-13)",
+     "level": "press"
+    },
+    {
+     "url": "https://r1.community.samsung.com/t5/samsung-health/%EC%82%BC%EC%84%B1%ED%97%AC%EC%8A%A4-%EC%83%9D%EB%A6%AC-%EC%A3%BC%EA%B8%B0-%EB%8D%B0%EC%9D%B4%ED%84%B0%EC%9D%98-google-%ED%97%AC%EC%8A%A4-%EC%BB%A4%EB%84%A5%ED%8A%B8-%EC%97%B0%EB%8F%99-%EC%A7%80%EC%9B%90-%EC%9A%94%EC%B2%AD/m-p/39986651",
+     "what": "Samsung Members: Health Connect 연동·공유 요청",
+     "level": "user-review"
+    },
+    {
+     "url": "https://r1.community.samsung.com/t5/samsung-health/%EC%82%BC%EC%84%B1%ED%97%AC%EC%8A%A4-%EC%83%9D%EB%A6%AC%EC%98%88%EC%A0%95%EC%9D%BC-%EC%95%8C%EB%9E%8C-%EC%97%86%EB%82%98%EC%9A%94/td-p/16523985",
+     "what": "Samsung Members: 예정일 알림 관련 글",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.samsung.com/sec/apps/samsung-health/",
+     "what": "무료이고 광고·구독이 없음 — 기억, 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Apple 건강 — 생리 주기 추적",
+   "maker": "Apple",
+   "country": "미국 (한국어 지원)",
+   "category": "플랫폼 기본 건강 앱의 주기 기능",
+   "platforms": "iPhone 건강 앱, Apple Watch 생리 주기 추적 앱",
+   "price_model": "무료. 광고·구독 없음",
+   "scale": "unknown (iOS 기본 탑재)",
+   "cycle_fertility_features": [
+    "생리 예측·알림, 가임 기간 6일 예측(다음 주기 예상 시작일에서 13일을 뺀 날 기준)",
+    "배란 테스트 양성을 넣으면 가임 기간이 보정됨(첫 양성일이 가임 기간 5일째가 되게)",
+    "기초체온·배란 테스트 결과 기록",
+    "Apple Watch Series 8 이후·Ultra: 수면 중 손목 온도로 후향적 배란 추정(매일 밤 착용, 약 2주기 뒤부터). 한국 지원 보도 있음",
+    "심박수로 예측 보정(기본 켜짐)",
+    "주기 편차 감지 알림(불규칙·드문 생리·긴 생리·지속 점상 출혈), 12개월 기록 PDF 내보내기"
+   ],
+   "pregnancy_parenting_features": [
+    "요인에 임신·수유·피임 선택, 임신을 기록하면 임신 주수 표시와 임신 증상 기록"
+   ],
+   "partner_features": [
+    "전용 파트너 기능 없음",
+    "건강 공유(Health Sharing): 기록하는 사람이 건강 앱 '공유' 탭에서 연락처를 고르고 주제를 선택하면 상대 건강 앱에 읽기 전용으로 보임(최대 5명). 주기 추적 항목 포함 여부는 iOS 버전마다 달랐다는 제3자 글 — Apple 공식 문서로는 확인 못 함",
+    "파트너용 설명·가임기 알림·할 일: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "platform_delivery": [
+    "iPhone·Apple Watch·iCloud 동기화, HealthKit으로 다른 앱과 연동",
+    "2026 건강 앱 개편(인사이트 탭에 생리 주기 포함)을 연내 배포 예정이라는 보도"
+   ],
+   "privacy_trust": [
+    "건강 공유는 받는 사람만 읽을 수 있게 암호화, 언제든 공유 항목 변경·중단(Apple 건강 프라이버시 백서 2023-05)",
+    "광고 없음"
+   ],
+   "design": {
+    "summary": "건강 앱 안의 한 항목. 가로 날짜 띠에 생리·가임 기간을 표시하고 아래에 기록 항목이 나열되는 절제된 화면",
+    "home": "날짜 띠 + 예측 요약 + 기록 옵션(기억)",
+    "onboarding": "마지막 생리일·주기 길이 질문, 예측·알림 켜기(기억)",
+    "visual_style": "흰 바탕, 빨강(생리)·하늘색(가임 기간) 타원(기억)",
+    "notable_patterns": [
+     "예측·알림·가임 기간 표시를 각각 켜고 끔",
+     "의료진용 PDF"
+    ],
+    "evidence": "Apple 지원 문서(120356)의 검색 요약. 화면 묘사는 기억이며 오늘 확인 못 함"
+   },
+   "strengths": [
+    "무료·광고 없음·기기 간 암호화",
+    "배란 테스트 입력이 가임 기간을 보정, 워치 온도로 배란 추정",
+    "가임 기간 표시·알림을 끌 수 있음"
+   ],
+   "weaknesses_from_reviews": [
+    "공유는 데이터만 보여 주고 이번 주가 어떤 의미인지 설명하지 않는다(제3자 비교 글)",
+    "한국 제도·임신 준비 콘텐츠 없음(기억)"
+   ],
+   "sources": [
+    {
+     "url": "https://support.apple.com/en-us/120356",
+     "what": "Apple 지원: 생리 주기 추적 기능, 가임 기간 계산, 요인, 알림, PDF",
+     "level": "official"
+    },
+    {
+     "url": "https://www.apple.com/privacy/docs/Health_Privacy_White_Paper_May_2023.pdf",
+     "what": "건강 공유 최대 5명·암호화(2023-05)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.apple.com/guide/iphone/view-health-data-shared-by-others-iphe083e99a5/ios",
+     "what": "공유받은 건강 데이터 보기",
+     "level": "official"
+    },
+    {
+     "url": "https://www.dt.co.kr/article/11585551",
+     "what": "한국에서 손목 온도 후향적 배란 추정 지원 보도",
+     "level": "press"
+    },
+    {
+     "url": "https://yuniapp.co.uk/blog/apple-health-cycle-sharing/",
+     "what": "건강 공유로 주기 공유 가능 여부(경쟁 앱 블로그, 편향 가능)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.itdaily.kr/news/articleView.html?idxno=242673",
+     "what": "2026 건강 앱 개편·한국어 지원 보도",
+     "level": "press"
+    },
+    {
+     "url": "https://support.apple.com/en-us/120356",
+     "what": "화면 묘사(날짜 띠·타원·온보딩 질문), 광고 없음, 한국 제도 콘텐츠 없음 — 기억, 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "열달후에",
+   "maker": "커넥트아이",
+   "country": "한국",
+   "category": "임신 준비 → 임신 → 육아(출산 후 1년)를 한 앱에서",
+   "platforms": "iOS, Android (com.after10app)",
+   "price_model": "무료 + 앱 내 구입. 2025년 유료 '육아 성장발달 종합보고서' 판매. 회사가 말한 수익 모델: 맞춤 상품, O2O 중개, 콘텐츠 구독",
+   "scale": "누적 회원 50만(2025-08 보도) · App Store 4.9 / 5,719 평가(검색 요약)",
+   "cycle_fertility_features": [
+    "임신준비 다이어리: 가임기·배란 예정일 D-day, 오늘의 임신 확률",
+    "배란테스트기를 촬영하면 결과 자동 분석",
+    "기초체온 기록으로 배란일 예측",
+    "생리주기·배란일·가임기 계산은 산부인과 전문의 감수라고 표기"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주수 계산, 주차별 태아 성장 리포트, 초음파 수치 자동 분석(OCR), 산모 체중",
+    "육아 성장발달 체크, 예방접종·영유아 검진 일정, 발열 관리"
+   ],
+   "partner_features": [
+    "'공유 다이어리': 남편·가족을 초대해 임신 가능성이 높은 날, 초음파 성장 기록, 전문의 감수 콘텐츠를 함께 봄",
+    "남편 전용 화면·알림·할 일은 확인 못 함(none found)"
+   ],
+   "korea_system_features": [
+    "예방접종·영유아 검진 일정(육아 단계). 임신 준비 단계의 정부 지원 안내는 확인 못 함"
+   ],
+   "content_community_ai": [
+    "산부인과 전문의 감수 콘텐츠, 초음파 OCR 분석"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 카메라(배테기·초음파 촬영)·위치 선택 권한"
+   ],
+   "privacy_trust": [
+    "접근 권한은 모두 선택, 동의하지 않아도 사용 가능하다고 명시",
+    "전문의 감수 표기"
+   ],
+   "design": {
+    "summary": "단계별 다이어리(임신준비 → 임신 → 육아)로 구성. 임신 준비 화면은 D-day와 임신 확률 숫자 중심",
+    "home": "임신준비 다이어리: 가임기·배란 예정일 D-day, 오늘의 임신 확률(스토어 설명 기준)",
+    "onboarding": "확인 못 함",
+    "notable_patterns": [
+     "사진을 찍으면 수치로 읽어 주는 입력(배테기, 초음파)",
+     "한 다이어리를 가족과 공유"
+    ],
+    "evidence": "App Store·Google Play 설명의 검색 요약. 스크린샷·설치 확인 없음"
+   },
+   "strengths": [
+    "임신 준비부터 육아까지 한 앱으로 이어짐",
+    "배테기 사진 판독 + 기초체온으로 입력 부담을 줄임",
+    "평점이 높음(4.9)"
+   ],
+   "weaknesses_from_reviews": [
+    "생리 기간 입력이 2~8일로 제한돼 아쉽다(App Store 리뷰, 약 2024)",
+    "그 밖의 불만은 검색에서 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1533627245",
+     "what": "App Store: 임신준비 다이어리, 배테기 촬영 분석, 공유 다이어리, 평점(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.after10app",
+     "what": "Google Play: 기능 목록, 공유 다이어리",
+     "level": "official"
+    },
+    {
+     "url": "https://www.socialvalue.kr/news/view/1065594832963569",
+     "what": "누적 회원 50만, 성장발달 보고서 출시(2025-08)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.startuptoday.kr/news/articleView.html?idxno=47684",
+     "what": "대표 인터뷰: 수익 모델, 회원 수",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "스마일리더",
+   "maker": "스마일랩 (Smilelab)",
+   "country": "한국",
+   "category": "배란·임신 테스트기 판독 앱 + 임신·육아일기",
+   "platforms": "iOS, Android (com.smilelab.drugs)",
+   "price_model": "무료. 앱 안에 시기별 맞춤 쇼핑 정보. 테스트기 판매 연결 여부는 확인 못 함",
+   "scale": "App Store 한국 4.6 / 3.7천 평가 · Android 10만+ 다운로드, 최신 버전 2026-05-27(AppBrain)",
+   "cycle_fertility_features": [
+    "생리주기·배란일·가임기 예측",
+    "배란 테스트기를 촬영하면 수치로 판독, 임신 테스트기도 수치로 확인"
+   ],
+   "pregnancy_parenting_features": [
+    "임신·육아일기(초음파 사진, 첫 걸음마 등)"
+   ],
+   "partner_features": [
+    "커플 다이어리: 엄마와 아빠가 함께 쓰는 일기(스토어 설명)",
+    "임신 준비 단계에서 남편이 보는 화면·알림·할 일은 확인 못 함(none found)"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "임신 후기 커뮤니티('맘카페 대신'이라고 소개)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 카메라(테스트기 인식) 선택 권한"
+   ],
+   "design": {
+    "summary": "테스트기 사진 → 수치 → 그래프가 중심인 도구형 앱으로 보임",
+    "evidence": "스토어 설명과 리뷰의 검색 요약뿐. 화면은 확인 못 함"
+   },
+   "strengths": [
+    "사진만 찍으면 수치가 자동 계산돼 편하다는 후기",
+    "배테기를 매일 쓰는 임신 준비 사용자의 실사용 도구"
+   ],
+   "weaknesses_from_reviews": [
+    "앱이 제대로 열리지 않거나 로딩에 5분까지 걸린다(Google Play 리뷰)",
+    "테스트기 사진 인식이 안 된다(Google Play 리뷰)",
+    "임테기 연동을 추가해 달라는 요청(App Store 리뷰)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1051356117",
+     "what": "App Store: 판독 기능, 커뮤니티, 커플 다이어리, 평점(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.smilelab.drugs",
+     "what": "Google Play: 설명, 로딩·인식 불만 리뷰",
+     "level": "official"
+    },
+    {
+     "url": "https://www.appbrain.com/app/smilereader-ovulation-tracker/com.smilelab.drugs",
+     "what": "10만+ 다운로드, 최신 버전 날짜(제3자 집계)",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "슈얼리즈 (Surearly's)",
+   "maker": "수젠텍",
+   "country": "한국",
+   "category": "배란테스트기 연동 판독 앱 (체외진단 의료기기 인증)",
+   "platforms": "iOS (App Store id6444604093). Android는 확인 못 함",
+   "price_model": "앱 무료로 보임, 테스트기 별도 구매(슈얼리 배란체크 플러스M 20입 약 1.2만~2.3만 원, 판매처마다 다름)",
+   "scale": "unknown (2024-10-15 출시 발표)",
+   "cycle_fertility_features": [
+    "배란테스트기를 폰 카메라로 찍어 배란 여부 판독(슈얼리 배란체크 플러스M과 연동)",
+    "기분·증상 통계, 기초체온 그래프, 생리주기를 평균과 비교",
+    "AI '슈리': 주기와 그날 기분·증상으로 오늘의 상태 안내"
+   ],
+   "partner_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "식약처 체외진단 의료기기 인증(회사: 국내에서 이 인증을 받은 앱은 유일)"
+   ],
+   "privacy_trust": [
+    "의료기기 인증"
+   ],
+   "design": {
+    "summary": "확인 못 함",
+    "evidence": "출시 보도자료 기사의 검색 요약뿐"
+   },
+   "strengths": [
+    "테스트기 제조사가 만든 판독 앱이라 기기와 앱이 맞물림",
+    "의료기기 인증을 신뢰 표지로 씀"
+   ],
+   "weaknesses_from_reviews": [
+    "리뷰는 검색에서 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://www.hankyung.com/article/202410155513P",
+     "what": "출시 보도(2024-10-15): 촬영 판독, 기초체온, AI 슈리",
+     "level": "press"
+    },
+    {
+     "url": "http://www.docdocdoc.co.kr/news/articleView.html?idxno=3021965",
+     "what": "체외진단 의료기기 인증, 연동 제품",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id6444604093",
+     "what": "App Store 등록(검색 결과 제목으로만 확인)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.kurly.com/goods/1001309827",
+     "what": "테스트기 판매 가격 예",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "오뷰 (O'VIEW) — 배란 분석기 W / 정자 분석기 프로",
+   "maker": "인트인 (INTIN)",
+   "country": "한국",
+   "category": "스마트폰 연동 자가 검사 기기 (여성 타액 배란, 남성 정자)",
+   "platforms": "기기 + 스마트폰 앱. OVIEW-M 앱 서비스는 2023-09-15 종료 공지, 정자 분석은 '오뷰 정자 분석기 프로' 기기로 제공. O'VIEW-W 앱의 현재 스토어 상태는 확인 못 함",
+   "price_model": "기기 판매. 오뷰 정자 분석기 프로 79,000원(인트인 공식몰, 조회 시점 불명)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "오뷰 W: 건조한 타액의 결정 패턴(에스트로겐 변화)을 스마트폰으로 분석해 배란 시기 확인, 앱 다이어리에 기록하면 생리주기 확인",
+    "오뷰 정자 분석기 프로: 고배율 렌즈 기기를 폰에 연결해 정자 농도·운동성을 WHO 기준으로 표시. 국내 체외진단 의료기기 1등급, 2025-04 유럽 CE(IVDR) 인증 보도"
+   ],
+   "partner_features": [
+    "커플 연동·공유 기능은 찾지 못함",
+    "이 묶음에서 유일하게 남성이 본인 몸으로 직접 하는 것(집에서 하는 정자 자가 검사)을 제공 — 앱이 아니라 기기"
+   ],
+   "korea_system_features": [
+    "체외진단 의료기기 등록. 정부 가임력 검사 지원과의 연결은 찾지 못함"
+   ],
+   "privacy_trust": [
+    "제품 페이지에 '정확한 진단은 의사 상담 필요' 안내",
+    "한양대병원 비뇨의학과 임상(2021, 45명) 일치율 98.9% — 제조사 자료"
+   ],
+   "design": {
+    "summary": "확인 못 함",
+    "evidence": "인트인 제품 페이지·Google Play 등록 정보·보도의 검색 요약뿐"
+   },
+   "strengths": [
+    "남편 쪽에 '직접 해 보는 검사'를 줌",
+    "의료기기 인증·임상 자료"
+   ],
+   "weaknesses_from_reviews": [
+    "리뷰는 검색에서 확인 못 함. 앱(OVIEW-M) 서비스 종료 이력"
+   ],
+   "sources": [
+    {
+     "url": "https://intin.kr/product/oview_w/",
+     "what": "오뷰 W 제품 페이지: 타액 패턴 분석",
+     "level": "official"
+    },
+    {
+     "url": "https://intin.kr/en/product/oview_m/",
+     "what": "OVIEW M 앱 서비스 2023-09-15 종료 공지",
+     "level": "official"
+    },
+    {
+     "url": "https://intin.kr/en/product/oview_m_pro/",
+     "what": "정자 분석기 프로: 농도·운동성, 임상 자료",
+     "level": "official"
+    },
+    {
+     "url": "https://m.intinstore.kr/product/detail.html?product_no=19",
+     "what": "공식몰 가격 79,000원",
+     "level": "official"
+    },
+    {
+     "url": "https://www.etnews.com/20250414000105",
+     "what": "유럽 CE 인증, 국내 1등급 판매(2025-04-14)",
+     "level": "press"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.intin.ngarden.oviewm",
+     "what": "OVIEW-M Google Play 등록 정보",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  }
+ ],
+ "cluster_takeaways": [
+  "한국 선두 주기 앱의 파트너 기능은 전부 '보기 + 알림'이에요. 핑크다이어리(카톡 링크 캘린더), 해피문데이 커넥트(전용 앱 캘린더), Flo(읽기 전용 단계 + 설명), 봄 캘린더·열달후에(달력·다이어리 공유) 모두 남편에게 본인이 할 일을 주지 않아요. 남편 쪽 행동은 답글(핑크다이어리 시크릿 코멘트), 퀴즈(Flo), 선물 구매(해피문데이·핑크다이어리)뿐이었어요.",
+  "남편이 들어오는 길 세 가지는 이미 다 나와 있어요: 설치 없는 카톡·문자 링크(핑크다이어리, 2020년부터), 파트너 전용 앱(해피문데이 커넥트), 같은 앱에 페어링 코드(Flo). 둘셋의 설치 없는 링크는 새롭지 않고, 핑크다이어리는 카카오 알림톡으로 남편에게 '알림이 가는 것'까지 해결했어요. 둘셋은 지금 서버 푸시가 없어요.",
+  "무엇을 보일지는 기록하는 여성이 정하는 것이 표준이에요(핑크다이어리 항목 선택, 봄 캘린더 민감 항목 제외, Flo는 좁게 고정). 파트너가 받을 알림을 스스로 고르는 것(해피문데이 커넥트)과 해지해도 상대에게 알리지 않는 것도 이미 있어요. 둘셋의 공유 3단계·각자 알림 방식은 같은 줄에 있고, 더 나아간 점은 '알리지 않은 기록은 상대 화면을 바꾸지 않는다'는 규칙이에요(경쟁 앱에서 같은 규칙은 확인하지 못했어요).",
+  "임신 준비 기본기는 임신 준비 모드, '오늘의 임신 확률', 기초체온, 배테기·임테기 사진 판독(핑크다이어리 AI 핑봇, 열달후에, 스마일리더, 슈얼리즈)이에요. 둘셋은 사진 판독·기초체온·확률 표시가 없고 일부는 하지 않기로 했으니, '쓰던 앱은 그대로 두세요' 전제가 실제로 통하는지가 비교 지점이에요.",
+  "돈 버는 방식은 광고 + 광고 제거 구독(핑크다이어리 월 2,500원, 봄 캘린더 프리미엄), 파트너 공유 유료(핑크다이어리 월 2,500원), 자사 커머스(해피문데이 생리대·영양제 정기배송), 구독(Flo)이에요. 파트너 화면이 판매 지면이 되기도 해요(해피문데이 커넥트 '선물하기' 탭). 핑크다이어리는 생리주기를 기준으로 타겟팅하는 캘린더 팝업 광고를 팔아요(2023 광고 소개서).",
+  "리뷰 불만은 광고 과다(핑크다이어리·봄 캘린더), 예측이 안 맞음(임신 확률 '낮음'인 날 임신, 5일 오차), 앱이 무겁거나 접속 오류, 기기 변경 때 기록 유실, 본인인증, 개인정보 불신(핑크다이어리 2022 중국 자회사 위탁 보도, Flo 미국 소송), 리브랜딩 색 변경 반발(해피문데이 2025)에 모여요. 둘셋이 광고·SDK 없음, 기기 저장, '예상' 표기로 답할 수 있는 항목들이에요.",
+  "삼성 헬스와 애플 건강은 무료·광고 없음에 워치 온도로 배란을 추정해요(삼성은 식약처 허가). 하지만 파트너 경험이 없어요: 삼성은 공유 기능을 찾지 못했고, 애플은 건강 공유로 데이터만 읽게 해요. 아내가 기본 앱을 쓰는 부부에게 둘셋이 남편 쪽을 채우는 자리가 있지만, 둘셋은 HealthKit·Health Connect 가져오기가 없어요.",
+  "신뢰 표지가 흔해요: 대한산부인과의사회 공식 앱(핑크다이어리), 전문의·약사 감수(해피문데이, 열달후에), 식약처 허가·의료기기 인증(삼성, 슈얼리즈, 오뷰), ISO 인증(Flo). 둘셋은 의료 감수와 외부 인증이 없어요.",
+  "규모 차이가 커요: 핑크다이어리 220만 이용(2025-10), 해피문데이 누적 300만 설치(2025-11), 열달후에 50만 회원(2025-08). 아내는 이미 이 중 하나에 몇 년 치 기록이 있을 가능성이 높아서, 둘셋은 주기 기록으로 겨루기보다 그 앱 옆에서 도는지가 관건이에요.",
+  "화면 틀은 비슷해요: 첫 화면에 D-day·남은 일수·예정일을 숫자로, 둘째 탭 캘린더, 그 뒤에 커뮤니티·매거진·스토어. 온보딩과 문구로 차별화한 곳은 해피문데이예요. 임신 준비 중인 남편에게 본인 건강 습관·검사·한국 제도 기한을 알려 주는 화면은 이 묶음에서 찾지 못했어요. 가장 가까운 것은 앱이 아니라 기기인 오뷰 정자 자가 검사예요."
+ ],
+ "not_found": [
+  "먼슬리씽: 운영사 씽즈가 2025-06-29 폐업으로 표시됨(TheVC, 출처 한 곳). 앱 마지막 업데이트도 2023~2024년(APK 사이트). 서비스가 끝난 것으로 보고 프로필에서 뺐어요 — https://thevc.kr/things",
+  "'해피문데이 앱'과 '헤이문'은 같은 앱이에요. 2025-07-01 리브랜딩으로 헤이문이 해피문데이로 이름을 바꿨어요. 한 프로필로 합쳤어요.",
+  "오뷰: OVIEW-M 앱 서비스는 2023-09-15 종료 공지(인트인). O'VIEW-W 앱이 지금 스토어에 있는지, 커플 기능이 있는지는 확인하지 못했어요.",
+  "apps.apple.com과 play.google.com은 이 세션에서 직접 열 수 없었어요(WebFetch 도메인 차단). 스토어 정보·리뷰·가격은 모두 검색 결과 요약으로만 확인했고, 스토어 스크린샷은 하나도 보지 못했어요. 두 도메인을 네트워크 설정에서 허용하면 다시 확인할 수 있어요.",
+  "어느 앱도 설치해서 써 보지 못했어요. 홈·캘린더·온보딩 묘사는 리뷰 글, 광고 소개서, 스토어 설명, 일부는 기억에 기대요.",
+  "핑크다이어리 커플커넥트의 누적 이용 커플 수와 남성 쪽 반응 통계는 찾지 못했어요.",
+  "핑크다이어리·해피문데이의 2025~2026년 최신 스토어 리뷰에서 광고 불만이 얼마나 나오는지는 확인하지 못했어요(찾은 광고 불만은 2016년·약 2021년 것).",
+  "봄 캘린더 공유를 받는 사람이 앱을 깔아야 하는지, 어떤 화면을 보는지 찾지 못했어요.",
+  "삼성 헬스에 파트너·가족 공유가 '없다'는 공식 문장은 찾지 못했어요. 기능 설명 어디에도 없었다는 뜻이에요.",
+  "애플 건강 공유에 생리 주기 추적이 포함되는지는 Apple 공식 문서로 확인하지 못했어요(제3자 글만).",
+  "Flo for Partners가 한국어로 제공되는지, Flo 임신 준비 모드의 세부 기능, 한국 프리미엄 기본 가격은 확인하지 못했어요.",
+  "해피문데이 본 앱의 앱 내 구입 항목과 광고 노출 빈도, 2025-07 이후 홈 화면 구성은 확인하지 못했어요.",
+  "열달후에·스마일리더에서 임신 준비 단계의 남편이 받는 알림·화면은 확인하지 못했어요.",
+  "생리 앱 국내 MAU 순위(와이즈앱·모바일인덱스) 원자료는 찾지 못했어요. 규모 숫자는 대부분 회사 발표예요."
+ ]
+}

@@ -1,0 +1,862 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "cluster": "Design benchmarks",
+ "as_of": "2026-11-13",
+ "searches_used": 32,
+ "apps": [
+  {
+   "name": "Flo",
+   "maker": "Flo Health",
+   "country": "UK/Belarus-origin, global",
+   "category": "Period, fertility and pregnancy tracker",
+   "platforms": [
+    "iOS",
+    "Android",
+    "Wear OS",
+    "watchOS (memory)"
+   ],
+   "price_model": "Freemium; Premium subscription with 14-day free-trial toggle on paywall; yearly plan led, monthly and family plans below",
+   "scale": "Third-party estimate ~$10.0M/month revenue, 4.8 stars (screensdesign, indicative only)",
+   "partner_features": [
+    "Flo for Partners (2023): woman shares a pairing code from a Partner tab; partner installs Flo and gets a view-only cycle calendar plus daily phase tips, quizzes, date ideas and push notifications",
+    "Woman chooses what to share (mostly cycle logging); partner is told when she switches modes; minimum age 18 (20 in Korea)",
+    "One help page lists partner sharing as a Premium benefit (not confirmed current)"
+   ],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "Google Play Best of 2025, Best for Watches (Hong Kong, Taiwan, Macau): cycle status, symptom logging, reminders on the wrist"
+   ],
+   "privacy_trust": [
+    "Privacy guide tells users to rewrite lock-screen reminders, e.g. 'period due' -> 'Check in on your cycle'",
+    "Separate published accessibility statements for iOS and Android (contents not read: flo.health blocked here)"
+   ],
+   "design": {
+    "summary": "Category leader: very long personalised quiz, paywall after the quiz, home = one big cycle circle with countdown, everything else below the fold.",
+    "onboarding": "Quiz of ~30-55 steps depending on source (screensdesign 55, Reteno 30+), branching on goal and age; paywall shown after the quiz (~4:22 into walkthrough) with 14-day trial toggle; testimonials and welcome discount in flow; heavily A/B tested (Lazyweb detected 52 experiments).",
+    "home": "One hero: central cycle circle showing countdown to ovulation, then to next period; daily-insight 'stories' row added (raised engagement); scrolling reveals 'My cycles' widgets with last-cycle analytics and flags for things to check. Critics say lower area cluttered with articles/images and calendar strip is static.",
+    "visual_style": "Pink/coral palette (brand colour listed #FF5A7D by Brandfetch), soft gradients, photo and illustration content cards.",
+    "notable_patterns": [
+     "Circle maps to cycle mental model; insights placed so they never clutter the circle (Flo design team)",
+     "Insights moved from ephemeral stories into persistent scrollable widgets because stories were easy to miss",
+     "Partner gets his own mode with tailored tips and pushes, not a copy of her screen",
+     "Watch app recognised by Google Play"
+    ],
+    "evidence": "screensdesign showcase, Flo Medium design posts, Flo help centre, Pratt IXD critique; widget/Live Activity/dark-mode details not confirmed"
+   },
+   "strengths": [
+    "Clear single hero metric",
+    "Mature partner mode",
+    "Watch presence"
+   ],
+   "weaknesses_from_reviews": [
+    "Free plan hard to find (Pratt critique)",
+    "Home below hero cluttered with content (redesign case study)"
+   ],
+   "sources": [
+    {
+     "url": "https://screensdesign.com/showcase/flo-period-pregnancy-tracker",
+     "what": "55 steps, paywall after quiz, 14-day trial toggle",
+     "level": "press"
+    },
+    {
+     "url": "https://gallery.reteno.com/flows/app-screens-flo",
+     "what": "Long flow 30+ steps, testimonials, discount, trial",
+     "level": "press"
+    },
+    {
+     "url": "https://www.lazyweb.com/research/flo-health-app-experiments",
+     "what": "52 experiments detected",
+     "level": "press"
+    },
+    {
+     "url": "https://medium.com/flo-health/how-we-evolved-and-enriched-the-main-screen-of-the-flo-app-part-2-cycle-widgets-b73d5ccb948d",
+     "what": "Cycle widgets on scrollable main screen",
+     "level": "official"
+    },
+    {
+     "url": "https://medium.com/flo-health/how-we-evolved-and-enriched-the-main-screen-of-the-flo-app-part-1-stories-cee6f4035e5",
+     "what": "Stories row raised engagement",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/4401756146452-What-can-I-find-on-the-main-screen",
+     "what": "Circle countdown, My cycles widgets",
+     "level": "official"
+    },
+    {
+     "url": "https://ixd.prattsi.org/2025/09/design-critique-flo-ios-app/",
+     "what": "Circle fits mental model; free plan hidden",
+     "level": "press"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19871976024596-How-do-I-set-up-Flo-for-Partners",
+     "what": "Partner pairing code setup",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/newsroom/flo-for-partners",
+     "what": "Partner tips, quizzes, pushes",
+     "level": "official"
+    },
+    {
+     "url": "https://www.techtimes.com/articles/314204/20260121/flo-health-recognized-google-play-wearable-innovation-across-asia.htm",
+     "what": "Best for Watches 2025 (HK/TW/MO)",
+     "level": "press"
+    },
+    {
+     "url": "https://flo.health/blog/your-privacy-toolkit-3-ways-to-protect-your-health-data",
+     "what": "Discreet reminder text advice",
+     "level": "official"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Clue",
+   "maker": "BioWink GmbH",
+   "country": "Germany",
+   "category": "Period / conceive / pregnancy / perimenopause tracker",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Freemium; Clue Plus subscription (web offers 25% off)",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [
+    "Modes: Period Tracking, Conceive, Pregnancy, Perimenopause; Cycle View shows current cycle and predicted next period"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "Home-screen widgets on iOS with optional discreet view (help centre)"
+   ],
+   "privacy_trust": [
+    "iOS alternative app icons, 'Low-key collection' designed not to look like a period tracker",
+    "Widget can switch to discreet view"
+   ],
+   "design": {
+    "summary": "Restrained, science-brand design; relaunch rebuilt colour system and calendar for accessibility; strong privacy-by-design touches (icon, widget).",
+    "onboarding": "not confirmed today",
+    "home": "Relaunch: redesigned Home Screen (pregnancy mode puts weekly milestones front and centre); signature Cycle View ring (memory for ring form).",
+    "visual_style": "Revamped colour system aimed at visually impaired users; custom component library built in Jetpack Compose replacing hard-coded colours/sizes.",
+    "notable_patterns": [
+     "Accessibility named as goal of colour and calendar redesign",
+     "Discreet app icons and discreet widget view (iOS)",
+     "Design system as code (Compose) to remove UI inconsistency; Google reports ~3x dev speed",
+     "Relaunch shipped without export and averages at first; users noticed (lesson: don't drop features in a redesign)"
+    ],
+    "evidence": "helloclue relaunch articles, Clue support centre, Android Developers blog"
+   },
+   "strengths": [
+    "Privacy-first discreet options",
+    "Accessible colour system"
+   ],
+   "weaknesses_from_reviews": [
+    "Relaunch temporarily removed data export and cycle averages (Clue's own Q&A)"
+   ],
+   "sources": [
+    {
+     "url": "https://helloclue.com/articles/how-to-use-clue/clue-period-tracking-relaunched-and-newly-designed",
+     "what": "Relaunch: colour system, calendar, accessibility",
+     "level": "official"
+    },
+    {
+     "url": "https://helloclue.com/articles/about-clue/your-clue-relaunch-questions-answered",
+     "what": "Missing features after relaunch",
+     "level": "official"
+    },
+    {
+     "url": "https://android-developers.googleblog.com/2023/04/clues-development-speed-improves-after-rebuilding-with-jetpack-compose.html",
+     "what": "Compose design system",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/29216103563165-How-to-change-the-Clue-app-icon-for-more-privacy",
+     "what": "Low-key icons",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/29216192829597-How-can-I-change-the-Clue-widget-to-discreet-view-iOS",
+     "what": "Discreet widget view",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/16701169049117-Does-Clue-have-any-widgets",
+     "what": "Widgets exist",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Natural Cycles",
+   "maker": "Natural Cycles Nordic AB",
+   "country": "Sweden",
+   "category": "Temperature-based fertility / birth control (regulated)",
+   "platforms": [
+    "iOS",
+    "Android",
+    "wearable integrations (memory)"
+   ],
+   "price_model": "Hard paywall; Adapty library lists $21.99/month, $149.99/year",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Onboarding run like a health consultation; hard paywall only after quiz and account; dark mode in settings.",
+    "onboarding": "~31 steps (screensdesign showcase; 49 captured screens on app page); hard paywall after the quiz and account creation; Reteno lists testimonials and welcome discount.",
+    "home": "Daily status (green/red day) as hero (memory); a designer's concept piece says first screen is the data-input screen, all purple.",
+    "visual_style": "Purple brand (memory plus concept piece); clean clinical-but-warm look per Apple editorial.",
+    "notable_patterns": [
+     "Quiz framed as personal consultation, not a setup form",
+     "Dark mode toggle: Menu > Settings > Appearance",
+     "Binary daily status as single glanceable answer (memory)"
+    ],
+    "evidence": "screensdesign, Adapty paywall library, NC help centre; home colours rest on memory"
+   },
+   "strengths": [
+    "Onboarding feels like care, earns hard paywall"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://screensdesign.com/showcase/natural-cycles-birth-control",
+     "what": "31 steps, hard paywall after quiz+account",
+     "level": "press"
+    },
+    {
+     "url": "https://adapty.io/paywall-library/natural-cycles/",
+     "what": "Prices",
+     "level": "press"
+    },
+    {
+     "url": "https://help.naturalcycles.com/hc/en-us/articles/5692257885597-How-to-enable-dark-mode-in-the-app",
+     "what": "Dark mode setting",
+     "level": "official"
+    },
+    {
+     "url": "https://jian-gugu-2120.squarespace.com/natural-cycles-revamp",
+     "what": "Concept critique: first screen purple input",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Stardust",
+   "maker": "Stardust App LLC",
+   "country": "US",
+   "category": "Period / pregnancy tracker with moon-phase and friend sharing",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Free core; paywall right after essential onboarding",
+   "scale": "screensdesign estimates ~$350-400K/month, 150K installs (conflicting)",
+   "partner_features": [
+    "Invite partner or close friends to follow cycle; one reviewer says add-friends broken"
+   ],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [
+    "Mozilla flags friend-sharing as extra tracked data point; store says never sells health data"
+   ],
+   "design": {
+    "summary": "Brand-first: dark starry theme, circular moon-phase dashboard, short onboarding; shows a strong visual world beats feature count for younger users.",
+    "onboarding": "Short ('swift yet impactful') but immerses user in the Stardust universe; paywall immediately after essential steps.",
+    "home": "One central circular graphic of the cycle that mirrors moon phases.",
+    "visual_style": "Dark, star-filled theme with moon-phase iconography; mysticism tone.",
+    "notable_patterns": [
+     "Dark-first UI as brand",
+     "Social sharing with friends, not just partner",
+     "Ring visual reused from moon metaphor"
+    ],
+    "evidence": "screensdesign, Product Hunt, Mozilla review, store listings"
+   },
+   "strengths": [
+    "Distinctive brand world"
+   ],
+   "weaknesses_from_reviews": [
+    "Friend add feature reported not working",
+    "Early versions buggy (Product Hunt)"
+   ],
+   "sources": [
+    {
+     "url": "https://screensdesign.com/showcase/stardust-period-pregnancy",
+     "what": "Circular moon dashboard, paywall after onboarding",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mozillafoundation.org/en/nothing-personal/stardust-privacy-review/",
+     "what": "Privacy review of friend sharing",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/app/id1495829322",
+     "what": "Store listing",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Oura",
+   "maker": "Oura Health",
+   "country": "Finland",
+   "category": "Wearable health app (sleep, readiness, cycle insights)",
+   "platforms": [
+    "iOS",
+    "Android",
+    "Oura Ring"
+   ],
+   "price_model": "Ring purchase + membership (memory)",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [
+    "Oct 2025: Cycle Insights predictions extended from 1 to 12 months; phase data from one night instead of ~60"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [
+    "AI Advisor (press)"
+   ],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Oct 2025 redesign: Today tab built around 'One Big Thing' per day; dropped card-style layout for an open layout; three tabs kept.",
+    "onboarding": "not researched",
+    "home": "Today tab surfaces the single most relevant stat of the day; Vitals tab holds the rest with day/week/month/year views.",
+    "visual_style": "Open, less boxed layout (cards removed); dark-leaning premium look (memory).",
+    "notable_patterns": [
+     "One hero insight per day",
+     "De-carding: whitespace grouping instead of stacked cards",
+     "Detail pushed to a second tab with time-range switch"
+    ],
+    "evidence": "9to5Google, TechCrunch, Engadget Oct 2025"
+   },
+   "strengths": [
+    "Clear hierarchy: one thing today, details elsewhere"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://9to5google.com/2025/10/20/oura-app-redesign/",
+     "what": "Today tab One Big Thing; card layout dropped",
+     "level": "press"
+    },
+    {
+     "url": "https://www.techcrunch.com/2025/10/20/oura-launches-redesigned-app-and-cumulative-stress-feature",
+     "what": "Redesign + stress",
+     "level": "press"
+    },
+    {
+     "url": "https://www.engadget.com/wearables/ouras-new-app-brings-enhanced-health-insights-and-longer-fertility-window-predictions-171329174.html",
+     "what": "12-month fertility predictions",
+     "level": "press"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Paired",
+   "maker": "Paired (Better Half Ltd, memory)",
+   "country": "UK",
+   "category": "Couples relationship app",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Free daily conversation; Pro paywall early in onboarding ('Unlock Pro' ~52s into walkthrough); 30-day free promo offers",
+   "scale": "screensdesign: ~$200K/month, 4.7 stars",
+   "partner_features": [
+    "Daily question or quiz both answer; answers revealed to each other",
+    "Partner referred to by name throughout"
+   ],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Daily ritual for two; copy always frames activity as shared and names the partner; long onboarding ending in paywall.",
+    "onboarding": "Long (review note); ~185 screens captured overall; paywall appears before core use. Order of partner invite vs paywall not found.",
+    "home": "Today's daily question as hero (memory).",
+    "visual_style": "Warm, editorial, illustrated (memory).",
+    "notable_patterns": [
+     "Use partner's name in microcopy",
+     "Answer-then-reveal mechanic",
+     "Free core ritual, paid depth"
+    ],
+    "evidence": "screensdesign, Paired site, store listings; Apple 'App of the Day' dates conflict"
+   },
+   "strengths": [
+    "Habit built on one 5-minute daily action"
+   ],
+   "weaknesses_from_reviews": [
+    "Onboarding quite long"
+   ],
+   "sources": [
+    {
+     "url": "https://screensdesign.com/showcase/paired-couples-relationship",
+     "what": "Shared-space framing, partner named",
+     "level": "press"
+    },
+    {
+     "url": "https://screensdesign.com/apps/paired-couples-relationship/",
+     "what": "Screens, Unlock Pro timing, revenue",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/app/id1469609343",
+     "what": "Store listing",
+     "level": "official"
+    },
+    {
+     "url": "https://www.paired.com/articles/use-this-app-5-minutes-a-day-for-better-communication-with-your-partner",
+     "what": "5-min daily framing",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "썸원 (TheSomeone)",
+   "maker": "썸원",
+   "country": "Korea",
+   "category": "Couples daily-question app",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Ads + paid membership",
+   "scale": "10M+ sign-ups, 1M+ DAU, over half global (company/press)",
+   "partner_features": [
+    "Daily question both answer; user sets delivery time",
+    "Shared character '반려몽' grows as both answer",
+    "Friend invite (2023) loops back to partner installs"
+   ],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Korean proof that a couple ritual + shared growing character drives retention; user-chosen push time.",
+    "onboarding": "not found",
+    "home": "Daily question + shared character (press description)",
+    "visual_style": "Cute character-led (반려몽); details not found",
+    "notable_patterns": [
+     "Shared pet that needs both partners",
+     "Notification time chosen by user",
+     "Invite loop"
+    ],
+    "evidence": "eopla.net interviews"
+   },
+   "strengths": [
+    "Joint progress object"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://eopla.net/magazines/15776",
+     "what": "Daily question habit, 반려몽, scale",
+     "level": "press"
+    },
+    {
+     "url": "https://eopla.net/magazines/13116",
+     "what": "Invite feature, revenue model",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Finch",
+   "maker": "Finch Care",
+   "country": "US",
+   "category": "Self-care habit app with virtual pet",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Freemium; trial and welcome discount in onboarding",
+   "scale": "Claimed ~60% D1 retention (growth blog, unverified); App Store Editors' Choice (secondary)",
+   "partner_features": [
+    "Friends can send support (memory)"
+   ],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "Gamified home-screen widgets showing the pet drive retention"
+   ],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Mascot-led chat onboarding, pet you care for by doing small goals; widgets keep pet 'always with you'.",
+    "onboarding": "Chat-style, pet asks questions with tap answers; 30+ steps; habit picking + pet customisation; trial and discount.",
+    "home": "Pet on an adventure; short list of small goals that give energy (memory for layout).",
+    "visual_style": "Soft pastel illustration, gentle non-judgemental tone.",
+    "notable_patterns": [
+     "Mascot speaks the onboarding",
+     "Small achievable goals",
+     "Widget as retention surface",
+     "Strong feedback on task completion"
+    ],
+    "evidence": "screensdesign article, Reteno, Deconstructor of Fun, Pratt critiques"
+   },
+   "strengths": [
+    "Emotional bond through character"
+   ],
+   "weaknesses_from_reviews": [
+    "Pratt critique: playful complexity overwhelms users wanting to start fast; breaks progressive disclosure"
+   ],
+   "sources": [
+    {
+     "url": "https://screensdesign.com/articles/finch-app-onboarding-design/",
+     "what": "Onboarding design",
+     "level": "press"
+    },
+    {
+     "url": "https://gallery.reteno.com/flows/app-screens-finch",
+     "what": "30+ steps, trial, discount",
+     "level": "press"
+    },
+    {
+     "url": "https://www.deconstructoroffun.com/blog/x0hd2ssr80y5n7gv0w967pg7hwd7tl",
+     "what": "Widgets drive retention",
+     "level": "press"
+    },
+    {
+     "url": "https://ixd.prattsi.org/2026/02/design-critique-finch-self-care-pet-ios-app/",
+     "what": "Complexity critique",
+     "level": "press"
+    },
+    {
+     "url": "https://www.monterail.com/blog/how-to-make-your-app-attract-users-every-day",
+     "what": "60% D1 claim",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Duolingo",
+   "maker": "Duolingo",
+   "country": "US",
+   "category": "Language learning (habit-loop benchmark)",
+   "platforms": [
+    "iOS",
+    "Android",
+    "watchOS (memory)"
+   ],
+   "price_model": "Freemium + Super",
+   "scale": "D1/D7 ~51%/35% cited via Sensor Tower (secondary)",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "4 widget families: 2 lock screen, 2 home screen",
+    "Lock-screen streak widget judged as effective as push by learners"
+   ],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Widget and notification are designed product surfaces with state-based character art; streak milestones get custom animation.",
+    "onboarding": "not researched",
+    "home": "Path of lessons; streak as persistent number (memory)",
+    "visual_style": "Bold flat illustration, Duo character with many expressions",
+    "notable_patterns": [
+     "Widget art changes with state: Duo panicked when not done, relaxed when done",
+     "Streak milestone celebration animations",
+     "Cautionary: 2026 reports of ads in Live Activity/Dynamic Island broke Apple guideline (Live Activities only for ongoing tasks)"
+    ],
+    "evidence": "Duolingo blog, mjtsai, MacRumors"
+   },
+   "strengths": [
+    "Widget = glanceable state + emotion"
+   ],
+   "weaknesses_from_reviews": [
+    "Backlash over Live Activity ads (2026)"
+   ],
+   "sources": [
+    {
+     "url": "https://blog.duolingo.com/widget-feature",
+     "what": "Widget design with Duo states",
+     "level": "official"
+    },
+    {
+     "url": "https://blog.duolingo.com/streak-milestone-design-animation/",
+     "what": "Streak milestone animation",
+     "level": "official"
+    },
+    {
+     "url": "https://mjtsai.com/blog/2026/01/07/duolingo-dynamic-island-ads/",
+     "what": "Live Activity ad controversy",
+     "level": "press"
+    },
+    {
+     "url": "https://www.deconstructoroffun.com/blog/x0hd2ssr80y5n7gv0w967pg7hwd7tl",
+     "what": "Retention figures",
+     "level": "press"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Toss (토스)",
+   "maker": "Viva Republica",
+   "country": "Korea",
+   "category": "Fintech super-app (Korean UX benchmark)",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Free",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Set the Korean default: all microcopy in 해요체, remove unneeded words, one task per screen, shared TDS components.",
+    "onboarding": "not researched",
+    "home": "Large amounts as headline numbers, list rows (memory, not confirmed today)",
+    "visual_style": "Toss Product Sans (secondary claim), blue accent, heavy whitespace (memory)",
+    "notable_patterns": [
+     "All copy in 해요체; became fintech default (press)",
+     "'잡초 뽑기' rule: delete text not needed for meaning",
+     "Error copy written to reduce bad feeling; consistent voice owned by UX writers",
+     "'One Thing' per screen (blog claim)",
+     "TDS shared across silos; bottom sheet as standard component (memory)"
+    ],
+    "evidence": "toss.im tossfeed, ditoday, TDS developer docs"
+   },
+   "strengths": [
+    "Korean users expect this tone and clarity"
+   ],
+   "weaknesses_from_reviews": [
+    "Critics say simplification hid risk of high-risk products"
+   ],
+   "sources": [
+    {
+     "url": "https://toss.im/tossfeed/article/uxwriter-interview",
+     "what": "UX writing role and voice",
+     "level": "official"
+    },
+    {
+     "url": "https://ditoday.com/?p=151644",
+     "what": "해요체 standard, 잡초 뽑기, risk critique",
+     "level": "press"
+    },
+    {
+     "url": "https://developers-apps-in-toss.toss.im/design/components",
+     "what": "TDS components",
+     "level": "official"
+    },
+    {
+     "url": "https://byline.network/2023/06/09-104/",
+     "what": "How Toss makes easy UX",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Moonlitt: Moon Phase Tracker",
+   "maker": "Flipping Hues Srls",
+   "country": "Italy",
+   "category": "Moon-phase tracker (cyclical data visualisation benchmark)",
+   "platforms": [
+    "iOS"
+   ],
+   "price_model": "not confirmed",
+   "scale": "Apple Design Award 2026 winner, Interaction",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Award-level reference for showing a cycle: scrubbable slider with tuned haptic ticks, smooth animation, translucent water-like style.",
+    "onboarding": "not researched",
+    "home": "Sky/moon view with time slider (press)",
+    "visual_style": "Translucent, water-inspired (iOS 26 Liquid Glass era)",
+    "notable_patterns": [
+     "Months spent tuning slider feel, fingertip haptic, animation smoothness",
+     "Sister app Sunlitt was 2024 finalist"
+    ],
+    "evidence": "Apple newsroom, gori.me"
+   },
+   "strengths": [
+    "Haptics and motion as core of interaction"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://www.apple.com/newsroom/2026/06/apple-reveals-winners-of-the-2026-apple-design-awards/",
+     "what": "ADA 2026 Interaction winner",
+     "level": "official"
+    },
+    {
+     "url": "https://gori.me/apps/iphone-app-news/167222",
+     "what": "Haptic/slider tuning details",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Headspace",
+   "maker": "Headspace",
+   "country": "US",
+   "category": "Mental health / meditation (illustration-brand benchmark)",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "Subscription",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [
+    "Ebb AI companion designed for trust/transparency (Figma blog)"
+   ],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "2024 rebrand (Italic Studio, custom Colophon typeface): illustration characters now show stress and sadness, not only joy; soft colour, smooth motion.",
+    "onboarding": "not researched",
+    "home": "not researched",
+    "visual_style": "Rounded character illustration, custom type, brand guidelines cover colour, type, tone and motion",
+    "notable_patterns": [
+     "Illustration expresses full emotional range",
+     "Motion part of brand guidelines",
+     "Custom typeface"
+    ],
+    "evidence": "It's Nice That, Design Compass"
+   },
+   "strengths": [
+    "Coherent brand system across illustration, type, motion"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://itsnicethat.com/articles/italic-studio-headspace-graphic-design-project-250424",
+     "what": "2024 rebrand credits and illustration",
+     "level": "press"
+    },
+    {
+     "url": "https://designcompass.org/en/2024/04/30/headspace/",
+     "what": "Soft colour, motion",
+     "level": "press"
+    },
+    {
+     "url": "https://www.figma.com/blog/headspace-ebb-ai-companion/",
+     "what": "AI companion design",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "당근 (Daangn) SEED design system",
+   "maker": "당근마켓",
+   "country": "Korea",
+   "category": "Local marketplace (Korean design-system benchmark)",
+   "platforms": [
+    "iOS",
+    "Android",
+    "Web"
+   ],
+   "price_model": "Free",
+   "scale": "not confirmed today",
+   "partner_features": [],
+   "cycle_fertility_features": [],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [],
+   "design": {
+    "summary": "Open-source SEED: one token source to React/iOS/Android, two-tier tokens (scale -> semantic), Figma-linked, LLM-readable docs; rebranded July 2026.",
+    "onboarding": "not researched",
+    "home": "not researched",
+    "visual_style": "Orange accent, warm local tone (memory)",
+    "notable_patterns": [
+     "Semantic tokens make dark mode a token swap (inference)",
+     "Docs published as llms.txt for AI tooling"
+    ],
+    "evidence": "GitHub daangn/seed-design, designcompass"
+   },
+   "strengths": [
+    "Public reference for a Korean token system"
+   ],
+   "weaknesses_from_reviews": [],
+   "sources": [
+    {
+     "url": "https://github.com/daangn/seed-design",
+     "what": "SEED repo",
+     "level": "official"
+    },
+    {
+     "url": "https://designcompass.org/2026/07/27/daangn-seed-design-system-rebranding/",
+     "what": "2026 SEED rebrand",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  }
+ ],
+ "cluster_takeaways": [
+  "Hero rule: home shows one big answer for today above the fold (Flo countdown circle, Oura 'One Big Thing', NC daily status); check that dulset's first screen has exactly one dominant number or sentence and nothing competing at the same size.",
+  "De-card the home: Oura's 2025 redesign dropped stacked cards for open whitespace grouping; Flo moved insights below the hero. Check: no more than 2-3 secondary blocks before the fold.",
+  "Cycle visual = a ring or arc for 'where am I now' plus a calendar for history; insights never overlay the ring (Flo design team). Check dulset uses one consistent cycle shape across her view, his view and widget.",
+  "Onboarding as a quiz that feels like a consultation (NC, Flo 30-55 steps, Finch chat mascot); each question visibly changes what the user sees next. Check: does dulset show a personalised result before asking for any account or invite?",
+  "Paywall sits after the quiz, never before the first value moment; couples apps that charge before partner pairing get criticised (Cozy Couples note). Check dulset monetisation point is after both partners are linked.",
+  "Partner gets his own mode with his own tips and pushes, not a mirror of her data (Flo for Partners; she picks what is shared and he is told when she changes mode). Check his screen copy is addressed to him.",
+  "Discretion is a design surface: alternate low-key app icon, discreet widget view, rewritable lock-screen notification text (Clue, Flo). Check every notification and widget string is safe on a locked screen.",
+  "Widgets and lock-screen widgets are retention tools with state-based art (Duolingo 4 widget families, Finch pet widgets, Flo watch award). Prototype gap: dulset (web) has none; plan at least one glanceable 'today' widget per partner.",
+  "Live Activities only for an ongoing task (e.g. a timed window), never promos; Duolingo was criticised for ads there in 2026.",
+  "Motion and haptics are tuned, not default: ADA 2026 Interaction winner Moonlitt spent months on slider feel and fingertip haptic ticks; Duolingo animates streak milestones. Check dulset has a designed completion moment.",
+  "Accessibility is now declared publicly: App Store Accessibility Nutrition Labels (2025) list VoiceOver, Larger Text to 200%, Dark Interface, Differentiate Without Color, Sufficient Contrast; Clue redesigned colours/calendar for low vision. Check fertile/period states are not colour-only and layouts survive 200% text.",
+  "Korean voice: all microcopy in 해요체, delete words not needed for meaning, soften error copy, one job per screen (Toss); a shared character or ritual that needs both partners drives couple retention (썸원 반려몽, user-set push time)."
+ ],
+ "not_found": [
+  "핑크다이어리: no redesign or design info found; only store-listed Couple Connect (share cycle without partner installing app), secret messages, gifts (https://apps.apple.com/app/id516498899, official)",
+  "베이비빌리: no design/home info found; store says couple co-records pregnancy notebook and PDF export (https://apps.apple.com/KR/app/id1497301126, official)",
+  "카카오뱅크, 오늘의집: not searched (budget); no claims made",
+  "Flo widget, Live Activity, dark mode, Dynamic Type support: not confirmed (flo.health accessibility page blocked by network)",
+  "Clue onboarding steps and paywall position: not found",
+  "Paired: order of partner invite vs paywall not found; Apple Design Award for any couples app not found (only App of the Day, dates conflict)",
+  "Apple Design Awards 2025: no femtech/health winner; Evolve (self-care) was Inclusivity finalist",
+  "Google Play Best of 2025: no Health category winner in US list; Focus Friend best app; Calm best for XR",
+  "Flo brand rebrand/agency 2024-2025: none found",
+  "Toss 'big number' principle and Pretendard usage: no source found; rests on memory",
+  "Natural Cycles widget or green/red home colours: not confirmed today"
+ ]
+}

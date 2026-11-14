@@ -1,0 +1,824 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "ルナルナ (Luna Luna)",
+   "maker": "株式会社エムティーアイ (MTI Ltd.)",
+   "country": "일본",
+   "category": "생리·배란 예측 앱 (일본에서 가장 널리 쓰이는 것으로 알려짐)",
+   "platforms": "iOS (App Store id368724832), Android (jp.co.mti.android.lunalunalite — 확인). 자매 서비스: 体温ノート, ルナルナ ベビー, ルナルナ メディコ(지자체 안내 PDF에 이름 확인), ルナルナ おくすり便(온라인 진료 앱 확인)",
+   "price_model": "무료(광고) + 유료 '프리미엄 코스'. 仲良し日와 パートナー共有는 유료 기능(App Store 설명). 월 금액은 오늘도 못 찾음. 2025-10 이후 니가타·미야기·후쿠시마시·고모로시·사무카와정 등 지자체가 MTI와 협정을 맺고 주민에게 프리미엄 코스를 무료 제공(주로 2026-2028년, 거주자 한정)",
+   "scale": "Google Play 설치 약 630만(제3자 추정 AppGoblin, 공식 아님). MTI 공식 누적 다운로드 수는 오늘 찾지 못함 — 2,000만이라는 기억은 미확인",
+   "cycle_fertility_features": [
+    "이용 목적을 고르면 홈 문구와 알림이 바뀜: 생리일 관리 / 임신 희망 / 피임약 복용 / 임신 중(기억, 목적 이름은 정확하지 않을 수 있음)",
+    "임신 희망: 임신하기 쉬운 날을 '仲良し日(사이좋은 날)'이라 부르고 알려 줌(기억)",
+    "이용자 데이터로 만든 자체 배란일 예측 로직을 내세움(기억)",
+    "기초체온은 별도 앱 体温ノート에서 기록, 블루투스 체온계 연동(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신하면 별도 앱 ルナルナ ベビー로 넘어감(기억)",
+    "출산 뒤는 같은 회사의 지자체 앱 母子モ가 맡음 — 단계마다 앱이 갈림(기억)"
+   ],
+   "partner_features": [
+    "パートナー共有는 유료 프리미엄 코스 기능: 생리 예정일·仲良し日·컨디션(体調) 등을 파트너와 공유(App Store 설명, 지자체 안내)",
+    "파트너에게 가는 방식: 메일 통지라 놓치기 쉽다는 이용자 글(2024년경 개인 블로그). 설치 없이 브라우저로 본다는 기억은 오늘 확인 못 함",
+    "파트너가 하는 것: 읽기만. 답장·체크·본인 할 일 none found",
+    "여성이 항목별로 가릴 수 있는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)",
+    "일본 의료 연계: 제휴 산부인과에서 기록을 보여 주는 ルナルナ メディコ, 온라인 진료·피임약 배송(기억)"
+   ],
+   "content_community_ai": [
+    "의사 감수 칼럼과 주기 단계별 오늘의 조언(기억)",
+    "커뮤니티 none found, AI 기능 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 서버 푸시, 계정 동기화(기억)",
+    "파트너 쪽은 설치 없는 웹 페이지(기억)",
+    "Apple 건강·워치·위젯: 확인 못 함"
+   ],
+   "privacy_trust": [
+    "상장사 MTI 운영, 의사 감수 표기(기억)",
+    "동의한 이용자 데이터를 대학·국립 기관과 공동 연구에 쓴다고 발표(기억)",
+    "광고 SDK 구성·개인정보 사고 보도: 확인 못 함"
+   ],
+   "design": {
+    "summary": "달력과 '다음 생리까지 N일'을 앞세운 분홍 톤 생리 앱. 임신 희망으로 바꾸면 같은 화면이 仲良し日 중심으로 바뀌는 것으로 기억",
+    "home": "오늘 상태(다음 생리·배란 예정까지 남은 날)와 오늘의 조언 카드, 아래에 칼럼과 광고(기억)",
+    "onboarding": "이용 목적 선택 → 마지막 생리일·주기 입력 → 회원 등록 권유(기억)",
+    "visual_style": "분홍·흰색, 둥근 글씨, 달 모양 로고(기억, 지금 모습은 확인 못 함)",
+    "notable_patterns": [
+     "관계 권장일을 '仲良し日'이라는 완곡어로 부름",
+     "목적 전환 하나로 생리·피임약·임신 준비를 오감",
+     "파트너는 URL로 여는 웹 화면",
+     "무료는 광고, 仲良し日와 파트너 공유는 유료 — 지자체가 대신 결제해 주는 모델이 2025-2026년에 퍼짐"
+    ],
+    "evidence": "전부 기억. 오늘 스토어·공식 사이트를 열지 못했고 스크린샷도 보지 못함"
+   },
+   "strengths": [
+    "아내가 이미 쓰고 있을 가능성이 가장 큰 앱",
+    "지자체가 프리미엄 코스를 주민에게 무료로 열어 줌(프레콘셉션 케어 협정, 2025-2026)",
+    "완곡어(仲良し日)가 브랜드 용어로 자리 잡음"
+   ],
+   "weaknesses_from_reviews": [
+    "파트너 공유가 유료이고 통지가 메일이라 눈에 안 띈다는 이유로 다른 서비스(ペアケア)를 고른 사례(개인 블로그)",
+    "무료판 광고 불만은 기억, 오늘 리뷰를 보지 못함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/jp/app/%E3%83%AB%E3%83%8A%E3%83%AB%E3%83%8A-%E7%94%9F%E7%90%86%E6%97%A5-%E4%BD%93%E8%AA%BF-%E5%A6%8A%E6%B4%BB-%E5%9F%BA%E7%A4%8E%E4%BD%93%E6%B8%A9-%E3%83%94%E3%83%AB%E6%9C%8D%E8%96%AC%E7%AE%A1%E7%90%86%E3%82%82/id368724832",
+     "what": "일본 App Store: 仲良し日·パートナー共有가 유료 기능 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://town.onagawa.miyagi.jp/05_14hukushi/pdf/lunaluna_premium_course.pdf",
+     "what": "지자체 안내: 프리미엄 코스 무료 제공, パートナー共有(생리 예정일·仲良し日·컨디션 공유) 포함 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://bestcalendar.jp/press/110053",
+     "what": "보도자료 전재: 지자체 협정, 仲良し日 예측 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://www.pref.okayama.jp/uploaded/attachment/421903.pdf",
+     "what": "오카야마현 안내: 유료 플랜 대신 안내 페이지로 등록 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://qiita.com/korede/items/2999dae4040095bdd7d7",
+     "what": "개인 글: ルナルナ 파트너 공유는 유료, 통지가 메일 — 오늘 검색 요약",
+     "level": "user-review"
+    },
+    {
+     "url": "https://appgoblin.info/apps/jp.co.mti.android.lunalunalite",
+     "what": "제3자 추정: Google Play 설치 약 6.3M, 패키지 이름 확인",
+     "level": "press"
+    },
+    {
+     "url": "https://sp.lnln.jp/",
+     "what": "기억: 공식 사이트(이용 목적 전환, 웹 파트너 페이지). 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "ペアケア (Pair Care)",
+   "maker": "株式会社Entale (도쿄, 2019 설립) — 기존 '헬스앤라이츠'는 오류: 그 회사는 ケアミー 운영사",
+   "country": "일본",
+   "category": "LINE 공식 계정에서 시작한 생리·배란 예측 + 파트너 공유 서비스",
+   "platforms": "LINE 공식 계정·LINE 미니앱이 먼저, 앱은 iOS 2024-07 / Android 2024-10-28 (App Store id6502973731)",
+   "price_model": "파트너 공유 기본 무료(보도자료). 유료 항목·가격 확인 못 함",
+   "scale": "LINE 친구 101만 명 돌파(2026-07 발표), 2025-07 90만 — 친구 수라 활성 이용자와 다름. 20대 여성과 그 파트너가 50% 이상(매체 자료)",
+   "cycle_fertility_features": [
+    "자체 AI로 생리일·배란일 예측, 임신 희망이면 '타이밍 날'도 예측(보도자료)",
+    "모드 3개: 생리·건강 관리 / 임신 희망 / 임신 중(App Store)",
+    "컨디션 기록 + 부인과 의사 감수 칼럼"
+   ],
+   "partner_features": [
+    "연결: LINE 또는 앱 중 골라 몇 단계로 상대 계정과 연동. LINE이면 파트너가 앱을 깔지 않아도 됨(App Store, 개인 글)",
+    "파트너가 받는 것: 생리 예정 알림이 본인과 파트너에게 함께 감. 시점은 1·3·7·10일 전 중 선택(소개 기사)",
+    "파트너가 보는 것: 일정과 컨디션(App Store)",
+    "임신 희망 모드에서 타이밍 날이 파트너에게 알림으로 가는지: 확인 못 함",
+    "파트너가 하는 것: 읽기 위주. 본인 할 일·체크 none found",
+    "연인·가족·친구도 공유 대상으로 고를 수 있음(소개 기사)"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "content_community_ai": [
+    "파트너용 조언 글(기억). 커뮤니티·AI 확인 못 함"
+   ],
+   "platform_delivery": [
+    "LINE 공식 계정 메시지가 기본 전달 통로, 이후 네이티브 앱 추가",
+    "파트너는 LINE 친구 추가만으로 받음"
+   ],
+   "privacy_trust": [
+    "2023-02 산부인과 온라인 상담 서비스(Kids Public)와 제휴 발표(검색 요약). 개인정보 사고: 확인 못 함"
+   ],
+   "design": {
+    "summary": "LINE 대화창 안에서 시작한 서비스라 '알림 메시지'가 주 화면. 앱 화면 구성·색은 확인 못 함",
+    "notable_patterns": [
+     "앱 설치 없이 LINE으로 받는 파트너 쪽",
+     "모드 3개로 생리 → 임신 희망 → 임신",
+     "알림 시점을 사용자가 고름(1·3·7·10일 전)"
+    ],
+    "evidence": "App Store 설명과 보도자료·소개 기사의 오늘 검색 요약. 스크린샷은 못 봄"
+   },
+   "strengths": [
+    "공유가 제품의 이유이고 무료",
+    "파트너는 LINE만 있으면 됨 — 둘셋의 카톡 링크와 같은 발상이 100만 규모로 돌아감",
+    "아내가 매번 말하지 않아도 날짜에 맞춰 파트너에게 알림"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/jp/app/id6502973731",
+     "what": "일본 App Store: 모드 3개, LINE/앱 공유, 파트너가 일정·컨디션 확인 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://prtimes.jp/main/html/rd/p/000000019.000051548.html",
+     "what": "Entale 보도자료: LINE 친구 100만 돌파, 무료 공유 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://media-radar.jp/detail22618.html",
+     "what": "매체 자료: 2025-07 90만, 이용자층 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://appmatch.jp/?p=198868",
+     "what": "앱 소개: iOS 2024-07, Android 2024-10-28 출시 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://ascii.jp/elem/000/004/124/4124517/",
+     "what": "기사: Entale 운영, 알림 시점 선택, 파트너에게도 알림 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://www.lycbiz.com/jp/case-study/line-mini-app/entale",
+     "what": "LINE 미니앱 사례(Entale) — 오늘 검색 결과 제목만",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "ケアミー (Careme)",
+   "maker": "株式会社ヘルスアンドライツ",
+   "country": "일본",
+   "category": "생리·PMS·임신 준비 정보를 LINE으로 파트너에게 보내는 공유 앱",
+   "platforms": "iOS (App Store id1505033077), Android(기억). 파트너는 LINE으로 받음, 앱을 깔면 달력도 봄",
+   "price_model": "기본 무료 + 앱 내 결제 있음(App Store). 유료 항목·가격 확인 못 함. 광고 없음이라는 소개(검색 요약)",
+   "scale": "이용자 70만 명(2025-01 회사 발표)",
+   "partner_features": [
+    "妊活モード: 입력한 생리일로 임신하기 쉬운 시기를 예측해 파트너 LINE에 알림 — 아내가 직접 말하지 않아도 됨(App Store, 2025-01 보도자료)",
+    "생리 시작일을 입력하면 파트너에게 알림 — 이번 달이 안 됐다는 소식도 앱이 전함(검색 요약)",
+    "파트너 알림마다 산부인과 의사 감수 기초 지식 한 줄이 붙음",
+    "파트너가 앱을 깔면 생리 예정일·임신하기 쉬운 기간 달력을 봄(App Store)",
+    "파트너가 하는 것: 읽기. 본인 할 일·검사 none found",
+    "아내가 알림 항목을 골라 끌 수 있는지: 확인 못 함"
+   ],
+   "cycle_fertility_features": [
+    "모드 3개: 생리 관리 / 妊活 / 피임약 복용",
+    "생리 예정일, PMS·컨디션 기록"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "content_community_ai": [
+    "의사 감수 기초 지식이 알림에 붙음",
+    "2025-01 기혼 남녀 400명 조사: 妊活 타이밍 공유에서 여성 30%가 고독감, 남성은 '함께 하고 있다'고 인식"
+   ],
+   "platform_delivery": [
+    "LINE 메시지로 파트너에게 푸시",
+    "네이티브 앱"
+   ],
+   "privacy_trust": [
+    "산부인과 의사 감수 표기. 개인정보 사고: 확인 못 함"
+   ],
+   "design": {
+    "summary": "파트너 쪽은 LINE 메시지 한 통이 화면 전부. 앱 화면 구성은 확인 못 함",
+    "notable_patterns": [
+     "타이밍과 생리 시작을 앱이 대신 전함",
+     "메시지에 지식 한 줄을 붙여 남편 교육을 겸함",
+     "모드 전환"
+    ],
+    "evidence": "App Store 설명과 2025-01 보도자료의 오늘 검색 요약. 스크린샷 못 봄"
+   },
+   "strengths": [
+    "임신 준비 단계에서 남편에게 타이밍·생리 시작을 자동으로 전하는, 둘셋과 가장 가까운 일본 앱",
+    "남편은 LINE만 있으면 됨"
+   ],
+   "weaknesses_from_reviews": [
+    "리뷰 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/jp/app/id1505033077",
+     "what": "일본 App Store: 모드 3개, LINE 공유, 파트너 앱 달력, 기본 무료+앱 내 결제 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://resemom.jp/release/prtimes/20250128/134092.html",
+     "what": "2025-01 보도자료: 이용자 70만, 妊活モード, 부부 인식 차이 조사 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://ascii.jp/elem/000/004/247/4247935/",
+     "what": "기사: 같은 조사·妊活モード 소개 — 오늘 검색 요약",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "コノトキ (KONOTOKI)",
+   "maker": "amane factory 株式会社",
+   "country": "일본 (한국 App Store에 한국어로 제공)",
+   "category": "부부가 연동하는 임신 준비(妊活) 앱",
+   "platforms": "iOS (App Store id1501112518), Android",
+   "price_model": "주요 기능 무료(일본 App Store 설명). 광고 유무 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "기초체온과 생리 주기로 배란일 예측(한국 스토어 앱 이름)",
+    "여성 컨디션 기록",
+    "병원 방문·복약 알림"
+   ],
+   "pregnancy_parenting_features": [
+    "없음: 임신하면 같은 회사의 다른 앱 トツキトオカ(280days)로 넘어감"
+   ],
+   "partner_features": [
+    "연결: 두 사람이 각자 앱을 깔고 연동",
+    "연동하면 공유: 임신 예측, 여성 컨디션 기록, 서로의 일정(App Store)",
+    "여성이 파트너와의 공유 범위를 정함(App Store 설명)",
+    "원탭 메시지: 연동해야 쓸 수 있는 정해진 문구. 2021 기사의 예: 여성 '기다리고 있을게', 남성 '지금 출발'",
+    "'베스트 타이밍을 알림'이 스토어 문구지만 파트너에게도 가는지는 오늘 확인 못 함",
+    "파트너 본인 할 일(검사·생활 습관): none found"
+   ],
+   "korea_system_features": [
+    "none found (한국어 번역만 제공, 한국 제도 안내 없음)"
+   ],
+   "content_community_ai": [
+    "none found"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 두 개 연동 + 푸시"
+   ],
+   "design": {
+    "summary": "황새 이름과 그림을 쓰는 부드러운 톤으로 기억. 홈·달력 구성은 확인 못 함",
+    "notable_patterns": [
+     "타이밍을 앱이 대신 알림",
+     "자유 입력 대신 정해진 원탭 문구",
+     "임신 준비와 임신을 앱 두 개로 나눔"
+    ],
+    "evidence": "저장소 조사(docs/research/kr-apps.json, 2026-09-26 검색 요약: 한국 App Store 설명, 공식 사이트, babytech.jp 2021-09 기사). 원문과 스크린샷은 그때도 오늘도 열지 못함. 화풍은 기억"
+   },
+   "strengths": [
+    "한국어로 쓸 수 있는 유일한 일본 부부 임신 준비 앱(저장소 조사)",
+    "말 꺼내기 부담을 정해진 문구로 줄임",
+    "치료 중인 부부용 복약·통원 알림까지 한 앱에"
+   ],
+   "weaknesses_from_reviews": [
+    "리뷰 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/jp/app/id1501112518",
+     "what": "일본 App Store: 앱 이름은 'コノトキ'(コウノトリ 아님), 연동 공유 항목, 여성이 공유 범위 설정, 원탭 메시지, 주요 기능 무료 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/konotoki-%EA%B8%B0%EC%B4%88-%EC%B2%B4%EC%98%A8%EA%B3%BC-%EC%83%9D%EB%A6%AC-%EC%A3%BC%EA%B8%B0%EB%A1%9C-%EB%B0%B0%EB%9E%80%EC%9D%BC-%EC%98%88/id1501112518",
+     "what": "한국 App Store: 앱 이름·설명(커플 연동, 타이밍 알림, 병원·복약 알림) — 저장소 조사 2026-09-26 검색 요약, 오늘 다시 못 엶",
+     "level": "official"
+    },
+    {
+     "url": "https://www.konotoki-apps.com/",
+     "what": "공식 사이트 — 저장소 조사 2026-09-26 검색 요약, 오늘 이름 해석 실패로 못 엶",
+     "level": "official"
+    },
+    {
+     "url": "https://babytech.jp/en/2021/09/konotoki/",
+     "what": "2021-09 기사: 원탭 문구 6개, 파트너 타이밍 알림 — 저장소 조사 2026-09-26 검색 요약",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "トツキトオカ (한국명 280days)",
+   "maker": "amane factory 株式会社",
+   "country": "일본 (한국어·중국어 번체 등 제공)",
+   "category": "부부가 공유하는 임신 기록·일기 앱",
+   "platforms": "iOS (id995864179), Android (com.amanefactory.totsukitoka)",
+   "price_model": "무료 + 하단 광고, 인앱 결제로 광고 숨기기, 기록을 책으로 만드는 유료 제본",
+   "scale": "월 이용자 일본 약 75만 / 한국 약 25만 / 대만 약 13만, 누적 약 1,000만 다운로드(2024-04 회사 발표, babytech.jp 2024-05)",
+   "cycle_fertility_features": [
+    "없음: 임신 준비는 같은 회사의 KONOTOKI가 맡음"
+   ],
+   "pregnancy_parenting_features": [
+    "아기 일러스트가 주수에 따라 자라고, 누르면 매일 다른 대사로 엄마·아빠에게 말함",
+    "컨디션 스탬프 기록, 체중 그래프, 검진 일정·기록, 임신 일기",
+    "기록 전체를 책 레이아웃으로 내보내기"
+   ],
+   "partner_features": [
+    "연결: 엄마가 앱 안 '앱 연결'에서 초대 코드(링크)를 보내고, 아빠가 그 링크로 앱을 열면 연결. 아빠 혼자서는 쓸 수 없음",
+    "아빠가 보는 것: 엄마 컨디션 기록, 아기 상태, 일기, 검진 기록",
+    "아빠가 받는 것: 주수별 아빠용 조언, 아기 캐릭터의 오늘 대사",
+    "아빠가 하는 것: 일기 쓰기, 부부가 함께 아기 이름 정하기",
+    "가족 초대: 가족에게는 아기 일러스트만 공유되고 기록은 부부만 봄(오래된 사용법 글)",
+    "엄마가 항목별로 가릴 수 있는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "주수별 조언(엄마용·아빠용). 커뮤니티·커머스·AI none found"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 두 개를 초대 코드로 연결",
+    "검진 알림"
+   ],
+   "design": {
+    "summary": "말하는 아기 캐릭터가 화면의 주인공. 정보보다 '오늘 아기가 한 말'이 매일 여는 이유",
+    "home": "주수에 따라 자라는 아기 일러스트와 오늘의 대사(스토어 설명 기준)",
+    "visual_style": "손그림 느낌의 파스텔 일러스트(스토어 설명 + 기억)",
+    "notable_patterns": [
+     "앱이 아니라 아기가 말하는 화법",
+     "스탬프 한 번으로 끝나는 컨디션 입력",
+     "같은 기록을 두 사람이 서로 다른 조언과 함께 봄",
+     "가족에게는 일러스트만 여는 2단계 공유",
+     "기록을 책으로"
+    ],
+    "evidence": "같은 실행의 형제 조사(kr-pregnancy-parenting.json, 오늘 검색 요약: 한국·일본 스토어 설명, 공식 사이트, 일본 사용법 글, 영문 리뷰). 스크린샷은 보지 못함. 화풍은 기억"
+   },
+   "strengths": [
+    "스토어 이름부터 '夫婦で共有'이고 두 앱 연결이 전제",
+    "아빠에게 주수마다 다른 글을 줌",
+    "매일 바뀌는 한 줄(아기 대사)이 다시 여는 장치"
+   ],
+   "weaknesses_from_reviews": [
+    "아빠 쪽이 읽기 위주라는 불만(영문 리뷰 모음)",
+    "일기를 쓰다 느려지거나 멈춤(영문 리뷰)",
+    "부부 구조를 전제해 혼자 쓰기 불편함(영문 리뷰)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id995864179",
+     "what": "한국 App Store 설명·평점 — 형제 조사의 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://www.totsukitoka-apps.com/index.html.en",
+     "what": "공식 사이트: 체중·검진·일기 부부 공유, 아빠용 조언, 책 내보내기 — 형제 조사",
+     "level": "official"
+    },
+    {
+     "url": "https://babytech.jp/en/2024/05/totsukitoka/",
+     "what": "2024-05 기사: 나라별 월 이용자, 누적 다운로드 — 형제 조사",
+     "level": "press"
+    },
+    {
+     "url": "https://app-tatsujin.com/totsukitoka-pregnancy-app-guide/",
+     "what": "기능·설정 가이드: 아빠 쪽에 공유되는 것, 아빠 일기 — 형제 조사",
+     "level": "press"
+    },
+    {
+     "url": "https://justuseapp.com/en/app/995864179/280days-pregnancy-diary-app/reviews",
+     "what": "영문 리뷰 모음: 아빠 참여 호평, 읽기 위주 불만, 멈춤 — 형제 조사",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "ninaru · パパninaru",
+   "maker": "株式会社エバーセンス",
+   "country": "일본",
+   "category": "임신 앱(ninaru)과 아빠 전용 임신·육아 앱(パパninaru)",
+   "platforms": "iOS (ninaru id1001404840, パパninaru id1085012323), Android (jp.co.eversense.papaninaru). 개발 EVER SENSE, INC.",
+   "price_model": "パパninaru 무료(App Store). 광고·유료 항목 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "임신 준비 기능 none found: 스토어 이름이 '妊娠・出産・育児'이고 임신부터 시작"
+   ],
+   "pregnancy_parenting_features": [
+    "ninaru: 예정일을 넣으면 임신 날짜마다 다른 '오늘의 메시지'(아기 성장, 엄마 몸, 조언)가 옴. 의사 감수(기억)",
+    "체중·검진 기록 같은 도구(기억)",
+    "출산 뒤는 육아 기록 앱 ninaru baby로 이어짐(기억)"
+   ],
+   "partner_features": [
+    "パパninaru: 아빠용 별도 앱. 임신 주수에 맞춘 임신부 몸 변화·생활 주의점의 '남성용 조언'이 매일 옴(App Store)",
+    "매일 메시지·기사는 임신 중부터 아이 6살까지(App Store)",
+    "아기 성장 일러스트와 메시지, 출산 준비 'パパガイド', 'パパ育休ペディア'(육아휴직 Q&A), 임신 중 한정 기념 이미지(App Store)",
+    "ninaru(엄마용) 설명에 'パパninaru와도 연계'라고 적혀 있으나 연동 방식(초대 코드 등)은 오늘 찾지 못함",
+    "아빠 할 일 체크리스트의 기한 계산 유무: 확인 못 함",
+    "임신 준비(妊活) 단계 아빠 콘텐츠: none found"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "content_community_ai": [
+    "날짜별 메시지와 의사 감수 기사(기억). 커뮤니티·AI 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 매일 푸시(기억)",
+    "엄마용·아빠용 앱을 따로 설치"
+   ],
+   "design": {
+    "summary": "홈이 '오늘의 메시지' 한 장인 읽기 중심 앱. 아빠 앱은 같은 틀에 아빠에게 말하는 화법으로 기억",
+    "home": "임신 주수·남은 날과 오늘의 메시지 카드(기억)",
+    "notable_patterns": [
+     "아빠용을 메뉴가 아니라 별도 앱으로 냄",
+     "아내 초대 없이 아빠가 혼자 시작",
+     "매일 한 편씩 오는 글이 다시 여는 이유"
+    ],
+    "evidence": "App Store 설명(오늘 검색 요약)으로 매일 조언·6살까지·육휴 콘텐츠 확인. 홈 화면 구성과 화풍은 기억, 스크린샷 못 봄"
+   },
+   "strengths": [
+    "아빠가 직접 설치하는 자기 앱",
+    "임신부터 6살까지 매일 바뀌는 아빠용 글"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/JP/app/id1085012323",
+     "what": "일본 App Store: パパninaru 무료, 매일 남성용 조언, 6살까지, パパガイド·育休ペディア — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/JP/app/id1001404840",
+     "what": "일본 App Store: ninaru, 'パパninaru와 연계' 문구 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=jp.co.eversense.papaninaru",
+     "what": "Google Play: パパninaru — 형제 조사",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Babyプラス",
+   "maker": "株式会社ハーゼスト (HEARZEST) — 학회 감수는 리뷰 사이트 표현, 스토어는 '산부인과 의사가 집필·감수'",
+   "country": "일본",
+   "category": "학회 감수 임신·출산 앱 (산부인과에서 안내)",
+   "platforms": "iOS, Android (기억)",
+   "price_model": "무료(기억)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "임신 준비 기능 none found"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주수별 정보, 검진 기록, 체중 관리(기억)",
+    "다니는 산부인과의 공지를 앱으로 받음(기억)"
+   ],
+   "partner_features": [
+    "파트너와 조부모에게 앱을 공유해 같은 데이터를 봄(App Store, 리뷰 사이트)",
+    "초대 방식(메일·LINE·QR)은 신뢰 낮은 글에만 있음",
+    "아빠 본인 할 일·아빠용 콘텐츠: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 병원 창구에서 안내받아 설치(기억)"
+   ],
+   "privacy_trust": [
+    "스토어 문구는 'お医者さんがつくった' + 산부인과 의사 집필·감수. 일본산과부인과학회 감수는 오늘 1차 자료로 확인 못 함"
+   ],
+   "design": {
+    "summary": "학회 이름을 앞세운 정보 중심 앱으로 기억. 화면은 확인 못 함",
+    "notable_patterns": [
+     "학회 감수 표기",
+     "병원을 거친 배포"
+    ],
+    "evidence": "전부 기억. 오늘 스토어·공식 사이트를 열지 못함"
+   },
+   "strengths": [
+    "학회 감수가 곧 내용의 신뢰",
+    "병원 창구가 유입 경로(기억)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/JP/app/id1244662290",
+     "what": "일본 App Store: 파트너·조부모 공유, 산부인과 의사 집필·감수 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://app-liv.jp/4570277/",
+     "what": "리뷰 사이트: 학회 감수라고 소개, 가족이 같은 데이터 봄 — 오늘 검색 요약",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "ラルーン (LaLune)",
+   "maker": "株式会社メドレー (MEDLEY) — App Store 판매자와 보도자료 기준. 예전 운영은 エイチーム 계열 エイチームウェルネス",
+   "country": "일본",
+   "category": "생리 관리 앱 + 익명 고민 상담",
+   "platforms": "iOS, Android, 웹(lalu.jp) — 기억",
+   "price_model": "무료 + 광고로 기억. 유료 항목 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "생리일·배란일 예측, 기초체온 그래프, 몸 상태·체중 기록(기억)",
+    "임신 준비 중인 사용자용 글과 상담 주제(기억)"
+   ],
+   "partner_features": [
+    "컨디션 변화와 생리 예정일을 파트너와 공유, 임신 준비 중이면 배란일·임신하기 쉬운 시기도 공유(App Store)",
+    "'파트너 LINE 연계' 기능을 새로 추가(App Store 설명) — 출시 시기와 파트너가 받는 알림 문구는 확인 못 함",
+    "파트너 본인 할 일: none found"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "content_community_ai": [
+    "여성 전용 익명 상담·블로그(App Store). 상담 품질 불만 리뷰 있음(app-liv)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시(기억)"
+   ],
+   "design": {
+    "summary": "달력 기록 옆에 또래 상담이 붙은 분홍 톤 생리 앱으로 기억. 화면은 확인 못 함",
+    "notable_patterns": [
+     "기록 앱 안의 익명 상담",
+     "주기 단계에 이름을 붙여 컨디션을 알려 줌"
+    ],
+    "evidence": "전부 기억. 오늘 스토어·공식 사이트를 열지 못함"
+   },
+   "strengths": [
+    "기다리는 동안이나 생리가 온 날 갈 곳(또래 상담)이 앱 안에 있음(기억)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/JP/app/id479838529",
+     "what": "일본 App Store: '妊活・生理 ラルーン', 메드레 제공, 파트너 공유·LINE 연계, 익명 상담 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://www.a-tm.co.jp/news/27569/",
+     "what": "エイチーム 발표(예전 운영 법인 エイチームウェルネス) — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://app-liv.jp/328798/",
+     "what": "리뷰: 상담 기능 혹평 — 오늘 검색 요약",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "medium",
+   "weaknesses_from_reviews": [
+    "익명 상담이 '최악'이라는 리뷰(app-liv)"
+   ]
+  },
+  {
+   "name": "母子モ (母子手帳アプリ)",
+   "maker": "株式会社エムティーアイ (MTI Ltd.)",
+   "country": "일본",
+   "category": "지자체가 도입하는 전자 모자수첩 앱",
+   "platforms": "iOS, Android, 웹(기억)",
+   "price_model": "주민 무료, 지자체가 도입 비용을 내는 것으로 기억",
+   "scale": "2020-06 발표 260곳 이상(보도자료). 500곳 이상이라는 기억과 현재 수치는 오늘 확인 못 함",
+   "cycle_fertility_features": [
+    "임신 준비 단계 기능 none found: 임신 신고 뒤부터 쓰는 구조로 기억"
+   ],
+   "pregnancy_parenting_features": [
+    "임신부 검진 기록, 아이 성장 기록과 그래프(기억)",
+    "예방접종 일정을 자동으로 짜고 접종일을 알림(기억)",
+    "지자체 공지와 지역 육아 정보가 사는 곳 기준으로 옴(기억)",
+    "일부 지자체: 건진·상담 온라인 예약, 문진표·예진표 미리 쓰기(기억)"
+   ],
+   "partner_features": [
+    "가족 공유: 초대한 가족(아빠·조부모)이 아이 기록과 접종 일정을 같이 봄(기억, 초대 방식·입력 권한 확인 못 함)",
+    "아빠 본인 할 일·아빠용 알림: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none (일본 지자체용)",
+    "일본 제도 연계: 공지·접종·건진 일정을 지자체가 직접 넣음(기억)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시(지자체 공지)",
+    "지자체마다 자기 이름을 붙여 제공(기억)"
+   ],
+   "privacy_trust": [
+    "지자체 공식 서비스라는 지위가 신뢰 표지(기억)"
+   ],
+   "design": {
+    "summary": "종이 모자수첩을 옮긴 기록·일정 도구로 기억. 화면은 확인 못 함",
+    "notable_patterns": [
+     "사는 곳을 고르면 그 지자체의 공지와 제도가 들어옴",
+     "접종 일정 자동 계산",
+     "가족 공유"
+    ],
+    "evidence": "전부 기억. 오늘 공식 사이트(mchh.jp)와 스토어를 열지 못함"
+   },
+   "strengths": [
+    "제도 정보가 거주 지자체에서 직접 와서 지역 차이를 다룸",
+    "지자체 도입이 유입 경로이자 신뢰"
+   ],
+   "sources": [
+    {
+     "url": "https://www.mchh.jp/",
+     "what": "기억: 공식 사이트(기능, 도입 지자체 찾기). 오늘 열지 못함",
+     "level": "memory"
+    },
+    {
+     "url": "https://www.mti.co.jp/",
+     "what": "기억: MTI 보도자료(지자체 도입 발표, 도입 수). 해당 글을 오늘 찾지 못함",
+     "level": "memory"
+    },
+    {
+     "url": "https://resemom.jp/release/prtimes/20200601/62891.html",
+     "what": "2020-06 보도자료: 260곳 이상 도입 — 오늘 검색 요약",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Seem (シーム) — 스마트폰 정자 셀프 체크",
+   "maker": "リクルートライフスタイル (현 リクルート)",
+   "country": "일본",
+   "category": "정자 셀프 체크 키트 + 측정 앱",
+   "platforms": "키트 + iPhone 앱(2016-11 출시). 종료됐다는 기억은 오늘 확인 못 함 — 종료 공지를 찾지 못했고, 빅카메라 판매 페이지(메이커 가격 5,478엔, 게시일 불명)는 검색됨",
+   "price_model": "키트 판매: 출시 4,980엔(세금 포함), 2019 보도에 3,980엔, 빅카메라 페이지 5,478엔. 앱 무료로 기억",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "채취 컵·스틱·렌즈 키트. 렌즈를 iPhone 카메라에 붙여 동영상을 찍으면 앱이 농도·운동률을 WHO 하한과 비교(보도)",
+    "의료기기가 아니며 의사 진단을 대신하지 않는다고 명시(보도)"
+   ],
+   "partner_features": [
+    "남편 본인이 집에서 혼자 하는 검사 — 이 묶음에서 남성이 자기 몸으로 하는 유일한 행동",
+    "결과를 아내와 나누는 연동 기능: 확인 못 함",
+    "주기 앱과의 연동: none found"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공). 한국의 비슷한 제품 오뷰 M 앱은 2023-09-15 종료 공지(형제 조사 kr-cycle-ttc.json)"
+   ],
+   "platform_delivery": [
+    "기기(렌즈·채취 컵) + 네이티브 앱"
+   ],
+   "design": {
+    "summary": "병원 검사 전 단계의 가벼운 셀프 체크로 보이게 만든 키트와 단순한 측정 화면으로 기억. 색·화면은 확인 못 함",
+    "notable_patterns": [
+     "'병원 가기 전에 집에서 먼저'",
+     "결과를 진단이 아니라 병원에 갈 계기로 제시"
+    ],
+    "evidence": "전부 기억. 오늘 공식 사이트(seem.life)를 열지 못했고 서비스 상태도 확인 못 함"
+   },
+   "strengths": [
+    "남성의 첫 행동 문턱을 낮춤 — 2018-11 홋카이도 드러그스토어 167곳으로 판로 확대, 2019-12 유튜브 영상 뒤 하루 판매 20배(리크루트 발표, 보도)",
+    "칸 라이언즈 수상은 기억, 오늘 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://www.watch.impress.co.jp/docs/news/1153103.html",
+     "what": "2018 기사: 키트 구성, 판로 확대 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://www.itmedia.co.jp/mobile/spv/1807/25/news051.html",
+     "what": "2018 기사: 개발 배경, WHO 기준 비교 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://www.businessinsider.jp/article/204519/",
+     "what": "기사: 2019 유튜브 계기 판매 20배, 3,980엔 — 오늘 검색 요약",
+     "level": "press"
+    },
+    {
+     "url": "https://www.biccamera.com/bc/item/3501975/",
+     "what": "빅카메라 판매 페이지(메이커 가격 5,478엔, 게시일·재고 불명)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/jp/app/id1360244366",
+     "what": "TENGA MEN'S LOUPE: TENGA Healthcare의 App Store 앱이 있음(기능 미확인) — 'メンズルーペ에 분석 앱 없음'이라는 기존 기억은 틀렸을 수 있음",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "美柚 (Meiyou) · 大姨妈 (Dayima)",
+   "maker": "美柚: 厦门美柚 / 大姨妈: 베이징의 康智乐思 (기억)",
+   "country": "중국",
+   "category": "생리 앱에서 커뮤니티·쇼핑으로 넓힌 여성 앱",
+   "platforms": "iOS, Android (중국 스토어 중심, 한국어 none found)",
+   "price_model": "무료, 광고·쇼핑·콘텐츠 수익으로 기억",
+   "scale": "unknown — 두 앱 모두 억 단위 가입자를 내세운 것으로 기억하지만 수치 확인 못 함",
+   "cycle_fertility_features": [
+    "美柚: 모드 4개 — 经期 / 备孕 / 怀孕 / 育儿(App Store 앱 이름 '美柚-经期 备孕 怀孕 育儿 亲友版')",
+    "备孕 모드: 배란일 표시, 체온·배란테스트 기록(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "같은 앱에서 모드만 바꿔 임신·육아로 이어짐(기억)"
+   ],
+   "partner_features": [
+    "大姨妈: 남성이 여자친구 계정과 연결해 생리일 알림을 받는 '男生版'이 있었던 것으로 기억 — 지금도 있는지 확인 못 함",
+    "美柚: 备孕 파트너 연동 none found. '亲友' 공유는 육아 기록(宝宝记: 초대한 가족만 봄) 쪽(App Store)"
+   ],
+   "korea_system_features": [
+    "none (한국 미제공)"
+   ],
+   "content_community_ai": [
+    "美柚: 커뮤니티 '她她圈', 쇼핑 '柚子街'(기억)",
+    "홈에서 피드와 광고 비중이 큼(기억)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시. 그 밖은 확인 못 함"
+   ],
+   "privacy_trust": [
+    "개인정보 정책·제재 이력: 확인 못 함"
+   ],
+   "design": {
+    "summary": "분홍 톤 달력 위에 피드·커뮤니티·쇼핑 탭이 붙은 구성으로 기억. 지금 화면은 확인 못 함",
+    "notable_patterns": [
+     "모드 전환으로 한 앱이 생애 단계를 따라감",
+     "기록보다 커뮤니티와 쇼핑이 체류를 만듦"
+    ],
+    "evidence": "전부 기억. 오늘 공식 사이트·스토어를 열지 못했고 중국어 자료도 찾지 못함"
+   },
+   "strengths": [
+    "모드만 바꿔 생리 → 임신 준비 → 임신 → 육아",
+    "커뮤니티가 매일 여는 이유"
+   ],
+   "sources": [
+    {
+     "url": "https://www.meiyou.com/",
+     "what": "기억: 美柚 공식 사이트. 오늘 열지 못함",
+     "level": "memory"
+    },
+    {
+     "url": "https://www.dayima.com/",
+     "what": "기억: 大姨妈 공식 사이트, 男生版. 오늘 열지 못함",
+     "level": "memory"
+    },
+    {
+     "url": "https://apps.apple.com/gr/app/id634896669",
+     "what": "App Store: 美柚 모드 4개, 亲友版 — 오늘 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/cn/app/id952685843",
+     "what": "App Store: 宝宝记(美柚), 초대한 가족만 보는 육아 기록 — 오늘 검색 요약",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  }
+ ],
+ "cluster_takeaways": [
+  "일본에서 임신 준비 단계 남편에게 가는 것은 '알림'이에요: ケアミー(70만)는 妊活モード에서 임신하기 쉬운 시기와 생리 시작을 남편 LINE으로 보내고, ペアケア(LINE 친구 101만)는 생리 예정 알림을 남편에게도 보내요. 남편 본인의 기한 있는 할 일(검사 신청 → 검사 → 청구)을 주는 앱은 이번에도 찾지 못했어요. 둘셋의 '이번 달 할 일'·'내 준비'가 차별점이에요.",
+  "'앱이 대신 말해 준다'가 일본식 기본값이고 대부분 공짜예요. ケアミー·ペアケア는 날짜에 맞춰 자동으로 가고, コノトキ는 공유 범위를 여성이 정하고 원탭 정해진 문구로 주고받아요. 둘셋은 생리 시작·양성을 아내가 [알리기]로 매번 보내요 — '한 번 정해 두면 알아서 가는' 선택지가 비어 있어요.",
+  "남편 쪽 통로는 LINE이에요: ケアミー·ペアケア·ラルーン(새 'パートナーLINE連携')이 남편에게 앱 설치를 요구하지 않아요. 둘셋의 카톡 링크와 같은 발상이 일본에서는 100만 규모로 돌아가고, 차이는 실제 메시지 푸시가 있다는 점이에요. ルナルナ의 파트너 공유는 메일 통지라 놓친다는 이용자 글이 있어요.",
+  "가격: 파트너 공유는 ペアケア·ケアミー·コノトキ에서 무료, ルナルナ에서만 유료(프리미엄 코스). 그런데 2025-10 이후 니가타·미야기 등 지자체가 MTI와 협정해 프리미엄 코스(파트너 공유 포함)를 주민에게 무료로 열어요 — 지자체가 프레콘셉션 케어 예산으로 앱을 사 주는 길이 생겼어요.",
+  "남편 전용 앱은 임신 뒤부터예요: パパninaru는 임신부터 6살까지 매일 남성용 조언, 육휴 Q&A까지 주지만 妊活 단계 내용은 찾지 못했어요. 임신 준비 단계의 남편 전용 앱은 일본에서도 없어요(2024-2026 신규 앱 검색 포함).",
+  "남성의 '자기 몸' 행동은 정자 셀프 체크 키트뿐이에요: Seem(2016~, 종료 공지는 못 찾았고 판매 페이지가 검색됨), TENGA MEN'S LOUPE(앱 있음). 둘 다 주기 앱·아내 앱과 연동되지 않아요. 둘셋은 보건소 검사 신청으로 보내지만 '집에서 혼자 먼저' 하는 가벼운 첫걸음은 없어요.",
+  "제도·신뢰는 지자체와 의사 감수가 들고 와요: 母子モ(지자체 도입, 2020년 260곳+), ルナルナ 지자체 협정, 의사 감수(ケアミー·Babyプラス·ninaru). 둘셋은 의료 감수와 기관 제휴가 없어요.",
+  "완곡어(仲良し日·タイミング)와 디자인 관습(파스텔·캐릭터·광고 배너)은 여전히 기억 수준이에요. 스크린샷은 한 장도 확인하지 못했어요."
+ ],
+ "not_found": [
+  "2026-11-13 재조사: WebSearch 23회 사용(상한 35). WebFetch는 쓰지 않음. 근거는 검색 결과 요약이고 원문 페이지·스크린샷은 열지 못했어요.",
+  "ルナルナ: 프리미엄 코스 월 금액, 공식 누적 다운로드 수, 파트너가 설치 없이 웹으로 보는지, 항목별로 가릴 수 있는지 확인 못 함.",
+  "ペアケア: 임신 희망 모드의 타이밍 날이 파트너에게 알림으로 가는지, 유료 항목 확인 못 함. 기존 파일의 운영사(헬스앤라이츠)와 App Store id(1356153348)는 틀렸고 고쳤어요.",
+  "ケアミー: 유료 항목·가격, 아내가 알림 항목을 고를 수 있는지, Android 제공 확인 못 함.",
+  "コノトキ: 파트너에게 타이밍 알림이 가는지(스토어는 '베스트 타이밍을 알림'만), 거절·미루기 버튼, 다운로드 수 확인 못 함. 이름은 'コウノトリ'가 아니라 'コノトキ'.",
+  "パパninaru: ninaru와 연동 방식, 할 일 기한 계산, 妊活 단계 내용 — 못 찾음(없을 가능성 높음).",
+  "Seem: 종료 공지도 현재 판매 확인도 못 함. 칸 라이언즈 수상은 미확인.",
+  "母子モ: 현재 도입 지자체 수 못 찾음(최신 확인값 2020-06 260곳+).",
+  "2024-2026 일본 신규 妊活 부부·남편 앱: 검색 2회로 찾지 못함. 걸린 것은 COUPPLY(커플 다기능 앱), ペアワーク(가사 분담), Baby Match(妊活 매칭), kegg(fermata, 기기) — 남편 역할 妊活 앱은 아님.",
+  "美柚·大姨妈: 大姨妈 男生版 현재 여부, 이용자 수 확인 못 함.",
+  "トツキトオカ는 형제 조사 근거 그대로 두고 오늘 재검색하지 않았어요.",
+  "ソフィ 파트너 공유, ファミワン, TENGA メンズルーペ 기능 세부는 프로필로 만들지 않았어요."
+ ]
+}

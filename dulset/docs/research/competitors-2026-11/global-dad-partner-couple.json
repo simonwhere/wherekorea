@@ -1,0 +1,846 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "HiDaddy (HiMommy의 아빠용 짝 앱)",
+   "maker": "HiFamily / HiMommy (폴란드 회사로 기억, 오늘 확인 못 함)",
+   "country": "폴란드(기억) · 다국어",
+   "category": "아빠 전용 앱: 임신 준비 → 임신 → 만 3세",
+   "platforms": "iOS, Android (com.hifamily.hidaddy)",
+   "price_model": "무료 + 프리미엄 구독(기억, 가격 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "임신 준비 중에는 남성이 파트너의 주기·배란을 따라 봄(스토어 설명, 2026-09 검색 요약)",
+    "누가 주기를 입력하는지, 여성이 항목을 가릴 수 있는지는 확인 못 함"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주차 따라가기",
+    "출생 뒤 만 3세까지 아기 발달과 팁(스토어 설명, 2026-09 검색 요약)",
+    "매일 '아기가 아빠에게 보내는' 1인칭 메시지와 아빠가 할 일 한 줄(기억)"
+   ],
+   "partner_features": [
+    "아빠가 보는 것: 매일 바뀌는 아기 메시지와 팁(기억). HiMommy와 연결하면 엄마가 적은 기분·먹고 싶은 것이 알림으로 옴(스토어 설명, 2026-09 검색 요약)",
+    "아빠가 하는 것: QR 코드나 mommyId로 연결, 서로에게 메모 남기기. 체크나 본인 건강 과제는 찾지 못함",
+    "연결하려면 두 사람 모두 앱 설치(엄마 HiMommy, 아빠 HiDaddy)"
+   ],
+   "korea_system_features": [
+    "없음. 한국어 제공 여부 확인 못 함"
+   ],
+   "content_community_ai": [
+    "매일 한 편 콘텐츠(아기 1인칭) — 기억"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 2개(엄마용·아빠용)와 푸시",
+    "계정 연결: QR 코드 · mommyId"
+   ],
+   "privacy_trust": [
+    "확인 못 함"
+   ],
+   "design": {
+    "summary": "엄마 앱과 짝을 이루는 별도 아빠 앱. 정보 목록이 아니라 아기 캐릭터가 매일 한 마디 거는 형식이 중심(기억)",
+    "home": "오늘의 아기 메시지 카드와 임신 주차(기억)",
+    "onboarding": "예정일 입력 또는 HiMommy 연결(기억, 세부 확인 못 함)",
+    "visual_style": "일러스트 캐릭터, 가볍고 유머 있는 말투(기억)",
+    "notable_patterns": [
+     "아기 1인칭 화법으로 아빠를 부름",
+     "엄마 앱의 기분·입덧 기록이 아빠 푸시가 됨",
+     "아빠용을 별도 앱·별도 이름으로 분리"
+    ],
+    "evidence": "저장소 docs/research/global-apps.json의 2026-09 검색 요약(스토어 설명)과 기억. 오늘 스토어·사이트를 열지 못했고 스크린샷도 보지 못함"
+   },
+   "strengths": [
+    "이 묶음에서 드물게 임신 전(주기 보기)부터 만 3세까지 한 앱으로 이어짐",
+    "매일 바뀌는 한 줄이 있어 아빠가 열 이유가 매일 생김",
+    "엄마 앱과 실제로 연결돼 엄마 상태가 아빠에게 감"
+   ],
+   "weaknesses_from_reviews": [
+    "오늘 리뷰를 확인하지 못함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/us/app/hidaddy-pregnancy-for-dads/id1328264789",
+     "what": "App Store 설명: 주기·배란 보기, 임신, 만 3세, HiMommy 연결. 저장소 global-apps.json(2026-09 검색 요약) 재인용, 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.hifamily.hidaddy&hl=en",
+     "what": "Google Play 설명: 기분·먹고 싶은 것 알림, 메모. 저장소 재인용(2026-09), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://himommy.app/en/pages/daddy-pregnancy-app/",
+     "what": "제작사 소개 페이지: QR·mommyId 연결. 저장소 재인용(2026-09), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://himommy.app/",
+     "what": "기억(2025년 이전 정보일 수 있음): 아기 1인칭 매일 메시지, 프리미엄 구독, 폴란드 회사. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Daddy Up",
+   "maker": "제작사명 확인 못 함(미국 소규모 제작으로 기억)",
+   "country": "미국(기억)",
+   "category": "임신 중 예비 아빠용 주차 가이드",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "없음. 임신 주차 기준이라 임신 준비 단계는 다루지 않음(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "주차별 '필드 가이드': 아기 크기를 공구·야외 물건에 비유, 이번 주 엄마와 아기에게 일어나는 일, 아빠가 할 일(기억)",
+    "체크리스트와 진통 간격 재기(기억)"
+   ],
+   "partner_features": [
+    "아빠가 보는 것: 주 1회 바뀌는 가이드(기억)",
+    "아빠가 하는 것: 체크리스트 체크, 진통 간격 재기(기억)",
+    "엄마 앱과 연결·공유: none found(기억에 없음)"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱. 푸시·계정 여부 확인 못 함"
+   ],
+   "design": {
+    "summary": "야외 생존 가이드북을 흉내 낸 남성 취향 브랜딩. 배지, 거친 글꼴, 농담 섞인 문체로 '남자용'임을 첫 화면에서 알림(기억)",
+    "home": "이번 주 카드(아기 크기 비유)와 할 일(기억)",
+    "visual_style": "아웃도어·캠핑 장비 느낌의 색과 아이콘(기억)",
+    "notable_patterns": [
+     "아기 크기를 과일 대신 남성에게 익숙한 물건으로 비유",
+     "주 1회 리듬",
+     "엄마 앱과 연결 없이 혼자 쓰는 구조"
+    ],
+    "evidence": "기억뿐(과거에 본 스토어 설명·스크린샷). 오늘 www.daddyup.com 접속이 막혔고 스토어도 열지 못함"
+   },
+   "strengths": [
+    "톤과 비유만으로 '남자를 위한 것'을 3초 안에 전달",
+    "주 1회라 부담이 낮음"
+   ],
+   "sources": [
+    {
+     "url": "https://www.daddyup.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 필드 가이드 콘셉트, 주차별 크기 비유, 체크리스트, 진통 타이머. 오늘 접속 실패(허용 도메인 밖)",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "DadPad",
+   "maker": "Inspire Cornwall CIC, NHS와 함께 개발(기억)",
+   "country": "영국",
+   "category": "신생아기 아빠용 안내서(종이 패드와 앱). 지역 NHS·지자체가 구매해 배포",
+   "platforms": "iOS, Android, 종이판(기억)",
+   "price_model": "앱 무료. 지역 NHS·지자체가 비용을 내고 지역 정보를 넣음(기억). 종이판 개별 구매 가격 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "없음"
+   ],
+   "pregnancy_parenting_features": [
+    "출산 직전부터 신생아기: 수유, 안기, 기저귀, 잠, 울음, 집 안전, 응급처치(기억)",
+    "아빠 본인의 산후 우울·불안과 부부 관계 주제(기억)",
+    "파생판: DadPad Neonatal(신생아집중치료실), Co-ParentPad(동성 커플 등 공동 부모) — 기억"
+   ],
+   "partner_features": [
+    "아빠가 보는 것: 주제별 짧은 글. 우편번호를 넣으면 지역 서비스·연락처가 붙음(기억)",
+    "아빠가 하는 것: 읽기 위주. 매일·매주 과제는 기억에 없음",
+    "엄마와 연결·공유: none found",
+    "임신 준비 단계: 없음"
+   ],
+   "korea_system_features": [
+    "없음. 참고: 공공 의료가 아빠용 자료를 직접 배포하는 모델"
+   ],
+   "content_community_ai": [
+    "의료진과 아빠들이 함께 만든 콘텐츠라고 소개(기억)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱. 알림·계정 방식 확인 못 함",
+    "조산사·산전 교실을 거쳐 배포(기억)"
+   ],
+   "privacy_trust": [
+    "NHS 공동 개발, 지역 NHS 위탁이라는 공신력(기억)"
+   ],
+   "design": {
+    "summary": "주제 타일을 눌러 짧은 글을 읽는 참고서형. 아빠들의 말을 인용하는 직설적이고 실용적인 문체(기억)",
+    "home": "주제 목록(기억)",
+    "visual_style": "색·서체는 기억나지 않음",
+    "notable_patterns": [
+     "반복 루프 없이 필요할 때 찾아보는 구조",
+     "지역 정보 결합",
+     "아빠 마음 건강을 정식 주제로 둠"
+    ],
+    "evidence": "기억뿐. 오늘 thedadpad.co.uk 접속이 막혔고 스토어도 열지 못함"
+   },
+   "strengths": [
+    "공공 의료 경로로 배포돼 신뢰와 도달을 함께 얻음",
+    "아빠 자신의 마음 건강을 다룸",
+    "농담 없이 담백한 톤으로도 남성용이 성립함을 보여 줌"
+   ],
+   "sources": [
+    {
+     "url": "https://thedadpad.co.uk/",
+     "what": "기억(2025년 이전 정보일 수 있음): 제작 주체, NHS 위탁 방식, 주제 목록, 파생판. 오늘 접속 실패(허용 도메인 밖)",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Baby Buddy (아빠·공동 부모 경로)",
+   "maker": "Best Beginnings(영국 자선단체) — 기억",
+   "country": "영국",
+   "category": "임신~영아기 공공형 무료 앱, 아빠·파트너용 매일 콘텐츠 포함",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "무료, 광고 없음(기억)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "없음(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주차·아기 월령에 맞춘 '오늘의 정보' 매일 한 편, 영상(기억)"
+   ],
+   "partner_features": [
+    "가입 때 역할(엄마 / 아빠·파트너)을 고르면 그 역할용 '오늘의 정보'가 매일 나옴 — 기억(2021년 말 2.0 개편)",
+    "아빠가 하는 것: 읽기·영상 보기. 과제나 체크는 확인 못 함",
+    "엄마 계정과 연결: 확인 못 함",
+    "임신 준비 단계: 없음(기억)"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시(기억)"
+   ],
+   "privacy_trust": [
+    "자선단체 운영, 영국 의료 단체들의 지지를 내세움(기억, 세부 확인 못 함)"
+   ],
+   "design": {
+    "summary": "하루 한 장 카드가 중심. 같은 앱 안에서 역할만 바꿔 아빠용 문장을 따로 씀(기억)",
+    "home": "오늘의 정보 카드(기억)",
+    "notable_patterns": [
+     "아빠용 앱을 따로 만들지 않고 역할 선택으로 콘텐츠를 갈라 줌",
+     "매일 한 편"
+    ],
+    "evidence": "기억뿐. 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "아빠에게도 매일 새 글이 있는 드문 공공형 앱",
+    "광고·판매가 없어 톤이 차분함"
+   ],
+   "sources": [
+    {
+     "url": "https://www.bestbeginnings.org.uk/baby-buddy",
+     "what": "기억(2025년 이전 정보일 수 있음): 2.0 개편에서 아빠·파트너용 매일 정보 추가, 무료·광고 없음. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Pregnancy+ (Philips) — 가족 역할 맞춤",
+   "maker": "Philips (원 제작사 Health & Parenting Ltd, 영국) — 기억",
+   "country": "영국·네덜란드, 글로벌",
+   "category": "주류 임신 앱의 파트너 처리 방식 대표 사례",
+   "platforms": "iOS, Android (com.hp.pregnancy.lite — 기억)",
+   "price_model": "무료 다운로드 + 앱 내 구입(기억, 현재 구조 확인 못 함)",
+   "scale": "스토어 설명이 수천만 이용자를 내세운 것으로 기억. 정확한 수 확인 못 함",
+   "cycle_fertility_features": [
+    "없음. 예정일 기준(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "매일 글, 주차별 3D 태아 모델, 크기 비유(과일·동물 등), 태동·진통·체중 기록, 출산 가방·출산 계획·이름 목록(기억)",
+    "같은 회사의 Baby+가 출생 뒤를 이어받음(기억)"
+   ],
+   "partner_features": [
+    "설치할 때 아기와의 관계를 고름(엄마, 아빠, 파트너, 조부모 등). 고른 역할에 맞춰 문구가 바뀜(기억)",
+    "아빠·파트너가 보는 것: 엄마와 같은 주차 콘텐츠를 자기 폰에서 따로(기억)",
+    "두 사람 계정 연결, 엄마 기록 공유, 파트너 전용 과제: none found(기억에 없음, 확인 못 함)",
+    "임신 준비 단계: 없음"
+   ],
+   "korea_system_features": [
+    "없음. 한국어 제공 여부 확인 못 함"
+   ],
+   "content_community_ai": [
+    "매일 글과 주차 가이드(기억)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시(기억). 위젯·워치·건강 데이터 연동 확인 못 함"
+   ],
+   "privacy_trust": [
+    "2022-08 Mozilla *Privacy Not Included가 생리·임신 앱과 기기 25개 중 18개에 경고를 붙임(저장소 재인용). Pregnancy+가 그 18개에 들었다고 기억하지만 오늘 확인 못 함"
+   ],
+   "design": {
+    "summary": "홈 위쪽에 그 주의 3D 태아 모델을 크게 두고 아래로 오늘의 글, 주차 정보, 도구가 이어짐. 완성도 높은 시각물이 매일 볼거리(기억)",
+    "home": "3D 모델과 오늘의 글(기억)",
+    "onboarding": "예정일과 '아기와의 관계' 선택(기억)",
+    "visual_style": "사실적인 3D 렌더, 밝은 바탕(기억)",
+    "notable_patterns": [
+     "파트너 모드가 사실상 '호칭 바꾸기'에 머묾",
+     "매일 한 편과 주 1회 큰 변화(모델·크기)",
+     "한 번 설정하면 예정일까지 자동으로 흐름"
+    ],
+    "evidence": "기억뿐(과거에 본 스토어 설명·스크린샷). 오늘 스토어를 열지 못함"
+   },
+   "strengths": [
+    "시각 완성도. 3D 모델이 매주 바뀌는 것 자체가 다시 여는 이유",
+    "가족 누구나 같은 앱을 자기 호칭으로 쓸 수 있어 진입이 쉬움"
+   ],
+   "sources": [
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.hp.pregnancy.lite",
+     "what": "기억(2025년 이전 정보일 수 있음): 역할 맞춤 문구, 3D 모델, 도구 목록. 오늘 열지 못함",
+     "level": "memory"
+    },
+    {
+     "url": "https://www.mozillafoundation.org/en/privacynotincluded/articles/in-post-roe-v-wade-era-mozilla-labels-18-of-25-popular-period-and-pregnancy-tracking-tech-with-privacy-not-included-warning/",
+     "what": "Mozilla 2022-08: 25개 중 18개 경고. 저장소 global-apps.json 재인용, Pregnancy+ 포함 여부는 오늘 확인 못 함",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Greenlight (Cycle Tracker: Greenlight)",
+   "maker": "확인 못 함",
+   "country": "확인 못 함(영어권 스토어 등재)",
+   "category": "임신 준비 커플의 남성 쪽 앱",
+   "platforms": "iOS(안드로이드 확인 못 함)",
+   "price_model": "확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "가임 피크 알림을 남성에게 보냄",
+    "LH 테스트 기록(선택)"
+   ],
+   "partner_features": [
+    "남성이 보는 것: 가임 피크 때 오는 티 안 나는 알림. 둘이 정한 장난스러운 암호 문구로 올 수 있음(스토어 설명, 2026-09 검색 요약)",
+    "연결: QR 코드로 두 사람 페어링",
+    "남성이 하는 것: 알림 받기 말고는 찾지 못함",
+    "여성이 무엇을 가릴 수 있는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시, QR 페어링"
+   ],
+   "design": {
+    "summary": "타이밍 알림을 둘만의 농담으로 포장. 스토어 문구는 'romantic and low-pressure'",
+    "notable_patterns": [
+     "암호 문구 알림",
+     "남성을 주 사용자로 둠"
+    ],
+    "evidence": "저장소 global-apps.json의 2026-09 검색 요약(App Store 설명). 스크린샷은 보지 못함. 오늘 재확인 못 함"
+   },
+   "strengths": [
+    "잠금화면에 건강 단어 없이 타이밍을 전함",
+    "남성 쪽에서 시작하는 드문 임신 준비 앱"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/mx/app/cycle-tracker-greenlight/id6751544752",
+     "what": "App Store 설명: QR 페어링, 암호 문구 알림, LH 기록. 저장소 재인용(2026-09 검색 요약), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/jm/app/cycle-tracker-greenlight/id6751544752",
+     "what": "같은 앱의 다른 국가 스토어 페이지. 저장소 재인용",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Labour (Pregnancy for Couples)",
+   "maker": "Labour the App(국가 확인 못 함)",
+   "country": "확인 못 함",
+   "category": "커플용 임신 준비 → 임신 → 산후 한 앱",
+   "platforms": "iOS(안드로이드 확인 못 함)",
+   "price_model": "2주 체험 뒤 구독. 한 구독으로 두 사람 모두(공식 FAQ, 2026-09 검색 요약). 가격 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "주기·가임기 기록(임신 준비 단계)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신·산후까지 같은 앱에서 이어짐"
+   ],
+   "partner_features": [
+    "두 사람이 각자 계정으로 연결",
+    "같이 보는 체크리스트: 할 일을 나눠 맡음",
+    "주 1회 같이 이야기할 질문으로 정신적 부담(mental load)을 나눔",
+    "파트너가 주기 정보를 어디까지 보는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 계정 연결"
+   ],
+   "design": {
+    "summary": "'보이지 않는 일 나누기'를 앞세운 커플 앱. 체크리스트와 주간 대화 질문이 두 축",
+    "notable_patterns": [
+     "주 1회 대화 질문",
+     "할 일의 담당자 나누기",
+     "커플 1구독"
+    ],
+    "evidence": "저장소 global-apps.json의 2026-09 검색 요약(App Store, 공식 사이트·FAQ). 스크린샷은 보지 못함. 오늘 재확인 못 함"
+   },
+   "strengths": [
+    "임신 준비부터 산후까지 커플 단위로 이어지는 드문 구조",
+    "파트너에게 '담당'을 줌",
+    "매일이 아니라 주 1회 리듬"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/us/app/labour-pregnancy-for-couples/id6464667468",
+     "what": "App Store 설명: 단계, 주기 기록, 파트너 연결. 저장소 재인용(2026-09), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://www.labourtheapp.com/",
+     "what": "공식 사이트: 체크리스트, 주간 질문. 저장소 재인용(2026-09)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.labourtheapp.com/faqs",
+     "what": "공식 FAQ: 2주 체험, 한 구독으로 두 사람. 저장소 재인용(2026-09)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Paired",
+   "maker": "Paired (런던. 법인명 Better Half Ltd로 기억)",
+   "country": "영국",
+   "category": "커플 습관 앱: 매일 질문·퀴즈",
+   "platforms": "iOS, Android",
+   "price_model": "무료 + 프리미엄. 월 $12.99, 연 $77.99, 한 구독으로 두 사람(공식 가격 페이지·리뷰 사이트, 2026-09 검색 요약. 지역·시점에 따라 다름)",
+   "scale": "unknown (수백만 다운로드로 보도된 기억, 수치 확인 못 함)",
+   "cycle_fertility_features": [
+    "없음"
+   ],
+   "partner_features": [
+    "매일 질문 1개: 각자 폰에서 답하고, 내가 답해야 상대 답이 열림(기억)",
+    "상대가 답하면 푸시가 옴(기억)",
+    "매일 퀴즈·게임: 상대를 얼마나 아는지 맞히고 둘의 답을 비교(기억)",
+    "주제별 질문 묶음과 오디오 코스는 유료(기억)",
+    "연속 답변 일수를 보여 줌(기억)",
+    "연결: 초대 코드나 링크, 두 사람 모두 앱 설치(기억)"
+   ],
+   "korea_system_features": [
+    "없음. 한국어 제공 여부 확인 못 함"
+   ],
+   "content_community_ai": [
+    "관계 연구자가 콘텐츠를 총괄한다고 내세움(기억)",
+    "자체 홍보: 영국 대학들과 한 연구에서 3개월 사용 뒤 관계의 질이 36% 올랐다는 문구(기억, 수치와 연구 설계 오늘 확인 못 함). 유지율 수치 공개는 찾지 못함",
+    "임신 준비·임신 전용 질문 묶음 유무: 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시, 계정 페어링. 위젯 확인 못 함"
+   ],
+   "privacy_trust": [
+    "확인 못 함"
+   ],
+   "design": {
+    "summary": "하루 한 화면. 오늘의 질문 카드가 홈 맨 위에 있고, 답하면 상대 답이 열리는 '잠금 해제'가 핵심 연출. 지난 답이 타임라인으로 쌓임(기억)",
+    "home": "오늘의 질문, 오늘의 퀴즈·게임(기억)",
+    "onboarding": "관계 상태와 목표 설문 뒤 상대 초대(기억)",
+    "visual_style": "보라 계열과 둥근 일러스트(기억, 불확실)",
+    "notable_patterns": [
+     "상호 잠금: 내가 해야 상대 것이 보임",
+     "상대의 행동이 내 알림이 됨",
+     "연속 일수",
+     "3분 안에 끝나는 하루 분량",
+     "답변 기록이 쌓여 둘의 자산이 됨"
+    ],
+    "evidence": "기억(과거에 본 스토어 스크린샷·사이트)과 저장소 couple-record.json의 2026-09 검색 요약. 오늘 www.paired.com 접속이 막혔고 스토어도 열지 못함"
+   },
+   "strengths": [
+    "하루 분량이 작고 끝이 분명함",
+    "상대가 답했다는 사실이 가장 강한 재방문 계기",
+    "커플 1구독"
+   ],
+   "weaknesses_from_reviews": [
+    "두 번째 질문부터 유료라는 불만(리뷰 정리 글, 2026-09 검색 요약)",
+    "무료 체험 뒤 연간 자동결제 불만(같은 출처)",
+    "질문이 반복된다는 불만(같은 출처)"
+   ],
+   "sources": [
+    {
+     "url": "https://www.paired.com/premium",
+     "what": "공식 가격 페이지: 한 구독으로 두 사람. 저장소 couple-record.json 재인용(2026-09 검색 요약), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://www.whistleout.com/CellPhones/Apps/paired-app-couples-relationship-questions",
+     "what": "가격 월 $12.99·연 $77.99. 저장소 재인용(2026-09)",
+     "level": "press"
+    },
+    {
+     "url": "https://couplebee.com/blog/paired-app-reviews",
+     "what": "스토어 리뷰 정리: 페이월, 자동결제, 반복. 경쟁 앱 블로그라 치우쳤을 수 있음. 저장소 재인용(2026-09)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://unstar.app/blog/paired-lasting-love-nudge-evergreen-cupla-couples-apps-ranked-2026",
+     "what": "커플 앱 비교 글(2026). 저장소 재인용",
+     "level": "press"
+    },
+    {
+     "url": "https://www.paired.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 매일 질문의 상호 잠금, 퀴즈·게임, 연속 일수, 36% 문구. 오늘 접속 실패(허용 도메인 밖)",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Agapé",
+   "maker": "Agapé Wellness(미국) — 기억",
+   "country": "미국",
+   "category": "커플 습관 앱: 매일 질문 하나",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "기본 무료, 추가 질문 묶음은 구독(기억, 가격 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "없음"
+   ],
+   "partner_features": [
+    "매일 질문 1개가 두 사람에게 같이 옴. 둘 다 답해야 서로의 답이 보임(기억)",
+    "답이 열린 뒤 그 질문 아래에서 대화를 이어 감(기억, 세부 확인 못 함)",
+    "연결: 두 사람 모두 앱 설치(기억)"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시(기억). 위젯 확인 못 함"
+   ],
+   "design": {
+    "summary": "Paired보다 좁게, 질문 하나에만 집중한 화면(기억)",
+    "notable_patterns": [
+     "둘 다 답해야 열림",
+     "무료 핵심 + 유료 확장"
+    ],
+    "evidence": "기억뿐. 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "기능이 하나라 설명이 필요 없음",
+    "핵심 루프가 무료"
+   ],
+   "sources": [
+    {
+     "url": "https://www.getdailyagape.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 매일 질문, 상호 공개, 구독. 주소도 기억이며 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Lasting",
+   "maker": "The Knot Worldwide(기억)",
+   "country": "미국",
+   "category": "부부 상담형 프로그램 앱",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "월 $29.99(리뷰 사이트, 2026-09 검색 요약). 두 사람이 한 구독을 쓰는지 오늘 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "없음"
+   ],
+   "partner_features": [
+    "처음에 관계 진단 설문 → 소통·갈등·성·돈 같은 시리즈로 짠 개인화 프로그램(기억)",
+    "세션은 각자 폰에서 몇 분짜리 읽기와 문항. 둘 다 끝내면 서로의 답을 비교(기억)",
+    "한쪽만 써도 진행됨(기억)"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "content_community_ai": [
+    "부부 연구에 근거했다고 내세움(기억)",
+    "자체 홍보: 함께 세션을 한 커플의 94%가 관계의 새 강점을 봤다는 문구(기억, 수치 오늘 확인 못 함)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 푸시(기억)"
+   ],
+   "design": {
+    "summary": "교과 과정처럼 시리즈 → 세션으로 나뉘고 진도율을 보여 주는 구조. 매일 가볍게보다 '과정 이수'에 가까움(기억)",
+    "notable_patterns": [
+     "진단 → 맞춤 과정",
+     "각자 하고 나서 비교",
+     "혼자서도 진행 가능"
+    ],
+    "evidence": "기억과 저장소 couple-record.json의 2026-09 검색 요약(가격). 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "상대가 안 해도 내 쪽은 진행돼 한 사람이 시작하기 쉬움",
+    "진단 결과가 과정 내용을 정함"
+   ],
+   "sources": [
+    {
+     "url": "https://www.choosingtherapy.com/lasting-app-review/",
+     "what": "리뷰: 월 $29.99. 저장소 couple-record.json 재인용(2026-09 검색 요약), 오늘 재확인 못 함",
+     "level": "press"
+    },
+    {
+     "url": "https://www.getlasting.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 진단, 시리즈·세션, 답 비교, 94% 문구. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "ExSeed Health",
+   "maker": "ExSeed Health(덴마크·영국) — 기억",
+   "country": "덴마크·영국",
+   "category": "남성 가임력: 집에서 하는 정액 검사 키트 + 앱 + 생활습관 프로그램",
+   "platforms": "iOS, Android 앱과 폰에 끼우는 검사 기기(기억)",
+   "price_model": "키트 구매형, 앱은 무료(기억). 가격 확인 못 함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "남성 쪽: 정액량·농도·운동성, 총운동정자수를 앱에서 보여 줌(기억)",
+    "결과에 맞춘 생활습관 권고와 약 90일 프로그램(기억)",
+    "키트에 검사 여러 회분이 들어 있어 바꾼 뒤 다시 재 봄(기억)"
+   ],
+   "partner_features": [
+    "남성 본인용. 남성이 하는 것: 집에서 채취 → 기기로 촬영 → 결과 확인 → 권고 따라 하기 → 재검(기억)",
+    "앱 안에서 상담원에게 질문(기억, 무료 여부 확인 못 함)",
+    "여성 파트너가 보는 화면·공유: none found"
+   ],
+   "korea_system_features": [
+    "없음. 한국 판매 여부 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 폰 카메라와 부착 기기(기억)"
+   ],
+   "privacy_trust": [
+    "유럽 CE 인증 체외진단기기로 판매(기억)",
+    "샘플 영상이 어디서 분석·보관되는지 확인 못 함"
+   ],
+   "design": {
+    "summary": "검사 절차를 단계별 화면으로 이끌고, 숫자 결과 다음에 바로 '무엇을 바꿀지'로 넘어가는 구조(기억)",
+    "notable_patterns": [
+     "측정 → 권고 → 약 3개월 뒤 재측정",
+     "숫자가 남성의 진척 표시가 됨",
+     "남성 혼자, 집에서"
+    ],
+    "evidence": "기억뿐. 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "남성에게 자기 숫자와 바꿀 것을 한 앱에서 줌",
+    "재검이 다시 돌아올 이유가 됨",
+    "병원에 가지 않아도 됨"
+   ],
+   "sources": [
+    {
+     "url": "https://exseed.health/",
+     "what": "기억(2025년 이전 정보일 수 있음): 키트 구성, 측정 항목, 생활습관 프로그램, 상담. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Legacy",
+   "maker": "Legacy (givelegacy.com)",
+   "country": "미국",
+   "category": "남성 가임력 디지털 클리닉: 우편 정액 검사와 정자 냉동",
+   "platforms": "웹 대시보드(네이티브 앱은 기억에 없음)",
+   "price_model": "검사·보관 패키지 판매(기억, 가격 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "우편 키트로 보낸 샘플을 연구소가 분석(저장소 재인용)",
+    "2026-03 'Sperm Insights' 출시: 남성 가임력을 장기 건강과 연결해 보여 주는 데이터 플랫폼(보도자료, 2026-09 검색 요약)",
+    "리포트에 생활습관 권고가 붙고 상담을 예약할 수 있음(기억)"
+   ],
+   "partner_features": [
+    "남성 본인용. 남성이 하는 것: 키트 주문 → 집에서 채취 → 우편 → 웹 리포트 확인(기억)",
+    "여성 파트너가 보는 화면·공유: none found"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "웹과 우편. 푸시 없음(기억)"
+   ],
+   "privacy_trust": [
+    "확인 못 함"
+   ],
+   "design": {
+    "summary": "앱이 아니라 서비스. 한 번 검사하고 리포트를 읽는 구조라 반복 루프가 약함. 남성 본인의 건강 문제로 말을 거는 마케팅(기억)",
+    "notable_patterns": [
+     "남성을 돕는 사람이 아니라 당사자로 부름",
+     "가임력을 전반적 건강 지표로 넓힘(Sperm Insights)"
+    ],
+    "evidence": "저장소 global-apps.json의 2026-09 검색 요약(공식 사이트, 보도자료)과 기억. 오늘 열지 못함"
+   },
+   "strengths": [
+    "연구소 분석이라 결과 신뢰도가 높다고 내세움",
+    "검사 → 냉동 보관까지 한 곳"
+   ],
+   "sources": [
+    {
+     "url": "https://www.givelegacy.com/",
+     "what": "공식 사이트: 우편 정액 검사, 정자 냉동. 저장소 재인용(2026-09 검색 요약), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "http://www.prnewswire.com/news-releases/legacy-launches-sperm-insights-a-first-of-its-kind-data-platform-to-contextualize-male-fertility-and-long-term-health-302719919.html",
+     "what": "보도자료(2026-03): Sperm Insights. 저장소 재인용",
+     "level": "press"
+    },
+    {
+     "url": "https://www.givelegacy.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 리포트의 생활습관 권고, 상담, 웹 대시보드. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "YO Home Sperm Test",
+   "maker": "Medical Electronic Systems(미국) — 기억",
+   "country": "미국",
+   "category": "남성 가임력: 스마트폰 정액 검사 키트 + 앱",
+   "platforms": "iOS, Android 앱과 폰에 끼우는 기기(기억)",
+   "price_model": "키트 구매형(기억, 가격 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "FDA 허가를 받은 가정용 검사. 운동정자농도를 알려 줌(저장소 재인용)",
+    "앱이 단계별로 안내하고 샘플 영상을 보여 줌. 결과를 점수로도 표시(기억)",
+    "생활습관 프로그램: 팁 수준 말고는 기억에 없음"
+   ],
+   "partner_features": [
+    "남성 본인용. 남성이 하는 것: 집에서 채취 → 기기로 측정 → 앱에서 결과 확인(기억)",
+    "여성 파트너가 보는 화면·공유: none found"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱과 부착 기기. 결과가 폰 안에서 나옴(기억)"
+   ],
+   "privacy_trust": [
+    "FDA 허가(저장소 재인용)",
+    "Cleveland Clinic 글이 '쓰기 쉽고 정확한 가정용 선별 검사'로 소개(저장소 재인용)"
+   ],
+   "design": {
+    "summary": "검사 한 번을 끝까지 이끄는 단계형 안내가 전부. 결과 뒤 이어지는 루프는 약함(기억)",
+    "notable_patterns": [
+     "자기 샘플 영상을 직접 봄",
+     "숫자 대신 점수·구간으로 쉽게"
+    ],
+    "evidence": "저장소 global-apps.json의 2026-09 검색 요약과 기억. 오늘 열지 못함"
+   },
+   "strengths": [
+    "남의 눈 없이 집에서 바로 결과",
+    "규제 허가라는 신뢰 장치"
+   ],
+   "sources": [
+    {
+     "url": "https://yospermtest.com/",
+     "what": "공식 사이트: FDA 허가 스마트폰 검사, 운동정자농도. 저장소 재인용(2026-09 검색 요약), 오늘 재확인 못 함",
+     "level": "official"
+    },
+    {
+     "url": "https://consultqd.clevelandclinic.org/yo-home-sperm-test-found-to-be-a-user-friendly-accurate-way-to-screen-samples-at-home",
+     "what": "Cleveland Clinic 글. 저장소 재인용",
+     "level": "press"
+    },
+    {
+     "url": "https://yospermtest.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 앱 단계 안내, 영상, 점수 표시, 제작사. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Maven Clinic (파트너 계정)",
+   "maker": "Maven Clinic",
+   "country": "미국",
+   "category": "기업·보험 복지형 가상 클리닉: 임신 준비·난임~육아",
+   "platforms": "iOS, Android, 웹(기억)",
+   "price_model": "회사·보험이 부담. 회원과 파트너는 무료(기억, 조건 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "임신 준비·난임 프로그램에서 전문가 화상 상담과 글·수업(기억)",
+    "남성 쪽 상담이 어디까지 포함되는지 확인 못 함"
+   ],
+   "pregnancy_parenting_features": [
+    "임신·산후·육아 프로그램으로 이어짐(기억)"
+   ],
+   "partner_features": [
+    "회사 복지로 가입한 회원의 파트너도 자기 계정을 따로 만들어 같은 서비스를 씀(기억)",
+    "파트너가 하는 것: 화상 진료·메시지로 전문가 상담, 담당 케어 어드보케이트와 대화, 프로그램 글 읽기(기억)",
+    "두 사람 기록을 서로 보는 화면: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "없음"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 화상 진료, 메시지(기억)"
+   ],
+   "privacy_trust": [
+    "의료 서비스로 운영(기억). 세부 확인 못 함"
+   ],
+   "design": {
+    "summary": "앱 루프가 아니라 사람이 중심. 다음 예약, 메시지, 추천 글이 홈을 채우는 서비스형 앱(기억, 불확실)",
+    "notable_patterns": [
+     "파트너에게 별도 계정",
+     "사람(담당자)이 다시 부르는 장치"
+    ],
+    "evidence": "기억뿐. 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "파트너도 당사자 자격으로 가입",
+    "전문가에게 바로 물을 수 있음"
+   ],
+   "sources": [
+    {
+     "url": "https://www.mavenclinic.com/",
+     "what": "기억(2025년 이전 정보일 수 있음): 복지형 모델, 파트너 계정, 케어 어드보케이트. 오늘 열지 못함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  }
+ ],
+ "cluster_takeaways": [
+  "아빠·파트너 앱의 기본 루프는 '매일 한 줄 또는 주 1회 한 장'이고, 임신 주차가 시계 노릇을 해요. 임신 전에는 그런 시계가 없어서 이 묶음 대부분이 임신부터 시작해요. 임신 준비를 다루는 남성 쪽 앱은 HiDaddy(주기 보기), Greenlight(가임 알림), 커플형 Soonr·Labour 정도예요. 둘셋은 한국 제도 기한과 '이번 주 하나'로 시계를 만들었으니, 비교할 것은 '임신 전 남편에게 매주 새로 볼 것이 있는가'예요.",
+  "남성용 톤은 두 갈래예요. 농담·남자 물건 비유·캐릭터(Daddy Up, HiDaddy)와 담백한 실용 안내(DadPad, Baby Buddy). 어느 쪽이든 첫 화면에서 '이건 나를 위한 것'이 보여요. 둘셋 남편 화면이 첫 3초에 그렇게 읽히는지 견줘 봐야 해요.",
+  "아빠 앱은 거의 다 남성을 '돕는 사람'으로 불러요(이번 주 아내 상태, 해 줄 일). 남성 본인의 몸과 검사를 과제로 주는 것은 남성 난임 서비스(ExSeed, Legacy, YO)뿐이고, 두 갈래를 한 앱에 묶은 사례는 이 묶음에서 찾지 못했어요. 둘셋의 '내 준비 + 해 줄 수 있는 것' 조합이 여기에 해당해요.",
+  "남성 난임 쪽의 루프는 '측정 → 숫자 → 생활습관 권고 → 약 3개월 뒤 재측정'이에요. 숫자가 진척 표시가 돼요. 둘셋은 정액검사 결과 입력·해석을 하지 않기로 했으니, 약 3개월 타이머가 숫자 피드백 없이 도는 점이 차이예요.",
+  "커플 습관 앱의 핵심 장치는 '내가 해야 상대 것이 열림'(상호 잠금), 상대가 했다는 푸시, 연속 일수, 3분 안에 끝나는 하루 분량이에요. 둘셋은 연속 기록과 읽음 표시를 하지 않기로 했으니, 그 자리를 '이번 주 우리 둘'과 [고마워요]가 얼마나 메우는지가 비교 지점이에요.",
+  "커플 앱이 내세우는 효과는 자체 연구의 관계 만족 수치이고(Paired, Lasting — 수치는 기억이라 미확인), 공개된 유지율은 찾지 못했어요. 반대편에는 '숙제 같다'·페이월·반복 불만이 있어요. 매일보다 주 1회(Labour, Daddy Up)를 고른 앱도 있어요.",
+  "연결은 두 사람 모두 앱을 깔고 코드·QR로 짝짓는 방식이 기본이고 푸시가 전제예요. 설치 없는 링크로 파트너를 들이는 사례는 이 묶음에서 찾지 못했어요. 둘셋의 링크는 진입이 가장 가볍지만, 다시 부르는 푸시가 없다는 약점도 이 묶음과 견주면 가장 커요.",
+  "공유 방향은 엄마 상태(기분·입덧·가임기)를 아빠에게 보내는 쪽이에요. 아내가 단계별로 무엇을 보일지 정하고 알리지 않은 것이 새지 않게 하는 설계는 이 묶음에서 확인하지 못했어요. 둘셋이 앞서는 지점이지만 남편 눈에는 보이지 않는 장점이에요.",
+  "결제 단위는 커플이에요(Paired, Labour는 한 구독으로 두 사람). 남성 난임은 키트·검사 판매, 가족형성 복지(Maven 등)는 회사가 내요. 복지형은 앱 기능보다 사람(담당자·전문가)이 다시 부르는 장치예요. 둘셋에는 사람도 의료 자문 표기도 아직 없어요.",
+  "매일 볼거리와 쌓이는 자산이 있어요: 3D 태아 모델(Pregnancy+), 아기 캐릭터의 한 마디(HiDaddy), 답변 타임라인(Paired). 둘셋 남편 화면에서 쌓이는 것은 '내 준비' 막대와 '고마워했어요' 정도라 시각적 보상이 얇아요."
+ ],
+ "not_found": [
+  "방법의 한계: 이 실행에서는 웹을 전혀 확인하지 못했어요. WebSearch는 첫 질의부터 '이번 턴 검색 예산 소진(에이전트 공용 200회)'으로 거절됐고, WebFetch는 hidaddy.app, www.daddyup.com, thedadpad.co.uk, www.paired.com 모두 이름 해석 실패였어요(세션 허용 도메인이 비어 있음). 그래서 모든 근거는 ① 내 기억(memory, 대체로 2025년 이전 정보) ② 저장소 docs/research/global-apps.json·couple-record.json의 2026-09 검색 요약 재인용뿐이에요. 오늘 새로 확인한 사실은 0건이에요.",
+  "다시 확인하려면: 검색 예산이 돌아온 뒤 다시 돌리거나, 세션 네트워크 설정에서 apps.apple.com, play.google.com과 각 제작사 사이트(hidaddy.app 또는 himommy.app, www.daddyup.com, thedadpad.co.uk, www.paired.com, www.getlasting.com, exseed.health, www.givelegacy.com, yospermtest.com, www.mavenclinic.com)를 허용해야 해요.",
+  "씨드 목록에서 없어진 앱이 있는지 확인하지 못했어요. 어느 앱도 '지금 스토어에 있다'를 오늘 보지 못했어요.",
+  "스토어 스크린샷을 하나도 보지 못했고 어느 앱도 설치해 보지 못했어요. design 항목은 전부 기억이나 설명 문구에 기대요.",
+  "기억으로 적은 숫자 두 개(Paired 36%, Lasting 94%)는 자체 홍보 문구로 기억하는 것이고 출처 연구를 보지 못했어요. 보고서에 쓰려면 먼저 원문을 확인해야 해요.",
+  "Who's Your Daddy: 프로필하지 않았어요. 영국식 농담 톤의 예비 아빠용 임신 주차 앱으로 기억하지만 제작사·현재 운영 여부·기능을 확인하지 못했어요.",
+  "What to Expect · BabyCenter · The Bump: 파트너 모드를 확인하지 못해 프로필하지 않았어요. 저장소 기록(2026-09, 신뢰도 낮음)은 BabyCenter에 커플 연결이 확인되지 않았고 What to Expect는 할 일 목록을 파트너에게 보낼 수 있다는 보도가 있다는 정도예요 — https://www.today.com/parents/pregnancy/best-pregnancy-apps-rcna30762",
+  "Baby+ (Philips): Pregnancy+처럼 역할 맞춤이 있는지 확인하지 못했어요.",
+  "Ovia 가족 공유: 새로 확인한 것이 없어요. 저장소 기록은 파트너 이메일을 넣으면 가임기 전에 이메일 알림이 가고, 육아 앱(Ovia Parenting)에서 가족과 사진을 나눈다는 것이에요 — https://ovuline.helpshift.com/hc/en/3-ovia-fertility/faq/898-how-do-i-add-or-change-my-partner-s-email/?l=en",
+  "Peanut 임신 준비 커뮤니티: 여성 전용이라 파트너 기능은 none found(저장소 기록 재인용) — https://www.thebump.com/news/peanut-app-launches-ttc",
+  "Coral: 프로필하지 않았어요. 성생활·친밀감 연습 앱으로 기억하고 임신 준비와의 접점은 찾지 못했어요.",
+  "Fellow, Posterity Health: 프로필하지 않았어요. Fellow는 우편 정액 검사, Posterity Health는 남성 난임 원격 진료로 기억하지만 앱·생활습관 프로그램·가격을 확인하지 못했어요. Ro Sperm Kit(옛 Dadi), Mojo, Jack Fertility도 이름만 기억해요.",
+  "Rescripted, Frame Fertility, Carrot, Kindbody: 프로필하지 않았어요. Rescripted는 여성 건강 미디어·커뮤니티, Frame은 임신 전 위험 평가와 코칭(커플 포함), Carrot·Kindbody는 기업 복지형으로 기억하지만 파트너가 실제로 보는 화면과 현재 운영 상태를 확인하지 못했어요.",
+  "Soonr: 이 묶음과 가장 가까운 앱이지만 새로 확인한 것이 없어 다시 프로필하지 않았어요. 저장소 기록(2026-09): 2026-06-04 미국 출시, 두 사람이 각자 기록하고 상대의 연속 기록과 완료 알림을 봄 — https://www.prnewswire.com/news-releases/soonr-health-officially-launches-in-the-us-with-connected-at-home-fertility-tracking-for-couples-302791083.html",
+  "일본 パパninaru(아빠용 임신·육아 앱)는 다른 묶음 메모에 이름만 있어요. 여기서도 확인하지 못했어요 — https://play.google.com/store/apps/details?id=jp.co.eversense.papaninaru",
+  "찾지 못한 것: 이 묶음 앱들의 유지율(D7·D30) 공개 수치, 아빠 앱의 다운로드 수, 2025~2026년 가격 변화, 한국어 지원 여부, 남성 난임 앱의 데이터 처리 방식, 아빠 앱에서 엄마가 공유 항목을 고르는 설정."
+ ]
+}

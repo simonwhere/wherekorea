@@ -1,0 +1,654 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "Mira and Inito (at-home hormone readers)",
+   "maker": "Quanovate Tech (Mira, US); Inito (India/US)",
+   "country": "US / India",
+   "category": "hardware + app: urine hormone monitor (LH, E3G, PdG, FSH)",
+   "platforms": [
+    "iOS",
+    "Android (Mira)",
+    "Inito monitor: iPhone only, Android not supported per Inito site"
+   ],
+   "price_model": "Device + consumable strips/wands; Mira app free to use without the device; Inito starter kit listed $149 (promo $89) with 15 strips, HSA/FSA eligible",
+   "scale": "Inito claims 'trusted by 100,000+ couples'; Inito Series B $29.0m dated Dec 2025 (briter); Mira scale not found",
+   "partner_features": [
+    "Inito marketing frames timing for couples ('when your partner's home for a short time'); no partner account/view found",
+    "Mira: no partner view found in today's searches"
+   ],
+   "cycle_fertility_features": [
+    "Mira Ultra4 (Aug 2025): one wand measures FSH, LH, E3G, PdG; 16-minute read; test any day, several times a day",
+    "Mira '4D Ovulation Profiling' claims to judge how strong/viable ovulation is, plus 'Egg Prep Scan' and 'Cycle Balance Analysis'",
+    "Inito: one strip reads estrogen, LH, PdG and FSH; result in the app in about 10 minutes; confirms ovulation with PdG"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [
+    "None; neither is sold officially in Korea as far as found (not checked)"
+   ],
+   "content_community_ai": [
+    "Mira markets an 'AI-powered app' that guides testing (press)"
+   ],
+   "platform_delivery": [
+    "Phone camera / reader reads the strip; results only inside maker's app"
+   ],
+   "privacy_trust": [
+    "Inito: FDA Class I registered, exempt from premarket notification; Inito itself says this is NOT clearance or approval, while some third parties call it 'FDA-cleared'",
+    "Mira claims fluorescent lab-grade tech and 'up to 7x accuracy' (company claim)"
+   ],
+   "design": {
+    "summary": "Data-heavy hormone charts; Mira redesigned its chart page in spring 2025",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "official (Mira blog 'What's new in the Mira app', Apr 2025); rest memory"
+   },
+   "strengths": [
+    "Gives measured hormone values instead of calendar guesses",
+    "Confirms ovulation (PdG), which calendar apps cannot"
+   ],
+   "weaknesses_from_reviews": [
+    "Recurring strip cost (memory)",
+    "Inito iPhone-only (official)"
+   ],
+   "sources": [
+    {
+     "url": "https://lp.inito.com/",
+     "what": "Inito price, FDA Class I registration wording, iPhone-only",
+     "level": "official"
+    },
+    {
+     "url": "https://try.inito.com/hormone-tracking/rb",
+     "what": "Inito four hormones, 10 minutes, couples framing",
+     "level": "official"
+    },
+    {
+     "url": "https://www.briter.co/companies/inito",
+     "what": "Inito Series B $29.0m Dec 2025",
+     "level": "press"
+    },
+    {
+     "url": "https://hitconsultant.net/2025/08/25/mira-launches-ultra4-the-first-at-home-hormone-monitor",
+     "what": "Mira Ultra4 launch, 4 hormones, 16 min, 4D ovulation profiling",
+     "level": "press"
+    },
+    {
+     "url": "https://shop.miracare.com/blogs/resources/whats-new-in-the-mira-app",
+     "what": "Mira app redesign spring 2025",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/app/id1434970941",
+     "what": "Mira app listing; app free without device",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Premom (Easy@Home LH strip photo reader)",
+   "maker": "Easy Healthcare Corp.",
+   "country": "US",
+   "category": "app + cheap LH strips; camera reads strip",
+   "platforms": [
+    "iOS",
+    "Android"
+   ],
+   "price_model": "App free; strips sold separately; 'PCOS Pro' paid tier unlocks AI tracking tools (bundle includes 6 months)",
+   "scale": "not found today",
+   "partner_features": [
+    "none found today"
+   ],
+   "cycle_fertility_features": [
+    "Photograph an LH strip; app aligns it and gives a numeric LH value (press release said 0-80 mIU/mL; product page says 0-65)",
+    "Maker claims the reader works with any strip brand",
+    "Reader described as 'proprietary AI algorithm'"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [],
+   "content_community_ai": [
+    "Separate 'Ask AI' chatbot; Premom's page says entered health info is processed by vendors including OpenAI"
+   ],
+   "platform_delivery": [],
+   "privacy_trust": [
+    "Discloses OpenAI as processor for AI chat",
+    "No independent validation of reader accuracy found"
+   ],
+   "design": {
+    "summary": "Photo-of-strip flow with numeric result and LH curve chart",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "memory"
+   },
+   "strengths": [
+    "Turns a cheap strip into a number and a curve: the most copyable 'device' feature for a software-only app"
+   ],
+   "weaknesses_from_reviews": [
+    "Reading varies with photo conditions (user review on premom.com)",
+    "One reseller review: results unusable (user-review)"
+   ],
+   "sources": [
+    {
+     "url": "https://www.streetinsider.com/Globe+Newswire/First-of-Its-Kind+Fertility+App+to+Quantify+Women%E2%80%99s+LH+Hormone+Level+to+Get+Real-Time+Ovulation+Prediction/15844018.html",
+     "what": "Photo reader launch, 0-80 mIU/mL",
+     "level": "press"
+    },
+    {
+     "url": "https://premom.com/product/premom-quantitative-ovulation-test-strips/comment-page-2/",
+     "what": "strip page range 0-65; user reviews on variability",
+     "level": "user-review"
+    },
+    {
+     "url": "https://premom.com/product/premom-lh-strips-pcos-pro-bundle/comment-page-2/",
+     "what": "PCOS Pro bundle with AI tools",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Natural Cycles (NC Birth Control / Plan Pregnancy, NC Partner View, NC Band)",
+   "maker": "Natural Cycles Nordic AB",
+   "country": "Sweden",
+   "category": "regulated temperature-algorithm app; licenses its algorithm to Samsung",
+   "platforms": [
+    "iOS",
+    "Android",
+    "Apple Watch app",
+    "Oura",
+    "Apple Watch Series 8+/Ultra temp",
+    "own NC Band"
+   ],
+   "price_model": "Paid subscription (price not checked today, memory)",
+   "scale": "not checked today",
+   "partner_features": [
+    "NC Partner View: she enables it in Settings and invites partner by email; partner sees red/green days, ovulation status and predictions in his own app",
+    "Partner can see today's status on his own Apple Watch (NC app 5.2.0+)",
+    "She can revoke all partners at any time; sharing categories are fixed (three), not item-by-item",
+    "Plan Pregnancy mode: partner follows predicted ovulation; NC frames it as sharing responsibility"
+   ],
+   "cycle_fertility_features": [
+    "FDA de novo birth-control clearance 2018; Oura integration cleared 2021; Apple Watch wrist-temperature integration cleared 2023",
+    "2025: further FDA 510(k) decision; NC Perimenopause mode; NC Band own temp + heart-rate wearable",
+    "Single report (July 2026) of clearance for a rebuilt algorithm (unconfirmed)"
+   ],
+   "pregnancy_parenting_features": [
+    "Follow Pregnancy mode exists (official page)"
+   ],
+   "korea_system_features": [
+    "Its algorithm powers Galaxy Watch cycle tracking, which 식약처 approved in Korea (Feb 2023)"
+   ],
+   "content_community_ai": [
+    "Markets an 'AI-powered' algorithm (press, 6th FDA clearance headline)"
+   ],
+   "platform_delivery": [
+    "Partner gets own app + Watch glance"
+   ],
+   "privacy_trust": [
+    "Uses 'FDA cleared' as headline trust signal",
+    "Apple's own Cycle Tracking explicitly is NOT cleared as birth control (contrast NC uses)"
+   ],
+   "design": {
+    "summary": "Red/green day as a single glanceable status; partner sees the same colour",
+    "onboarding": "not checked",
+    "home": "Big daily status circle (memory)",
+    "visual_style": "not checked",
+    "notable_patterns": [
+     "one-colour daily status shared to partner and watch"
+    ],
+    "evidence": "official help pages for partner; visuals memory"
+   },
+   "strengths": [
+    "Closest overseas model of 'she decides, he sees' with his own app and watch glance",
+    "Regulatory clearance as moat"
+   ],
+   "weaknesses_from_reviews": [
+    "not checked today"
+   ],
+   "sources": [
+    {
+     "url": "https://www.naturalcycles.com/cyclematters/have-you-tried-partner-view",
+     "what": "Partner View description",
+     "level": "official"
+    },
+    {
+     "url": "https://help.naturalcycles.com/hc/en-us/articles/5692805583645/",
+     "what": "Partner View setup, revoke",
+     "level": "official"
+    },
+    {
+     "url": "https://naturalcycles.com/plan-pregnancy",
+     "what": "Plan Pregnancy partner follows ovulation",
+     "level": "official"
+    },
+    {
+     "url": "https://www.biospace.com/natural-cycles-receives-fda-clearance-to-integrate-its-birth-control-app-with-data-measured-by-apple-watch",
+     "what": "Apple Watch clearance 2023",
+     "level": "press"
+    },
+    {
+     "url": "https://www.engadget.com/natural-cycles-fda-wearable-clearance-232422042.html",
+     "what": "wearable clearance",
+     "level": "press"
+    },
+    {
+     "url": "https://femtechinsider.com/natural-cycles-receives-sixth-fda-clearance-for-ai-powered-fertility-algorithm/",
+     "what": "sixth FDA clearance, AI framing",
+     "level": "press"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Wearable cycle estimates and health-data hubs (Apple Watch/HealthKit, Galaxy Watch/Samsung Health, Oura, Android Health Connect, Tempdrop)",
+   "maker": "Apple; Samsung; Oura; Google; Tempdrop",
+   "country": "US / Korea / Finland / Israel(Tempdrop, memory)",
+   "category": "platform layer a couple app reads from or writes to",
+   "platforms": [
+    "watchOS/iOS HealthKit",
+    "Wear OS/Samsung Health",
+    "Android Health Connect",
+    "Oura ring",
+    "Tempdrop armband"
+   ],
+   "price_model": "Free OS features with hardware; Oura membership paid (memory)",
+   "scale": "OS-level",
+   "partner_features": [
+    "None of these share cycle data to a partner natively (memory; not contradicted today)"
+   ],
+   "cycle_fertility_features": [
+    "Apple Watch Series 8+/Ultra: retrospective ovulation estimate from wrist-temperature biphasic shift; needs Sleep Focus 4h x 5 nights and ~2 cycles; 'estimates only', not birth control, not diagnosis",
+    "Galaxy Watch5+ / Galaxy Ring: skin temperature during sleep + Natural Cycles algorithm in Samsung Health shows predicted ovulation and fertile window; 식약처 approved Feb 2023 as fertility-diagnosis-aid software; 32 countries incl. Korea; not for contraception",
+    "Oura 'Fertile Window' (Cycle Insights): uses temperature, cardiovascular, respiratory, regularity, tags; Oura-reported 96.4% ovulations detected, +/-1.26 days; not for contraception, points to Natural Cycles",
+    "Health Connect record types include Menstruation (flow), Ovulation test (positive/negative), Cervical mucus, Sexual activity, Skin temperature; BBT as a distinct type not confirmed (Body temperature exists)",
+    "HealthKit has menstrual flow, ovulation test result, sexual activity, BBT, wrist temperature types (memory)",
+    "Tempdrop armband BBT: exports to Apple Health; auto-feeds some charting apps; ovulation-test import/export with Apple Health announced (v3.27.10, due end Nov 2025)"
+   ],
+   "pregnancy_parenting_features": [
+    "Oura Pregnancy Insights exists (details not found)"
+   ],
+   "korea_system_features": [
+    "Samsung Health heart rate, SpO2 and step functions became 식약처 'digital medical/health-support device' registration no.1 (Jan 2026) under 디지털의료제품법 (in force 24 Jan 2026); voluntary filing + performance certification route for non-diagnostic wellness devices",
+    "Vivhealth smart ring followed as first ring registered"
+   ],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "Data import requires a native app (HealthKit/Health Connect have no web API); a PWA cannot read them (memory)"
+   ],
+   "privacy_trust": [
+    "OS-level permission per data type; Samsung states general wellness use only, not for detecting/diagnosing disease"
+   ],
+   "design": {
+    "summary": "Cycle data lives inside OS health apps; third-party apps show it read-only",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "memory"
+   },
+   "strengths": [
+    "Many Korean couples already wear a Galaxy Watch with approved cycle tracking: the wife's ovulation estimate may already exist on her wrist"
+   ],
+   "weaknesses_from_reviews": [
+    "Apple estimates are retrospective (after ovulation), so less useful for timing (official limitation)"
+   ],
+   "sources": [
+    {
+     "url": "https://support.apple.com/120357",
+     "what": "Apple retrospective ovulation estimates, requirements, disclaimers",
+     "level": "official"
+    },
+    {
+     "url": "https://www.apple.com/legal/ifu/cycle-tracking/4-0/ct-ifu-4-0-en_GB.pdf",
+     "what": "Apple Cycle Tracking IFU inputs",
+     "level": "official"
+    },
+    {
+     "url": "https://news.samsung.com/kr/%EA%B0%A4%EB%9F%AD%EC%8B%9C-%EC%9B%8C%EC%B9%985-%EC%8B%9C%EB%A6%AC%EC%A6%88-%ED%94%BC%EB%B6%80-%EC%98%A8%EB%8F%84-%EA%B8%B0%EB%B0%98%EC%9D%98-%EC%83%9D%EB%A6%AC-%EC%A3%BC%EA%B8%B0-%EC%98%88%EC%B8%A1",
+     "what": "Galaxy Watch5 skin-temperature cycle prediction, NC algorithm, 32 countries",
+     "level": "official"
+    },
+    {
+     "url": "https://www.fnnews.com/news/202302151459183551",
+     "what": "식약처 approval of Samsung cycle tracking Feb 2023",
+     "level": "press"
+    },
+    {
+     "url": "https://news.samsung.com/kr/%EC%82%BC%EC%84%B1-%ED%97%AC%EC%8A%A4-%EA%B8%B0%EB%8A%A5-%EC%8B%9D%EC%95%BD%EC%B2%98-%EB%94%94%EC%A7%80%ED%84%B8%EC%9D%98%EB%A3%8C%C2%B7%EA%B1%B4%EA%B0%95%EC%A7%80%EC%9B%90%EA%B8%B0%EA%B8%B0-1",
+     "what": "Samsung Health first digital health-support device registration Jan 2026",
+     "level": "official"
+    },
+    {
+     "url": "https://dailymedi.com/news/news_view.php?wr_id=933696",
+     "what": "Vivhealth ring registration",
+     "level": "press"
+    },
+    {
+     "url": "https://ouraring.com/blog/inside-the-ring-fertile-window/",
+     "what": "Oura Fertile Window method, accuracy claim, contraception warning",
+     "level": "official"
+    },
+    {
+     "url": "https://support.google.com/android/answer/13770320",
+     "what": "Health Connect supported data types",
+     "level": "official"
+    },
+    {
+     "url": "https://developer.android.com/reference/kotlin/android/health/connect/datatypes/package-summary",
+     "what": "Health Connect record types",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/tempdrop/id1199061141",
+     "what": "Tempdrop Apple Health export",
+     "level": "official"
+    },
+    {
+     "url": "https://tempdrop-faq.helpscoutdocs.com/article/47-charting-app",
+     "what": "Tempdrop charting-app integrations",
+     "level": "official"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Sperm self-tests tied to an app (YO, ExSeed, O'VIEW M 오뷰엠)",
+   "maker": "Medical Electronic Systems (YO); ExSeed Health (DK/UK); 인트인 + 대구경북첨단의료산업진흥재단 (오뷰엠)",
+   "country": "US/Israel; Denmark/UK; Korea",
+   "category": "male hardware + phone camera semen analysis",
+   "platforms": [
+    "iOS",
+    "Android (memory)"
+   ],
+   "price_model": "One-off kits; ExSeed UK £94.99 for 2 tests, £149.99 for 5; YO price not checked",
+   "scale": "not found",
+   "partner_features": [
+    "YO: results private by default, can be shared with a professional; kit is for one person, not shareable",
+    "ExSeed markets 'understand your partner's fertility' but tests only the man; every test reviewed by an ExSeed fertility expert"
+   ],
+   "cycle_fertility_features": [
+    "YO: clip-on device turns phone into semen analyser; concentration + motility in ~3 minutes; '>97% vs lab' (maker; Cleveland Clinic study cited)",
+    "ExSeed: CE-marked device on smartphone; total motile sperm count, volume, concentration to WHO 5th ed.; ~15 min; UK NEQAS validated (maker)",
+    "오뷰엠 (2018): 4cm attachment to phone camera, count + motility, post-vasectomy check; current availability not confirmed"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [
+    "No 식약처-approved smartphone sperm test found today",
+    "TENGA sperm-observation kit reported Aug 2026 in Korea, explicitly not for medical judgement (press)"
+   ],
+   "content_community_ai": [],
+   "platform_delivery": [],
+   "privacy_trust": [
+    "YO described as FDA-cleared/authorized (wording varies)",
+    "ExSeed CE-marked",
+    "Cleveland Clinic: home tests screen only, don't replace andrology lab + doctor"
+   ],
+   "design": {
+    "summary": "Video of own sperm on the phone screen is the emotional hook; result as traffic-light",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "memory"
+   },
+   "strengths": [
+    "Only category that gives the husband his own measurable task, matching dulset's 'he does things himself'"
+   ],
+   "weaknesses_from_reviews": [
+    "not checked today"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/app/id1672830551",
+     "what": "YO app listing, accuracy, private sharing",
+     "level": "official"
+    },
+    {
+     "url": "https://www.icthealth.org/news/yo-enables-fda-aproved-at-home-sperm-fertility-test",
+     "what": "YO FDA wording",
+     "level": "press"
+    },
+    {
+     "url": "https://consultqd.clevelandclinic.org/yo-home-sperm-test-found-to-be-a-user-friendly-accurate-way-to-screen-samples-at-home",
+     "what": "Cleveland Clinic on YO",
+     "level": "press"
+    },
+    {
+     "url": "https://shop.exseedhealth.com/products/exseed-home-sperm-test-kit",
+     "what": "ExSeed kit, CE, prices, expert review",
+     "level": "official"
+    },
+    {
+     "url": "https://www.medicaltimes.com/Main/view.html?ID=1121526",
+     "what": "오뷰엠 launch 2018",
+     "level": "press"
+    },
+    {
+     "url": "https://kormedi.com/1221194/",
+     "what": "TENGA kit 2026",
+     "level": "press"
+    },
+    {
+     "url": "https://health.clevelandclinic.org/at-home-sperm-tests-can-be-useful-but-they-dont-replace-a-fertility-doctor",
+     "what": "home test limits",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "AI chat inside cycle/pregnancy apps (Ask Flo, Clue 'Chat With Your Data', Premom Ask AI, 맘찌 AI)",
+   "maker": "Flo Health; Clue (BioWink); Easy Healthcare; YONGSUB YOON (맘찌)",
+   "country": "UK; Germany; US; Korea",
+   "category": "LLM assistant inside health app",
+   "platforms": [
+    "iOS",
+    "Android (Flo, Clue)",
+    "맘찌: iPhone"
+   ],
+   "price_model": "Flo: tiering conflicting across sources (free+premium vs paywalled); Clue: beta only for US Clue Plus subscribers; 맘찌: paid to use, US$4.99/month or US$39.99/year",
+   "scale": "맘찌 KR App Store 4.8 from 38 ratings (small)",
+   "partner_features": [
+    "Flo for Partners (Oct 2023; 'Flo Partner' naming by 2025): pairing code from her Partner tab; partner gets cycle explanations, push notifications, support suggestions; notified on mode switch; min age 20 in Korea",
+    "Clue has a 'share cycle data with a partner, friend or family' help article (not read)"
+   ],
+   "cycle_fertility_features": [
+    "Clue chat answers from the user's own logged data (period dates, symptoms, frequency)"
+   ],
+   "pregnancy_parenting_features": [
+    "맘찌: doctor characters 맘찌 (paediatric) and 봄찌 (OB, added v2.6) answer from ~3,000 + 500 doctor YouTube videos"
+   ],
+   "korea_system_features": [
+    "마미톡 and 베이비빌리: no AI Q&A chatbot found today (베이비빌리 uses AI only to moderate community posts 24h)"
+   ],
+   "content_community_ai": [
+    "Ask Flo: generative assistant fine-tuned on Databricks (June 2025); Flo dialogs carry 'not a substitute for professional medical advice'",
+    "Clue chat: no medical advice, diagnosis or treatment/medication suggestions; labelled beta, can make mistakes; user data never used to train any model",
+    "Premom Ask AI: discloses OpenAI as processor",
+    "맘찌: 'does not replace diagnosis or treatment; ask a specialist'"
+   ],
+   "platform_delivery": [],
+   "privacy_trust": [
+    "Flo settled privacy lawsuits (US$56m per TechRadar headline) and announced a Google health partnership with explicit consent onboarding",
+    "맘찌 self-declares 'no data collected'"
+   ],
+   "design": {
+    "summary": "Chat tab grounded in user's own log; Korean entrant uses doctor mascots for trust",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "official listings; visuals memory"
+   },
+   "strengths": [
+    "Grounding answers in the couple's own log (Clue) is the defensible pattern; generic Q&A is commoditised"
+   ],
+   "weaknesses_from_reviews": [
+    "not checked today"
+   ],
+   "sources": [
+    {
+     "url": "https://www.digitalhealth.net/2025/06/flo-health-adopts-databricks-platform-to-power-analytics-and-ai",
+     "what": "Ask Flo LLM fine-tuning",
+     "level": "press"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/360052676191",
+     "what": "Flo medical disclaimer for dialogs",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19871976024596-How-do-I-set-up-Flo-for-Partners",
+     "what": "Flo for Partners setup, Korea age 20",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19872048333972-What-data-will-be-shared-with-my-partner",
+     "what": "what partner sees",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/sv/flo-partner",
+     "what": "'Flo Partner' naming",
+     "level": "official"
+    },
+    {
+     "url": "https://techradar.com/health-fitness/fitness-apps/google-health-coach-onboarding-incorporates-explicit-consent-i-asked-google-about-its-new-multi-year-partnership-with-flo-health-in-light-of-privacy-concerns-following-the-companies-usd56-million-lawsuit-settlement",
+     "what": "Flo-Google partnership, settlement",
+     "level": "press"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/37684596573469-What-is-Chat-With-Your-Data",
+     "what": "Clue chat scope and limits",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/37684709652637-How-does-the-chat-work",
+     "what": "Clue chat LLM, no training on user data, beta eligibility",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/%EB%A7%98%EC%B0%8C-ai-%EC%9E%84%EC%8B%A0-%EC%B6%9C%EC%82%B0-%EC%9C%A1%EC%95%84-%EB%8C%80%EB%B0%B1%EA%B3%BC/id6742169293",
+     "what": "맘찌 AI listing, price, disclaimer, ratings",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/KR/app/id1497301126",
+     "what": "베이비빌리 listing, AI moderation only",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1494440076",
+     "what": "마미톡 listing, no chatbot mentioned",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Korean IVF trackers and clinic apps (퍼티바, 페어오라 Pairora, 트리니움여성병원 난임센터 app)",
+   "maker": "independent developers; Trinium Women's Hospital",
+   "country": "Korea",
+   "category": "난임 시술 tracker / hospital patient app",
+   "platforms": [
+    "퍼티바: iPhone",
+    "페어오라: iOS + Android (beta history via TestFlight/Google group)",
+    "hospital apps: iOS/Android"
+   ],
+   "price_model": "퍼티바 free; 페어오라 core (records, alerts, partner link) free in beta, paid extras planned (prescription scan, photo storage)",
+   "scale": "not found",
+   "partner_features": [
+    "페어오라: share records with partner; partner connection free",
+    "퍼티바: no partner feature found"
+   ],
+   "cycle_fertility_features": [
+    "퍼티바: calendar of injections, visits, costs by day; push 10 min before injection; tick 'given'; cost split into spend vs 지원금 with daily out-of-pocket; memo for treatment and feelings",
+    "페어오라: IVF schedule, med/injection reminders at custom times (e.g. 07:10/18:10/23:10), health records, per-schedule procedure cost",
+    "트리니움 app: 시술 스케줄, 시험관 알리미 (stage progress and results), blood test results in app, notices"
+   ],
+   "pregnancy_parenting_features": [],
+   "korea_system_features": [
+    "퍼티바 tracks 정부 난임 지원금 against spend",
+    "No app found that links to clinic EMR except the hospital's own app"
+   ],
+   "content_community_ai": [],
+   "platform_delivery": [
+    "Native push for injection timing"
+   ],
+   "privacy_trust": [
+    "페어오라 states it is a personal record/schedule tool, not diagnosis or treatment"
+   ],
+   "design": {
+    "summary": "Calendar-first, injection-reminder-first utility apps",
+    "onboarding": "not checked",
+    "home": "not checked",
+    "visual_style": "not checked",
+    "notable_patterns": [],
+    "evidence": "official listings; visuals not checked"
+   },
+   "strengths": [
+    "Exact-time injection push is the killer feature in IVF; 페어오라 already pairs it with partner sharing - a direct overlap with dulset's positioning"
+   ],
+   "weaknesses_from_reviews": [
+    "not checked today"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/%ED%8D%BC%ED%8B%B0%EB%B0%94-%ED%9A%A8%EC%9C%A8%EC%A0%81%EC%9D%B8-%EB%82%9C%EC%9E%84-%EC%8B%9C%EC%88%A0-%EA%B4%80%EB%A6%AC/id6736720787",
+     "what": "퍼티바 features",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/app/id6759721018",
+     "what": "페어오라 features, partner sharing, disclaimer",
+     "level": "official"
+    },
+    {
+     "url": "https://classic-moose-74d.notion.site/Pairora-EN-3232caed091880d2acb1e46e688444e6",
+     "what": "Pairora beta, free core, planned paid extras",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/%ED%8A%B8%EB%A6%AC%EB%8B%88%EC%9B%80%EC%97%AC%EC%84%B1%EB%B3%91%EC%9B%90/id1522090904?l=ko",
+     "what": "Trinium hospital app features",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "cluster_takeaways": [
+  "Partner sharing is now table stakes abroad: Natural Cycles Partner View (email invite, partner's own app + Apple Watch glance, she revokes) and Flo Partner (pairing code, partner pushes, min age 20 in Korea) both put the woman in control of what he sees - dulset must show its per-item control is finer than their fixed 3-category share.",
+  "In Korea, 페어오라 (Pairora) already combines IVF injection/med alarms with partner record sharing (free core in beta) - the closest local overlap with dulset's position; 퍼티바 adds 지원금-vs-spend cost tracking and exact-time injection push.",
+  "The wife's ovulation estimate may already exist on her wrist: Galaxy Watch5+/Galaxy Ring cycle tracking (Natural Cycles algorithm) is 식약처-approved in Korea since Feb 2023; Apple Watch gives only retrospective estimates. Reading it needs a native app (HealthKit / Health Connect have no web API), so a web-only prototype cannot import it.",
+  "Health Connect exposes Menstruation, Ovulation test (pos/neg), Cervical mucus, Sexual activity and Skin temperature records; HealthKit has equivalents - writing 'together days' and LH results there is the low-cost interop step once dulset goes native.",
+  "LH strip photo-reading (Premom) is the most copyable 'device' feature for software-only apps, but has no independent accuracy validation and reviews report variability by photo; hormone readers (Mira Ultra4 with 4 hormones, Inito) are moving to PdG/FSH confirmation that software cannot replicate.",
+  "Male-side devices (YO FDA, ExSeed CE with expert review, Korean 오뷰엠 from 2018) give the husband his own measurable task; no 식약처-approved phone sperm test was found, so dulset can at most guide him to a clinic 정액검사 and log the result.",
+  "AI chat has converged on 'grounded in your own log + strong disclaimer': Clue's chat refuses diagnosis/treatment, says user data never trains models, beta for paid US users only; Ask Flo is LLM-based; Korean 맘찌 AI charges US$4.99/mo with doctor mascots; 마미톡 and 베이비빌리 have no Q&A chatbot found.",
+  "Korean rules: 디지털의료제품법 in force 24 Jan 2026 created a voluntary 'digital medical/health-support device' registration (Samsung Health first, Jan 2026); 식약처 wellness criteria revised Feb 2026 keep anything aimed at diagnosis/treatment/prevention out of wellness; LLM medical-device guidance issued 2025 and June 2026 - consumer chatbots remain a grey zone, so dulset copy must avoid 진단/치료 wording.",
+  "Trust signals rivals lean on: FDA clearance (Natural Cycles x6, YO), CE (ExSeed), 식약처 approval (Samsung), and careful wording (Inito is only Class I registered yet resellers call it 'FDA-cleared'); a local-first app's best trust signal is the absence of servers plus explicit 'not diagnosis' copy.",
+  "KakaoTalk 알림톡 can reach users without channel friendship but only for template-reviewed informational messages, billed per message via official dealers (price not found); it suits clinic-day/injection reminders for a no-push web app but needs a server and phone number, breaking pure local-first."
+ ],
+ "not_found": [
+  "Ovia AI chat: not searched (budget)",
+  "마미톡 AI consultation chatbot: none found",
+  "베이비빌리 AI Q&A chatbot: none found (only AI moderation)",
+  "Seem (Japan smartphone sperm test): no results",
+  "메디쏠: not searched/found as a 난임 tracker",
+  "마리아병원 / 차병원 난임 patient app: not found; 일산차병원 app has general patient functions only",
+  "Kegg, Oova, Proov: not covered (budget)",
+  "Official per-message price of KakaoTalk 알림톡",
+  "식약처 judgement example specific to cycle/ovulation apps",
+  "Premom Ask AI price/tier",
+  "Exact current Flo AI tiering"
+ ],
+ "meta": {
+  "date": "2026-11-13",
+  "searches_used": 27,
+  "webfetch_used": 0
+ }
+}

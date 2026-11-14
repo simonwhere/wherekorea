@@ -1,0 +1,1184 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "Flo + Flo for Partners",
+   "maker": "Flo Health (런던)",
+   "country": "영국",
+   "category": "글로벌 선두 주기·임신 준비·임신 앱 (구독)",
+   "platforms": "iOS, Android. 파트너도 같은 Flo 앱을 설치",
+   "price_model": "무료 기본 + Flo Premium 구독(미국 연 $39.99 앵커 가격 — 제3자 가격 목록·Healthline, 국가·프로모션마다 다름). Flo for Partners 기본(주기·임신 공유)은 무료와 Premium 모두 사용 가능(공식 도움말, 2026-11-13 재확인). 파트너용 전문가 글·맞춤 인사이트·스토리·영상·퀴즈·설문은 Premium(공식 도움말 + 한국어 공식 페이지의 'Flo for Partners 전체 액세스' Premium 혜택)",
+   "scale": "월간 활성 약 8천만 명(2026-08 CMO 선임 발표를 인용한 2차 보도 — press, 공식 보도자료는 못 찾음). 2024-07 투자 때 7천만 명대·2026-01 기사 '누적 4.2억 사용자'(press). 한국 App Store 4.7 / 약 4.5만~5.4만 평가(형제 조사의 검색 요약)",
+   "cycle_fertility_features": [
+    "모드 3개: 주기 추적 / 임신 준비 / 임신(공식 도움말)",
+    "임신 준비 모드에서 날마다 임신 가능성을 등급(낮음·중간·높음)으로 표시(기억)",
+    "배란테스트 결과·기초체온·분비물·관계를 손으로 기록(기억)",
+    "테스트기 사진 판독과 웨어러블 온도 기반 배란 확정은 찾지 못함",
+    "프리미엄: 월별 주기 리포트, 증상 예측·패턴 분석(형제 조사)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 모드: 주차별 진행(상세는 프리미엄). 출산 뒤 육아일기는 찾지 못함(2026-09 조사)"
+   ],
+   "partner_features": [
+    "연결: 주 사용자가 Partner 탭에서 페어링 코드(48시간 유효)를 만들고, 파트너가 Flo를 깔아 입력",
+    "파트너가 보는 것(읽기 전용): 오늘 주기 일차와 단계, 생리·배란(가임기) 예상, 임신 준비 중이면 언제가 좋은지, 임신 중이면 진행",
+    "파트너가 못 보는 것: 기록한 증상·기분·메모·Secret Chats, 과거·미래 달력. 수정 불가",
+    "파트너가 받는 것: 단계가 바뀔 때 푸시 + '지금 무슨 일이 일어나는지'와 '이렇게 도와주세요' 일일 인사이트",
+    "파트너가 하는 것: 읽기, 커플 퀴즈·설문. 본인 할 일·체크·본인 건강 기록은 찾지 못함",
+    "주 사용자가 모드를 바꾸면 파트너 화면도 바뀜. 공유 중단은 주 사용자가 언제든(다시 연결하려면 새 코드)",
+    "2023-10-19 출시. 기본 무료, 파트너 대상 심화 콘텐츠는 Premium(공식 도움말 2026-11-13 확인). 공유 항목을 주 사용자가 고를 수 있는지는 출처가 엇갈림",
+    "한국어 제공: 한국어 공식 페이지(flo.health/ko/flo-for-partners)와 한국 App Store 설명에 '파트너를 위한 Flo'가 있음(2026-11-13 확인)",
+    "나이 제한: 공유 시작은 만 18세 이상, 한국은 20세 이상(공식 도움말 검색 요약, 2026-11-13)"
+   ],
+   "korea_system_features": [
+    "한국 제도 관련 기능 none found. 앱은 한국어 지원, 파트너 화면의 한국어 제공 여부는 확인 못 함(형제 조사)"
+   ],
+   "content_community_ai": [
+    "의료진 감수 글·영상·코스(대부분 프리미엄)",
+    "익명 커뮤니티 Secret Chats",
+    "Health Assistant: 의료진 2명 이상이 검토한 규칙 기반 증상 문답(PCOS 등, 2018~, 공식 도움말·보도자료)",
+    "생성형 AI 비서 'Ask Flo': 2025-06 보도에서 Databricks Mosaic AI로 LLM을 미세조정 중인 생성형 건강 비서로 언급(press). 출시일·무료/유료·한국어 제공은 공식 출처로 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 서버 푸시, 계정 동기화",
+    "Anonymous Mode: 이름·이메일 없이 사용",
+    "Apple 건강 연동·위젯·워치 앱(기억, 오늘 확인 못 함)"
+   ],
+   "privacy_trust": [
+    "2021 FTC 합의: 건강 데이터를 Facebook 등 제3자와 공유한 혐의 → 공유 전 적극적 동의 의무",
+    "이후 Anonymous Mode 도입(2022-09, 날짜는 기억)",
+    "ISO 27001·27701 인증을 스토어에서 홍보(형제 조사)",
+    "2025-08 미국 집단소송: 배심이 Meta의 캘리포니아 사생활침해법 위반 인정, Flo는 800만 달러 합의(책임 인정 없음)",
+    "2022-08 Mozilla *Privacy Not Included 경고 라벨"
+   ],
+   "design": {
+    "summary": "홈 가운데 큰 원에 '생리까지 N일 / 주기 N일째'를 크게 보여 주고, 그 아래 스토리형 일일 인사이트 카드가 이어지는 콘텐츠 중심 화면. 온보딩은 수십 화면짜리 맞춤 설문 뒤 구독 제안",
+    "home": "위쪽 주간 날짜 띠 + 큰 원(남은 일수, 임신 준비 모드면 임신 가능성 문구) + [생리 기록] 버튼, 아래에 일일 인사이트 카드 줄과 증상 기록. 하단 탭에 Partner가 따로 있음",
+    "onboarding": "목표 선택(주기 추적 / 임신 준비 / 임신) → 출생연도·주기·증상·생활 질문 수십 개 → '맞춤 계획을 만드는 중' 화면 → 무료 체험 구독 제안(기억)",
+    "visual_style": "분홍·코랄 주조, 주기 단계에 따라 배경색이 바뀜(가임기 청록), 둥근 일러스트(기억)",
+    "notable_patterns": [
+     "파트너 전용 탭",
+     "파트너에게 데이터가 아니라 '무슨 뜻인지 + 돕는 법'을 일일 카드로 줌",
+     "모드 전환이 홈 문구와 파트너 화면을 함께 바꿈",
+     "긴 설문형 온보딩으로 개인화 인상을 만든 뒤 결제 화면",
+     "콘텐츠 잠금으로 구독 유도"
+    ],
+    "evidence": "파트너 탭·인사이트는 Flo 도움말·제품 소개의 검색 요약(형제 조사, 오늘). 홈·온보딩·색은 기억이고 오늘 스토어 스크린샷이나 사이트를 열지 못함"
+   },
+   "strengths": [
+    "파트너 기능이 무료이고, 달력 대신 설명과 '돕는 법'을 줌",
+    "모드 전환 하나로 임신 준비 → 임신까지 파트너 화면이 따라감",
+    "공유 범위가 좁음(현재 단계와 예상만, 기록·메모 제외)",
+    "의료진 감수 콘텐츠와 ISO 인증, 익명 모드로 신뢰 표지를 쌓음"
+   ],
+   "weaknesses_from_reviews": [
+    "프리미엄 가입 권유가 잦다는 미국 App Store 리뷰(형제 조사)",
+    "번역투가 강하고 매거진이 유료라는 한국 커뮤니티 글(약 2021)",
+    "개인정보 제재·소송 이력(FTC 2021, 2025 배심 평결)",
+    "(분석) 파트너에게 본인이 할 일은 없음 — 읽기와 퀴즈뿐"
+   ],
+   "sources": [
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19871976024596-How-do-I-set-up-Flo-for-Partners",
+     "what": "연결 방법: Partner 탭, 페어링 코드(형제 조사의 오늘 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19872048333972-What-data-will-be-shared-with-my-partner",
+     "what": "파트너에게 공유되는 데이터(검색 요약, 2026-09 조사와 형제 조사)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/19872024107284-Can-my-partner-edit-my-data-or-see-my-symptoms-and-personal-notes",
+     "what": "파트너가 못 보는 것·수정 불가(형제 조사)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/20524949465876-Do-I-need-to-have-a-subscription-to-access-Flo-for-Partners",
+     "what": "Flo for Partners 기본은 무료·Premium 모두 사용, Premium은 전문가 글·맞춤 인사이트·영상·퀴즈 추가, 18세(한국 20세) 이상(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/newsroom/flo-for-partners",
+     "what": "출시 발표(2023-10-19): 푸시, 돕는 법 팁, 퀴즈·설문",
+     "level": "official"
+    },
+    {
+     "url": "https://flo.health/product-tour/flo-for-partners",
+     "what": "파트너가 받는 인사이트·알림 소개(형제 조사)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.healthline.com/health/flo-period-tracker",
+     "what": "프리미엄 연 약 $39.99, 공유를 유료 기능으로 설명(공식 도움말과 엇갈림, 2026-09 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/mozilla-l10n/fomo-content/main/templates/pages/homepage/privacynotincluded/flo-ovulation-period-tracker.pot",
+     "what": "Mozilla 리뷰 원문 문자열: FTC 합의, Anonymous Mode 도입(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.digitalhealth.net/2025/08/meta-found-liable-for-using-period-tracking-data-from-flo-health/",
+     "what": "2025-08 Meta 배심 평결(형제 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://therecord.media/google-flo-health-settle-privacy-class-action",
+     "what": "Google·Flo 합의 금액(형제 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://m.cafe.daum.net/subdued20club/LxCT/306476",
+     "what": "한국 여성시대 비교 글: 번역투, 매거진 유료(형제 조사)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://flo.health/",
+     "what": "기억: 홈의 큰 원, 일일 인사이트 카드, 긴 설문형 온보딩 뒤 구독 제안, 색 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://flo.health/ko/flo-for-partners",
+     "what": "한국어 공식 페이지: 파트너를 위한 Flo, 주기별 설명·배란 시기·퀴즈·영상(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/KR/app/id1038369065",
+     "what": "한국 App Store 한국어 설명에 파트너를 위한 Flo(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.flo.health/hc/en-us/articles/360052676191",
+     "what": "Health Assistant: 의료진 2명 이상 검토, 의료 조언 대체 아님(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.digitalhealth.net/2025/06/flo-health-adopts-databricks-platform-to-power-analytics-and-ai",
+     "what": "2025-06: Ask Flo 생성형 AI 건강 비서용 LLM 미세조정(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://newmarketpitch.com/blogs/news/femtech-flo-health-update",
+     "what": "2026-08 MAU 8천만·Premium 기부 2,800만 인용(2차 보도)(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://spacecoastdaily.com/2026/01/one-in-five-u-s-women-already-use-flo-now-the-420-million-user-app-is-building-infrastructure-for-the-future-of-digital-health",
+     "what": "2026-01 기사: 누적 4.2억 사용자(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Flo_(app)",
+     "what": "기억: Anonymous Mode 2022-09, 임신 가능성 등급, 배란테스트·기초체온 수기 기록 — 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Clue (Clue Connect, Clue Conceive)",
+   "maker": "BioWink GmbH (베를린)",
+   "country": "독일",
+   "category": "과학·중립 톤의 주기 앱 (구독으로 임신 준비·임신 모드)",
+   "platforms": "iOS, Android. Connect 상대도 Clue 앱·계정 필요(기억)",
+   "price_model": "무료 기본 + Clue Plus 구독. 공식 도움말은 가격이 지역·스토어 통화마다 다르다고만 밝힘. 미국 정가는 제3자 출처끼리 엇갈림(월 $9.99~14.99, 연 $39.99~59.99), 웹 25% 할인 상시 노출. Clue Connect로 내 주기를 '공유하는 쪽'은 Plus 필요, '보기만 하는 쪽'은 무료(공식 도움말 2026-11-13). Clue Conceive·Pregnancy는 Plus 모드(공식 도움말)",
+   "scale": "unknown — 회사가 190개국 이상 약 1천만 사용자라고 밝혀 왔음(기억, 시점 불명)",
+   "cycle_fertility_features": [
+    "생리·PMS·가임기 예측, 기록 항목이 많음(기분·통증·에너지·분비물 등)",
+    "Clue Conceive(Clue Plus 모드): 생리 시작일만으로 주기 길이를 계산해 '임신 시도에 좋은 날' 6일(예상 배란일 포함)을 표시. 배란테스트·체온 없이 동작. 알고리즘 DOT는 Georgetown 대학 연구소가 검증했다고 회사가 주장(공식 도움말 2026-11-13)",
+    "Clue Pregnancy·Clue Perimenopause 모드(Pregnancy 가격 도움말 존재 — 공식)",
+    "웨어러블 연동: 온도·수면·심박을 Clue Plus 인사이트와 합침(App Store 설명, 2026-11-13 검색 요약)",
+    "테스트기 사진 판독·임신 확률 숫자는 찾지 못함"
+   ],
+   "pregnancy_parenting_features": [
+    "Clue Pregnancy 모드(유료). 이 모드에서는 Clue Connect를 쓸 수 없음(공식 도움말)"
+   ],
+   "partner_features": [
+    "Clue Connect: 초대해서 연결, 한 번에 한 사람과만 공유. 공유와 보기를 동시에 못 해서 양방향 공유 불가. 양쪽 모두 Clue 계정 필요(공식 도움말 2026-11-13)",
+    "상대가 보는 것: 생리·PMS·가임기의 지금과 예상 날짜만. 기분·에너지·통증 등 다른 기록은 비공개",
+    "상대 알림: 생리·PMS·가임기 알림을 상대가 자기 설정에서 켜야 옴, 기본 꺼짐(제3자 글 한 곳, 신뢰도 낮음)",
+    "팁·설명·할 일: none found",
+    "요금: 공유하는 사람은 Clue Plus, 보는 사람은 무료(공식 도움말 2026-11-13). 예전에 무료였는지는 확인 못 함",
+    "공유 설정은 상대 연결을 언제든 끊을 수 있음. 새 도움말 '파트너·친구·가족과 주기 데이터 공유'가 따로 생김(세부 미확인)"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "과학 근거를 앞세운 백과형 글(helloclue.com), 대학 연구 협력(기억)",
+    "커뮤니티 none found",
+    "생성형 AI 'Chat With Your Data': 내 주기 기록에 대해 대화형으로 질문. 직원 테스트 뒤 미국·영어·Period Tracking 모드의 일부 Clue Plus 구독자에게 베타. 데이터로 모델을 학습하지 않는다고 명시(공식 도움말 2026-11-13). 정식 출시 여부는 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 푸시, 계정 동기화",
+    "Apple 건강 연동(기억). 웨어러블 온도·수면·심박 연동 있음(App Store 설명)"
+   ],
+   "privacy_trust": [
+    "EU(독일) 회사, GDPR 적용. 광고 없이 구독으로 운영하고 데이터를 팔지 않는다고 내세움(기억)",
+    "2022-08 Mozilla *Privacy Not Included 경고 라벨을 받음",
+    "2021 미국 FDA가 Clue Birth Control(디지털 피임)을 허가(기억)"
+   ],
+   "design": {
+    "summary": "원형 주기 휠 하나로 생리·가임기·PMS를 보여 주는 홈, 분홍과 꽃을 뺀 중립 디자인으로 알려짐",
+    "home": "원형 휠 가운데 '주기 N일째', 둘레에 생리(빨강)·가임기(청록)·PMS 구간. 달력·분석 탭이 따로 있음(기억)",
+    "onboarding": "마지막 생리일·주기 길이·피임 여부를 묻는 짧은 질문 뒤 Clue Plus 체험 제안(기억, 신뢰도 낮음)",
+    "visual_style": "흰 바탕에 빨강·청록, 단순한 아이콘 타일, 성별 중립 문구(기억)",
+    "notable_patterns": [
+     "원형 휠이 브랜드의 얼굴",
+     "기록은 아이콘 타일을 누르는 방식",
+     "모드(Conceive·Pregnancy·Perimenopause)를 구독 안에 묶음"
+    ],
+    "evidence": "기억(디자인 소개 글과 사용 경험). 오늘 스토어·사이트를 열지 못했고 스크린샷도 못 봄"
+   },
+   "strengths": [
+    "공유 범위가 날짜 세 종류로 좁아 설명이 쉬움",
+    "과학 톤과 중립 디자인으로 신뢰 인상",
+    "광고 없음(기억)"
+   ],
+   "weaknesses_from_reviews": [
+    "파트너 공유가 유료 벽 뒤에 있음(공식 도움말)",
+    "무료였던 기능을 유료로 옮긴 데 대한 불만(기억, 오늘 확인 못 함)",
+    "(분석) 상대에게 설명·팁·할 일이 없고 날짜만 보임"
+   ],
+   "sources": [
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/14582034397597-How-can-I-share-my-cycle-with-someone-using-Clue-Connect",
+     "what": "Connect: 공유자는 Clue Plus, 보는 쪽 무료, 한 명, 양방향 불가(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://helloclue.com/clue-plus",
+     "what": "Clue Plus 구성(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://medium.com/clued-in/revolutionize-your-relationship-with-clue-connect-812d6a638f1b",
+     "what": "Clue 공식 블로그의 Connect 소개(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://thevibecheck.app/blog/relationship-advice/clue-connect-partner-feature-free-paid",
+     "what": "상대 알림은 기본 꺼짐, 무료/유료 정리(제3자 블로그, 신뢰도 낮음)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mozillafoundation.org/en/privacynotincluded/articles/in-post-roe-v-wade-era-mozilla-labels-18-of-25-popular-period-and-pregnancy-tracking-tech-with-privacy-not-included-warning/",
+     "what": "2022-08 Mozilla 경고 대상에 Clue 포함(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/7955791306900-What-s-Clue-Conceive-mode",
+     "what": "Conceive: Plus 모드, 생리 시작일만 사용, 좋은 날 6일, DOT·Georgetown 검증 주장(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/10568786062365-How-is-Clue-Conceive-different-from-Clue-Period-Tracking-s-fertile-window-feature",
+     "what": "Conceive와 기본 가임기 차이(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/37684596573469-What-is-Chat-With-Your-Data",
+     "what": "생성형 AI Chat With Your Data, 미국 Plus 일부 베타(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/115005215266-How-much-does-Clue-Plus-cost",
+     "what": "가격은 지역·통화마다 다름(미국 금액 명시 없음)(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.helloclue.com/hc/en-us/articles/29049992708509-How-to-share-cycle-data-with-a-partner-friend-or-family-member",
+     "what": "파트너·친구·가족 공유 새 도움말(내용 미열람)(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/app/clue/id657189652",
+     "what": "App Store: 웨어러블 연동(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://helloclue.com/",
+     "what": "기억: 원형 휠 홈, 중립 디자인, 광고 없음, 사용자 수, FDA 피임 허가 — 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Natural Cycles (NC° Plan Pregnancy, Partner View)",
+   "maker": "Natural Cycles Nordic AB (스톡홀름)",
+   "country": "스웨덴",
+   "category": "체온 기반 가임 판정 앱 (FDA 허가 디지털 피임 + 임신 계획 모드)",
+   "platforms": "iOS, Android. 파트너도 NC 앱 설치(보기 전용)",
+   "price_model": "구독 전용, 무료 기본 없음(App Store: 핵심 기능에 구독 필요). 미국 연 $149.99·월 $21.99(Oura 제휴 페이지, 2026-11-13 검색 요약, 공식 가격 페이지는 못 엶). 연간 플랜에 NC° Band 무료 제공 프로모션. 미국은 다수 보험·FSA/HSA 적용. 다섯 모드(피임·임신 계획·임신·산후·갱년기)가 구독 하나. Partner View 요금은 공식 출처에서 무료/유료 어느 쪽도 확인 못 함(파트너는 주 사용자 계정에 연결된 보기 전용)",
+   "scale": "등록 사용자 300만 이상(회사 발표, 2023~24 — 기억, 오늘 확인 못 함)",
+   "cycle_fertility_features": [
+    "매일 아침 체온(체온계) 또는 웨어러블 온도로 배란을 감지(Oura·Apple Watch·Garmin(2026-03)·자체 NC° Band(2025-10 출시) — press)",
+    "NC° Plan Pregnancy: 날마다 가임 단계를 여러 등급(Not fertile ~ Peak)으로 표시, 임신 테스트 가능일 안내(기억)",
+    "LH 테스트 결과를 입력하면 예측에 반영, '배란 테스트 할 때' 알림(파트너에게도 선택 발송 — 공식 도움말)",
+    "피임 모드: Green Day / Red Day",
+    "삼성 헬스 생리 주기에 알고리즘 제공(한국 식약처 허가 2023 — 형제 조사)",
+    "2026-07 FDA 여섯 번째 허가: 통계 모델 + 머신러닝 결합 차세대 알고리즘. 2026-06 Sleep Insights 추가(press)"
+   ],
+   "pregnancy_parenting_features": [
+    "NC° Follow Pregnancy·Postpartum 모드로 이어짐(기억)"
+   ],
+   "partner_features": [
+    "주 사용자가 설정에서 파트너 이메일로 초대 → 파트너가 링크를 받아 계정을 만들고 보기 전용 Partner View로 따라봄(공식 도움말 2026-11-13)",
+    "주 사용자가 정하는 것: 무엇을 공유할지(가임 상태·배란·예측·생리 + 선택으로 기분·증상)와 얼마나 과거까지 보일지",
+    "파트너 알림(파트너가 직접 켬): 첫 Green Day, 첫 Red Day, 생리·PMS 다가옴, 배란 테스트 할 때. NC° Follow Pregnancy 파트너 알림도 있음(공식 도움말)",
+    "제약: 주 사용자가 그날 앱을 열기 전엔 파트너 화면 상태가 'unknown'. Go Anonymous 모드에선 Partner View 불가(공식 도움말 2026-11-13)",
+    "팁·할 일: none found. NC는 이 기능을 '타이밍 압박을 던다'고 소개",
+    "가격: 파트너 쪽 추가 요금 여부는 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none found. NC 앱 자체의 한국어 지원은 확인 못 함"
+   ],
+   "content_community_ai": [
+    "Cyclematters 블로그, 앱 안 Learn 글(기억)",
+    "생성형 AI 대화 비서: 2026-11-13 검색에서 찾지 못함. 'AI'는 알고리즘(FDA 허가) 쪽에만 쓰임"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 푸시, 계정 필수",
+    "웨어러블 연동이 핵심 입력 경로(기억)"
+   ],
+   "privacy_trust": [
+    "2018-08-10 미국 FDA De Novo 허가(피임용 소프트웨어, 21 CFR 884.5370)",
+    "2022-08 Mozilla 리뷰에서 경고 라벨을 받지 않은 드문 생식건강 앱",
+    "데이터를 팔지 않는다는 약속과 'NC° Secure' 보호 프로그램, ISO 27001(기억, 오늘 확인 못 함)"
+   ],
+   "design": {
+    "summary": "오늘의 판정 하나를 큰 원으로 보여 주는 홈(초록 = 비가임, 빨강 = 가임). 매일 아침 측정이 앱 사용의 중심",
+    "home": "큰 원에 오늘 상태(피임 모드는 초록/빨강, 임신 계획 모드는 가임 등급), 아래에 체온 입력과 예측. 달력·그래프 탭(기억)",
+    "onboarding": "목표(피임 / 임신 계획 / 임신 추적) → 주기·최근 호르몬 피임 여부 질문 → 측정 기기 선택 → 구독 결제 뒤 사용(기억)",
+    "visual_style": "진한 자주색 브랜드, 초록·빨강 신호색(기억)",
+    "notable_patterns": [
+     "오늘의 답 하나(색)로 줄인 홈",
+     "파트너가 받을 알림을 파트너가 고름",
+     "모드 전환으로 피임 → 임신 계획 → 임신 → 산후"
+    ],
+    "evidence": "Partner View는 NC 도움말·블로그의 검색 요약(2026-09). 홈·온보딩·색은 기억이고 오늘 사이트·스토어를 열지 못함"
+   },
+   "strengths": [
+    "온도로 배란을 확정하는 규제 허가 알고리즘",
+    "파트너가 받을 알림을 스스로 고르는 구조",
+    "웨어러블로 입력 부담을 줄임(기억)"
+   ],
+   "weaknesses_from_reviews": [
+    "사용자 연구(2021): 일부 부부에게 성관계가 '기능적'이 되고 불안이 커졌으며 '임신은 여성 책임'이라는 생각이 강해짐",
+    "무료 기본이 없고 매일 측정해야 함(기억)",
+    "(분석) 파트너는 상태와 알림만 받고 본인 할 일은 없음"
+   ],
+   "sources": [
+    {
+     "url": "https://help.naturalcycles.com/hc/en-us/articles/5693163931293-How-to-use-the-Natural-Cycles-Partner-View",
+     "what": "Partner View: 공유 선택, 파트너 알림 종류(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.naturalcycles.com/cyclematters/have-you-tried-partner-view",
+     "what": "Partner View 소개, '타이밍 압박을 던다'(2026-09 검색 요약. 오늘 WebFetch는 도메인 차단)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.naturalcycles.com/plan-pregnancy",
+     "what": "Plan Pregnancy 모드 소개(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://raw.githubusercontent.com/lucas-amberg/ecfr-analyzer/main/public/ecfr/2025-02-06/21/I/H/884/F/884.5370/884.5370.md",
+     "what": "21 CFR 884.5370 피임용 소프트웨어 분류(미국 연방규정 eCFR의 GitHub 미러, 2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7894554/",
+     "what": "NC 임신 준비 사용자 질적 연구(Sociology of Health & Illness 2021)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mozillafoundation.org/en/privacynotincluded/articles/in-post-roe-v-wade-era-mozilla-labels-18-of-25-popular-period-and-pregnancy-tracking-tech-with-privacy-not-included-warning/",
+     "what": "2022-08 Mozilla: Natural Cycles는 경고 대상 아님(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.samsung.com/sec/apps/samsung-health/",
+     "what": "삼성 헬스가 Natural Cycles 기술을 씀(형제 조사)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.naturalcycles.com/hc/en-us/articles/5692805583645-How-to-share-your-fertility-status-using-the-Partner-View",
+     "what": "Partner View: 이메일 초대, 보기 전용, 공유 항목, 앱 열기 전 unknown, Go Anonymous 불가(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://go.ouraring.com/naturalcycles/",
+     "what": "미국 연 $149.99·월 $21.99(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.contemporaryobgyn.net/view/natural-cycles-receives-fda-clearance-for-ai-powered-fertility-algorithm",
+     "what": "2026-07 FDA 허가, AI 기반 알고리즘(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://femtechinsider.com/natural-cycles-launches-perimenopause-app-mode-and-wearable-band/",
+     "what": "2025-10 갱년기 모드·NC° Band(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Natural_Cycles",
+     "what": "기억: 가임 등급 표시, 사용자 수, NC° Secure·ISO 27001, 홈 화면 — 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Premom (Predad)",
+   "maker": "Easy Healthcare Corporation (미국 일리노이, Easy@Home 테스트기 제조·판매)",
+   "country": "미국",
+   "category": "배란테스트 사진 판독 중심 임신 준비 앱 (테스트기 판매와 묶임)",
+   "platforms": "iOS, Android. 파트너도 Premom 앱에서 Predad로 연결",
+   "price_model": "앱 무료 + Premium 멤버십(가격은 2026-11-13에도 못 찾음. 2021 출시 때 미국 한정). 본업은 테스트 스트립·체온계 판매(기억). Predad에 요금이 붙는다는 설명은 공식 페이지에서 찾지 못함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "LH 스트립을 카메라로 찍으면 T/C 비율 숫자로 판독",
+    "날짜별 스트립 사진을 한 줄로 세워 LH 변화를 보여 주는 차트(기억: 대표 화면)",
+    "기초체온 차트(공식 안내). 블루투스 체온계 연동(기억)",
+    "Low / High / Peak 가임 단계 표시(기억)",
+    "복약 알림: 반복·시각·시작/종료일 설정"
+   ],
+   "pregnancy_parenting_features": [
+    "임신을 공유하면 파트너에게 임신 단계 소식이 감(Predad)"
+   ],
+   "partner_features": [
+    "Predad: 주 사용자가 More 탭 Predad 배너에서 페어링 코드를 만들고, 파트너가 Premom 앱을 깔아 입력(공식, 2026-11-13 확인)",
+    "주 사용자가 공유 항목을 고름: 가임기 / 생리 / 임신",
+    "파트너가 받는 것: 배란 예상일과 가임기, 주기 단계별 교육 콘텐츠와 알림. 임신 공유 시 임신 단계 소식",
+    "파트너는 수정·다운로드 불가",
+    "본인 할 일·체크: none found",
+    "사용자 리뷰: Predad 화면에 생리·배란일 말고는 볼 게 별로 없다는 평(unitQ 리뷰 한 건, user-review)"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "커뮤니티 포럼, 전문가 유료 상담(기억)",
+    "생성형 AI 'Ask AI': 일반 답변용 Fertility AI + 내 기록을 바탕으로 한 맞춤형 Fertility AI Pro(Premium 전용). 일반판의 무료 여부는 명시 없음(premom.com 글 검색 요약, 2026-11-13)"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 푸시, 계정 동기화",
+    "카메라 판독과 자사 블루투스 체온계 연동(기억)"
+   ],
+   "privacy_trust": [
+    "2023-05 FTC 합의: 광고·분석 SDK(AppsFlyer, Google, 중국 기업 2곳)로 건강 데이터를 동의 없이 공유. 민사 제재금 10만 달러 + 3개 주 10만 달러, 광고 목적 건강 데이터 공유 금지"
+   ],
+   "design": {
+    "summary": "테스트기 촬영이 중심 동작인 도구형 앱. 스트립 사진 줄과 LH 곡선이 한 화면에 쌓임",
+    "home": "주기 일차와 가임 단계, 가운데 카메라(테스트 촬영) 버튼, 차트 탭에 스트립 사진 줄 + 체온 곡선(기억)",
+    "onboarding": "목표와 주기 정보 입력, 계정 필수(기억, 신뢰도 낮음)",
+    "visual_style": "코랄·분홍 계열(기억)",
+    "notable_patterns": [
+     "사진 → 숫자(T/C) → 곡선으로 이어지는 판독 흐름",
+     "소모품 판매와 앱이 한 묶음",
+     "파트너 공유 항목을 주 사용자가 세 가지 중에서 고름"
+    ],
+    "evidence": "판독·차트·Predad는 Premom 공식 페이지의 검색 요약(2026-09). 홈 구성과 색은 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "배테기 판독과 기록을 한 번에 끝냄(사진 한 장)",
+    "파트너 공유 범위를 항목별로 고름",
+    "앱이 무료"
+   ],
+   "weaknesses_from_reviews": [
+    "2023 FTC 제재로 드러난 데이터 공유",
+    "(분석) 파트너는 읽기만 함"
+   ],
+   "sources": [
+    {
+     "url": "https://premom.com/predad/",
+     "what": "Predad: 페어링 코드, 공유 항목, 파트너가 받는 것, 수정 불가(2026-09 검색 요약 + 2026-11-13 재확인)",
+     "level": "official"
+    },
+    {
+     "url": "https://premom.com/what-is-a-t-c-ratio/",
+     "what": "T/C 비율 판독 설명(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://premom.com/how-to-read-a-premom-ovulation-bbt-chart/",
+     "what": "기초체온 차트(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.premom.com/hc/en-us/articles/4403300659219-How-to-setup-reminders-for-taking-medication",
+     "what": "복약 알림 설정(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://techcrunch.com/2023/05/18/ftc-premom-fertility-tracking-shared-data-google/",
+     "what": "2023-05 FTC 합의 내용(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.washingtonpost.com/technology/2023/05/17/premom-settlement-fertility-tracker-data-sharing/",
+     "what": "FTC 합의 보도(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://premom.com/",
+     "what": "기억: 스트립 사진 줄 차트, Low/High/Peak, 블루투스 체온계, 유료 상담, 홈 구성·색 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://premom.com/?p=97669",
+     "what": "Predad 소개: More 탭 배너, 코드, 공유 항목 선택(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://premom.com/?p=110218",
+     "what": "Ask AI: Fertility AI / Fertility AI Pro(Premium)(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://femtechinsider.com/premom-membership-launch/",
+     "what": "2021 Premium 멤버십 출시, 미국 한정(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://unitq.com/unitq-scorecards/ovulationtracker",
+     "what": "Predad 화면이 빈약하다는 리뷰(2026-11-13 검색 요약)",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "Glow (+ Glow Nurture, Glow Baby)",
+   "maker": "Glow Inc. (미국)",
+   "country": "미국",
+   "category": "임신 준비 앱 + 커뮤니티, 남성 파트너 기록까지 있는 양방향 연결",
+   "platforms": "iOS, Android. 파트너도 Glow 앱에서 파트너용으로 가입",
+   "price_model": "무료(광고 있음) + 인앱 결제 Glow Premium(앱 3개 공용, 가격 미확인 — App Store 목록 검색 요약 2026-11-13). 파트너 연결 자체에 요금이 붙는다는 설명은 찾지 못함",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "날마다 임신 확률을 퍼센트로 표시(기억)",
+    "기초체온·배란테스트·분비물 등 많은 항목을 매일 기록(기억)",
+    "커플이 임신 확률과 달력을 함께 봄(공식 도움말)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신은 Glow Nurture, 육아는 Glow Baby로 앱이 나뉨(프리미엄은 공용)",
+    "Glow Baby: 마일스톤을 날짜·사진으로 기록, 파트너·가족을 이메일로 초대(여러 보호자 동기화는 프리미엄)"
+   ],
+   "partner_features": [
+    "남성 파트너용 가입 흐름이 따로 있음: 여성이 More에서 'Add your partner'로 이름·이메일 입력 → 파트너가 초대 메일 확인 후 앱 설치·가입, 시작 화면의 'Male partner?' 배너 선택(지원 FAQ, 날짜 없음). 두 사람 모두 매일 기록",
+    "남성이 기록하는 것: 수면·운동·열 노출 같은 생활습관. 남성용 가임 인사이트를 받음(2015년부터)",
+    "둘이 함께 받는 알림: 배란일, 생리 시작·종료, 가임기",
+    "건강 기록이 양방향으로 공유됨(일일·치료·의료 기록 포함)",
+    "임신 앱 Nurture: 파트너가 자기 팁과 알림을 받음(예: 산전 비타민 챙겨 주기). 대신 입력은 못 함",
+    "2026 현재도 같은 흐름인지는 확인 못 함(찾은 자료는 2015 출시 보도와 날짜 없는 FAQ)"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "큰 익명 커뮤니티(기억)",
+    "스토어·목록 설명: 'AI로 맞춤 임신 조언·예측', AI 배란 계산기, Nurture도 AI 맞춤 인사이트(제3자 앱 목록 검색 요약, 2026-11-13). 대화형 생성형 AI 비서는 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 푸시, 계정 동기화",
+    "단계별로 앱 3개를 따로 설치"
+   ],
+   "privacy_trust": [
+    "2016 Consumer Reports: 상대가 모르게 계정을 연결해 내밀한 기록을 볼 수 있는 결함",
+    "2020-09 캘리포니아 주 검찰총장과 25만 달러 합의 — 파트너 연결 요청을 데이터 주인 확인 없이 자동 승인한 점 포함",
+    "2022-08 Mozilla 경고 라벨(Glow, Eve)"
+   ],
+   "design": {
+    "summary": "임신 확률 숫자와 매일 채우는 긴 기록, 커뮤니티 피드가 한 홈에 있는 밀도 높은 화면",
+    "home": "주간 날짜 띠 + 오늘 임신 확률 + 일일 기록 채우기 유도 + 커뮤니티 글(기억)",
+    "onboarding": "상태 선택(임신 준비 / 피임 / 주기 추적 / 난임 시술) → 건강 프로필 → 파트너 초대 제안(기억)",
+    "visual_style": "보라 계열(기억)",
+    "notable_patterns": [
+     "남성에게도 기록 화면을 줌",
+     "확률을 퍼센트로 표시",
+     "준비 → 임신 → 육아를 앱 3개로 나눔"
+    ],
+    "evidence": "파트너 기능은 Glow 도움말과 2015 TechCrunch의 검색 요약(2026-09). 홈·온보딩·색은 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "기존 앱 중 드물게 남성이 본인 생활습관을 기록(보는 사람이 아니라 하는 사람)",
+    "임신·육아까지 파트너가 이어짐"
+   ],
+   "weaknesses_from_reviews": [
+    "파트너 연결 보안 사고와 합의 이력(2016, 2020)",
+    "(분석) 양방향 전체 공유라 기록하는 사람이 범위를 좁히는 장치가 약해 보임(범위 선택 기능은 찾지 못함)"
+   ],
+   "sources": [
+    {
+     "url": "https://support.glowing.com/hc/en-us/articles/115000247447-What-are-the-benefits-of-connecting-to-your-partner-on-Glow",
+     "what": "파트너 연결 혜택: 공동 알림, 확률·달력 공유(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.glowing.com/help/en-us/11-partner-experience/10",
+     "what": "파트너 경험: 남성 기록, 양방향 공유(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://techcrunch.com/2015/04/23/the-glow-app-now-tracks-male-fertility",
+     "what": "2015 남성 가임 기록 추가(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://support.glowing.com/help/en-us/21-partner-questions/89",
+     "what": "Nurture 파트너: 자기 팁·알림, 대신 입력 불가(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://oag.ca.gov/news/press-releases/attorney-general-becerra-announces-landmark-settlement-against-glow-inc-%E2%80%93",
+     "what": "2020-09 캘리포니아 주 검찰총장 보도자료: 25만 달러 합의, 파트너 연결 자동 승인(정부 발표, 2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://techcrunch.com/2016/07/30/serious-privacy-flaws-discovered-in-glow-fertility-tracker-app/",
+     "what": "2016 계정 연결 결함(2026-09 조사)",
+     "level": "press"
+    },
+    {
+     "url": "https://glowing.com/",
+     "what": "기억: 일별 임신 확률 %, 홈 구성, 커뮤니티, 온보딩, 색 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://apps.apple.com/app/id638021335",
+     "what": "App Store: Glow Ovulation & Period App, 무료·광고·인앱 결제, 피임용 아님(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.148apps.com/glow-ai-ovulation-tracker-app/glow-helps-partner-step-closer-conceiving",
+     "what": "파트너 추가 절차(Add your partner, Male partner? 배너)(2026-11-13 검색 요약)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Ovia (구 Ovia Fertility + Ovia Pregnancy)",
+   "maker": "Ovia Health (Labcorp 자회사 — 인수는 기억)",
+   "country": "미국",
+   "category": "무료 주기·임신 앱 (수익은 고용주·보험사 B2B로 기억)",
+   "platforms": "iOS, Android. 파트너는 이메일로 받음",
+   "price_model": "소비자 무료 + 유료 Ovia+ 티어. 고용주·건강보험이 무료 혜택으로 제공(예: MESSA). 2021-08 Labcorp 인수, 지금은 'Ovia Health by Labcorp'(press·제휴 기관, 2026-11-13)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "Ovia Fertility와 Ovia Pregnancy를 한 앱 'Ovia'로 합침(임신 전용 앱은 종료)",
+    "날마다 fertility score(1~10)를 표시(기억)",
+    "기초체온·분비물·배란테스트·관계·증상을 손으로 기록(기억)"
+   ],
+   "pregnancy_parenting_features": [
+    "같은 앱에서 임신으로 전환. 육아는 별도 앱 Ovia Parenting(수유·기저귀·수면, 마일스톤 사진, 가족 공유)"
+   ],
+   "partner_features": [
+    "파트너 이메일을 넣으면 가임기가 다가올 때 파트너에게 이메일 알림이 감",
+    "스토어 설명의 'Ovia for Partners': 가임기 알림부터 임신 마일스톤까지 소식 공유",
+    "파트너가 보는 화면·팁·할 일: none found",
+    "무료(기억)"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "글·팁 콘텐츠와 커뮤니티 Q&A(기억)",
+    "회사 글이 'AI 기반 대화형 안내'를 언급(2025 회고) — 세부·대화형 생성형 비서 여부 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 푸시, 계정 동기화",
+    "파트너 전달은 이메일"
+   ],
+   "privacy_trust": [
+    "2022-08 Mozilla 경고 라벨(Ovia Fertility)",
+    "2019 워싱턴포스트: 고용주가 직원의 집계 데이터를 볼 수 있는 구조 보도(기억, 오늘 확인 못 함)"
+   ],
+   "design": {
+    "summary": "일일 타임라인 피드에 점수·기록·글이 섞여 흐르는 화면",
+    "home": "오늘의 fertility score와 기록 카드, 글이 이어지는 피드(기억)",
+    "onboarding": "목표(임신 준비 / 주기 추적 / 임신) → 건강 정보 → 고용주·보험 제휴 여부 질문(기억)",
+    "visual_style": "초록·청록 계열(기억)",
+    "notable_patterns": [
+     "점수 하나로 오늘을 요약",
+     "파트너는 앱 없이 이메일로 받음"
+    ],
+    "evidence": "파트너 이메일·앱 통합은 Ovia 도움말·스토어의 검색 요약(2026-09). 화면 묘사는 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "무료",
+    "파트너가 설치 없이 이메일로 가임기 알림을 받음"
+   ],
+   "weaknesses_from_reviews": [
+    "유산을 입력한 뒤 기록이 꼬인다는 리뷰(리뷰 집계 사이트, 2026-09 검색 요약)",
+    "(분석) 파트너에게 가는 것은 알림뿐"
+   ],
+   "sources": [
+    {
+     "url": "https://ovuline.helpshift.com/hc/en/3-ovia-fertility/faq/898-how-do-i-add-or-change-my-partner-s-email/?l=en",
+     "what": "파트너 이메일 등록과 가임기 이메일 알림(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/ovia-cycle-pregnancy-tracker/id570244389",
+     "what": "통합 앱 스토어 설명, Ovia for Partners 문구(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.messa.org/ovias-new-experience/",
+     "what": "Ovia 앱 통합 안내(제휴 보험 기관 페이지, 2026-09 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.oviahealth.com/parenting-app/",
+     "what": "Ovia Parenting 별도 앱(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://justuseapp.com/en/app/719135369/ovia-pregnancy-tracker/reviews",
+     "what": "유산 입력 뒤 기록 문제 리뷰(2026-09 검색 요약)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.oviahealth.com/",
+     "what": "기억: Labcorp 인수, fertility score 1~10, 무료·B2B 모델, 홈 피드, 온보딩의 고용주 질문, 2019 워싱턴포스트 보도 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://www.messa.org/ovia",
+     "what": "고용주·보험 무료 혜택, Ovia+(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mobihealthnews.com/news/labcorp-scoops-femtech-startup-ovia-health-deepen-womens-health-services",
+     "what": "2021 Labcorp 인수(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.oviahealth.com/?p=329566",
+     "what": "2025 회고: AI 기반 대화형 안내 언급(2026-11-13 검색 요약)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Stardust (Partner Mode)",
+   "maker": "Stardust (미국 뉴욕 — 기억)",
+   "country": "미국",
+   "category": "달 위상·점성술 테마 주기 앱 + 파트너·친구 싱크",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "무료 + 인앱 'All Access' 구독(미국 App Store 항목 $2.99~$39.99, 연 $24.99 플랜 표시 — 2026-11-13 검색 요약). Partner Mode가 유료인지는 확인 못 함",
+   "scale": "사용자 100만 이상, 그중 약 1/3이 파트너를 초대(AOL 기사, 출처 한 곳·신뢰도 낮음)",
+   "cycle_fertility_features": [
+    "생리 예측과 달 위상을 엮은 일일 메시지(기억)",
+    "임신 준비 전용 기능(기초체온·배란테스트·확률): none found"
+   ],
+   "partner_features": [
+    "Partner Mode(2023-08): 서로 상대를 추가하고 양쪽이 수락해야 연결",
+    "친구끼리 주기를 맞춰 보는 싱크도 있음",
+    "파트너가 보는 것: 주기 데이터를 공유해 상대가 증상·기분을 이해하고 따라오게 하며, 앱이 대신 알려 줘 '그 얘기'를 직접 안 해도 됨(리뷰 글 — press). FAQ: 주기 없는 사람도 따라보며 지원. 알림 세부 설정은 확인 못 함",
+    "본인 할 일·체크: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "유머 섞인 일일 문구가 콘텐츠 역할(기억)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 푸시(기억)"
+   ],
+   "privacy_trust": [
+    "2022-06 미국 Roe 판결 직후 '암호화'를 내세워 App Store 상위에 올랐지만, TechCrunch가 전화번호를 제3자 분석 도구에 보낸 점과 주장 불일치를 지적(기억, 오늘 확인 못 함)"
+   ],
+   "design": {
+    "summary": "어두운 우주·달 테마와 농담 섞인 문구로 주기 앱의 분위기를 바꾼 사례",
+    "home": "달과 주기 일차, 오늘의 한마디(기억)",
+    "onboarding": "생일(별자리)과 전화번호 로그인(기억, 2022 기준)",
+    "visual_style": "검정·보라 바탕의 천체 일러스트(기억)",
+    "notable_patterns": [
+     "파트너·친구를 초대하게 만드는 사회적 장치",
+     "설명을 가벼운 말투로 바꿈"
+    ],
+    "evidence": "Partner Mode 연결 방식은 stardust.app FAQ의 검색 요약(2026-09), 초대율은 AOL 기사. 화면 묘사는 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "파트너 초대율이 높다고 보도됨(신뢰도 낮음)",
+    "양쪽 수락 연결"
+   ],
+   "weaknesses_from_reviews": [
+    "2022 개인정보 주장 논란(기억)",
+    "(분석) 임신 준비 도구는 아님"
+   ],
+   "sources": [
+    {
+     "url": "https://stardust.app/faq",
+     "what": "Partner Mode: 서로 추가·양쪽 수락, 친구 싱크(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.aol.com/let-partners-track-periods-everything-162700733.html",
+     "what": "2023-08 파트너 기능 뒤 100만+ 사용자의 약 1/3이 초대(2026-09 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://techcrunch.com/2022/06/27/stardust-period-tracker-phone-number/",
+     "what": "기억: 2022-06 암호화 주장과 전화번호 공유 지적 — URL도 기억이라 정확하지 않을 수 있음",
+     "level": "memory"
+    },
+    {
+     "url": "https://stardust.app/",
+     "what": "기억: 달·점성술 테마, 어두운 화면, 가벼운 말투, 전화번호 로그인 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://www.thecwordmag.co.uk/c-word-loves/stardust-app-review-the-period-tracking-app-for-modern-witches",
+     "what": "Partner Mode 설명, 유머 알림·끄기 가능(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/id1495829322",
+     "what": "App Store: 무료 + All Access 인앱 가격(2026-11-13 검색 요약)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Femometer",
+   "maker": "Bongmi (중국 항저우 — 기억)",
+   "country": "중국",
+   "category": "체온계·배란테스트 하드웨어와 묶인 임신 준비 앱",
+   "platforms": "iOS, Android(기억)",
+   "price_model": "앱 무료 + 프리미엄 구독, 체온계·테스트기 판매(기억, 가격은 오늘 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "블루투스 기초체온계(Vinca)에서 체온을 자동으로 받아 곡선 표시(기억)",
+    "LH 스트립을 카메라로 찍어 판독(기억)",
+    "생리·배란 예측과 임신 가능성 표시(기억)"
+   ],
+   "partner_features": [
+    "none found — 오늘 확인하지 못했고, 이전 조사 파일에도 없음"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "오늘 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 자사 블루투스 기기(기억)"
+   ],
+   "privacy_trust": [
+    "오늘 확인 못 함(인증·제재 이력 모두 찾지 못함)"
+   ],
+   "design": {
+    "summary": "체온 곡선과 테스트 판독이 중심인 하드웨어 동반 앱",
+    "home": "오늘 주기 상태와 체온·테스트 입력(기억, 신뢰도 낮음)",
+    "notable_patterns": [
+     "기기 → 앱 자동 입력",
+     "구독 유도(기억)"
+    ],
+    "evidence": "전부 기억. 오늘 스토어·사이트를 열지 못했고 이전 조사 파일에도 Femometer는 없음"
+   },
+   "strengths": [
+    "체온 자동 입력과 사진 판독으로 기록 부담을 줄임(기억)"
+   ],
+   "weaknesses_from_reviews": [
+    "구독 결제·해지 불만이 있다는 기억(오늘 확인 못 함)"
+   ],
+   "sources": [
+    {
+     "url": "https://www.femometer.com/",
+     "what": "기억: Vinca 체온계 연동, LH 사진 판독, 임신 가능성 표시, 구독 — 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Fertility Friend",
+   "maker": "Tamtris Web Services Inc. (캐나다)",
+   "country": "캐나다",
+   "category": "기초체온 차트 중심의 오래된 임신 준비 도구 + 커뮤니티",
+   "platforms": "iOS, Android, 웹",
+   "price_model": "무료 기본 + VIP 유료 멤버십(기억, 가격은 오늘 확인 못 함)",
+   "scale": "unknown",
+   "cycle_fertility_features": [
+    "기초체온·분비물·배란테스트를 한 차트에 기록(기억)",
+    "체온 상승으로 배란일을 자동 표시(기억)",
+    "무료 차트 교육 과정(Trying To Conceive Journey)"
+   ],
+   "partner_features": [
+    "전용 파트너 모드: none found",
+    "차트 공유와 companion 접근이 선택으로 있음(2026-09 조사, 신뢰도 낮음). 부부 알림보다 임신 준비 커뮤니티용"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "차트 갤러리와 게시판 커뮤니티(기억)",
+    "AI 비서는 오늘 확인 못 함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 웹, 계정 동기화(기억)"
+   ],
+   "privacy_trust": [
+    "오늘 확인 못 함"
+   ],
+   "design": {
+    "summary": "체온 그래프와 기록 행이 빽빽한 차트 한 장이 곧 앱",
+    "home": "차트(위 체온 곡선, 아래 날짜별 기록 행)(기억)",
+    "visual_style": "오래된 도구형 UI(기억)",
+    "notable_patterns": [
+     "교육 과정으로 차트 읽는 법부터 가르침",
+     "다른 사람 차트를 보는 갤러리"
+    ],
+    "evidence": "교육 과정·스토어 존재는 2026-09 검색 요약. 화면 묘사는 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "차트 기능이 깊고 교육 자료가 많음",
+    "오랜 사용자 커뮤니티"
+   ],
+   "weaknesses_from_reviews": [
+    "(분석) 파트너 경험이 없음",
+    "화면이 낡고 배우기 어렵다는 평(기억, 오늘 확인 못 함)"
+   ],
+   "sources": [
+    {
+     "url": "https://www.fertilityfriend.com/courses/lessons/1/Trying-To-Conceive-Journey.html",
+     "what": "임신 준비 교육 과정(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.tamtris.fertilityfriend&hl=en-US",
+     "what": "Google Play 등록, 차트 공유·companion 접근 언급(2026-09 검색 요약, 신뢰도 낮음)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.fertilityfriend.com/",
+     "what": "기억: 자동 배란 표시, VIP 멤버십, 차트 갤러리, 낡은 UI — 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "Apple Health — Cycle Tracking",
+   "maker": "Apple",
+   "country": "미국",
+   "category": "플랫폼 기본 건강 앱의 주기 기능",
+   "platforms": "iPhone 건강 앱, Apple Watch 생리 주기 추적 앱",
+   "price_model": "무료, 광고·구독 없음",
+   "scale": "unknown (iOS 기본 탑재)",
+   "cycle_fertility_features": [
+    "생리 예측과 가임 기간 6일 예측(다음 주기 예상 시작일에서 13일을 뺀 날 기준)",
+    "배란테스트 양성을 넣으면 가임 기간이 보정됨",
+    "기초체온·배란테스트 결과 기록",
+    "Apple Watch Series 8 이후: 수면 중 손목 온도로 지난 배란을 추정(약 2주기 뒤부터)",
+    "주기 편차 알림, 12개월 기록 PDF 내보내기",
+    "임신 확률 점수·테스트기 사진 판독: none found"
+   ],
+   "pregnancy_parenting_features": [
+    "임신을 기록하면 주수 표시와 임신 증상 기록"
+   ],
+   "partner_features": [
+    "전용 파트너 기능 없음",
+    "건강 공유: 기록하는 사람이 Sharing 탭에서 상대와 주제를 고르면 상대 건강 앱에 읽기 전용으로 보임(최대 5명). 기본은 아무것도 공유 안 함. iOS 16 기준 약 117개 주제에 생리 주기 세부가 포함된다는 보도(AppleInsider — press). Apple 공식 문서로 주기 항목 포함은 여전히 직접 확인 못 함. 공유를 끊으면 상대 기기에서 과거 데이터도 삭제(Apple 개인정보 페이지)",
+    "파트너용 설명·알림·할 일: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "none found"
+   ],
+   "platform_delivery": [
+    "iPhone·Apple Watch·iCloud 동기화",
+    "HealthKit으로 다른 앱이 주기·배란테스트·기초체온 데이터를 읽고 씀(사용자 허용 시)"
+   ],
+   "privacy_trust": [
+    "건강 공유는 받는 사람만 읽을 수 있게 암호화, 언제든 중단(Apple 건강 프라이버시 백서 2023-05)",
+    "광고 없음"
+   ],
+   "design": {
+    "summary": "건강 앱 안의 한 항목. 가로 날짜 띠에 생리·가임 기간을 표시하는 절제된 화면",
+    "home": "날짜 띠 + 예측 요약 + 기록 옵션(기억)",
+    "onboarding": "마지막 생리일·주기 길이 질문, 예측·알림 켜기(기억)",
+    "visual_style": "흰 바탕, 빨강(생리)·하늘색(가임 기간) 타원(기억)",
+    "notable_patterns": [
+     "예측·알림·가임 기간 표시를 각각 켜고 끔",
+     "의료진용 PDF"
+    ],
+    "evidence": "Apple 지원 문서의 검색 요약(형제 조사, 오늘). 화면 묘사는 기억이고 오늘 확인 못 함"
+   },
+   "strengths": [
+    "무료·광고 없음·암호화",
+    "배란테스트 입력이 예측을 보정하고 워치 온도로 배란을 추정",
+    "다른 앱의 데이터 허브(HealthKit)"
+   ],
+   "weaknesses_from_reviews": [
+    "공유는 데이터만 보여 주고 이번 주가 어떤 뜻인지 설명하지 않는다는 제3자 비교 글(경쟁 앱 블로그)",
+    "(분석) 파트너 경험과 임신 준비 콘텐츠가 없음"
+   ],
+   "sources": [
+    {
+     "url": "https://support.apple.com/en-us/120356",
+     "what": "Apple 지원: 주기 추적 기능, 가임 기간 계산, 알림, PDF(형제 조사의 오늘 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.apple.com/privacy/docs/Health_Privacy_White_Paper_May_2023.pdf",
+     "what": "건강 공유 최대 5명·암호화(2023-05)",
+     "level": "official"
+    },
+    {
+     "url": "https://support.apple.com/guide/watch/receive-retrospective-ovulation-estimates-apd3ee429691/watchos",
+     "what": "손목 온도 후향적 배란 추정(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://developer.apple.com/documentation/healthkit/hkcategorytypeidentifier/ovulationtestresult",
+     "what": "HealthKit 배란테스트 결과 유형(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://yuniapp.co.uk/blog/apple-health-cycle-sharing/",
+     "what": "건강 공유로 주기 공유 가능 여부, 설명 부재 지적(경쟁 앱 블로그, 편향 가능)",
+     "level": "press"
+    },
+    {
+     "url": "https://support.apple.com/en-us/120356",
+     "what": "기억: 화면 묘사(날짜 띠·타원), 온보딩 질문 — 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://appleinsider.com/inside/ios-16/tips/how-to-manage-health-data-sharing-in-ios-16",
+     "what": "건강 공유 주제에 생리 주기 포함, 기본 비공유(2026-11-13 검색 요약)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.apple.com/au/legal/privacy/data/en/health-app/",
+     "what": "사람별 주제 추가·제거, 공유 중단 시 상대 기기에서 삭제(2026-11-13 검색 요약)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "Soonr (Fertility for Couples) — 조사 중 추가",
+   "maker": "Vespexx Inc.(모회사: 한국 코스닥 상장 수젠텍 Sugentech, 253840)",
+   "country": "미국",
+   "category": "부부가 각자 폰에서 쓰는 임신 준비 앱 + 가정용 호르몬 테스터 연동",
+   "platforms": "iOS, Android",
+   "price_model": "앱 무료 + Soonr Premium 인앱 구독(미국 월 $12.99·연 $65.99, App Store). Premium에 무엇이 들어가는지는 확인 못 함. 연동 기기 Surearly SMART는 Amazon 출시가 $119(정가 $169) 별도",
+   "scale": "unknown — 2026-02 얼리 액세스, 2026-06-04 미국 정식 출시",
+   "cycle_fertility_features": [
+    "가임기를 두 사람 모두에게 표시",
+    "Surearly SMART 호르몬 테스터와 연동"
+   ],
+   "partner_features": [
+    "두 사람이 각자 폰에서 사용(App Store 설명, 2026-11-13 확인)",
+    "여성: 영양제·산전 비타민 기록. 남성(남자친구·남편): 영양제, 운동, 영양, 흡연·음주 기록",
+    "서로의 일일 기록과 연속 기록(streak), 가임기를 봄",
+    "상대가 루틴을 마치면 알림을 받음(App Store 설명)",
+    "공유 범위를 기록하는 사람이 좁히는 장치: none found"
+   ],
+   "korea_system_features": [
+    "한국 회사 계열: 개발사 Vespexx의 모회사가 한국 코스닥 상장 진단기업 수젠텍, 연동 기기 Surearly SMART도 수젠텍 제조(PR Newswire·PRN Asia 보도자료, 2026-11-13). 한국 출시·한국어 지원은 찾지 못함"
+   ],
+   "content_community_ai": [
+    "오늘 확인 못 함. 별도 목록에 '맞춤 코칭·120개 이상 건강 지표 검사' 서비스 언급(가격·출처 신뢰도 낮음)"
+   ],
+   "platform_delivery": [
+    "네이티브 iOS·Android, 상대 완료 알림(푸시), 기기 연동"
+   ],
+   "privacy_trust": [
+    "오늘 확인 못 함"
+   ],
+   "design": {
+    "summary": "확인 못 함 — 화면을 본 적이 없고 묘사한 자료도 찾지 못함",
+    "notable_patterns": [
+     "부부 상호 체크 + 연속 기록 + 상대 완료 알림"
+    ],
+    "evidence": "출시 보도자료와 스토어 설명의 검색 요약(2026-09)뿐. 스크린샷 못 봄"
+   },
+   "strengths": [
+    "남성에게 매일 본인 할 일을 주는, 둘셋과 가장 가까운 해외 앱",
+    "네이티브 앱과 실제 알림이 이미 있음",
+    "'두 사람 건강(dyadic health)'을 제품 정의로 내세움",
+    "한국 상장사 계열이라 한국 진출 시 둘셋의 가장 직접적인 경쟁자가 될 수 있음"
+   ],
+   "weaknesses_from_reviews": [
+    "리뷰는 찾지 못함",
+    "(분석) 연속 기록과 매일 체크에 기댐 — 둘셋이 하지 않기로 한 방식"
+   ],
+   "sources": [
+    {
+     "url": "https://www.prnewswire.com/news-releases/soonr-health-officially-launches-in-the-us-with-connected-at-home-fertility-tracking-for-couples-302791083.html",
+     "what": "2026-06-04 미국 출시 회사 보도자료: 부부 각자 기록, 상호 확인, 완료 알림, 테스터 연동(2026-09 검색 요약, 오늘 다시 못 엶)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/soonr-fertility-for-couples/id6756647515",
+     "what": "App Store 등록·설명(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://soonr.health/",
+     "what": "공식 사이트(2026-09 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/us/app/id6756647515",
+     "what": "App Store: 무료 + Premium 월 $12.99·연 $65.99, 서로의 기록·streak·완료 알림(2026-11-13 검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://en.prnasia.com/releases/global/soonr-health-officially-launches-in-the-u-s-with-connected-at-home-fertility-tracking-for-couples-535990.shtml",
+     "what": "Vespexx 개발, 모회사 수젠텍(KOSDAQ 253840), Surearly SMART $119(2026-11-13 검색 요약)",
+     "level": "press"
+    }
+   ],
+   "confidence": "high"
+  }
+ ],
+ "cluster_takeaways": [
+  "해외 주기 앱의 파트너 모드는 거의 다 '그녀의 상태를 읽는 창'이에요. Flo·Clue·Natural Cycles·Premom·Ovia·Apple 모두 파트너는 읽기만 하고, 본인 할 일은 없어요. 예외는 남성이 본인 생활습관을 기록하는 Glow(2015~)와 부부가 서로 루틴을 체크하는 Soonr(2026-06)예요. Soonr는 한국 코스닥 상장사 수젠텍 계열(Vespexx)이고 네이티브 앱·완료 알림·호르몬 테스터·유료 구독(월 $12.99)까지 갖춰서, 한국에 들어오면 둘셋의 가장 직접적인 경쟁자예요.",
+  "읽기 전용 안에서도 급이 갈려요. 달력 날짜만(Clue), 상태와 알림(Natural Cycles, Ovia 이메일), 설명과 '이렇게 도와주세요' 팁·퀴즈(Flo), 단계별 교육(Premom Predad). 둘셋의 '오늘 해 줄 수 있는 것'·'해 줄 말'은 Flo의 팁과 같은 자리라서, 차이는 문구가 아니라 할 일(검사 신청·기한)과 답장 고리에서 나와야 해요.",
+  "무엇을 보일지는 기록하는 사람이 정하고, 받을 알림은 파트너가 고르는 것이 표준이에요(Natural Cycles: 공유 항목·기간 선택 + 파트너가 알림 종류를 켬, Premom: 가임기/생리/임신 중 선택, Flo: 현재 단계와 예상만). 둘셋의 공유 3단계와 각자 알림 방식은 같은 줄이고, '날짜 없음' 단계와 '알리지 않은 기록은 상대 화면을 바꾸지 않는다'는 규칙은 이 묶음에서 찾지 못했어요.",
+  "파트너 쪽에 따로 요금을 받는 앱은 찾지 못했어요. Flo는 파트너 기본 기능이 무료(심화 콘텐츠는 Premium), Clue는 공유하는 쪽만 Plus를 내고 보는 쪽은 무료, Natural Cycles는 본인 구독(미국 연 $149.99)에 묶인 보기 전용 계정이에요(파트너 요금 명시 없음). 둘셋이 파트너 연결에 값을 매기면 Flo 무료와 바로 비교돼요.",
+  "예측은 세 층이에요. ① 달력 + 수기 기록(Flo, Clue, Ovia, Glow) ② 배테기 사진 판독 + 체온계(Premom, Femometer) ③ 온도로 배란을 확정하는 규제 허가 알고리즘 + 웨어러블(Natural Cycles, Apple Watch). 날마다 임신 가능성을 등급·점수로 보여 주는 것도 흔해요(Flo 등급, Glow %, Ovia 1~10 — 기억). 둘셋은 사진 판독·기초체온·점수·웨어러블이 없고 일부는 하지 않기로 했으니, '쓰던 앱 옆에서 돈다'는 전제를 받쳐 줄 가져오기(HealthKit·Health Connect)가 없다는 점이 비교 지점이에요.",
+  "이 분야에서 개인정보는 제품 기능이 됐어요. 제재·소송 뒤에 Flo는 익명 모드와 ISO 인증을 앞세우고(FTC 2021, 2025 배심 평결), Premom은 FTC 합의(2023), Glow는 파트너 연결 자동 승인으로 합의(2020)했고, Natural Cycles는 Mozilla 경고를 받지 않았어요. 둘셋의 SDK 없음·기기 저장은 좋은 답이지만 외부 인증·의료 감수·공개된 처리방침 같은 '보이는 표지'가 없어요. 양쪽이 수락해야 연결되는 구조는 선택이 아니라 기본선이에요.",
+  "전달 방식은 전부 네이티브 앱 + 서버 푸시 + 계정 동기화예요. 파트너 알림(단계 변경, 가임기, 테스트할 때, 상대 완료)이 파트너 기능의 실체라서, 서버 푸시가 없는 둘셋은 같은 기능표에서도 실제 경험이 한 단계 아래예요. 이 묶음에서 설치 없는 전달은 Ovia의 이메일뿐이었고, 둘셋 같은 링크 방식은 찾지 못했어요.",
+  "홈은 '오늘의 답 하나'(큰 원·링에 남은 일수나 가임 상태) + 기록 버튼 + 콘텐츠 피드, 온보딩은 목표 선택으로 시작해 모드를 정하는 틀이 공통이에요(기억). Flo는 수십 화면 설문 뒤 결제 화면, Natural Cycles는 색 하나로 줄인 홈, Clue는 원형 휠과 중립 톤, Stardust는 어두운 우주 테마로 구분돼요. 둘셋의 표지 사진 + 링 + 할 일 홈을 이 틀과 나란히 놓고 봐야 해요. 스크린샷은 오늘 하나도 보지 못했어요.",
+  "콘텐츠·커뮤니티·전문가가 기본 구성이에요. 의료진 감수 글과 코스(Flo), 과학 백과(Clue), 익명 커뮤니티(Flo·Glow·Fertility Friend), 유료 전문가 상담(Premom, 기억). 생성형 AI는 2026년에 막 들어오는 중이에요: Clue 'Chat With Your Data'(미국 Plus 베타), Premom 'Ask AI'(맞춤판은 유료), Flo 'Ask Flo'(보도만). 모두 '내 기록에 대해 묻기'이고 파트너용 AI는 찾지 못했어요. 둘셋은 설명 문구를 일부러 줄였고 콘텐츠 라이브러리·커뮤니티·감수자 표기가 없어요.",
+  "연구는 '보여 주기만으로는 남성이 움직이지 않는다'와 '추적이 관계를 기능적으로 만든다'를 함께 말해요. 경쟁 앱의 답은 팁(Flo), '타이밍 압박을 던다'는 알림 선택(Natural Cycles), 암호 문구(Greenlight)예요. 타이밍과 무관한 할 일을 주는 둘셋의 방향은 연구와 맞지만, 남성 수요는 어느 쪽도 숫자로 보여 주지 못했어요(Stardust 초대율 1/3은 출처 한 곳).",
+  "한국어 장벽은 Flo에만 확실히 없어요: Flo for Partners는 한국어 페이지·한국 스토어 설명이 있고 한국은 20세 이상 조건까지 따로 둬요. Clue·Natural Cycles·Premom·Glow·Soonr의 한국어 제공은 확인하지 못했어요. 국내에서 둘셋과 '남편이 보는 화면'을 바로 비교할 해외 앱은 사실상 Flo예요."
+ ],
+ "not_found": [
+  "2026-11-13 후속 조사: WebSearch 25회로 파트너 기능·가격·AI를 다시 확인했어요. WebFetch는 쓰지 않았고 원문 페이지는 열지 않았어요(검색 요약 기준).",
+  "그래서 이 파일의 근거는 세 가지뿐이에요: ① 저장소 조사 파일 docs/research/global-apps.json · regulation.json · couple-record.json(2026-09-26 검색 요약, 원문 미열람) ② 같은 실행의 한국 묶음 조사 kr-cycle-ttc.json(오늘 검색 요약 — Flo, Apple, 삼성) ③ 기억(level: memory). 가격·사용자 수·화면 묘사는 대부분 기억이라 출시 전 원문 확인이 필요해요.",
+  "스토어 스크린샷·디자인 사례 글을 하나도 열지 못했고 어느 앱도 설치해 보지 못했어요. design 항목은 Flo 파트너 탭을 빼면 전부 기억이에요.",
+  "Kindara: 지금도 운영되는지 확인하지 못해 프로필에서 뺐어요. 2026-09 조사에는 '차트를 파트너·전문가와 공유 가능, Wink 체온계는 단종'만 있어요(https://app.kindara.com/app , https://www.sheranked.com/app-reviews/kindara-app-review).",
+  "Ovia Fertility라는 단독 앱은 Ovia 통합 앱으로 합쳐졌어요(2026-09 검색 요약). 2026-11 현재 운영 상태는 다시 확인하지 못했어요.",
+  "Stardust 파트너가 실제로 보는 화면·알림과 요금, Femometer의 파트너 공유 기능, Fertility Friend의 companion 접근 세부는 찾지 못했어요.",
+  "Apple 건강 공유에 생리 주기 추적이 포함되는지는 Apple 공식 문서로 확인하지 못했어요(형제 조사와 같음).",
+  "프로필로 만들지 않은 관련 앱(2026-09 조사에만 있음): Mira(이메일로 초대한 한 명에게 주기·호르몬 데이터 읽기 전용 Partner Mode), Inito(파트너 공유 없음), Greenlight(남성용, QR 연결, 암호 문구로 가임 알림), Labour(부부 앱, 구독 하나로 두 사람), HiDaddy(HiMommy와 QR 연결). 호르몬 측정 기기 앱과 부부·아빠 앱은 다른 묶음에서 다루는 편이 맞아요.",
+  "AI 비서(2026-11-13): Clue는 'Chat With Your Data' 베타(공식), Premom은 'Ask AI'(Pro는 유료, 공식 글), Flo는 'Ask Flo'가 2025-06 보도에만 나오고 공식 출시 정보 없음. Natural Cycles는 대화형 비서를 찾지 못함(알고리즘만 AI). Glow·Ovia는 'AI' 문구만 있고 대화형 비서는 확인 못 함.",
+  "Flo for Partners: 주 사용자가 공유 항목을 고를 수 있는지, 파트너 수는 여전히 확인 못 함. 한국어는 있음.",
+  "Natural Cycles: Partner View 요금(무료인지)과 한국 제공 여부, 공식 가격 페이지 금액은 확인 못 함.",
+  "Clue: 미국 정가(제3자끼리 엇갈림), Conceive가 날마다 보여 주는 화면 디자인은 확인 못 함.",
+  "Soonr Premium에 무엇이 들어가는지, 한국 출시 계획은 찾지 못함.",
+  "프로필로 만들지 않은 2025~26 소형 커플 앱들(App Store 목록만 확인): Otty(커플 주기 추적, 날짜 데이트 아이디어·러브노트 프롬프트·일일 팁, 구독, iOS — apps.apple.com/app/id6762998029), Yuni, BeKnown: Cycle Partner Support, Flow Together, DuoSync. DadReadyAI(남성 파트너용 임신 준비 무료 앱, 동의 시 입력을 DeepSeek로 보내 AI 계획 생성, 리뷰 없음 — apps.apple.com/lb/app/dadreadyai/id6769300775). 모두 규모·평판 미확인."
+ ]
+}

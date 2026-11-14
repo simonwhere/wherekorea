@@ -1,0 +1,1196 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "베이비빌리",
+   "maker": "빌리지베이비 (VillageBaby Inc., 대표 이정윤)",
+   "country": "한국",
+   "category": "임신 준비 → 임신 → 육아를 한 앱에서: 시기별 콘텐츠 + 커뮤니티(베동) + 커머스(빌리쇼핑)",
+   "platforms": "iOS, Android (kr.villagebaby.billyapplication). 커뮤니티 글과 정보 글은 웹(babybilly.co, babybilly.app)에도 공개",
+   "price_model": "앱 기능 무료(스토어 설명 '이 모든 기능이 정말 무료'). 수익은 커머스(2025년 말 누적 거래액 1,020억 원)와 광고(스플래시·메인 팝업·베동 배너·쇼핑 팝업·카카오 푸시 패키지)",
+   "scale": "누적 회원 200만+(머니투데이 2026-06-10) · 월 이용자 50만+(브릿지경제 2026-10-22, 회사 발표) — 같은 해 3월 기사는 월 30만+, 광고 소개서는 MAU 30만(2025-07)·38만+(공개 소개서, 시점 불명) · 성별 여성 82.9% / 남성 17.1%, 30대 82.6%, 육아 중 59.4% / 임신 준비·임신 중 40.6%(공개 소개서) · 앱스토어·플레이스토어 '임신 준비' 카테고리 1위(2026-10 기사) · 5분기 연속 흑자(2026-06). 스토어 평점은 확인 못 함",
+   "cycle_fertility_features": [
+    "임신 준비 모드가 있음: 2023-07 보도에서 대표가 도입을 언급, 아기가 없는 사람도 쓰게 됨",
+    "2026-03 고도화: 배란 테스트기 기록 + 생리 주기 분석으로 '임신 확률이 높은 시기'를 그림으로 보여 줌",
+    "2026-03 '임신 관련 지원사업 체크리스트': 지자체별 난임 부부 시술비 지원, 임신 사전건강관리 지원사업 등을 확인·관리",
+    "둘째 준비: 육아 모드와 임신 준비 모드를 한 계정에서 함께 씀(2023-09 아기 추가 업데이트)",
+    "배테기 사진 판독, 기초체온, 남편 쪽 준비 항목은 찾지 못함"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주차별 정보가 엄마 / 아빠 / 아기 세 갈래로 나옴",
+    "산모수첩·육아수첩(옛 다이어리): 증상(입덧·태동·통증) 날짜별 기록, 접종·검진·이유식, 성장 단계에 맞춘 기록 추천",
+    "아기 최대 5명 한 계정 관리(2023-09)",
+    "육아 기록 위젯(아기 사진 넣기)",
+    "AI 아기 얼굴 예측 이벤트(산모수첩에 초음파 사진을 올리면 참여)",
+    "포인트 미션 리워드(기사 날짜 확인 못 함)"
+   ],
+   "partner_features": [
+    "부부 ID 연동(2021-08 다이어리 출시 때 도입): 산모수첩·육아수첩과 건강 기록을 부부가 함께 기록하고 같이 봄",
+    "연동한 남편이 보는 것: 아기 상태와 정보가 실시간으로 공유됨(App Store 리뷰의 표현, 화면은 확인 못 함)",
+    "주차별 콘텐츠의 '아빠' 갈래: 그 시기에 아빠가 하면 좋은 일(예: 허리가 아플 때 마사지). 읽는 글이고 체크·기한은 확인 못 함",
+    "아빠가 읽어 주는 태담(2021 추가), 산모 마사지법·아기 목욕법 같은 아빠용 콘텐츠",
+    "커뮤니티 베동에 아빠도 참여(스토어 설명 '육아맘, 임산부, 아빠까지')",
+    "전문가 글을 배우자·가족에게 공유하기(Google Play 설명)",
+    "임신 준비 단계에서 남편이 받는 알림·남편 몫 할 일·가임기 공유 범위 설정: none found",
+    "남성 이용자 비중: 2021년 대표 발언 20%대(목표 50%) → 공개 광고 소개서 17.1%(시점 불명)"
+   ],
+   "korea_system_features": [
+    "임신 관련 지원사업 체크리스트(2026-03): 지자체 난임 시술비, 임신 사전건강관리. 금액·기한 계산이나 갱신일 표기는 확인 못 함",
+    "2026-11 '우리아이자립펀드' 콘텐츠(기사 제목만 확인)",
+    "한국마더세이프와 협업한 정보(TheVC 기업 소개 요약)"
+   ],
+   "content_community_ai": [
+    "베동: 같은 시기 임산부·부모 커뮤니티. 시험관 1차 성공, 난저 신선이식 같은 난임 글이 웹에 공개돼 있음",
+    "베동에 '임신준비중인데 남편이 부담스러워해요', '임신준비중 자꾸 남편에게 서운해져요' 같은 글이 있음(제목만 확인)",
+    "난임 정보 글(인공수정·시험관 비교)",
+    "클린 베동AI: 글·댓글 24시간 모니터링(커뮤니티 관리용)",
+    "빌리쇼핑: 시기별 상품 추천, 라이브·기획전",
+    "AI 질문 답변 챗봇: none found"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 푸시(알림함에서 지난 푸시 다시 보기 개선)",
+    "홈 화면 위젯",
+    "카카오톡 채널(고객센터·광고 푸시)",
+    "계정 기반, 부부 ID 연동",
+    "워치·건강 데이터 연동은 확인 못 함"
+   ],
+   "privacy_trust": [
+    "광고 소개서가 MAU를 임신 / 육아로 나눠 광고주에게 제시함(2025-07: 임신 49.1%, 육아 50.9%)",
+    "개인정보 사고·제재 보도는 검색에서 찾지 못함",
+    "Apple 앱스토어 '투데이의 앱' 선정(2025-05)"
+   ],
+   "design": {
+    "summary": "정보·기록·커뮤니티·쇼핑을 한 앱에 넣은 구조. 회사는 2025-05 Apple '투데이의 앱' 선정 이유로 직관적인 UI/UX와 시기별 맞춤 정보를 들었음. 비교 글은 '정보가 너무 많아 탐색에 시간이 든다'고 적음",
+    "home": "확인 못 함. 광고 소개서 기준 앱을 열면 가장 먼저 보이는 지면이 메인 화면 팝업 광고",
+    "onboarding": "확인 못 함",
+    "visual_style": "기억: 하늘색 계열 브랜드 색과 둥근 캐릭터 '빌리'. 오늘 화면으로 확인하지 못함",
+    "notable_patterns": [
+     "주차 정보를 엄마 / 아빠 / 아기로 나눠 보여 주기",
+     "모드 병행(육아 + 임신 준비)",
+     "탭 이름: 마이빌리, 빌리쇼핑, 베동(버전 기록에서 확인)",
+     "앱 실행 스플래시 배너와 메인 팝업이 광고 상품",
+     "포인트 미션·이벤트로 다시 오게 하기"
+    ],
+    "evidence": "회사 보도 기사, 광고 소개서의 지면 설명, 스토어 설명·버전 기록·리뷰의 검색 요약, 블로그 비교 글. 스토어 스크린샷과 실제 화면은 보지 못함(apps.apple.com·play.google.com·babybilly.app 접속 차단). 색·캐릭터는 기억"
+   },
+   "strengths": [
+    "임신 준비부터 육아까지 한 계정으로 이어짐",
+    "규모(누적 200만, 월 50만)와 흑자 구조",
+    "임신 준비 기능을 2026년에 키우고 지원사업 체크리스트를 넣음 — 둘셋의 '한국 제도' 영역과 직접 겹침",
+    "부부 ID 연동으로 같은 수첩을 같이 씀",
+    "커뮤니티에 난임·임신 준비 글이 쌓여 있음"
+   ],
+   "weaknesses_from_reviews": [
+    "정보가 너무 많아 탐색에 시간이 들고 신뢰 근거를 따로 확인해야 함(스냅스 블로그 비교 글)",
+    "업데이트 뒤 로그인이 안 됨, 주차 표시 오류(영문 스토어 리뷰, 이후 수정 답변)",
+    "광고·푸시가 많다는 리뷰는 검색에서 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1497301126",
+     "what": "App Store: 설명(부부가 함께 기록·공유, 베동, 클린 베동AI, 무료), 버전 기록, 남편 계정 연동 리뷰 — 검색 요약으로만 확인",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=kr.villagebaby.billyapplication",
+     "what": "Google Play: 배우자·가족에게 전문가 팁 공유, 2026-10-23 업데이트(검색 요약)",
+     "level": "official"
+    },
+    {
+     "url": "https://news.nate.com/view/20260325n29999",
+     "what": "2026-03-25 임신 준비 기능 고도화: 배테기 기록·주기 분석, 지원사업 체크리스트, 월 30만+",
+     "level": "press"
+    },
+    {
+     "url": "https://www.viva100.com/article/20261022500793",
+     "what": "2026-10-22 임신 준비 카테고리 1위, 월 50만+, 누적 200만",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/industry/2026/06/10/2026061010514085466",
+     "what": "2026-06-10 5분기 연속 흑자, 누적 회원 200만+",
+     "level": "press"
+    },
+    {
+     "url": "https://m.news.nate.com/view/20260316n30148",
+     "what": "2026-03-16 누적 거래액 1,020억 원(2025년 말)",
+     "level": "press"
+    },
+    {
+     "url": "https://adure.net/uploads/adure/1763621799_%EB%B2%A0%EC%9D%B4%EB%B9%84%EB%B9%8C%EB%A6%AC%EA%B4%91%EA%B3%A0%EC%86%8C%EA%B0%9C%EC%84%9C_250710.pdf",
+     "what": "회사 광고 상품 제안서(2025-07): MAU 30만, 임신 49.1% / 육아 50.9%, 메인 팝업·커뮤니티 배너·쇼핑 팝업(PDF 텍스트 추출이 깨져 있음)",
+     "level": "official"
+    },
+    {
+     "url": "https://villagebaby.kr/ads/",
+     "what": "회사 광고센터·공개 소개서: MAU 38만+, 여성 82.9% / 남성 17.1%, 30대 82.6%, 육아 59.4% / 임신 준비·임신 40.6%(검색 요약이 이 페이지와 adrop 키트 중 어느 쪽인지 특정하지 않음)",
+     "level": "official"
+    },
+    {
+     "url": "https://adrop.io/adnote/kit/01JCMC4KK6FSK5KQ7XZSYZJKA4",
+     "what": "광고 마켓의 베이비빌리 상품 키트(위 수치의 다른 후보 출처)",
+     "level": "press"
+    },
+    {
+     "url": "https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=03178326629114520",
+     "what": "2021-08 다이어리 출시, 부부 아이디 연동 공유",
+     "level": "press"
+    },
+    {
+     "url": "https://news.nate.com/view/20210622n03646",
+     "what": "2021-06 대표 인터뷰: 남성 이용자 20%대, 50% 목표, 육아일기 부부 공유·'아빠가 읽어주는 태담'",
+     "level": "press"
+    },
+    {
+     "url": "https://stibee.com/api/v1.0/emails/share/5k45F8VX3SQ3knivjh13M3NaHetvInI=",
+     "what": "쫌아는기자들 인터뷰: 주차 정보가 엄마·아빠·아기로 나뉨, 아빠 마사지 예시",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/industry/2025/05/13/2025051216073859494",
+     "what": "2025-05-13 Apple '투데이의 앱' 선정, UI/UX 평가, 배우자도 쓰는 다이어리",
+     "level": "press"
+    },
+    {
+     "url": "https://www.fntoday.co.kr/news/articleView.html?idxno=303713",
+     "what": "다이어리 → 산모수첩·육아수첩, AI 아기 얼굴 예측 이벤트(날짜 확인 못 함)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/industry/2023/09/20/2023090815460946961",
+     "what": "2023-09 아기 추가(최대 5명), 육아 모드 + 임신 준비 모드",
+     "level": "press"
+    },
+    {
+     "url": "https://zdnet.co.kr/view/?no=20230705154753",
+     "what": "2023-07 임신 준비 모드 도입 언급, MAU·매출 2배",
+     "level": "press"
+    },
+    {
+     "url": "https://babybilly.co/ko/community/detail/bedong/559869",
+     "what": "베동 시험관 후기 글이 웹에 공개됨",
+     "level": "user-review"
+    },
+    {
+     "url": "https://babybilly.co/ko/community/detail/bedong/556355",
+     "what": "베동 글 '임신준비중인데 남편이 부담스러워해요'(제목만)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.snaps.com/blog/best-parenting-apps",
+     "what": "육아 앱 비교 글: 장점(주차별 가이드·커뮤니티·쇼핑), 단점(정보 과다)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1497301126",
+     "what": "기억: 브랜드 색과 캐릭터 인상. 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "마미톡",
+   "maker": "라이프엑스 (LifeX, 2026-03 휴먼스케이프에서 사명 변경, 대표 장민후)",
+   "country": "한국",
+   "category": "산부인과 초음파 영상 연동 임신·육아 앱 + 커뮤니티·클래스·커머스",
+   "platforms": "iOS, Android (com.mommytalkappv1). 병원용 앱 별도",
+   "price_model": "무료 + 병원 SaaS(분석 글 기준) + 광고(스플래시 400만 원/주, 광고 요약 자료) + 커머스·라이브커머스 '마라쇼' + 클래스 멤버십(1개월 29,000원) + 이유식 멤버십 '맘편한 이유식 케어'. 초음파 영상 전송은 한 제휴 병원 공지 기준 2025-09-01부터 30,000원(평생 이용, 비급여)",
+   "scale": "국내 누적 가입자 180만 + 해외 3국 92만(데일리메디, 라이프엑스 상장 준비 기사, 2026) · MAU 약 50만(2026-01 광고 요약), 45만(2025-09 소개서 본문, 같은 문서 표는 40만) · 제휴 병원 600곳+(2026-09) · 누적 초음파 영상 업로드 1,400만 건(2026-09, 회사 발표) · 회사 주장 '국내 임산부 약 90% 사용' · App Store 4.9 / 2.6만 평가(검색 요약)",
+   "cycle_fertility_features": [
+    "임신 준비 모드·가임기 기능: none found(스토어 설명에 임신 전 단계 언급 없음)"
+   ],
+   "pregnancy_parenting_features": [
+    "병원에서 받은 바코드를 넣으면 초음파 영상이 연동돼 진료 직후 앱에서 봄",
+    "AI로 태어날 아이 모습 미리 보기",
+    "주차별 아기 일러스트와 정보(대한산부인과초음파학회·대한소아청소년과학회 감수 표기)",
+    "다이어리, 체중 그래프",
+    "출산 뒤 육아 모드: 수유·수면·배변, 키·몸무게 기록과 통계",
+    "병원 찾기(2026-09): 지역·병원명으로 제휴 병원 600곳+ 검색, 8월 한 달 약 1만 6천 건 이용"
+   ],
+   "partner_features": [
+    "초대 코드로 가족 최대 5명 공유: 초대받은 사람은 각자 폰에서 초음파 영상을 봄(2024-02 기사)",
+    "주차 정보 안에 '아내를 도와 남편이 할 수 있는 일' 설명(읽는 글)",
+    "육아 기록을 남편과 공유하고 통계를 같이 봄(2020 App Store 리뷰)",
+    "커뮤니티에서 예정일이 같은 엄마·아빠가 관심 갖는 키워드를 보여 줌(약 2023 개편 글)",
+    "남편 전용 화면·남편 몫 할 일·남편에게 가는 알림: none found",
+    "2023-01 공식 커뮤니티에 '남편 초대 기능이 없냐'는 문의가 있었음(기존 조사 파일)"
+   ],
+   "korea_system_features": [
+    "정부 지원·기한 안내 기능: none found",
+    "병원 찾기는 제휴 병원 목록(둘셋이 하지 않기로 한 영역)"
+   ],
+   "content_community_ai": [
+    "커뮤니티: 아이 주차(개월 수) 기준으로 글을 보여 줌",
+    "매거진, 전문가 클래스(일부 유료 멤버십)",
+    "쇼핑, 라이브커머스 마라쇼",
+    "AI: 아기 얼굴 예측. AI 상담 챗봇은 none found. 회사는 상장 자금을 AI 진단 보조 솔루션에 쓰겠다고 밝힘"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 병원 초음파 장비·SaaS 연동(바코드)",
+    "초대 코드 가족 공유",
+    "위젯·워치는 확인 못 함"
+   ],
+   "privacy_trust": [
+    "Google Play 데이터 안전: 제3자와 공유하는 데이터 없음(개발사 신고)",
+    "App Store 개인정보 라벨: 검색 기록, 사용자 ID, 기기 ID, 광고 데이터 수집",
+    "2020 대한분만병원협회와 산모 개인정보 안전관리·앱 감수 협약",
+    "초음파 영상은 바코드 등록자가 탈퇴하기 전까지 보관(2024-02 기사)"
+   ],
+   "design": {
+    "summary": "초음파 영상이 중심인 앱. 주차별 아기 일러스트와 정보, 그 뒤에 커뮤니티·클래스·쇼핑이 붙음",
+    "home": "확인 못 함. 광고 자료 기준 앱 실행 때 스플래시 광고가 전 사용자에게 노출",
+    "visual_style": "기억: 분홍·코랄 계열. 오늘 확인 못 함",
+    "notable_patterns": [
+     "병원 바코드 → 영상 자동 연동(입력 없이 콘텐츠가 들어옴)",
+     "가족 초대 코드",
+     "커뮤니티 홈을 사용자 정보가 아니라 아이 주차 기준으로 구성",
+     "임신 모드 → 육아 모드 전환"
+    ],
+    "evidence": "기자 사용기(프라임경제 2024-02), 스토어 설명·리뷰의 검색 요약, 광고 소개서 요약, 커뮤니티 개편을 다룬 뉴스레터 글. 스크린샷·실제 화면은 보지 못함(mmtalk.kr·스토어 접속 차단). 색은 기억"
+   },
+   "strengths": [
+    "병원이 유통 채널: 병원에서 받은 바코드로 영상을 보려면 이 앱을 써야 함",
+    "가족이 들어올 이유가 분명함(아기 초음파 영상)",
+    "전문의 감수 표기와 학회 이름",
+    "규모(180만, MAU 약 50만)"
+   ],
+   "weaknesses_from_reviews": [
+    "광고가 너무 심해진다, 육아 기록 화면을 예전으로 돌려 달라(App Store 리뷰)",
+    "프리미엄 콘텐츠는 유료 정기 구독, 정보는 개별 검증 필요(스냅스 비교 글)",
+    "쇼핑 상품 구성이 다양하지 않다(2023~2024 기자 사용기)",
+    "초음파 영상 전송 유료 전환(제휴 병원 공지 2025-09). 산모 반응은 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1494440076",
+     "what": "App Store: 설명(초음파, AI 아이 모습, 학회 감수, 클래스 멤버십 가격), 평점 4.9 / 2.6만, 개인정보 라벨 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.mommytalkappv1",
+     "what": "Google Play: 초대 코드 가족 공유, 육아 기록, 개발사 LifeX, 데이터 안전, 2026-09-15 업데이트",
+     "level": "official"
+    },
+    {
+     "url": "https://mmtalk.kr/",
+     "what": "공식 사이트: '가족들에게도 쉽게 공유'",
+     "level": "official"
+    },
+    {
+     "url": "https://news.nate.com/view/20240222n22806",
+     "what": "프라임경제 사용기(2024-02): 가족 최대 5명, 남편이 할 수 있는 일, 클래스 유료, 쇼핑 구성, 육아 모드",
+     "level": "press"
+    },
+    {
+     "url": "https://www.newstap.co.kr/news/articleView.html?idxno=334892",
+     "what": "2026-09 병원 찾기: 제휴 600곳+, 8월 1만 6천 건, 초음파 업로드 1,400만 건",
+     "level": "press"
+    },
+    {
+     "url": "https://view.asiae.co.kr/article/2026092807595032192",
+     "what": "2026-09-28 '연계 병원 찾기' 도입(운영사 라이프엑스)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.dailymedi.com/news/news_view.php?wr_id=939261",
+     "what": "라이프엑스 코스닥 상장 준비: 국내 180만, 해외 92만, 임산부 약 90%",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mashupventures.co/portfolio/life-x",
+     "what": "2026-03 휴먼스케이프 → 라이프엑스 사명 변경",
+     "level": "press"
+    },
+    {
+     "url": "https://adure.net/uploads/adure/1757984285_%EB%A7%88%EB%AF%B8%ED%86%A1_%EB%A7%A4%EC%B2%B4%EC%86%8C%EA%B0%9C%EC%84%9C_Agency_25.0915.pdf",
+     "what": "회사 광고 소개서(2025-09): MAU 45만(표는 40만), 누적 150만, 25~44세 88%",
+     "level": "official"
+    },
+    {
+     "url": "https://adrop.io/adnote/kit/01J3Q3G003WRDF0V31A2CPHX37",
+     "what": "광고 키트 요약(2026-01): MAU 약 50만, 임신 20만 등, 스플래시 400만 원/주",
+     "level": "press"
+    },
+    {
+     "url": "http://www.sanbonjeil.kr/main/sub.html?boardID=www103&num=4879&Mode=view",
+     "what": "제휴 병원 공지: 2025-09-01부터 영상 전송 30,000원",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1494440076?see-all=reviews&platform=iphone",
+     "what": "리뷰: 광고가 심해짐, 육아 기록 화면 개편 불만, 남편과 기록 공유",
+     "level": "user-review"
+    },
+    {
+     "url": "https://maily.so/tipster/posts/1do1qel5rx6",
+     "what": "커뮤니티 홈 개선 글(약 2023, 광고 포함 글)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.medicaltimes.com/Users/News/NewsView.html?ID=1131505",
+     "what": "2020 출시 보도: 주차별 엄마·아빠 정보, 대한분만병원협회 협약",
+     "level": "press"
+    },
+    {
+     "url": "https://community.mmtalk.kr/community/article/233861",
+     "what": "2023-01 '남편 초대 기능' 문의(기존 조사 파일 kr-apps.json에서 가져옴, 오늘 다시 확인 못 함)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.snaps.com/blog/best-parenting-apps",
+     "what": "비교 글: 장점(단계별 커뮤니티), 단점(유료 구독)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1494440076",
+     "what": "기억: 브랜드 색 인상. 오늘 확인 못 함",
+     "level": "memory"
+    },
+    {
+     "url": "https://demoday.co.kr/bm-analysis/189",
+     "what": "수익 구조 분석 글: 병원 SaaS 구독·광고·커머스(기존 조사 파일 kr-apps.json에서 가져옴, 회사 공식 자료 아님)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "280days (일본명 トツキトオカ) 한국어판",
+   "maker": "amane factory (일본)",
+   "country": "일본 (한국어 제공)",
+   "category": "부부가 공유하는 임신 기록·일기 앱",
+   "platforms": "iOS, Android (com.amanefactory.totsukitoka)",
+   "price_model": "무료 + 하단 광고. 인앱 결제로 광고 숨기기. 기록을 책으로 만드는 유료 제본",
+   "scale": "월 이용자 일본 약 75만 / 한국 약 25만 / 대만 약 13만, 누적 약 1,000만 다운로드(2024-04, 회사 발표) · 스토어 설명 '누적 1,200만 다운로드 돌파'(시점 불명) · 한국 App Store 4.8 / 1만 평가(검색 요약)",
+   "cycle_fertility_features": [
+    "임신 준비 기능 없음: 같은 회사의 별도 앱 KONOTOKI가 맡음"
+   ],
+   "pregnancy_parenting_features": [
+    "아기 일러스트가 임신 주수에 따라 자라고, 누르면 매일 다른 대사로 엄마·아빠에게 말함",
+    "임신부 컨디션·기분을 스탬프로 기록, 체중 그래프, 검진 일정·기록, 임신 일기",
+    "기록 전체를 책 레이아웃으로 내보내기",
+    "출산 뒤 육아 기록 기능은 확인 못 함(임신 기간용 앱으로 소개됨)"
+   ],
+   "partner_features": [
+    "연결: Tool › 앱 연결에서 초대 코드(링크)를 보내고, 받은 쪽이 그 링크로 앱을 열면 연결됨. 아빠 쪽만으로는 쓸 수 없음",
+    "아빠가 보는 것: 엄마의 컨디션 기록, 아기 상태, 일기, 검진 기록",
+    "아빠가 받는 것: 임신 주수별 아빠용 조언, 아기 캐릭터의 대사",
+    "아빠가 하는 것: 일기 쓰기(사진·이모지), 부부가 함께 아기 이름 정하기(리뷰·스토어 설명)",
+    "가족 초대: 가족에게는 아기 일러스트만 공유되고 임신 기록은 엄마·아빠만 봄(오래된 사용법 글)",
+    "엄마가 항목별로 가릴 수 있는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "주수별 조언(엄마용·아빠용). 커뮤니티·커머스·AI는 찾지 못함",
+    "해외 사용자 대상 초음파 사진 무료 인쇄(2024-05)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 초대 코드로 두 앱 연결",
+    "검진 알림"
+   ],
+   "design": {
+    "summary": "말하는 아기 캐릭터가 화면의 주인공. 정보보다 '오늘 아기가 한 말'이 매일 여는 이유가 됨",
+    "home": "주수에 따라 자라는 아기 일러스트와 오늘의 대사(스토어 설명 기준)",
+    "visual_style": "손그림 느낌의 파스텔 일러스트(스토어 설명 + 기억)",
+    "notable_patterns": [
+     "앱이 아니라 아기가 말하는 화법",
+     "스탬프 한 번으로 끝나는 컨디션 입력",
+     "같은 기록을 두 사람이 다른 조언과 함께 봄",
+     "가족에게는 일러스트만 여는 2단계 공유",
+     "기록을 책으로"
+    ],
+    "evidence": "한국·미국·일본 스토어 설명과 공식 사이트의 검색 요약, 일본 사용법 글(2015~2016년 것 포함), 영문 리뷰. 스크린샷은 보지 못함. 화풍은 기억"
+   },
+   "strengths": [
+    "스토어 이름부터 '부부가 공유하는 임신 기록'이고, 두 앱을 잇는 것이 전제",
+    "아빠에게 주수별로 다른 글을 줌",
+    "매일 바뀌는 한 줄(아기 대사)이 다시 여는 장치 — 둘셋 남편 화면의 '기다리는 주' 팁 돌리기와 같은 문제를 캐릭터로 풂",
+    "한국에서도 월 25만(2024)"
+   ],
+   "weaknesses_from_reviews": [
+    "레이아웃이 복잡하고 번역이 어색함(영문 리뷰)",
+    "일기를 쓰다 느려지거나 멈춤(영문 리뷰)",
+    "부부 구조를 전제해 싱글맘이 쓰기 불편함(영문 리뷰)",
+    "아빠 쪽이 읽기 위주라는 불만(JustUseApp에 실린 리뷰)",
+    "한국어 리뷰의 불만은 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id995864179",
+     "what": "한국 App Store: 설명(아기 일러스트, 스탬프 기록, 부부 공유, 이름 짓기, 광고 숨기기 인앱), 평점 4.8 / 1만 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.amanefactory.totsukitoka",
+     "what": "Google Play 설명",
+     "level": "official"
+    },
+    {
+     "url": "https://www.totsukitoka-apps.com/index.html.en",
+     "what": "공식 사이트: 체중·검진·일기 부부 공유, 'advice for Daddy', 책 내보내기",
+     "level": "official"
+    },
+    {
+     "url": "https://babytech.jp/en/2024/05/totsukitoka/",
+     "what": "2024-05: 일본 75만·한국 25만·대만 13만 월 이용자, 누적 약 1,000만",
+     "level": "press"
+    },
+    {
+     "url": "https://applibito.com/%E3%83%88%E3%83%84%E3%82%AD%E3%83%88%E3%82%AA%E3%82%AB%E3%81%AE%E4%BD%BF%E3%81%84%E6%96%B9%EF%BC%81%E3%82%A2%E3%83%97%E3%83%AA%E3%81%AF%E3%81%84%E3%81%A4%E3%81%8B%E3%82%89%E4%BD%BF%E3%81%86%E3%81%B9/",
+     "what": "사용법 글: 초대 코드 연결 절차, 가족 초대는 일러스트만",
+     "level": "press"
+    },
+    {
+     "url": "https://app-tatsujin.com/totsukitoka-pregnancy-app-guide/",
+     "what": "기능·설정 가이드: 아빠 쪽에 공유되는 것, 아빠 일기",
+     "level": "press"
+    },
+    {
+     "url": "https://justuseapp.com/en/app/995864179/280days-pregnancy-diary-app/reviews",
+     "what": "영문 리뷰 모음: 아빠 참여 호평, 읽기 위주 불만, 멈춤",
+     "level": "user-review"
+    },
+    {
+     "url": "https://apps.apple.com/KR/app/id995864179",
+     "what": "기억: 일러스트 화풍. 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "열달후에",
+   "maker": "커넥트아이",
+   "country": "한국",
+   "category": "임신 준비(난임 모드 포함) → 임신 → 육아 다이어리",
+   "platforms": "iOS, Android (com.after10app)",
+   "price_model": "무료 + 앱 내 구입(유료 성장발달 보고서 등). 혜택존 '혜택플러스'",
+   "scale": "누적 회원 50만(2025-08 보도) · App Store 4.9 / 5,719 평가(검색 요약) · 회사 소개: 태아 15만 명의 초음파 360만 건",
+   "cycle_fertility_features": [
+    "임신 준비 다이어리: 가임기·배란 예정일 D-day, 생리 주기에 따른 '임신 확률' 예측(2002년 연구 인용)",
+    "배란 테스트기를 찍으면 결과 자동 분석, 기초체온 기록",
+    "난임 모드: 난임 시술 스케줄 관리, 약물 검색·투약 알림, 단계별 정보",
+    "임신 준비 모드 '임신준비 보고서'(버전 1.5.3, 1월 13일 — 연도 확인 못 함)",
+    "회사 소개 문구: 배란 테스트 분석으로 임신 성공률 47%(독립 검증 없음)"
+   ],
+   "pregnancy_parenting_features": [
+    "주차별 태아 성장 리포트, 초음파 수치 OCR 분석, 산모 체중",
+    "육아 성장발달 체크, 예방접종·영유아 검진 일정"
+   ],
+   "partner_features": [
+    "공유 다이어리: 남편·가족을 초대해 임신 가능성이 높은 날, 초음파 성장 기록, 감수 콘텐츠를 같이 봄",
+    "남편 전용 화면·알림·할 일: none found",
+    "아내가 공유 범위를 고르는지: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "혜택존·혜택플러스(내용 확인 못 함). 임신 준비 단계 정부 지원 안내는 확인 못 함",
+    "예방접종·영유아 검진 일정(육아 단계)"
+   ],
+   "content_community_ai": [
+    "산부인과 전문의 감수 콘텐츠",
+    "초음파 OCR, 배테기 사진 분석",
+    "산모 체중 변화로 태아 성장 위험을 예측하는 AI 개발 중(회사 소개)"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 카메라(배테기·초음파)"
+   ],
+   "privacy_trust": [
+    "전문의 감수 표기",
+    "개발사가 리뷰 답변에서 임신 확률·배란일 기능이 '아직 부족한 부분이 많다'고 인정"
+   ],
+   "design": {
+    "summary": "단계별 다이어리. 임신 준비 화면은 D-day와 임신 확률 숫자가 중심이고, 사진을 찍으면 수치로 읽어 주는 입력이 특징",
+    "home": "임신 준비 다이어리: 가임기·배란 예정일 D-day, 오늘의 임신 확률(스토어 설명)",
+    "notable_patterns": [
+     "한 계정에 임신 준비 / 난임 / 임신 / 육아 모드",
+     "사진 → 수치 입력",
+     "다이어리 하나를 가족과 공유"
+    ],
+    "evidence": "스토어 설명·버전 기록·개발사 리뷰 답변의 검색 요약, 같은 실행의 kr-cycle-ttc.json 프로필. 스크린샷·실제 화면은 보지 못함"
+   },
+   "strengths": [
+    "국산 앱 중 임신 준비·난임·임신·육아를 한 앱에 가장 넓게 담음",
+    "난임 모드에 투약 알림과 시술 스케줄이 있음 — 둘셋 '병원과 함께'와 겹침",
+    "평점 4.9"
+   ],
+   "weaknesses_from_reviews": [
+    "생리 기간 입력이 2~8일로 제한됨(App Store 리뷰, 약 2024)",
+    "임신 확률·배란일 정확도 불만에 개발사가 부족함을 인정"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1533627245",
+     "what": "App Store: 공유 다이어리, 난임 모드, 배테기 촬영 분석, 임신준비 보고서·혜택플러스 버전 기록, 개발사 답변 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.after10app",
+     "what": "Google Play 설명: 다이어리 공유",
+     "level": "official"
+    },
+    {
+     "url": "https://www.socialvalue.kr/news/view/1065594832963569",
+     "what": "누적 회원 50만(2025-08) — kr-cycle-ttc.json에서 가져옴",
+     "level": "press"
+    },
+    {
+     "url": "https://m.saramin.co.kr/job-search/company-info-view?csn=MytSTE1iaCtXSVVEdDdvRDI1SmJLQT09",
+     "what": "회사 소개: 임신 성공률 47%, 초음파 360만 건, AI 개발 중",
+     "level": "official"
+    },
+    {
+     "url": "https://www.startuptoday.kr/news/articleView.html?idxno=47684",
+     "what": "대표 인터뷰: 수익 모델",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "쑥쑥찰칵",
+   "maker": "제제미미",
+   "country": "한국",
+   "category": "아기 사진 자동 정리·가족 공유 앨범 + 육아 기록(수유텀)",
+   "platforms": "iOS, Android (com.jejememe.daybabyday), 웹 버전(2025-09), 디지털 액자",
+   "price_model": "무료 + 구독(App Store 표기: Premium 월 5,900원 / 연 59,000원, Family 월 11,900원 / 연 99,000원, Ad-free 월 6,900원 / 연 49,000원) + 굿즈·광고",
+   "scale": "누적 가입자 100만 돌파(2025-12-02 보도) · 130만+(8월 기준, 광고 키트·기사 요약, 연도는 2026으로 보임) · 스토어 문구 '150만 가족' · MAU 32만 / DAU 15만 / 고착도 47%(2026-04, 회사 집계) · MAU의 약 50%가 조부모 등 가족",
+   "cycle_fertility_features": [
+    "none found(출산 뒤 전용)"
+   ],
+   "pregnancy_parenting_features": [
+    "AI 아기 사진 자동 정리, 성장 영상, 쑥티콘(아이 사진 이모티콘), 굿즈",
+    "수유·수면·기저귀 기록, 시리·빅스비 음성 기록('시리야, 쑥쑥이 분유 먹었어')",
+    "꿀잠 타이밍(2026-02): 월령별 활동 시간과 쌓인 기록으로 재우기 좋은 때 제안",
+    "다둥이 기능"
+   ],
+   "partner_features": [
+    "가족 초대: 카카오톡 초대 메시지 또는 초대 코드 직접 입력",
+    "사진마다 공개 범위를 고름: 엄마네 식구 / 아빠네 식구 / 부부만. 다른 그룹끼리는 누가 초대됐는지 모름(제작자 글)",
+    "가족이 하는 것: 사진·영상 보기, 좋아요, 댓글",
+    "웹 버전(2025-09): 앱을 깔지 않고 브라우저로 접속. 가입 없이 댓글이 되는지는 확인 못 함",
+    "큰글씨 모드: 조부모용",
+    "아빠 전용 화면·할 일: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "content_community_ai": [
+    "AI 사진 분류, 음성 인식 기록, 수면 예측. 저장된 기록으로 의학적·심리적 인사이트를 순차 도입할 계획이라고 밝힘",
+    "AI 상담 챗봇: none found"
+   ],
+   "platform_delivery": [
+    "네이티브 앱 + 웹 버전 + 디지털 액자 연결",
+    "시리·빅스비 음성 명령",
+    "카카오톡 초대"
+   ],
+   "privacy_trust": [
+    "사진별 공개 범위와 그룹 사이 비공개가 설계 원칙(제작자 글)"
+   ],
+   "design": {
+    "summary": "가족 SNS형 사진 타임라인. 보는 사람(조부모) 화면을 따로 설계함: 초기 가족 가입률이 낮아 보기 화면을 고쳤고 큰글씨 모드와 웹 버전을 냄",
+    "home": "사진 타임라인과 성장 기록(큰글씨 모드 홈에서도 성장 기록 확인)",
+    "visual_style": "기억: 연두·초록 계열 아이콘. 오늘 확인 못 함",
+    "notable_patterns": [
+     "올리는 사람과 보는 사람의 화면을 나눠 설계",
+     "사진 단위 공개 범위",
+     "설치 없는 웹 입구(2025-09)",
+     "가족 초대 화면 개편, 카카오톡 없이도 초대 메시지 복사",
+     "홈 안내 팝업이 겹쳐 뜨던 문제 정리(버전 기록)"
+    ],
+    "evidence": "제작사 브런치 글(큰글씨 모드를 만든 이유), 보도 기사, App Store 버전 기록의 검색 요약. 스크린샷은 보지 못함. 색은 기억"
+   },
+   "strengths": [
+    "초대받은 가족이 MAU의 절반 — 초대받는 쪽 경험을 제품의 중심에 둔 사례",
+    "설치 없는 웹 버전과 큰글씨 모드로 초대받는 쪽 장벽을 낮춤",
+    "DAU/MAU 47%",
+    "음성 입력·수면 예측 같은 기록 부담 줄이기"
+   ],
+   "weaknesses_from_reviews": [
+    "사진 기록·댓글 글씨가 작다는 의견(큰글씨 모드 배경, 제작사 글)",
+    "스토어 리뷰 불만은 검색에서 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id1509183009",
+     "what": "App Store: 설명(자동 정리, 쑥티콘, 가족 공유), 인앱 가격, 버전 기록(가족 초대 화면, 초대 코드 입력) — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://brunch.co.kr/@daybabyday/17",
+     "what": "제작사 글: 큰글씨 모드, 사진별 공개 범위, 가족 가입률",
+     "level": "official"
+    },
+    {
+     "url": "https://platum.kr/archives/276203",
+     "what": "누적 100만 돌파, MAU 절반이 가족(2025-12)",
+     "level": "press"
+    },
+    {
+     "url": "https://v.daum.net/v/20251202164752299",
+     "what": "2025-12-02 가입자 100만 보도",
+     "level": "press"
+    },
+    {
+     "url": "https://thevc.kr/jejememe",
+     "what": "2026-04 기사 요약: MAU 32만, DAU 15만, 고착도 47%",
+     "level": "press"
+    },
+    {
+     "url": "https://platum.kr/archives/269327",
+     "what": "2025-09 웹 버전 출시",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/future/2026/02/26/2026022609501187955",
+     "what": "2026-02-26 꿀잠 타이밍",
+     "level": "press"
+    },
+    {
+     "url": "https://besuccess.com/?p=176559",
+     "what": "AI 음성 수유텀 기록",
+     "level": "press"
+    },
+    {
+     "url": "https://adrop.io/en/adnote/kit/01KT836ZT5KWW8HRB3XSZRY2D7",
+     "what": "광고 키트: 누적 130만+, DAU/MAU 45.7%",
+     "level": "press"
+    },
+    {
+     "url": "https://www.madclub.co.kr/news/articleView.html?idxno=9992",
+     "what": "큰글씨 모드 출시 보도",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id1509183009",
+     "what": "기억: 아이콘 색. 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "베이비타임 (BabyTime)",
+   "maker": "심플러 (Simfler Inc.)",
+   "country": "한국",
+   "category": "수유·수면·기저귀 육아 기록 앱",
+   "platforms": "iOS, Android (yducky.application.babytime), Wear OS",
+   "price_model": "무료 + 하단 배너 광고. 인앱: 광고 제거 6,600원, 공동양육자 수 늘리기 3,300원(App Store 표기)",
+   "scale": "스토어 문구 '400만명이 선택한 육아앱' · App Store 4.8 / 약 5.1만 평가(제3자 집계) · Android 4.10.5(2026-04-29)",
+   "cycle_fertility_features": [
+    "none found(출산 뒤 전용)"
+   ],
+   "pregnancy_parenting_features": [
+    "모유·분유·이유식·체온·약·기저귀·잠 기록, 주간·월간 통계, 성장 곡선, 월령별 발달 체크, 예방접종"
+   ],
+   "partner_features": [
+    "공동양육자 추가: 배우자·조부모·육아도우미가 같은 아기 기록을 함께 입력하고 실시간으로 동기화",
+    "배우자가 받는 것: 기록 갱신 알림(Google Play 영문 설명 'receive instant updates')",
+    "공동양육자 인원을 늘리려면 인앱 결제(무료 인원 수는 확인 못 함)",
+    "역할별로 다른 화면이나 아빠 몫 할 일: none found"
+   ],
+   "korea_system_features": [
+    "예방접종 내역 기록. 정부 지원 안내는 none found"
+   ],
+   "content_community_ai": [
+    "AI 기능은 찾지 못함. 강점은 하루 리듬을 그림으로 보여 주는 것이라는 평가(2026 소개 글)"
+   ],
+   "platform_delivery": [
+    "위젯: 배고픔 상태, 마지막 수유·수면·기저귀 시각",
+    "Wear OS 앱",
+    "공동양육자 실시간 동기화"
+   ],
+   "design": {
+    "summary": "기록 버튼과 타임라인·그래프가 전부인 도구형. '특출난 기능은 없지만 모든 부분에서 평균 이상'이라는 평",
+    "notable_patterns": [
+     "위젯에서 마지막 수유 뒤 지난 시간을 바로 확인",
+     "하단에 작은 배너 광고 하나"
+    ],
+    "evidence": "스토어 설명과 리뷰의 검색 요약, 블로그 비교 글. 스크린샷은 보지 못함"
+   },
+   "strengths": [
+    "공동양육자가 '보기'가 아니라 같은 권한으로 '입력'함",
+    "교대할 때 인수인계가 필요 없다는 실사용 가치",
+    "위젯·워치로 앱을 열지 않고 기록 확인"
+   ],
+   "weaknesses_from_reviews": [
+    "기록할 때마다 폰을 꺼내야 함(스냅스 비교 글)",
+    "iOS 위젯 동기화 문제(리뷰 분석 페이지)",
+    "직수 수유량은 알 수 없고 시간만 잼(블라인드 댓글)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id1052459780",
+     "what": "App Store: 공동양육자, 위젯, 인앱 가격, '400만' 문구, 광고 리뷰 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=yducky.application.babytime",
+     "what": "Google Play: 배우자 동기화·알림, Wear OS",
+     "level": "official"
+    },
+    {
+     "url": "https://mwm.ai/apps/babytime-record-analysis/1052459780",
+     "what": "제3자 집계: 평점 4.8 / 약 5.1만, 위젯 동기화 불만",
+     "level": "press"
+    },
+    {
+     "url": "https://www.snaps.com/blog/best-parenting-apps",
+     "what": "비교 글: 장점(기록·그래프), 단점(매번 폰 사용)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.teamblind.com/kr/post/%EC%8B%A0%EC%83%9D%EC%95%84-%EC%9C%A1%EC%95%84%EC%9D%BC%EC%A7%80-MZT8xvtw",
+     "what": "블라인드: 신생아 육아일지 앱 비교 댓글",
+     "level": "user-review"
+    },
+    {
+     "url": "https://thevc.kr/simfler",
+     "what": "운영사 기업 정보",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "삐요로그 (PiyoLog, ぴよログ)",
+   "maker": "株式会社ぴよログ (일본)",
+   "country": "일본 (한국어 제공)",
+   "category": "부부가 공유하는 육아 기록 앱",
+   "platforms": "iOS, Android (jp.co.sakabou.piyolog). 돌봄 제공자용 별도 앱 '삐요도움'",
+   "price_model": "무료 + 프리미엄(한국 App Store 표기: 월 4,900원 / 연 45,000원)",
+   "scale": "누적 500만 다운로드(2026-01-07 회사 보도자료, 전체 국가) · 한국 이용자 수는 unknown · Android 9.5.1(2026-10-12)",
+   "cycle_fertility_features": [
+    "none found(출산 뒤 전용)"
+   ],
+   "pregnancy_parenting_features": [
+    "한 손으로 모유·분유·기저귀·수면 기록, 수유 타이머, 성장 곡선, 하루를 한 줄로 보는 타임 바, 사진 육아 일기"
+   ],
+   "partner_features": [
+    "입력하면 바로 공유돼 부부·돌보미가 언제든 아기 기록을 봄",
+    "배우자가 하는 것: 같은 기록에 직접 입력(리뷰: 퇴근한 배우자와 교대할 때 인수인계가 필요 없음)",
+    "삐요도움: '돌봄 제공자를 위한 삐요로그'라는 별도 앱(스토어 설명에 '가족 수에 제한이 없습니다')",
+    "초대 절차와 공유 인원 한도: 확인 못 함"
+   ],
+   "korea_system_features": [
+    "한국 제도 안내: none found",
+    "일본에서는 2026-01 국가의 '子育て支援制度レジストリ'와 연동해 지자체 지원 제도를 시점에 맞춰 알려 주기 시작(한국 제공 여부 확인 못 함)"
+   ],
+   "content_community_ai": [
+    "음성 입력(AI 어시스턴트 연동, 일본 리뷰 글). 커뮤니티·커머스는 찾지 못함"
+   ],
+   "platform_delivery": [
+    "네이티브 앱, 실시간 공유",
+    "스마트워치·음성 어시스턴트 지원(일본 리뷰 글, 한국어판 확인 못 함)"
+   ],
+   "design": {
+    "summary": "한 손 조작과 하루 타임 바가 특징인 기록 도구",
+    "visual_style": "기억: 노란 병아리 캐릭터. 오늘 확인 못 함",
+    "notable_patterns": [
+     "한 손 입력",
+     "하루를 시간 띠 하나로 요약",
+     "돌봄 제공자용 앱을 따로 둠"
+    ],
+    "evidence": "한국·미국 스토어 설명과 리뷰의 검색 요약, 일본 보도자료, 일본 아빠 블로그 사용기. 스크린샷은 보지 못함. 캐릭터는 기억"
+   },
+   "strengths": [
+    "부부 공유가 기본값이고 무료",
+    "교대 육아의 인수인계를 없앰",
+    "제도 정보를 국가 레지스트리에서 받아 시점에 맞춰 주는 방식(일본) — 둘셋의 손으로 관리하는 콘텐츠 JSON과 대비"
+   ],
+   "weaknesses_from_reviews": [
+    "아이폰은 5분 단위, 갤럭시는 1분 단위로 시간 표시가 달라 부부 사이에 불편(한국 App Store 리뷰)"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id1252857347",
+     "what": "한국 App Store: 설명(부부 즉시 공유), 프리미엄 가격, 남편과 쓰는 리뷰 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=jp.co.sakabou.piyolog",
+     "what": "Google Play: 'both parents, nanny, or caregiver' 즉시 공유",
+     "level": "official"
+    },
+    {
+     "url": "https://prtimes.jp/main/html/rd/p/000000022.000019025.html",
+     "what": "2026-01-07 보도자료: 500만 다운로드, 육아 지원 제도 레지스트리 연동",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/id6502620526",
+     "what": "삐요도움(돌봄 제공자용) 스토어 설명",
+     "level": "official"
+    },
+    {
+     "url": "https://ikuji-jouhou.com/application-piyorog/",
+     "what": "1년 쓴 아빠의 사용기: 음성 입력, 스마트워치",
+     "level": "user-review"
+    },
+    {
+     "url": "https://apps.apple.com/KR/app/id1252857347",
+     "what": "기억: 병아리 캐릭터. 오늘 확인 못 함",
+     "level": "memory"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "맘스다이어리",
+   "maker": "맘스다이어리",
+   "country": "한국",
+   "category": "임신·육아 일기 → 포토북 무료 출판 + 이벤트·체험단",
+   "platforms": "iOS, Android (com.moms.momsdiary), 원스토어, 웹",
+   "price_model": "무료. 100일 연속 일기를 쓰면 무료 출판권(되풀이 가능), 매달 5,000명 이상에게 출판권 제공(스토어 문구). 제휴 기업 이벤트·맘스팩",
+   "scale": "회원 200만+(2026-08 보도자료) · 스토어 문구는 '150만 엄마', 원스토어는 '100만 엄마들의 선택'(시점이 다름)",
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "사진 한 장 + 한 줄 일기, 일기장을 아이별·엄마 개인으로 나눠 관리, 포토북 출판",
+    "매일 경품 이벤트, 매달 선물 세트 맘스팩"
+   ],
+   "partner_features": [
+    "앱 안의 아빠 계정·공동 작성·남편 초대: none found",
+    "2026 대국민 아빠육아 캠페인 '6분 6아, 아빠의 시작'(고용노동부 후원, 2026-09-01~10-15): 아빠 육아 실천 인증샷·응원 메시지를 올리면 경품",
+    "회사 발표: 2019년 같은 캠페인에서 아빠가 직접 참여한 비율 45.15%",
+    "사용자 사례: 출판하는 책의 머리말·뒷표지 글을 남편이 씀(브런치 글, 앱 기능 아님)"
+   ],
+   "korea_system_features": [
+    "none found(캠페인 후원 기관으로 고용노동부)"
+   ],
+   "content_community_ai": [
+    "커뮤니티·이벤트·체험단 중심. AI는 찾지 못함"
+   ],
+   "design": {
+    "summary": "일기 쓰기와 출판·이벤트가 중심. 출판 표지가 아동틱하다는 리뷰가 있음",
+    "notable_patterns": [
+     "100일 연속 작성 → 무료 출판(연속 기록 보상)",
+     "매일 경품 이벤트"
+    ],
+    "evidence": "스토어 설명·리뷰의 검색 요약, 공식 FAQ, 2026 캠페인 보도. 화면은 보지 못함"
+   },
+   "strengths": [
+    "기록이 책이라는 실물로 남음",
+    "정부 부처와 함께하는 아빠 참여 캠페인 운영력",
+    "오래된 회원 기반"
+   ],
+   "weaknesses_from_reviews": [
+    "표지가 너무 아동틱함, 세련된 디자인이면 좋겠다(App Store 리뷰)",
+    "유료 포토북 가격과 광고 불만은 검색에서 확인 못 함"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id669378713",
+     "what": "App Store: 무료 출판, 매달 5,000명, 맘스팩, '150만 엄마', 리뷰 — 검색 요약",
+     "level": "official"
+    },
+    {
+     "url": "https://www.seoul.co.kr/news/economy/2026/08/31/20260831500246",
+     "what": "2026-08-31 '6분 6아' 캠페인: 고용노동부 후원, 기간, 회원 200만+, 2019 아빠 참여율 45.15%",
+     "level": "press"
+    },
+    {
+     "url": "https://m.momsdiary.co.kr/w/event/com_event/daddy_comp/2026/index_10m.moms",
+     "what": "공식 캠페인 페이지(2탄)",
+     "level": "official"
+    },
+    {
+     "url": "https://we.moms.kr/29",
+     "what": "공식 FAQ: 일기장 분류",
+     "level": "official"
+    },
+    {
+     "url": "https://ibabynews.com/news/articleView.html?idxno=51500",
+     "what": "베이비뉴스 리뷰(약 9년 전): 100일 연속 무료 출판",
+     "level": "press"
+    },
+    {
+     "url": "https://brunch.co.kr/@jdesigns2/54",
+     "what": "사용자 글: 남편이 책 머리말을 씀",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "세이베베",
+   "maker": "메디엔비즈",
+   "country": "한국",
+   "category": "제휴 산부인과 초음파 영상 앱 + 임신·육아 정보",
+   "platforms": "iOS, Android (com.saybaby)",
+   "price_model": "무료 + 광고(리뷰 기준). 병원 쪽 요금은 확인 못 함",
+   "scale": "누적 회원 80만, 제휴 분만병원 332곳(2016년 전후 기사, 지금 수치 아님) · Android 평점 3.0 / 3.3천(AppBrain) · Google Play 2026-08-03 업데이트 'UI 전면 개편'",
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "제휴 병원에서 찍은 초음파 사진·영상을 앱에서 봄, 다이어리, 커뮤니티, 임신·육아 정보, 쇼핑"
+   ],
+   "partner_features": [
+    "초음파 사진·영상을 카카오톡·SMS 등으로 가족에게 보내기(메신저 공유)",
+    "앱 안의 가족 초대·아빠 화면: none found"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "design": {
+    "summary": "리뷰에서 UI가 오래됐다는 불만이 많았고 2026-08에 UI 전면 개편을 올림. 개편 뒤 화면은 확인 못 함",
+    "evidence": "AppBrain·스토어 미러의 검색 요약과 리뷰 요약. 화면은 보지 못함"
+   },
+   "strengths": [
+    "병원 채널로 들어오는 사용자"
+   ],
+   "weaknesses_from_reviews": [
+    "UI가 오래됐다",
+    "광고를 거절해도 계속 뜬다",
+    "병원 때문에 어쩔 수 없이 쓰는 앱이라는 반응"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id437465266",
+     "what": "App Store 설명: 제휴 병원 초음파, 공유",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.saybaby",
+     "what": "Google Play: 2026-08-03 UI 전면 개편",
+     "level": "official"
+    },
+    {
+     "url": "https://www.appbrain.com/app/%EC%84%B8%EC%9D%B4%EB%B2%A0%EB%B2%A0-%EC%9E%84%EC%8B%A0-%EC%B6%9C%EC%82%B0-%EC%9C%A1%EC%95%84/com.saybaby",
+     "what": "평점 3.0 / 3.3천, 리뷰 요약(오래된 UI, 광고)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.hankyung.com/article/201602020396a",
+     "what": "2016 기사: 332개 분만병원, 카카오톡 등 공유",
+     "level": "press"
+    },
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=17207",
+     "what": "운영사 메디엔비즈, 누적 회원 80만(오래된 기사)",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "차이의 놀이",
+   "maker": "Havit Inc.",
+   "country": "한국",
+   "category": "0~7세 연령별 놀이·육아 콘텐츠 + 교구 커머스",
+   "platforms": "iOS, Android (com.havit.android), 웹(chaisplay.com). 한국어·인도네시아어·중국어",
+   "price_model": "앱 무료, 놀이 패키지·책 판매",
+   "scale": "공식 링크 페이지 '120만 엄마 아빠 선생님' · Google Play 2026-08-23 업데이트 · 평점은 확인 못 함",
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "아이 생년월일을 넣으면 연령에 맞는 놀이·육아 정보를 매일 받음"
+   ],
+   "partner_features": [
+    "부부 계정 공유·초대: none found",
+    "아빠 대상은 콘텐츠와 상품: '우리 아이 육아에 아빠 소환하기 전략'(남편에게 앱 설치를 권하는 글), '1~3세 아이 아빠가 아이와 꼭 해야 할 5가지', 아빠놀이 동화책"
+   ],
+   "korea_system_features": [
+    "none found"
+   ],
+   "design": {
+    "summary": "연령에 맞는 놀이·육아 정보를 매일 보내 주는 콘텐츠 앱(스토어 설명 기준). 화면 구성은 확인 못 함",
+    "evidence": "Google Play 설명과 공식 사이트 글 제목의 검색 요약. 화면은 보지 못함"
+   },
+   "strengths": [
+    "생년월일 하나로 매일 맞춤 콘텐츠",
+    "아빠를 '불러오는 법'을 콘텐츠로 다룸"
+   ],
+   "sources": [
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.havit.android",
+     "what": "Google Play 설명, 2026-08-23 업데이트",
+     "level": "official"
+    },
+    {
+     "url": "https://linktr.ee/havitplay",
+     "what": "공식 링크 페이지: 120만",
+     "level": "official"
+    },
+    {
+     "url": "https://www.chaisplay.com/stories/44-%EC%9A%B0%EB%A6%AC-%EC%95%84%EC%9D%B4-%EC%9C%A1%EC%95%84%EC%97%90-%EC%95%84%EB%B9%A0-%EC%86%8C%ED%99%98%ED%95%98%EA%B8%B0-%EC%A0%84%EB%9E%B5",
+     "what": "공식 글: 아빠 소환하기 전략",
+     "level": "official"
+    },
+    {
+     "url": "https://www.chaisplay.com/stories/293-1-3%EC%84%B8-%EC%95%84%EC%9D%B4-%EC%95%84%EB%B9%A0%EA%B0%80-%EC%95%84%EC%9D%B4%EC%99%80-%EA%BC%AD-%ED%95%B4%EC%95%BC-%ED%95%A0-5%EA%B0%80%EC%A7%80",
+     "what": "공식 글: 아빠가 꼭 해야 할 5가지",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "라플 (LAPL, 앱 이름 my라플)",
+   "maker": "라플홀딩스 (베이비뉴스 계열)",
+   "country": "한국",
+   "category": "AI 육아비서: 시기별 선제 안내 + 일정 + 지원금 계산 (2026-09-11 정식 출시, 새로 찾은 앱)",
+   "platforms": "iOS, Android. 카카오 PlayMCP에 '출산지원금 계산기' 도구 공개(2026-11 초)",
+   "price_model": "무료(보도 기준)",
+   "scale": "unknown (출시 2개월)",
+   "cycle_fertility_features": [
+    "임신 준비 기능은 확인 못 함(임신 주차 또는 자녀 생년월일로 시작)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주차·자녀 생년월일을 등록하면 그 시점의 검사 항목과 육아 지침을 AI가 먼저 안내",
+    "자연어로 일정 등록, 하루 전과 당일 아침 카카오톡 알림",
+    "예방접종, 병원 찾기"
+   ],
+   "partner_features": [
+    "배우자 공유·아빠 기능: none found"
+   ],
+   "korea_system_features": [
+    "전국 246개 시·군·구의 출산·육아 지원 혜택 데이터를 전수 구축했다고 발표",
+    "사는 곳과 아이 개월 수를 넣으면 중앙정부 + 지자체 지원금을 한 화면에 모아 총액 계산",
+    "육아휴직 급여 계산",
+    "PlayMCP 계산기: 첫만남이용권·부모급여·아동수당의 총액과 남은 금액 계산, 지자체 금액은 확인된 지역만 따로, 결과는 예상치이니 복지로·주민센터에서 다시 확인하라고 안내",
+    "데이터 갱신일 표기 방식은 확인 못 함"
+   ],
+   "content_community_ai": [
+    "베이비뉴스 기사 10만여 건과 전문가 콘텐츠를 바탕으로 한 AI",
+    "'검색하는 육아에서 AI가 먼저 챙기는 육아로'가 내세우는 말"
+   ],
+   "platform_delivery": [
+    "카카오톡 1초 가입, 카카오톡 알림",
+    "MCP 도구로 외부 AI에서 호출"
+   ],
+   "design": {
+    "summary": "확인 못 함. 보도는 '검색창 없이 AI가 생애주기 시점에 맞춰 먼저 제시'하는 구조라고만 설명",
+    "evidence": "출시 보도 기사 여러 건의 검색 요약. 화면·스토어 페이지는 보지 못함"
+   },
+   "strengths": [
+    "지자체 지원금을 전국 단위로 모아 금액까지 계산 — 둘셋은 지자체 금액을 적지 않고 링크만 둠",
+    "알림을 카카오톡으로 보냄 — 둘셋은 서버 푸시가 없음",
+    "언론사 콘텐츠 자산"
+   ],
+   "sources": [
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=154437",
+     "what": "2026-09 출시 보도: AI 육아비서, 선제 안내",
+     "level": "press"
+    },
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=154525",
+     "what": "지원금·예방접종·병원 찾기, 지원금 총액 계산",
+     "level": "press"
+    },
+    {
+     "url": "https://www.meconomynews.com/news/articleView.html?idxno=201529",
+     "what": "2026-09-11 정식 출시, 246개 지자체 데이터, 카카오톡 알림",
+     "level": "press"
+    },
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=156552",
+     "what": "2026-11 PlayMCP 출산지원금 계산기: 계산 범위와 '예상치' 안내",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "아이마중",
+   "maker": "보건복지부 · 한국사회보장정보원(운영), 인구보건복지협회(다국어)",
+   "country": "한국 (정부)",
+   "category": "정부 임신·출산 앱: 임산부 등록과 지원 서비스 신청 (2023-03 출시, 제도 안내의 기준점으로 추가)",
+   "platforms": "iOS, Android",
+   "price_model": "무료",
+   "scale": "unknown (다운로드·평점은 검색에서 확인 못 함)",
+   "cycle_fertility_features": [
+    "임신 준비 단계 기능은 확인 못 함(맞춤 정보는 임신 3주부터)"
+   ],
+   "pregnancy_parenting_features": [
+    "임신 주차별(3~40주)·아이 월령별(1~36개월) 맞춤 건강정보",
+    "임산부·아기수첩(기록, 사진)",
+    "우울증 자가검사"
+   ],
+   "partner_features": [
+    "맞춤 정보 목록에 '배우자/파트너 역할' 항목이 있음(사용 설명 자료)",
+    "일부 민원 신청은 가구원의 동의가 필요함",
+    "배우자 계정 연동·배우자 화면: none found"
+   ],
+   "korea_system_features": [
+    "보건소에 가지 않고 임산부 등록(본인인증, 구비서류)",
+    "엽산제·철분제·표준모자보건수첩 신청(일부 지자체는 택배 배송)",
+    "의료비 지원 등 민원 신청, 정부 지원 정책 안내",
+    "7개 국어 지원(2023)",
+    "임신 사전건강관리(가임력 검사) 신청은 이 앱이 아니라 e보건소(기존 조사 파일)"
+   ],
+   "design": {
+    "summary": "확인 못 함. 행정 신청 메뉴와 주차별 정보·수첩으로 구성된 것으로 보임",
+    "evidence": "한국사회보장정보원 공지, 지자체 보도, 사용 설명 자료의 검색 요약. 화면은 보지 못함"
+   },
+   "strengths": [
+    "안내가 아니라 실제 신청이 됨",
+    "정책 주체가 직접 운영해 정보가 공식"
+   ],
+   "sources": [
+    {
+     "url": "https://www.ssis.or.kr/lay1/bbs/S1T1909C101/B/101/view.do?article_seq=125967",
+     "what": "한국사회보장정보원: 아이마중 기능 안내",
+     "level": "official"
+    },
+    {
+     "url": "https://www.childcare.go.kr/?menuno=124",
+     "what": "아이사랑 포털: 아이마중으로 임산부 신고 가능",
+     "level": "official"
+    },
+    {
+     "url": "https://sooyusil.com/home/article/2047.htm?articleSearchTarget=&pageNo=1&searchGb=",
+     "what": "사용 설명 리플렛: 맞춤 정보에 배우자/파트너 역할",
+     "level": "official"
+    },
+    {
+     "url": "https://www.newsis.com/view/NISX20230314_0002226506",
+     "what": "2023-03 마포구 시행, 엽산제 택배",
+     "level": "press"
+    },
+    {
+     "url": "https://biz.heraldcorp.com/article/3835873",
+     "what": "2023 다국어 7개 국어",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "cluster_takeaways": [
+  "이 묶음에서 '남편 기능'은 계정을 잇고 같은 기록을 같이 보거나 같이 쓰는 것이에요(베이비빌리 부부 ID 연동, 280days 앱 연결, 베이비타임 공동양육자, 삐요로그 즉시 공유, 마미톡 가족 5명). 남편만의 화면, 남편 몫 할 일, 남편 기한은 12개 앱 어디에서도 찾지 못했어요. 가장 가까운 것은 주차별 '아빠가 하면 좋은 일' 글(베이비빌리, 마미톡, 280days)인데 읽는 글이지 체크나 날짜가 아니에요. 둘셋의 '이번 달 할 일'과 '내 준비'가 비교되는 자리예요.",
+  "남편을 들어오게 하는 것은 기능이 아니라 '아기'예요: 초음파 영상(마미톡 누적 1,400만 건), 수유·수면 교대(베이비타임, 삐요로그), 사진(쑥쑥찰칵 MAU의 절반이 가족). 임신 준비 단계에는 이런 공유물이 없어서, 선두 앱들도 준비 단계 남편에게는 아무것도 주지 않아요. 둘셋에게는 빈자리이면서, '아기 없이 무엇이 남편을 다시 오게 하나'를 스스로 풀어야 한다는 뜻이에요.",
+  "임신 준비 모드는 임신 앱이 사용자를 일찍 잡는 깔때기로 커지고 있어요. 베이비빌리는 2026-03에 배테기 기록·주기 분석·지원사업 체크리스트를 넣고 2026-10에 스토어 '임신 준비' 카테고리 1위라고 발표했고, 열달후에는 임신 확률·배테기 촬영·난임 모드(시술 스케줄, 투약 알림)까지 있어요. 내용은 모두 아내의 주기 기록과 정보예요. 마미톡·280days·육아 기록 앱에는 준비 모드가 없어요.",
+  "정부 지원 안내는 2026년에 빠르게 평준화됐어요: 베이비빌리 지원사업 체크리스트(3월), 라플의 246개 지자체 데이터와 지원금 총액·육아휴직 급여 계산(9월), 아이마중의 앱 안 신청, 일본 삐요로그의 국가 제도 레지스트리 연동(1월). 둘셋이 여전히 다른 점은 사람별 기한 체인(신청 → 3개월 안 검사 → 1개월 안 청구)과 출처·확인일 표기예요. 둘셋에 없는 것은 지자체별 금액 조회와 금액 계산, 앱 안 신청이에요. 경쟁 앱이 갱신일을 화면에 적는지는 확인하지 못했어요.",
+  "돈은 커머스·광고·병원에서 나와요. 베이비빌리는 누적 거래액 1,020억 원에 스플래시·메인 팝업·카카오 푸시를 광고로 팔고, 마미톡은 스플래시 주 400만 원에 클래스 멤버십과 병원 SaaS, 쑥쑥찰칵은 구독(월 5,900원~)과 굿즈예요. 광고 소개서는 사용자를 임신 / 육아 단계로 나눠 제시해요. 리뷰 불만도 광고에 모여요(마미톡 '광고가 너무 심해진다', 세이베베 '거절해도 계속 뜬다'). 둘셋의 광고·분석 SDK 없음이 대비되는 지점이지만, 수익 모델이 없다는 뜻이기도 해요.",
+  "규모와 유입 경로가 달라요. 베이비빌리 누적 200만·월 50만, 마미톡 국내 180만·MAU 약 50만·제휴 병원 600곳, 쑥쑥찰칵 130만·MAU 32만, 280days 한국 월 25만(2024)이에요. 마미톡은 진료실 바코드, 베이비빌리는 스토어 카테고리와 커뮤니티, 맘스다이어리는 정부 부처와의 캠페인이 입구예요. 베이비빌리의 남성 비중은 공개 광고 소개서 기준 17.1%예요. 2021년에 대표가 말한 20%대(목표 50%)와 집계 기준이 같은지는 모르지만, 부부 연동을 넣은 뒤에도 절반과는 거리가 멀어요. 연동 기능만으로는 남성 사용이 늘지 않는다는 간접 신호예요.",
+  "전달 수단의 기본기가 둘셋보다 한참 앞서 있어요: 네이티브 앱과 푸시, 홈 화면 위젯(베이비빌리, 베이비타임), 워치(베이비타임 Wear OS), 음성 입력(쑥쑥찰칵 시리·빅스비, 삐요로그), 카카오톡 알림(라플), 설치 없는 웹 버전(쑥쑥찰칵 2025-09). 둘셋은 웹 프로토타입이고 서버 푸시가 없어서 알림이 앱을 열 때만 생겨요.",
+  "초대받는 쪽 화면을 따로 설계한 곳이 성과를 냈어요. 쑥쑥찰칵은 가족 가입률이 낮자 보기 화면을 고치고 큰글씨 모드와 웹 버전을 내서 MAU의 절반이 가족이 됐고, 사진마다 '엄마네 식구 / 아빠네 식구 / 부부만'을 골라요. 280days는 가족에게 일러스트만 열어요. 나머지는 연동하면 전부 공유예요. 둘셋의 공유 3단계와 '알리지 않은 기록은 상대 화면을 바꾸지 않는다'는 더 세밀하지만, 남편 링크의 첫 화면·글씨·다시 오는 길은 쑥쑥찰칵 수준으로 검증된 적이 없어요.",
+  "AI는 사진·예측·비서 쪽으로 붙었어요: 쑥쑥찰칵의 사진 자동 정리·음성 기록·수면 예측, 마미톡·베이비빌리의 AI 아기 얼굴, 열달후에의 초음파 OCR·배테기 분석, 라플의 먼저 챙기는 AI 비서, 유료 AI 문답 앱 맘찌 AI(https://apps.apple.com/kr/app/id6742169293). 선두 두 앱(베이비빌리, 마미톡)의 AI 상담 챗봇은 찾지 못했어요. 둘셋은 AI가 없고 사진 판독은 하지 않기로 했어요.",
+  "톤은 밝고 아기 중심이에요: 말하는 아기 캐릭터(280days), 주차 일러스트, '엄빠' 호칭, 포인트 미션·경품·100일 연속 무료 출판 같은 보상이에요. 준비가 길어지거나 유산을 겪은 사람을 위한 조용한 화면은 이 묶음에서 확인하지 못했어요. 반면 커뮤니티에는 그 필요가 그대로 올라와요(베동의 시험관 글, '임신준비중인데 남편이 부담스러워해요'). 둘셋의 42일 쉼·금지어·연속 기록 없음이 다른 점이고, 커뮤니티가 없다는 점은 빠진 것이에요. 디자인 수준은 스크린샷을 보지 못해 비교하지 못했어요."
+ ],
+ "not_found": [
+  "이 세션에서는 WebFetch가 모든 사이트에서 막혔어요(apps.apple.com, play.google.com, babybilly.app, mmtalk.kr 모두 이름 해석 실패). 그래서 모든 근거가 WebSearch 결과 요약이에요. 스토어 스크린샷·앱 화면·기사 원문을 하나도 직접 보지 못했어요. 네트워크 설정에서 apps.apple.com, play.google.com과 각 제작사 사이트를 허용하면 다시 확인할 수 있어요.",
+  "어느 앱도 설치해 써 보지 못했어요. design의 home·onboarding·visual_style은 스토어 설명, 기사, 광고 소개서, 일부는 기억에 기대요. 색·캐릭터처럼 기억으로 적은 것은 sources에 memory로 표시했어요.",
+  "스마일리더(씨드 목록): 같은 실행의 kr-cycle-ttc.json에 이미 프로필이 있어 여기서는 다시 만들지 않았어요. 새로 확인한 것도 없어요.",
+  "씨드 목록에서 없어진 앱은 없었어요. 세이베베(2026-08 UI 개편), 차이의 놀이(2026-08 업데이트), 맘스다이어리(2026-09 캠페인) 모두 운영 중이에요. 다만 마미톡 운영사는 2026-03에 휴먼스케이프에서 라이프엑스로 이름이 바뀌었어요.",
+  "베이비빌리: 남편 연동 절차(초대 방식), 연동한 남편이 보는 실제 화면, 임신 준비 모드에서 남편에게 가는 것, 지원사업 체크리스트의 항목 수·갱신일·금액 표기, 한국 스토어 평점, AI 챗봇 유무를 확인하지 못했어요. '엄마가 아빠를 초대하면 안내 문구가 뜬다'는 검색 요약은 출처 기사를 특정하지 못해 프로필에 넣지 않았어요.",
+  "베이비빌리 MAU는 출처마다 달라요(2025-07 소개서 30만, 공개 소개서 38만+, 2026-03 기사 30만+, 2026-10 기사 50만+). 남성 17.1%가 나온 공개 소개서의 기준 시점도 확인하지 못했어요.",
+  "마미톡: 임신 준비 모드가 '없다'는 공식 문장은 찾지 못했어요. 스토어 설명과 검색 어디에도 없었다는 뜻이에요. 가족 5명 제한은 2024-02 기사 한 건이고, 초대받은 가족이 영상 말고 무엇을 보는지, 영상 유료화가 전국 공통인지(병원 공지 한 건), 산모 반응은 확인하지 못했어요.",
+  "280days: 아빠 쪽 화면을 설명한 자료는 대부분 2015~2016년 일본 글이에요. 한국어판의 현재 아빠 화면, 엄마가 항목별로 가릴 수 있는지, 광고 제거 가격, 2024-04 이후 한국 이용자 수를 확인하지 못했어요.",
+  "열달후에: 공유 다이어리에 초대된 남편이 받는 알림과 화면, 혜택플러스의 내용, '임신준비 보고서' 추가 연도를 확인하지 못했어요.",
+  "쑥쑥찰칵: 웹 버전에서 가입 없이 댓글을 달 수 있는지, 130만 가입자의 기준 연도, 스토어 평점을 확인하지 못했어요.",
+  "베이비타임·삐요로그: 무료로 추가할 수 있는 공동양육자 수, 삐요로그의 한국 이용자 수와 한국어판 워치·음성 지원 여부를 확인하지 못했어요.",
+  "맘스다이어리·세이베베·차이의 놀이: 근거가 얇아요(스토어 요약과 오래된 기사). 세이베베의 현재 제휴 병원 수·회원 수, 맘스다이어리의 앱 안 가족 기능 유무는 '찾지 못함'이지 '없음'으로 확인한 것이 아니에요.",
+  "개인정보: 이 묶음 앱들의 유출·제재 보도는 한 번의 검색에서 나오지 않았어요. 없다고 확인한 것은 아니에요. 각 앱의 처리방침 원문과 SDK 목록은 보지 못했어요.",
+  "프로필하지 않고 이름만 확인한 새 앱: 한화손해보험 PLUS CLOVR(2026-10-13 출시, 주차별 체크리스트·바디로그, 아빠 공유 기능은 보도에 없음 — https://biz.heraldcorp.com/article/10901707), 맘찌 AI(의사 유튜브 영상 기반 유료 AI 문답 — https://apps.apple.com/kr/app/id6742169293), 모아베베(연계 병원 초음파, 엄마·아빠 목소리 태담 녹음 — https://apps.apple.com/KR/app/id977917522), 젤리뷰(초음파 앱 — https://play.google.com/store/apps/details?id=com.thecares.jellyview).",
+  "한국에서 2025~2026년에 나온 아빠 전용 임신·육아 앱은 검색에서 찾지 못했어요. 일본에는 パパninaru가 있어요(https://play.google.com/store/apps/details?id=jp.co.eversense.papaninaru)."
+ ]
+}

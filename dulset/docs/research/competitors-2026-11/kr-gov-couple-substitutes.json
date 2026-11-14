@@ -1,0 +1,1125 @@
+{
+ "researched": "2026-11-13",
+ "method": "웹 검색 요약 위주(스토어·다수 사이트는 직접 열지 못함). 앱을 설치해 보지 않음. sources[].level: official / press / user-review / memory(오늘 확인 못 한 기억).",
+ "apps": [
+  {
+   "name": "아이마중",
+   "maker": "한국사회보장정보원 (보건복지부 소관)",
+   "country": "KR",
+   "category": "government app: pregnancy registration, supplements, mother/baby notebook",
+   "platforms": "iOS, Android (native app)",
+   "price_model": "free; no ads or paid tier found",
+   "scale": "App Store KR rating 3.3 from 32 ratings [1]; downloads unknown",
+   "partner_features": [
+    "none found: one account for the pregnant woman, no spouse link or spouse view [1][2]"
+   ],
+   "cycle_fertility_features": [
+    "none found (the app starts at pregnancy registration)"
+   ],
+   "pregnancy_parenting_features": [
+    "임산부 신고(등록) from the phone without visiting the 보건소; needs consent, 본인인증 and documents [3][4]",
+    "apply for 엽산제·철분제 and 표준모자보건수첩 in-app; pickup still needs a 보건소 visit in most places, 마포구 ships by parcel after a phone call [3][4]",
+    "health info by pregnancy week (3~40주) and baby month (1~36개월) [2]",
+    "임산부수첩·아기수첩: free-form records with photos [2]",
+    "우울증 자가검사 [4]"
+   ],
+   "korea_system_features": [
+    "store listing names 의료비지원 as an in-app service and the app links info to government support policies [1][6]",
+    "whether 임신 사전건강관리(가임력 검사) can be applied for inside 아이마중 was not established; local 보건소 pages send people to e보건소",
+    "no per-person deadline calculation or deadline push found"
+   ],
+   "content_community_ai": [
+    "content offered in 7 languages according to a search summary of a 정책브리핑 page (page not opened) [6]",
+    "no community and no AI feature found"
+   ],
+   "platform_delivery": [
+    "native app with login and 본인인증 [4]",
+    "e보건소's 표준모자보건수첩 page carries a download button for the app [5]",
+    "push, widgets, watch, health-data integrations: none found"
+   ],
+   "privacy_trust": [
+    "government operator; received the 정보통신접근성 인증마크 in 2023-11 [2]",
+    "applications require identity verification [4]"
+   ],
+   "design": {
+    "summary": "Public-service utility: registration forms, a benefits list and two notebooks. Nothing found that gives a reason to open it daily.",
+    "home": "not established",
+    "onboarding": "sign up and verify identity before any application [4]",
+    "visual_style": "not established (no screenshots seen)",
+    "notable_patterns": [
+     "apply in app, the 보건소 processes it, then pickup or parcel",
+     "notebook (수첩) as the only retention feature"
+    ],
+    "evidence": "Store listing text and press read only as search summaries on 2026-11-13. apps.apple.com could not be opened, so no screenshots were seen."
+   },
+   "strengths": [
+    "real in-app application for 임산부 등록 and supplements, which a private app cannot offer",
+    "official source for pregnancy benefits",
+    "accessibility-certified"
+   ],
+   "weaknesses_from_reviews": [
+    "App Store review title '아이폰은 로그인이 안돼요'; the maker replied that auto-login improvement is planned [1]",
+    "2025-11 review: 아기수첩 opens with an unknown-error alert and vaccination lookup is blocked; maker replied a system update was scheduled [1]",
+    "only 32 iOS ratings three years after launch suggests low engagement [1]"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/id6443696021",
+     "what": "App Store KR listing: provider, service list, rating 3.3 (32), review complaints (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=118436",
+     "what": "베이비뉴스: operated by 한국사회보장정보원, launched 2023-03, weekly/monthly info, notebooks, 2023-11 accessibility mark (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.newsis.com/view/NISX20230314_0002226506",
+     "what": "뉴시스 2023-03-14: 마포구, registration and 엽산제·철분제·의료비 applications by app, parcel delivery (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.childcare.go.kr/?menuno=124",
+     "what": "아이사랑 portal: 임산부 신고 via e보건소 and 아이마중, what can be applied for, pickup at 보건소 (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.bosa.co.kr/news/articleView.html?idxno=2228405",
+     "what": "의학신문: e보건소 added a 아이마중 download button on the 모자보건수첩 page (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.korea.kr/news/customizedNewsView.do?newsId=148973720",
+     "what": "정책브리핑: one-stop platform description; 7-language content (search summary, attribution uncertain)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "e보건소 (공공보건포털)",
+   "maker": "한국사회보장정보원",
+   "country": "KR",
+   "category": "government web portal: online application for 임신 사전건강관리(가임력 검사) and 난임 시술비 지원",
+   "platforms": "web (www.e-health.go.kr); a dedicated app was not confirmed",
+   "price_model": "free",
+   "scale": "unknown",
+   "partner_features": [
+    "each adult signs in with own 간편인증 or 공동인증서; 군포시 and 동대문구 say spouses apply individually [3][4]",
+    "구로구's form takes applicant, subject and spouse details in one application, so the unit of application differs by 보건소 [2]",
+    "no way found for one partner to see the other's application status or deadlines"
+   ],
+   "cycle_fertility_features": [
+    "none (application portal only)"
+   ],
+   "pregnancy_parenting_features": [
+    "online: 임산부 신고, 엽산제·철분제, 표준모자보건수첩, 우울증 자가검사, 생애초기건강관리 [1]"
+   ],
+   "korea_system_features": [
+    "online menus under 의료비 지원: 임신 사전건강관리, 영구 불임 예상 난자·정자 냉동, 난임부부 시술비, 고위험임산부 의료비 [1]",
+    "가임력 검사 flow: apply before the test, 보건소 issues a 검사의뢰서 (printout or phone screen), test at a participating clinic within 3 months, claim within 1 month of the test [5][6]",
+    "no retroactive support: a test done before approval is not paid [5][8]",
+    "budget can run out: 송파구 stopped 2026 intake after early exhaustion [8]",
+    "amounts on a 강남구 page: women up to 13만 원, men up to 5만 원 [10]",
+    "claim deadline conflicts between sources (1 month on 구청 pages, 3 months in a 복지로 summary); needs checking at source",
+    "2026-06 bill (안철수 의원, 모자보건법) would allow retroactive claims; passage not confirmed [9]",
+    "deadline reminders from the portal: none found"
+   ],
+   "content_community_ai": [
+    "none found"
+   ],
+   "platform_delivery": [
+    "web portal with 간편인증 or 공동인증서 [2]",
+    "검사의뢰서 can be shown on a phone screen at the clinic [5]",
+    "push or 알림톡 for deadlines: not established"
+   ],
+   "privacy_trust": [
+    "government portal; identity-verified applications [2]"
+   ],
+   "design": {
+    "summary": "Form-driven civil-service portal: 민원서비스, pick the programme, verify identity, fill the form; a status page later issues the 검사의뢰서.",
+    "home": "portal menu split into 의료비 지원 and 임산부 지원 [1]",
+    "onboarding": "none; identity check happens at application [2]",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "status lookup, choose 검사의뢰서, type the clinic name (must be a participating clinic) [7]",
+     "rules and cut-offs are set per 보건소, not shown per person"
+    ],
+    "evidence": "구청·시청 how-to pages and one blog walkthrough, all read as search summaries on 2026-11-13; the portal itself was not opened."
+   },
+   "strengths": [
+    "the only place the 가임력 검사 application actually happens, for men as well as women",
+    "also handles 난임 시술비 지원 and egg/sperm freezing support",
+    "paperless 검사의뢰서 on the phone"
+   ],
+   "weaknesses_from_reviews": [
+    "no user review text found today",
+    "structural (from official pages, not reviews): joint vs individual application and budget cut-offs differ by 보건소, and nothing found that reminds either partner of the 3-month and 1-month deadlines [2][3][4][8]"
+   ],
+   "sources": [
+    {
+     "url": "https://www.e-health.go.kr/",
+     "what": "portal: list of online civil services (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.guro.go.kr/health/contents.do?key=1320",
+     "what": "구로구 보건소: online steps, 본인인증, applicant/subject/spouse fields (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.ddm.go.kr/health/contents.do?key=3785",
+     "what": "동대문구 보건소: individual prior application required (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://ctm.gunpo.go.kr/health/contents.do?key=1008876",
+     "what": "군포시 보건소: couple applies individually (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.sejong.go.kr/health/sub03_04_18.do",
+     "what": "세종시: 검사의뢰서 as printout or mobile screen, test within 3 months, no retroactive support, budget limit (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.sdm.go.kr/health/contents/healthbiz/maternal/birthEncourage",
+     "what": "서대문구 보건소: online application is the rule, claim within 1 month (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://imroho.com/289",
+     "what": "blog walkthrough by a 사실혼 applicant: status lookup, 검사의뢰서, clinic name (search summary)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://www.songpa.go.kr/ehealth/contents.do?key=6154",
+     "what": "송파구 보건소: 2026 budget exhausted, intake stopped; no retroactive payment (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://seoul.co.kr/news/plan/this-week-bill/2026/06/14/20260614500028",
+     "what": "서울신문 2026-06-14: bill to allow retroactive application for pre-pregnancy test costs (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.gangnam.go.kr/board/B_000031/1074163/view.do?mid=ID01_0313&pgno=8",
+     "what": "강남구: support amounts (search summary)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "정부24 '맘편한 임신' 원스톱 서비스",
+   "maker": "행정안전부 (정부24)",
+   "country": "KR",
+   "category": "government one-stop application for pregnancy benefits",
+   "platforms": "정부24 web (app availability from memory, not confirmed today); also at 주민센터·보건소",
+   "price_model": "free",
+   "scale": "applications per year: 48,477 (2022), 158,586 (2023), 162,928 (2024), 207,836 (2025) per press summary [4]",
+   "partner_features": [
+    "since 2026-06-30 a spouse (also 직계혈족, 형제자매 and their spouses) can apply on the pregnant woman's behalf; 위임장 and 가족관계증명서 are waived if 행정정보 공동이용 is consented [3][4][5]",
+    "before that date the pregnant woman had to apply herself",
+    "no shared view or reminders for the partner found"
+   ],
+   "cycle_fertility_features": [
+    "none"
+   ],
+   "pregnancy_parenting_features": [
+    "one application covers 엽산제, 철분제, 임신·출산 진료비(국민행복카드), 에너지바우처, 청소년 산모 의료비, 산모·신생아 건강관리, 맘편한 KTX, SRT 임산부 할인, 표준모자보건수첩 (list from 하남시) [2]",
+    "sister service 행복출산 bundles post-birth benefits such as 첫만남이용권, 부모급여, 아동수당 [7]"
+   ],
+   "korea_system_features": [
+    "applies after pregnancy is confirmed; no preconception item (가임력 검사 lives on e보건소) [1][2]",
+    "real application, routed to each agency from one form [1]",
+    "no deadline tracking found"
+   ],
+   "platform_delivery": [
+    "정부24 login with identity verification",
+    "push or reminder features specific to this service: not established"
+   ],
+   "privacy_trust": [
+    "government service; proxy application needs consent to 행정정보 공동이용 or paper proof [3]"
+   ],
+   "design": {
+    "summary": "One web form inside 정부24: tick the services you want, submit once.",
+    "home": "not established",
+    "onboarding": "none beyond 정부24 login",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "bundle many benefits into one submission",
+     "2026 change moves the paperwork to the spouse when the woman cannot do it"
+    ],
+    "evidence": "Official and 지자체 descriptions plus June 2026 press, read as search summaries; the service page was not opened."
+   },
+   "strengths": [
+    "removes the multi-agency round trip after a positive pregnancy",
+    "usage quadrupled from 2022 to 2025 [4]",
+    "the spouse can now do the application"
+   ],
+   "weaknesses_from_reviews": [
+    "no user review text found today"
+   ],
+   "sources": [
+    {
+     "url": "https://www.gov.kr/portal/onestopSvc/fertility",
+     "what": "정부24 맘편한 임신 page (cited in repo research 2026-09; not reopened today)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.hanam.go.kr/health/contents.do?key=6660",
+     "what": "하남시 보건소: list of services in the bundle (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.heraldk.com/article/2026062120480078436",
+     "what": "헤럴드경제 2026-06-21: proxy application by family from 2026-06-30 (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.kukinews.com/article/view/kuk202606220138",
+     "what": "쿠키뉴스 2026-06-22: proxy application; yearly usage figures appeared in this coverage (search summary, exact outlet for the figures uncertain)",
+     "level": "press"
+    },
+    {
+     "url": "https://newneek.co/@newneek/article/41800",
+     "what": "뉴닉: family can now apply for pregnancy/birth services (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://opinion.lawmaking.go.kr/gcom/admpp/46806",
+     "what": "행정예고 of the rule change, comments until 2026-06-22 (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.gov.kr/portal/onestopSvc/happyBirth",
+     "what": "정부24 행복출산 page (cited in repo research 2026-09; not reopened today)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "탄생육아 몽땅정보통 (구 몽땅정보 만능키) + 서울시 임신·출산정보센터",
+   "maker": "서울특별시",
+   "country": "KR",
+   "category": "city government portal: benefits search, online application, proactive alerts",
+   "platforms": "web (umppa.seoul.go.kr, seoul-agi.seoul.go.kr) plus KakaoTalk chatbot 서울톡; no dedicated app found",
+   "price_model": "free",
+   "scale": "1.4M visitors and 130,000 applicants in the first year after the 2023-09 launch [3]",
+   "partner_features": [
+    "none found: personal login, no couple link",
+    "서울형 산후조리경비 must be applied for by the mother herself, no proxy (repo research 2026-09) [7]"
+   ],
+   "cycle_fertility_features": [
+    "임신 전 자가 설문평가 on the 임신·출산정보센터 site (repo research 2026-09) [6]"
+   ],
+   "pregnancy_parenting_features": [
+    "applications for 임산부 교통비 and 서울형 산후조리경비 moved here from 서울맘케어 in 2026-02 [1]"
+   ],
+   "korea_system_features": [
+    "2026-02-23 relaunch and rename: users register life stage (결혼준비, 임신, 출산, 육아), household type and interests, then get matching programmes [1][2]",
+    "서울톡 (KakaoTalk) tells each user in advance which programmes they can apply for [1][2]",
+    "비대면 자격확인 without uploading proof, and the result arrives by 알림톡 [4]",
+    "난자동결 시술비 is online-only here; claim within 3 months of the procedure [5]",
+    "information from central ministries and 자치구 is merged in one place [1]",
+    "the national 가임력 검사 is explained on the 임신·출산정보센터 site but applied for on e보건소 [6]"
+   ],
+   "content_community_ai": [
+    "no community found; chatbot channel is 서울톡"
+   ],
+   "platform_delivery": [
+    "web with login",
+    "KakaoTalk 알림톡 and 서울톡 alerts instead of app push [1][4]"
+   ],
+   "privacy_trust": [
+    "city government; eligibility checked through administrative data links [4]"
+   ],
+   "design": {
+    "summary": "Search-and-apply portal that now pushes: you tell it your stage once and it messages you on KakaoTalk when something opens.",
+    "home": "life-stage entry points and a search box on the main screen [1]",
+    "onboarding": "register life stage, household and interests [1]",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "profile once, then proactive KakaoTalk alerts before application windows",
+     "one portal for information, eligibility check, application and result"
+    ],
+    "evidence": "서울시 press coverage from 2026-02 and 2024-09 read as search summaries; site not opened."
+   },
+   "strengths": [
+    "the closest public equivalent to dulset's 'what to do and when' list, delivered on KakaoTalk",
+    "covers 결혼준비 as a stage, so it reaches couples before pregnancy",
+    "application happens in the same place"
+   ],
+   "weaknesses_from_reviews": [
+    "no user review text found today",
+    "Seoul residents only for city programmes (blog note, unverified)"
+   ],
+   "sources": [
+    {
+     "url": "https://biz.heraldcorp.com/article/10679811",
+     "what": "헤럴드경제 2026-02: relaunch as 탄생육아 몽땅정보통, profile-based recommendations, 서울톡 alerts, merged application window (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://m.news.nate.com/view/20260221n16156",
+     "what": "2026-02-21 wire copy of the same 서울시 release (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.mt.co.kr/policy/2024/09/22/2024092109305860678",
+     "what": "머니투데이 2024-09-22: 1.4M visitors, 130,000 applicants (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://news.seoul.go.kr/welfare/archives/555122",
+     "what": "서울시: 비대면 자격확인, 알림톡 result (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://seoul-agi.seoul.go.kr/sofp-csp",
+     "what": "서울시 임신·출산정보센터: 난자동결 online-only application, 알림톡, 3-month claim (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://seoul-agi.seoul.go.kr/pragnant-previous-support",
+     "what": "서울시 임신·출산정보센터: 임신 사전건강관리 guide (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://umppa.seoul.go.kr/hmpg/sprt/bzin/bzmgComtDetail.do?biz_mng_no=58D83411277E40D1BFF6255A10CBCDD5",
+     "what": "산후조리경비 page: mother applies herself (cited in repo research 2026-09; not reopened today)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "고용24",
+   "maker": "고용노동부",
+   "country": "KR",
+   "category": "government portal: leave benefit claims (배우자 출산휴가, 난임치료휴가, 유산·사산휴가)",
+   "platforms": "web (work24.go.kr) and mobile app",
+   "price_model": "free",
+   "scale": "unknown",
+   "partner_features": [
+    "the husband is the applicant himself for 배우자 출산휴가 급여 and, as a worker, 난임치료휴가 급여; nothing is shared with the wife [1][2]"
+   ],
+   "cycle_fertility_features": [
+    "none"
+   ],
+   "korea_system_features": [
+    "menu path: 개인, 출산휴가·육아휴직, 출산휴가, 출산전후(유산·사산·난임치료, 배우자 출산·유산·사산)휴가 급여 신청 [1][2]",
+    "three steps: worker hands 휴가신청서 to the employer, employer files a 확인서, worker files the 급여신청서 [1]",
+    "배우자 출산휴가: 20 paid days, usable from 50 days before the due date to 120 days after birth, up to 3 splits; 급여 for 우선지원대상기업 workers capped at 1,684,210원 [1]",
+    "난임치료휴가 급여: app application only if the employer filed the 확인서 online; apply from 1 month after the leave starts until 12 months after it ends [3][4]",
+    "today's search summaries still describe 난임치료휴가 as 6 days a year with the first 2 paid; the 2026-11-27 change to 4 paid days could not be confirmed today [3][4]",
+    "deadline reminders: none found"
+   ],
+   "platform_delivery": [
+    "web and mobile app with identity login [3]"
+   ],
+   "privacy_trust": [
+    "government portal"
+   ],
+   "design": {
+    "summary": "Benefit-claim forms behind a deep menu; depends on the employer's paperwork arriving first.",
+    "home": "not established",
+    "onboarding": "none",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "employer step gates the worker's online claim"
+    ],
+    "evidence": "정책브리핑 article and 고용노동부·고용24 pages read as search summaries; not opened."
+   },
+   "strengths": [
+    "the only channel that pays the leave benefit",
+    "covers every partner-side leave in one menu"
+   ],
+   "weaknesses_from_reviews": [
+    "no user review text found today",
+    "structural: four menu levels and an employer-side prerequisite [1][3]"
+   ],
+   "sources": [
+    {
+     "url": "https://www.korea.kr/news/reporterView.do?newsId=148973716",
+     "what": "정책브리핑: 배우자 출산휴가 rules, 고용24 menu path, 3-step process (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.moel.go.kr/minwon/fastcounsel/fastcounselView.do?inetDcssMngId=202512091242525820018",
+     "what": "고용노동부 quick counsel answer: menu path (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://m.work24.go.kr/cm/c/f/1100/selecSystInfo.do?currentPageNo=1&recordCountPerPage=10&systId=SI00000497&systClId=SC00000385&systClId=SC00000385",
+     "what": "고용24 제도안내 for 난임치료휴가 급여: online/app condition, claim window (search summary; this or source 4)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.gov.kr/portal/rcvfvrSvc/dtlEx/WII000001460",
+     "what": "정부24 service detail for 난임치료휴가 급여 (search summary; this or source 3)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "썸원 (SumOne)",
+   "maker": "모니모니",
+   "country": "KR",
+   "category": "couple app: daily question plus shared virtual pet",
+   "platforms": "iOS, Android",
+   "price_model": "free with ads (optional rewarded ads; store label says it contains ads) [5][6]; subscription listed at US$5.99 a month and US$29.99 a year on the US store [6]; KRW price not confirmed today (repo note 2026-09: 썸원 골드 월 7,900원, 연 49,000원, listing date unknown); gem packs; lifetime plan discontinued [5]; 반려몽 character IP sold as plush in Japanese arcades [1]",
+   "scale": "20M+ cumulative downloads worldwide (2025-09), global MAU 2.5M+, Korea MAU 1M+ [1]; another interview cites DAU 1M, MAU 2.6M and revenue in the 6 billion won range, year unclear [2]",
+   "partner_features": [
+    "one question a day delivered at a set time (썸원타임); each answer stays hidden until both partners have answered [3][7]",
+    "shared pet 반려몽 hatches from an egg and grows as the couple answers; it turns to stone if answers stop for a while [4]",
+    "쿡 찌르기 button on home sends the partner an alert when they have not answered; preset message types 질문, 사랑, 슬픔, 화해 [3]",
+    "both earn 조약돌 by attendance check, feeding the pet or watching optional ads (up to 10), and spend it on the pet's room and clothes [4][5]",
+    "home-screen widget shows the couple's D-day [6]"
+   ],
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none"
+   ],
+   "content_community_ai": [
+    "question bank tuned from user feedback against internal guidelines [3]"
+   ],
+   "platform_delivery": [
+    "native apps, push at question time, home-screen widget [6][7]",
+    "after disconnecting, data is deleted after 30 days (90 for paid) per the FAQ (repo research 2026-09) [5]"
+   ],
+   "privacy_trust": [
+    "store label: contains ads [6]"
+   ],
+   "design": {
+    "summary": "Character-led. The couple's pet lives on the home screen and the day's question is the single task; the nudge button sits on home.",
+    "home": "pet in its room, D-day, today's question, 쿡 찌르기 [3] (exact layout from memory)",
+    "onboarding": "the loop needs the partner connected: 'if one does not use it, it does not move to the next step' [3]; exact steps not established",
+    "visual_style": "soft pastel, hand-drawn mascot illustration (memory, not confirmed today)",
+    "notable_patterns": [
+     "mutual reveal: answer to see theirs",
+     "virtual pet as a shared streak with a visible penalty",
+     "soft currency from attendance and optional ads",
+     "user-sent nudge instead of app nagging",
+     "widget keeps the D-day on the home screen"
+    ],
+    "evidence": "Founder interview, FAQ and wiki read as search summaries (home nudge button, pet rules, currency). Visual details are from memory; store screenshots could not be opened."
+   },
+   "strengths": [
+    "a 30-second daily task that only works if both open the app",
+    "profitable without outside funding per press [2]",
+    "largest Korean couple app by stated MAU [1]"
+   ],
+   "weaknesses_from_reviews": [
+    "App Store review (2023): 'so many fun features but it is quite hard to find them'; a notification that the partner opened a gift lands on the main screen only [6]",
+    "블라인드 post: quit around question 600 because it became a chore; 'if it feels like homework, better not to do it' (repo research 2026-09, not rechecked) [9]",
+    "Google Play review calls a recent update unnecessary (detail unclear) [8]"
+   ],
+   "sources": [
+    {
+     "url": "https://classian.co.kr/View.aspx?No=3803381",
+     "what": "press: 20M downloads, MAU figures, 반려몽 plush in Japanese arcades (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.dt.co.kr/article/12049861",
+     "what": "디지털타임스 co-founder interview: DAU 1M, MAU 2.6M, revenue (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "http://www.financialreview.co.kr/news/articleView.html?idxno=32988",
+     "what": "파이낸셜리뷰 CEO interview: both must answer, 쿡 찌르기 on home, question tuning (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://namu.wiki/w/%EC%8D%B8%EC%9B%90",
+     "what": "나무위키: pet growth and stone rule, 조약돌 (search summary)",
+     "level": "user-review"
+    },
+    {
+     "url": "https://sumone.co/faq/",
+     "what": "official FAQ: ads are optional rewards, ways to earn 조약돌, lifetime plan discontinued (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/app/sumone/id1469506430",
+     "what": "App Store listing: in-app purchases, contains ads, D-day widget, 2023 review (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.sumone.co/ko/",
+     "what": "official site: 썸원타임 is when the pet delivers the question (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.sumone&hl=en_US",
+     "what": "Google Play listing and a review (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.teamblind.com/kr/post/%EC%97%AC%EC%9E%90%EC%B9%9C%EA%B5%AC%EA%B0%80-%EC%8D%B8%EC%9B%90%EC%9D%B4%EB%9D%BC%EA%B3%A0-%EC%BB%A4%ED%94%8C%EC%95%B1-%EA%B0%99%EC%9D%B4%ED%95%98%EB%8A%94%EB%8D%B0-3Tw8MQwF",
+     "what": "블라인드 thread on 썸원 fatigue (from repo docs/research/couple-record.json, 2026-09; not rechecked today)",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "비트윈 (Between)",
+   "maker": "디엘티파트너스 (딜라이트룸 자회사; 2011 VCNC, 2018 쏘카, 2021 크래프톤, 2025-02 현 운영사)",
+   "country": "KR",
+   "category": "couple app: private 1:1 chat, album, shared calendar, anniversaries",
+   "platforms": "iOS, Android",
+   "price_model": "free with ads on home, notifications and more tabs [2]; 비트윈 플러스 1 month ₩3,500 on the KR App Store [1] (wiki: ₩3,000 on Android [6]); US store also lists 1 year US$24.99 and lifetime US$26.99 [1]; one payer covers both partners [2]",
+   "scale": "current MAU not found; past press cited MAU 1.2M and 35M+ downloads (repo research 2026-09)",
+   "partner_features": [
+    "both share one space: 1:1 chat with stickers, album of photos, videos and notes, a shared calendar, D-day and anniversaries [1]",
+    "D-day widget on the home screen [1]",
+    "Plus removes ads for both, adds high-quality and bulk-by-date download, themes and app icons, 4 premium sticker sets [2]",
+    "after disconnecting, both can restore data for 31 days free, 90 days on Plus [2]"
+   ],
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none"
+   ],
+   "platform_delivery": [
+    "native apps, push, widget [1]",
+    "Face ID app lock and a disguised app icon on iOS (repo research 2026-09, from wiki) [6]",
+    "server-side storage only; export is a paid feature [2]"
+   ],
+   "privacy_trust": [
+    "2025-09-13: a code error during server maintenance deleted free users' album, profile and home background photos, unrecoverable; announced 2025-09-23 [3][4]",
+    "compensation: lifetime Plus (valued at 1 million won) and 280 sticker sets; refunds for affected Plus users [5]",
+    "operator changed four times since 2011 (repo research 2026-09)"
+   ],
+   "design": {
+    "summary": "A private messenger skin over couple memories: chat is the daily surface, album and calendar are the archive.",
+    "home": "the two profile photos with the D+ counter over a chosen background photo (memory, not confirmed today); ad windows on home for free users [2]",
+    "onboarding": "sign up, then connect with the partner's account (memory, not confirmed today)",
+    "visual_style": "photo-first, light, coral/pink accent (memory, not confirmed today)",
+    "notable_patterns": [
+     "one subscription unlocks both phones",
+     "D-day counter as the hero element",
+     "restore window after disconnect as a paid upgrade"
+    ],
+    "evidence": "Help-centre article and store listing read as search summaries; home and visual style are from memory because store screenshots could not be opened."
+   },
+   "strengths": [
+    "years of photos and chat create lock-in",
+    "cheap couple subscription where one pays",
+    "privacy features people liked: app lock, hidden icon"
+   ],
+   "weaknesses_from_reviews": [
+    "users reported losing up to 10 years of photos in the 2025-09 deletion; some suspected a push toward paid plans [3][4]",
+    "compensation came late according to press [5]"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id458035189",
+     "what": "App Store KR listing: features, widget, Plus 1 month ₩3,500, DLT Partners (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "https://help.between.us/hc/en-us/articles/115006800147-What-is-Between-Plus",
+     "what": "help centre: Plus benefits, ad placements, one payer covers both, 31/90-day restore (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.hankyung.com/article/2025092951317",
+     "what": "한국경제 2025-09-29: photo deletion incident (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.asiae.co.kr/article/2025100214252264863",
+     "what": "아시아경제 2025-10-02: incident details and user reaction (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://news.mtn.co.kr/news-detail/2025100115223831312",
+     "what": "MTN 2025-10-01: late compensation, lifetime Plus (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://namu.wiki/w/%EB%B9%84%ED%8A%B8%EC%9C%88",
+     "what": "나무위키: plan prices by platform, app lock and hidden icon (search summary)",
+     "level": "user-review"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "TimeTree (타임트리)",
+   "maker": "TimeTree, Inc. (Japan)",
+   "country": "JP (Korean service)",
+   "category": "shared calendar used by couples and families",
+   "platforms": "iOS, Android, web",
+   "price_model": "free; TimeTree 프리미엄 listed at ₩3,000 and ₩30,000 on the KR App Store (period not shown, probably month and year) [4]; ad policy not confirmed today (memory: free tier shows ads, premium removes them)",
+   "scale": "4M cumulative users in Korea and 75M registered worldwide (announced around 2026-10-02) [1]; 3.7M in Korea in 2026-04 [2]",
+   "partner_features": [
+    "a calendar per group (family, partner, friends, colleagues); every member sees and edits the same events [4]",
+    "push to members when someone creates or changes an event or adds a comment or photo [4]",
+    "comments and photos inside each event; shared album added around 2025-02 [4][5]"
+   ],
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none"
+   ],
+   "content_community_ai": [
+    "2026 press describes a move toward AI-based time management (detail not established) [3]"
+   ],
+   "platform_delivery": [
+    "native apps with push; links to external calendar apps [1]",
+    "widgets: not confirmed today"
+   ],
+   "design": {
+    "summary": "A month grid is the product. Events carry a colour label and a comment thread, so the calendar doubles as a quiet chat.",
+    "home": "home calendar re-centred on 'my time' in the UI/UX renewal rolled out from late 2026-01 [3]",
+    "onboarding": "create a calendar and invite members by link (memory, not confirmed today)",
+    "visual_style": "clean grid with coloured event bars, green brand (memory, not confirmed today)",
+    "notable_patterns": [
+     "event-level comments and photos",
+     "push on every change by the other person",
+     "separate calendars per relationship"
+    ],
+    "evidence": "2026 press and the store listing read as search summaries; layout and colours from memory."
+   },
+   "strengths": [
+    "the default way Korean couples and families share appointments, growing by about 900,000 Korean users since 2025-01 [1]",
+    "the partner is notified without anyone sending a message",
+    "works for clinic visits and leave days with zero health framing"
+   ],
+   "weaknesses_from_reviews": [
+    "no review text found today"
+   ],
+   "sources": [
+    {
+     "url": "https://www.sentv.co.kr/article/view/sentv202610020030",
+     "what": "서울경제TV 2026-10-02: 4M Korean users, 75M worldwide, growth drivers (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://isplus.com/article/view/isp202604140181",
+     "what": "일간스포츠 2026-04-14: 3.7M Korean sign-ups, couple and family use (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.etnews.com/20260209000194",
+     "what": "전자신문 2026-02-09: 'my time' home calendar, UI/UX renewal (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/KR/app/id952578473",
+     "what": "App Store KR listing: group calendars, push on changes, premium prices (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "https://timetreeapp.com/intl/en/newsroom/tag/android",
+     "what": "official newsroom: album feature around 2025-02 (search summary)",
+     "level": "official"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "더데이비포 (TheDayBefore) · The Couple (커플 디데이)",
+   "maker": "TheDayBefore, Inc.",
+   "country": "KR",
+   "category": "D-day counter and couple anniversary widget apps",
+   "platforms": "iOS, Android",
+   "price_model": "free with in-app purchases [1]; The Couple has a subscription [2]; prices not found",
+   "scale": "TheDayBefore: about 36,000 ratings on the KR App Store [1]; a third-party tracker lists 7.5M+ downloads and rating 4.7 [3]",
+   "partner_features": [
+    "none established for TheDayBefore (single-user counter)",
+    "The Couple: partner linking not confirmed today"
+   ],
+   "cycle_fertility_features": [
+    "none found"
+   ],
+   "pregnancy_parenting_features": [
+    "couple-day and baby-age calculation in one app (repo research 2026-09, from the Play listing) [4]"
+   ],
+   "korea_system_features": [
+    "none"
+   ],
+   "platform_delivery": [
+    "7 kinds of lock-screen widget; several D-days can sit on the home screen [1]"
+   ],
+   "design": {
+    "summary": "The widget is the product: a number on the lock screen, the app only for setup.",
+    "home": "list of D-day cards (memory, not confirmed today)",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "lock-screen and home-screen widgets as the daily touchpoint",
+     "automatic 100-day and anniversary milestones from one date"
+    ],
+    "evidence": "Store listings read as search summaries; no screenshots seen."
+   },
+   "strengths": [
+    "seen every day without opening an app",
+    "no account needed for the basic counter (memory, not confirmed today)"
+   ],
+   "weaknesses_from_reviews": [
+    "no review text found today"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/kr/app/thedaybefore-%EB%94%94%EB%8D%B0%EC%9D%B4-%EC%9C%84%EC%A0%A7/id991283955",
+     "what": "App Store KR listing: free with IAP, 7 lock-screen widgets, rating count (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/the-couple-%EC%BB%A4%ED%94%8C-%EB%94%94%EB%8D%B0%EC%9D%B4/id1116889464",
+     "what": "App Store KR listing for The Couple: subscription terms (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://mwm.ai/ko/apps/thedaybefore-days-countdown/991283955",
+     "what": "third-party tracker: downloads and rating estimates (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://play.google.com/store/apps/details?id=com.aboutjsp.thedaybefore&hl=en_US",
+     "what": "Play listing: couple and baby calculators (from repo docs/research/couple-record.json, 2026-09; not rechecked today)",
+     "level": "official"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "카카오톡 (채팅방 · 톡캘린더)",
+   "maker": "카카오",
+   "country": "KR",
+   "category": "substitute: the messenger couples already use, with a calendar in each chat room",
+   "platforms": "iOS, Android, PC",
+   "price_model": "free",
+   "scale": "KakaoTalk domestic MAU about 49.63M in 2026 Q2 (repo research 2026-09) [4]",
+   "partner_features": [
+    "either person creates an event from the chat room's calendar menu and it is shared with the room; a 1:1 room collects the pair's events [1]",
+    "the 톡캘린더 channel messages members when an event changes or is about to start; at launch in 2019 this came from the 죠르디 channel, for example 15 minutes before [1][2]",
+    "everything else is plain chat: the wife types what she wants him to know"
+   ],
+   "cycle_fertility_features": [
+    "none"
+   ],
+   "pregnancy_parenting_features": [
+    "none"
+   ],
+   "korea_system_features": [
+    "government and hospital alerts already arrive here: 서울톡 programme alerts, 알림톡 results, hospital chatbots (see 몽땅정보통 and 차병원 entries)"
+   ],
+   "platform_delivery": [
+    "no install or account step for either partner",
+    "phone calendar can be mirrored into 톡캘린더 [1]",
+    "shared-calendar API listed as planned, not available [3]"
+   ],
+   "design": {
+    "summary": "No couple product at all: a calendar tab in the side menu of the chat you already have, and reminders delivered as chat messages.",
+    "home": "the chat list; the calendar sits in each room's side menu [1]",
+    "onboarding": "none",
+    "visual_style": "KakaoTalk standard",
+    "notable_patterns": [
+     "reminder arrives as a message in the messenger, not as an app push",
+     "zero-install sharing"
+    ],
+    "evidence": "카카오 service page and developer docs read as search summaries; the 2019 launch article is old, current behaviour not rechecked."
+   },
+   "strengths": [
+    "both partners open it many times a day already",
+    "nothing to learn; costs nothing",
+    "dulset's own link is delivered through it"
+   ],
+   "weaknesses_from_reviews": [
+    "no review text found today",
+    "structural: no privacy lens, no health wording rules, no deadline logic; the wife carries the telling"
+   ],
+   "sources": [
+    {
+     "url": "https://www.kakaocorp.com/page/service/service/TalkCalendar",
+     "what": "카카오 service page: create and share events from a chat room, 1:1 room events, alerts from the channel, phone calendar sync (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://newstomato.com/ReadNews.aspx?no=920609",
+     "what": "뉴스토마토 2019 launch article: 죠르디 channel alerts, 15-minute reminder (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://developers.kakao.com/docs/latest/ko/talkcalendar/common",
+     "what": "Kakao Developers: calendar types; shared-calendar API to be supported later (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://www.etnews.com/20260810000256",
+     "what": "전자신문 2026-08-10: KakaoTalk MAU (from repo docs/research/couple-record.json; not rechecked today)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "네이버 카페 (맘스홀릭베이비 · 불임은 없다, 아가야 어서오렴)",
+   "maker": "네이버 (카페 운영진별 운영)",
+   "country": "KR",
+   "category": "substitute: mothers' and infertility communities",
+   "platforms": "web, 네이버 카페 app",
+   "price_model": "free; the cafe sells official advertising [2]",
+   "scale": "맘스홀릭베이비: about 3.1M members on a cafe-info page, 3.5M claimed by an ad seller [1][2]; 불임은 없다, 아가야 어서오렴: 47,000 members in a 2019 report, current number not found [3]",
+   "partner_features": [
+    "none found: individual accounts, no couple link"
+   ],
+   "cycle_fertility_features": [
+    "peer posts only; no tracker"
+   ],
+   "pregnancy_parenting_features": [
+    "boards by pregnancy week and by region on 맘스홀릭베이비 [1]"
+   ],
+   "korea_system_features": [
+    "benefit how-tos circulate as member posts (pattern from memory; not confirmed today)",
+    "the infertility cafe co-hosted a National Assembly forum on infertility policy [3][4]"
+   ],
+   "content_community_ai": [
+    "the main source of peer experience for IVF and IUI in Korea; called the representative Naver infertility cafe in press [3]"
+   ],
+   "platform_delivery": [
+    "Naver account; push for new posts and comments through the cafe app (memory, not confirmed today)"
+   ],
+   "design": {
+    "summary": "Bulletin boards. Value is other people's posts, not a tool.",
+    "home": "board list by stage and region [1]",
+    "visual_style": "Naver Cafe standard",
+    "notable_patterns": [
+     "boards segmented by week and region",
+     "ad sales as the business"
+    ],
+    "evidence": "Third-party cafe-info page, an ad-agency post and 2019 press read as search summaries; cafes not opened (login required)."
+   },
+   "strengths": [
+    "scale and lived experience no app content team can match",
+    "answers within hours from people at the same stage"
+   ],
+   "weaknesses_from_reviews": [
+    "no review text found today",
+    "structural: woman-centred, nothing for the husband to do"
+   ],
+   "sources": [
+    {
+     "url": "https://borathis.com/entry/%EB%A7%98%EC%8A%A4%ED%99%80%EB%A6%AD-%EB%B2%A0%EC%9D%B4%EB%B9%84",
+     "what": "cafe-info page: since 2003-07-11, 3,127,654 members, boards by week and region (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.i-boss.co.kr/ab-2987-472130",
+     "what": "ad-agency post selling official ads on 맘스홀릭베이비, claims 3.5M members (search summary)",
+     "level": "user-review"
+    },
+    {
+     "url": "http://ssjnews.com/client/news/viw.asp?cate=C06&nNewsNumb=20190368430",
+     "what": "서울스트리트저널 2019: infertility cafe with 47,000 members, policy forum (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://www.ibabynews.com/news/articleView.html?idxno=72992",
+     "what": "베이비뉴스: infertility policy coverage naming the cafe (search summary)",
+     "level": "press"
+    }
+   ],
+   "confidence": "low"
+  },
+  {
+   "name": "페어오라 (Pairora)",
+   "maker": "루나바이오닉",
+   "country": "KR",
+   "category": "infertility treatment manager for couples (IVF, IUI)",
+   "platforms": "iOS only; Android announced as planned (2026-07) [1][2]",
+   "price_model": "not found",
+   "scale": "about 2,000 users as of 2026-07-07 [1][2]",
+   "partner_features": [
+    "when the wife enters a medication or injection as taken, or a schedule, the linked husband's account gets the alert too [1][2]",
+    "both see the same schedule; record access is limited to the paired couple's accounts [1]"
+   ],
+   "cycle_fertility_features": [
+    "none found (treatment phase, not cycle tracking)"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none found (no support-count or 통지서 tracking mentioned)"
+   ],
+   "platform_delivery": [
+    "native iOS app with push for injections, medication and clinic visits [1]",
+    "dashboard showing injection types, doses and clinic visit schedule [1]",
+    "treatment record archive [1]"
+   ],
+   "privacy_trust": [
+    "press describes access restricted to paired accounts and lists data protection as a feature [1]"
+   ],
+   "design": {
+    "summary": "A treatment dashboard: what to inject, how much, and when the next clinic visit is, mirrored to the husband.",
+    "home": "dedicated dashboard of injections, doses and visits [1]",
+    "onboarding": "pair the two accounts (steps not established)",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "wife logs, husband is notified",
+     "timed medication alarms as the daily reason to open"
+    ],
+    "evidence": "Two press articles from 2026-07-07 read as search summaries; no store page or screenshots seen."
+   },
+   "strengths": [
+    "the nearest Korean app to dulset's 병원과 함께 mode with a husband notification",
+    "timed alarms that match the real burden of IVF"
+   ],
+   "weaknesses_from_reviews": [
+    "no review text found today",
+    "small base (about 2,000) and iOS only [1]"
+   ],
+   "sources": [
+    {
+     "url": "https://www.seoul.co.kr/news/economy/2026/07/07/20260707500143",
+     "what": "서울신문 2026-07-07: features, husband alerts, paired-only access, 2,000 users, iOS only (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=04040966645512880",
+     "what": "이데일리: 2,000 users, husband alert, dashboard (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://m.news.nate.com/view/20260707n38706",
+     "what": "네이트 copy of the same release (search summary)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "난임 병원 앱 (포켓마리아 · 차병원 센터별 앱과 케어챗 · 최상난임센터)",
+   "maker": "마리아병원 · 차병원 · 최상산부인과",
+   "country": "KR",
+   "category": "clinic patient apps for infertility treatment",
+   "platforms": "iOS, Android per hospital; 마곡 차병원 케어챗 runs inside KakaoTalk [3]",
+   "price_model": "free for patients",
+   "scale": "포켓마리아: App Store KR rating 1.6 from 132 ratings [1]; others unknown",
+   "partner_features": [
+    "none found in any of these apps: the account belongs to the patient"
+   ],
+   "cycle_fertility_features": [
+    "포켓마리아: calendar with expected period and ovulation dates next to clinic appointments [1]"
+   ],
+   "pregnancy_parenting_features": [
+    "none found"
+   ],
+   "korea_system_features": [
+    "none found (no support-count, 통지서 or leave tracking mentioned)"
+   ],
+   "content_community_ai": [
+    "포켓마리아 '마리아테라피': free music and yoga content for treatment stress [1]",
+    "분당차병원 app: videos for special tests, procedures and injections (2021 article) [4]",
+    "마곡 차병원 케어챗: AI chatbot for procedure schedule and process guidance, lifestyle education videos, bill payment, 24 hours; stage-by-stage alerts described as planned [3]"
+   ],
+   "platform_delivery": [
+    "포켓마리아: waiting-order view with an alert when 3 people are ahead; '시험관알리미' sends IVF stage results (eggs retrieved, embryos fertilised, transfer date) to the phone [1]",
+    "분당차병원 app: appointment schedule, test history lookup, queue tickets for blood draw and injection, mobile payment [4]",
+    "차병원 서울역센터 app: mobile queue ticket, arrival check-in, patient card, appointment schedule [5]",
+    "최상난임센터 app (2026-04): retrieved egg count, embryos, transfer, frozen embryo and egg records, visit schedule, check-in and waiting status, mobile consent forms, booking [6]"
+   ],
+   "privacy_trust": [
+    "hospital-held medical records; details not established"
+   ],
+   "design": {
+    "summary": "Hospital logistics on a phone: queue number, check-in, appointments, payment, and lab results for the IVF stage. Built per hospital, not per couple.",
+    "home": "not established",
+    "onboarding": "patient number or identity login (memory, not confirmed today)",
+    "visual_style": "not established",
+    "notable_patterns": [
+     "result of each IVF stage delivered as a notification",
+     "queue and waiting status as the most used feature",
+     "newer services move into KakaoTalk instead of a separate app"
+    ],
+    "evidence": "Store listing summaries (포켓마리아, 차병원 서울역센터), a 2021 award article (분당차병원), 2025 and 2026 press (케어챗, 최상난임센터), all read as search summaries."
+   },
+   "strengths": [
+    "holds the data patients actually wait for: egg count, fertilisation, transfer date",
+    "cuts waiting-room friction"
+   ],
+   "weaknesses_from_reviews": [
+    "포켓마리아 rated 1.6 on the KR App Store; one review on the English page reports connection errors; latest release notes mention an old iOS 12 icon fix [1]",
+    "injection reminders and general test results in 포켓마리아 could not be confirmed [1]"
+   ],
+   "sources": [
+    {
+     "url": "https://apps.apple.com/KR/app/id1182905508",
+     "what": "App Store KR listing for 포켓마리아: calendar, waiting order, 시험관알리미, 마리아테라피, rating 1.6 (search summary; page blocked)",
+     "level": "official"
+    },
+    {
+     "url": "http://ssjnews.com/client/news/viw.asp?cate=C01&nNewsNumb=201703287111",
+     "what": "서울스트리트저널 2017: 포켓마리아 launch coverage (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "https://biz.heraldcorp.com/article/10618394",
+     "what": "헤럴드경제: 마곡 차병원 난임센터 KakaoTalk 케어챗, functions and planned alerts (search summary)",
+     "level": "press"
+    },
+    {
+     "url": "http://www.bosa.co.kr/news/articleView.html?idxno=2166641",
+     "what": "의학신문 2021: 분당차병원 app functions (search summary; old)",
+     "level": "press"
+    },
+    {
+     "url": "https://apps.apple.com/kr/app/%EC%B0%A8%EB%B3%91%EC%9B%90-%EC%97%AC%EC%84%B1%EC%9D%98%ED%95%99%EC%97%B0%EA%B5%AC%EC%86%8C-%EC%84%9C%EC%9A%B8%EC%97%AD%EC%84%BC%ED%84%B0/id1070680801",
+     "what": "App Store listing for 차병원 여성의학연구소 서울역센터 app (search summary)",
+     "level": "official"
+    },
+    {
+     "url": "https://news.nate.com/view/20260420n23517",
+     "what": "press 2026-04-20: 최상난임센터 app launch and functions (search summary)",
+     "level": "press"
+    }
+   ],
+   "confidence": "medium"
+  }
+ ],
+ "cluster_takeaways": [
+  "Applying happens only on government channels, and each benefit sits on a different one: 가임력 검사 on e보건소, pregnancy benefits on 정부24 or 아이마중, leave pay on 고용24, Seoul extras on 몽땅정보통. None of them was found to show a partner the other's progress or to compute per-person deadlines. dulset cannot apply in-app, so it should be judged on how well it hands off to the right page and on the dates it derives after the hand-off.",
+  "Public services are starting to push, not just wait: 서울 몽땅정보통 (relaunched 2026-02-23) asks for the life stage once, including 결혼준비, and sends KakaoTalk alerts when a programme opens. A generic 'benefit reminder' is no longer special; dulset's per-person chain (applied, test within 3 months, claim within 1 month) and its husband-side tasks are what the public channels do not do.",
+  "The rules themselves are moving toward the spouse doing paperwork: proxy application for 맘편한 임신 by the spouse since 2026-06-30, and a 2026-06 bill to allow retroactive 가임력 검사 claims. dulset's task list depends on dated rules that change within a year, and intake can close early when a 보건소 budget runs out.",
+  "Couple apps get both partners to open daily with a mutual-dependency loop, not with content: in 썸원 an answer is hidden until both answer, a shared pet grows or turns to stone, and a user-sent nudge sits on home. dulset has chosen a weekly loop with no streaks; the comparison is whether a weekly pick and one [고마워요] can bring the husband back without that pressure.",
+  "Widgets and D-day counters are the everyday surface of this category (더데이비포 with 7 lock-screen widgets, 비트윈 and 썸원 D-day widgets). dulset is a web prototype with no widget and no push for the link-only husband.",
+  "Reminders in Korea increasingly arrive as KakaoTalk messages rather than app pushes: 톡캘린더 channel alerts, 서울톡, 알림톡 results, a hospital chatbot inside KakaoTalk. dulset already sends its link through KakaoTalk but has no message-based reminder.",
+  "Monetisation in couple apps is low-priced and couple-wide: one payer unlocks both phones at about ₩3,000 to ₩3,500 a month (비트윈 플러스, TimeTree 프리미엄), with ads on the free home screen, cosmetic currency and character IP on top (썸원). The daily loop itself stays free.",
+  "Trust is a live issue in this category: 비트윈 lost free users' photos in 2025-09 and keeps bulk export behind the paid plan. dulset's local-first storage and free export are the opposite stance, with its own risk of loss on one device.",
+  "Clinic apps are per-hospital logistics tools (queue, check-in, payment, IVF stage results) with no partner role and weak ratings; the one couple-oriented treatment app, 페어오라, mirrors injection and medication alerts to the husband but is iOS only with about 2,000 users. dulset's 병원과 함께 mode overlaps on the husband alert and differs on support counts, 통지서 expiry and leave, while lacking timed medication alarms.",
+  "The real substitutes for a couple today are a KakaoTalk chat plus a shared calendar for coordination and a Naver cafe for information and comfort. All are free, already installed and woman-driven; none gives the husband something of his own to do."
+ ],
+ "not_found": [
+  "카이헬스: no patient or couple app found. Press describes Vita Embryo, AI embryo-analysis software sold to clinics (20+ Korean clinics by 2026-02): https://m.news.nate.com/view/20260214n02817 , https://www.newsis.com/view/NISX20260513_0003628207",
+  "'마리아플러스' does not exist under that name; the 마리아병원 app is 포켓마리아.",
+  "몽땅정보 만능키 no longer exists under that name: renamed 탄생육아 몽땅정보통 on 2026-02-23. 서울시 임신·출산정보센터 (seoul-agi.seoul.go.kr) remains as an information site.",
+  "복지로: exists, but today's searches showed only post-birth online applications (첫만남이용권 etc.) and nothing specific to 임신 준비 or to partners, so it is not profiled.",
+  "e보건소 native app: not confirmed; only the web portal was found.",
+  "'투게더 - 함께하는 난임졸업' (App Store id6474945262) appeared once as a search-result title; no description found.",
+  "Noted but not profiled because the search budget ran out: 퍼티바 (injection alarm 10 minutes before, treatment cost and subsidy ledger; https://play.google.com/store/apps/details?id=ltd.eggbomb.fertiva&hl=ko), 메디쏠 (claims couple pairing, mood log, clinic link, frozen-embryo expiry; https://www.mediloving.co.kr/ko), LG화학 블룸 (infertility encyclopedia, self-check, community '쉼터'; repo research 2026-09).",
+  "Not found: current KRW price of 썸원's subscription, 비트윈's current MAU, TimeTree's ad policy, 페어오라's price, 고용24 confirmation of the 2026-11-27 change to 4 paid 난임치료휴가 days, user reviews for e보건소, 정부24, 고용24 and 몽땅정보통.",
+  "Method limit: WebFetch could not open apps.apple.com or www.yugacrew.com (hosts outside the session's allowed network domains), and the shared web-search budget ran out after about 45 queries. Every claim rests on search-result summaries, not opened pages, and no store screenshot was seen. apps.apple.com and play.google.com need to be allowed in the session's network settings to verify design claims."
+ ]
+}

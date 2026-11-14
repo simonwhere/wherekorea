@@ -52,3 +52,20 @@
 - 콘텐츠를 고칠 때는 JSON만 고치고, 근거는 이 폴더에 먼저 더해요. `verified`를 `true`로 바꾸는 건 공식 원문을 직접 본 사람만 해요.
 
 **주의:** 조사할 때 웹페이지 원문을 직접 열 수 없어서, 대부분 **검색 결과 요약**을 근거로 했어요. 각 파일의 `confidence`와 `notes`(수정 사항)를 확인하고, **출시 전에는 공식 원문으로 다시 확인**해야 해요. 특히 금액, 대상, 기한은 해마다 바뀌어요.
+
+## 경쟁 앱 비교 (2026-11-13)
+
+`docs/review-competitors.md`(디자인부터 기능까지 다른 앱과 비교해 부족한 점)의 원자료예요. `competitors-2026-11/` 폴더에 있어요. 앱을 설치해 보지 못했고 스토어도 직접 열지 못해서, 대부분 검색 결과 요약이에요. `sources[].level`이 `memory`인 것은 그날 확인하지 못한 내용이에요.
+
+| 파일 | 내용 |
+|---|---|
+| `kr-cycle-ttc.json` | 국내 주기·임신 준비 앱 (핑크다이어리, 해피문데이, 봄 캘린더, Flo 한국어판, 삼성 헬스 …) |
+| `kr-pregnancy-parenting.json` | 국내 임신·육아 앱 (베이비빌리, 마미톡, 열달후에, 280days, 삐요로그 …) |
+| `kr-gov-couple-substitutes.json` | 정부 서비스·커플 앱·난임 앱 (아이마중, e보건소, 정부24, 고용24, 썸원, 비트윈, 페어오라 …) |
+| `global-cycle-fertility.json` | 해외 주기·가임기 앱 (Flo for Partners, Clue, Natural Cycles, Premom, Glow, Soonr …) |
+| `global-dad-partner-couple.json` | 해외 남편·커플·남성 가임력 (HiDaddy, Paired, Legacy, ExSeed …) |
+| `japan-asia.json` | 일본·아시아 (ルナルナ, ペアケア, ケアミー, コノトキ, パパninaru, Seem …) |
+| `design-benchmarks.json` | 디자인 기준으로 본 앱 (Flo, Oura, Duolingo, Finch, Toss …) |
+| `devices-clinic-ai.json` | 기기·난임 병원 앱·AI 챗·알림톡·건강 데이터 연동, 디지털의료제품법 |
+| `gaps.json` | 8개 기준별 부족한 점 90개와 확인 결과(우리 쪽은 코드, 경쟁 앱 쪽은 출처) |
+| `our-design-audit.json` | 둘셋 화면 점검: 화면별 길이·카드 수·글자 크기, 약점 20개 (캡처 파일은 저장소에 없어요) |
